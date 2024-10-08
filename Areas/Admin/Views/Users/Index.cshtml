@@ -1,0 +1,259 @@
+﻿@model IEnumerable<Tech_Store.Models.User>
+@{
+    ViewData["Title"] = "User";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+}
+
+<div class="Container">
+    @Html.AntiForgeryToken()
+
+    <div class="pt-3"></div>
+    <div class="tableProduct">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex align-items-center">
+                        <h4 class="card-title">DANH SÁCH KHÁCH HÀNG</h4>
+                        <button class="btn btn-primary btn-round ms-auto"
+                                data-bs-toggle="modal"
+                                data-bs-target="#UserModal">
+                            <i class="fa fa-plus"></i>
+                            Thêm
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Modal -->
+                    @Html.Partial("ModalUser")
+                    <!--End Modal-->
+                    <div class="table-responsive">
+                        <table id="add-row" class="display table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Ảnh</th>
+                                    <th>Họ & tên lót</th>
+                                    <th>Tên</th>
+                                    <th>Số điện thoại</th>
+                                    <th>Email</th>
+                                    <th>Kích hoạt</th>
+                                    <th style="width: 10%">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tfoot>
+                                <tr>
+                                    <th>Ảnh</th>
+                                    <th>Họ & tên lót</th>
+                                    <th>Tên</th>
+                                    <th>Số điện thoại</th>
+                                    <th>Email</th>
+                                    <th>Kích hoạt</th>
+                                    <th>Hành động</th>
+                                </tr>
+                            </tfoot>
+                            <tbody>
+
+                                @if (Model != null)
+                                {
+                                    @foreach (var us in Model)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="avatar">
+                                                    <img src="~/Upload/Avatar/@us.Img" alt="..." class="avatar-img rounded-circle">
+                                                </div>
+
+                                            </td>
+                                            <td>@us.LastName</td>
+                                            <td>@us.FirstName</td>
+                                            <td>@us.PhoneNumber</td>
+                                            <td>@us.Email</td>
+
+                                            <td>
+
+                                                <p class="badge badge-pill @(us.IsActive ==true ? "badge-success" : "badge-danger") text-center">
+                                                    @us.IsActive
+                                                </p>
+
+                                            </td>
+                                            <td>
+                                                <div class="form-button-action">
+                                                    <button type="button"
+                                                            data-bs-toggle="tooltip" data-id="@us.UserId"
+                                                            id="editUs"
+                                                            class="btn btn-link btn-primary btn-lg"
+                                                            data-original-title="Edit Task">
+                                                        <i class="fa fa-edit"></i>
+                                                    </button>
+                                                    <button type="button"
+                                                            data-bs-toggle="tooltip"
+                                                            title=""
+                                                            class="btn btn-link btn-danger"
+                                                            data-id="@us.UserId"
+                                                            id="removeUs"
+                                                            data-original-title="Remove">
+                                                        <i class="fa fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        var token = $('input[name="__RequestVerificationToken"]').val();
+
+        // Xử lý sự kiện click cho nút xóa
+        $(document).on('click', '#removeUs', function () {
+            var id_us = $(this).data('id'); // Lấy ID từ thuộc tính data-id
+
+            if (confirm('Bạn có chắc chắn muốn xóa người dùng này không?')) {
+                // Hiển thị biểu tượng loading
+                $('.loading-container').show();
+
+
+                $.ajax({
+                    method: 'DELETE', // Sử dụng phương thức DELETE
+                    url: 'Users/Delete/' + id_us, // Cập nhật URL cho đúng
+                    headers: {
+                        "RequestVerificationToken": token // Thêm token vào header
+                    },
+                    success: function (response) {
+                        location.reload(); // Làm mới trang sau khi xóa
+                        // Ẩn biểu tượng loading
+                        $('.loading-container').hide();
+                    },
+                    error: function (xhr, status, error) {
+                        alert("Đã xảy ra lỗi: " + xhr.message)
+                        $('.loading-container').hide();
+                    }
+                });
+            }
+        });
+
+        // Hàm lấy dữ liệu từ API (phải sử dụng async/await)
+        async function getProvince(provinceId) {
+            const api = await fetch('https://provinces.open-api.vn/api/p/' + provinceId);
+            const data = await api.json(); // Chuyển đổi phản hồi thành JSON
+            return data;
+        }
+
+        async function getDistrict(districtId) {
+            const api = await fetch('https://provinces.open-api.vn/api/d/' + districtId);
+            const data = await api.json();
+            return data;
+        }
+
+        async function getWard(wardId) {
+            const api = await fetch('https://provinces.open-api.vn/api/w/' + wardId);
+            const data = await api.json();
+            return data;
+        }
+
+        // Xử lý sự kiện click cho nút chỉnh sửa
+        $(document).on('click', '#editUs', async function () {
+            var id_us = $(this).data('id'); // Lấy ID từ thuộc tính data-id
+            $('.loading-container').show(); // Hiển thị loading
+
+            $.ajax({
+                method: 'GET',
+                url: 'Users/Edit/' + id_us, // Lấy dữ liệu từ server
+
+                success: async function (response) {
+                    // Đặt giá trị của các input và select
+                    $('input[name=us_id]').val(response.userId);
+                    $('input[name="LastName"]').val(response.lastName); // Đặt giá trị cho input name
+                    $('input[name="FirstName"]').val(response.firstName);
+                    $('input[name="PhoneNumber"]').val(response.phoneNumber.trim()); // Đặt giá trị cho input description
+                    $('input[name="Email"]').val(response.email);
+                    $('select[name="isActive"]').val(response.isActive.toString());
+                    $('input[name="street"]').val(response.addressLine);
+                    // Gán giá trị mới cho thuộc tính src
+                    $('#avatarPreview').attr('src', '/Upload/Avatar/' + response.imageUrl);
+
+                    // Khởi tạo biến cho province, district, ward
+                    let provinceFill, districtFill, wardFill;
+
+                    // Lấy dữ liệu địa chỉ từ API
+                    if (response.province !== '' && response.province !== null) {
+                        provinceFill = await getProvince(response.province); // Chờ API trả về dữ liệu tỉnh
+                    }
+                    if (response.district !== '' && response.district !== null) {
+                        districtFill = await getDistrict(response.district); // Chờ API trả về dữ liệu huyện
+                    }
+                    if (response.ward !== '' && response.ward !== null) { // Sửa ở đây
+                        wardFill = await getWard(response.ward); // Chờ API trả về dữ liệu xã/phường
+                    }
+
+                    // Điền dữ liệu vào dropdown Tỉnh/Thành phố
+                    // Gọi hàm fillAddressData
+                    if (provinceFill && provinceFill.code) {
+                        // Chỉ gọi hàm fillAddressData với các giá trị hợp lệ
+                        await fillAddressData(
+                            provinceFill.code,
+                            districtFill && districtFill.code ? districtFill.code : null,
+                            wardFill && wardFill.code ? wardFill.code : null
+                        );
+                    } else {
+                        console.error('Province data is missing or invalid:', { provinceFill, districtFill, wardFill });
+                    }
+
+                    // Hiển thị nút Lưu thay đổi và ẩn nút Thêm mới
+                    $('#update').show();
+                    $('#add').hide();
+
+                    // Ẩn biểu tượng loading
+                    $('.loading-container').hide();
+
+                    // Mở popup
+                    $('#UserModal').modal('show');
+                },
+                error: function (xhr, status, error) {
+                    alert("Đã xảy ra lỗi: " + error);
+                    $('.loading-container').hide(); // Ẩn loading khi có lỗi
+                }
+            });
+        });
+
+
+
+
+        // Sự kiện khi modal bị ẩn
+        $('#UserModal').on('hidden.bs.modal', function () {
+            // Đặt lại các trường trong modal khi ẩn
+            // Đặt giá trị của các input và select
+            $('input[name="LastName"]').val(''); // Đặt giá trị cho input name
+            $('input[name="FirstName"]').val(''); // Đặt giá trị cho input name
+            $('input[name="PhoneNumber"]').val(''); // Đặt giá trị cho input name
+            $('input[name="Email"]').val(''); // Đặt giá trị cho input description
+            $('select[name="isActive"]').val(''); // Đặt giá trị cho select visible
+            $('input[name="us_id"]').val('')
+            $('input[name="street"]').val('');
+            $('#citySelect').val('').selectpicker('refresh');
+            $('#districtSelect').val('').selectpicker('refresh');
+            $('#wardSelect').val('').selectpicker('refresh');
+            $('#avatarPreview').attr('src', '/Upload/Avatar/none.png');
+
+            //Tắt trạng thái load
+            $('.loading-container').hide();
+
+            // Ẩn nút Lưu thay đổi và hiển thị nút Thêm mới
+            $('#update').hide();
+            $('#add').show();
+        });
+    });
+
+</script>
+
+<script type="text/javascript">
+
+</script>

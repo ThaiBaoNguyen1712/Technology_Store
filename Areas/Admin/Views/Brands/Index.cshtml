@@ -1,0 +1,155 @@
+﻿@model IEnumerable<Tech_Store.Models.Brand>
+@{
+    ViewData["Title"] = "Category";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+}
+
+<div class="Container">
+    <div class="pt-3"></div>
+    <div class="tableProduct">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex align-items-center">
+                        <h4 class="card-title">DANH SÁCH THƯƠNG HIỆU</h4>
+                        <button class="btn btn-primary btn-round ms-auto"
+                                data-bs-toggle="modal"
+                                data-bs-target="#BrandModal">
+                            <i class="fa fa-plus"></i>
+                            Thêm
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Modal -->
+                    @Html.Partial("ModalBrand")
+                    <!--End Modal-->
+                    <div class="table-responsive">
+                        <table id="add-row" class="display table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Tên</th>
+                                    <th>Mô tả</th>
+                                    <th style="width:10%">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tfoot>
+                                <tr>
+                                    <th>Tên</th>
+                                    <th>Mô tả</th>
+                                    <th>Hành động</th>
+                                </tr>
+                            </tfoot>
+                            <tbody>
+                                @if(Model != null)
+                                {
+                                @foreach (var brand in Model)
+                                {
+                                    <tr>
+                                            <td>@brand.Name</td>
+                                            <td>@brand.Description</td>
+                                        <td>
+                                            <div class="form-button-action">
+                                                <button type="button"
+                                                            data-bs-toggle="tooltip" data-id="@brand.BrandId"
+                                                            id="editBrand"
+                                                        class="btn btn-link btn-primary btn-lg"
+                                                        data-original-title="Edit Task">
+                                                    <i class="fa fa-edit"></i>
+                                                </button>
+                                                <button type="button"
+                                                        data-bs-toggle="tooltip"
+                                                        title=""
+                                                        class="btn btn-link btn-danger"
+                                                            data-id="@brand.BrandId"
+                                                        id="removeBrand"
+                                                        data-original-title="Remove">
+                                                    <i class="fa fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        // Xử lý sự kiện click cho nút xóa
+        $(document).on('click', '#removeBrand', function () {
+            var id_brand = $(this).data('id'); // Lấy ID từ thuộc tính data-id
+
+            if (confirm('Bạn có chắc chắn muốn xóa thương hiệu này không?')) {
+                // Hiển thị biểu tượng loading
+                $('.loading-container').show();
+
+
+                $.ajax({
+                    method: 'DELETE', // Sử dụng phương thức DELETE
+                    url: 'Brands/Delete/' + id_brand, // Cập nhật URL cho đúng
+                    success: function (response) {
+                        location.reload(); // Làm mới trang sau khi xóa
+                          // Ẩn biểu tượng loading
+                        $('.loading-container').hide();
+                    },
+                    error: function (xhr, status, error) {
+                        alert("Đã xảy ra lỗi: " + error);
+                        $('.loading-container').hide();
+
+                    }
+                });
+            }
+        });
+
+        // Xử lý sự kiện click cho nút chỉnh sửa
+        $(document).on('click', '#editBrand', function () {
+            var id_brand = $(this).data('id'); // Lấy ID từ thuộc tính data-id
+            $('.loading-container').show(); // Hiển thị loading
+
+            $.ajax({
+                method: 'GET',
+                url: 'Brands/Edit/' + id_brand, // Lấy dữ liệu từ server
+                success: function (response) {
+                    // Đặt giá trị của các input và select
+                    $('input[name="name"]').val(response.name); // Đặt giá trị cho input name
+                    $('input[name="description"]').val(response.description); // Đặt giá trị cho input description
+                    $('input[name="brand_id"]').val(response.brandId)
+                    // Hiển thị nút Lưu thay đổi và ẩn nút Thêm mới
+                    $('#update').show();
+                    $('#add').hide();
+
+                    // Ẩn biểu tượng loading
+                    $('.loading-container').hide();
+                    //Mở popup
+                    $('#BrandModal').modal('show');
+                },
+                error: function (xhr, status, error) {
+                    alert("Đã xảy ra lỗi: " + error);
+                    $('.loading-container').hide(); // Ẩn loading khi có lỗi
+                }
+            });
+        });
+
+
+        // Sự kiện khi modal bị ẩn
+        $('#BrandModal').on('hidden.bs.modal', function () {
+            // Đặt lại các trường trong modal khi ẩn
+            $('input[name="name"]').val('');
+            $('input[name="description"]').val('');
+            $('input[name="brand_id"]').val('');
+            //Tắt trạng thái load
+            $('.loading-container').hide();
+
+            // Ẩn nút Lưu thay đổi và hiển thị nút Thêm mới
+            $('#update').hide();
+            $('#add').show();
+        });
+    });
+</script>

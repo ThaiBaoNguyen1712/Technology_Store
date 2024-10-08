@@ -1,0 +1,194 @@
+﻿body {
+}
+.preview-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.avatar-preview {
+    height: 85px!important;
+    width: 85px!important;
+    cursor: pointer; /* Thêm con trỏ để chỉ rằng có thể bấm vào ảnh */
+    transition: transform 0.2s; /* Hiệu ứng khi phóng to */
+}
+
+    .avatar-preview:hover {
+        transform: scale(1.1); /* Phóng to khi hover */
+    }
+
+.image-modal {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+.modal-image {
+    max-width: 70%; /* Điều chỉnh theo ý thích */
+    max-height: 70%; /* Điều chỉnh theo ý thích */
+    display: block;
+    margin: auto;
+}
+
+.close {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    color: white;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.image-upload-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.image-upload-label {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 500px;
+    height: 500px;
+    border: 2px dashed #d9d9d9;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border 0.3s ease;
+    background-color: #f9f9f9;
+}
+
+    .image-upload-label:hover {
+        border-color: #007bff;
+    }
+
+.upload-icon {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #007bff;
+}
+
+    .upload-icon i {
+        font-size: 50px;
+        margin-bottom: 10px;
+    }
+
+.image-preview {
+    display: none;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.image-upload-input {
+    display: none;
+}
+
+.image-info {
+    margin-top: 10px;
+    font-size: 14px;
+    text-align: center;
+    color: #888;
+}
+
+#fileInput:valid + .upload-icon {
+    display: none;
+}
+
+/*switch button*/
+.form-check-input {
+    width: 40px !important; /* Độ rộng của switch */
+    height: 20px !important; /* Độ cao của switch */
+    background-color: #ddd; /* Màu nền khi tắt */
+    border-radius: 10px; /* Làm tròn góc cho switch */
+    position: relative;
+    appearance: none; /* Ẩn kiểu checkbox mặc định */
+    outline: none;
+    transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out; /* Hiệu ứng chuyển động */
+    cursor: pointer;
+}
+
+    .form-check-input:before {
+        content: '';
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        background-color: white; /* Màu của nút */
+        border-radius: 50%; /* Làm tròn nút */
+        top: 2px;
+        left: 2px;
+        transition: transform 0.2s ease-in-out; /* Hiệu ứng di chuyển nút */
+    }
+
+    /* Khi bật switch */
+    .form-check-input:checked {
+        background-color: #0d6efd; /* Màu nền khi bật */
+    }
+
+        .form-check-input:checked:before {
+            transform: translateX(20px); /* Di chuyển nút sang phải khi bật */
+        }
+
+    /* Hiệu ứng khi focus */
+    .form-check-input:focus {
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25); /* Hiệu ứng focus */
+    }
+
+.form-check {
+    position: relative;
+}
+
+.form-check-label {
+    margin-left: 0.75em; /* Khoảng cách giữa switch và label */
+}
+
+.dropzone {
+    border: 2px dashed #ccc;
+    border-radius: 4px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+}
+
+    .dropzone.dragover {
+        background-color: #f0f0f0;
+        border-color: #aaa;
+    }
+
+.preview-image {
+    position: relative;
+    display: inline-block;
+    margin: 5px;
+}
+
+    .preview-image img {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+    }
+
+    .preview-image .remove-btn {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        background-color: red;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        font-size: 12px;
+        cursor: pointer;
+    }

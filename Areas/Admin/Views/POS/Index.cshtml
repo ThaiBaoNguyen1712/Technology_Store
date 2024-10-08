@@ -1,0 +1,265 @@
+﻿@{
+    ViewData["Title"] = "POS";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+}
+
+<div class="pt-4"></div>
+<div class="container-fluid row">
+    <!-- Phần Sản phẩm -->
+    <div class="col-lg-7 mb-4 mb-lg-0">
+        <div class="card h-100">
+            <div class="p-3 m-0 bg-light">
+                Mục sản phẩm
+            </div>
+
+            <div class="row gy-1">
+                <div class="col-sm-6">
+                    <div class="input form-control d-flex justify-content-end">
+                        <select class="form-control">
+                            <option>Tất cả các danh mục</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="input form-control d-flex justify-content-end">
+                        <input class="form form-control" placeholder="Tìm kiếm sản phẩm" type="search" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Thêm tính năng cuộn dọc khi có nhiều sản phẩm -->
+            <div class="card-body pt-2" style="max-height: 75vh; overflow-y: auto;">
+                <div class="row">
+                    <!-- Card 1 -->
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="card h-100">
+                            <a href="#" data-bs-toggle="modal" data-bs-target="#exampleModal1">
+                            <img src="https://tse2.mm.bing.net/th?id=OIP.WjwTVU4VuosvLMorXosMvgHaJ4&pid=Api&P=0&h=180" class="card-img-top" alt="...">
+                            <div class="card-body">
+                                <p class="card-text">Sản phẩm 1</p>
+                            </div>
+                            </a>
+                        </div>
+                    </div>
+                    @Html.Partial("ViewProduct")
+                    <!-- Card 2 -->
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="card h-100">
+                            <img src="https://tse2.mm.bing.net/th?id=OIP.WjwTVU4VuosvLMorXosMvgHaJ4&pid=Api&P=0&h=180" class="card-img-top" alt="...">
+                            <div class="card-body">
+                                <p class="card-text">Sản phẩm 2</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 2 -->
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="card h-100">
+                            <img src="https://tse2.mm.bing.net/th?id=OIP.WjwTVU4VuosvLMorXosMvgHaJ4&pid=Api&P=0&h=180" class="card-img-top" alt="...">
+                            <div class="card-body">
+                                <p class="card-text">Sản phẩm 2</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 2 -->
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="card h-100">
+                            <img src="https://tse2.mm.bing.net/th?id=OIP.WjwTVU4VuosvLMorXosMvgHaJ4&pid=Api&P=0&h=180" class="card-img-top" alt="...">
+                            <div class="card-body">
+                                <p class="card-text">Sản phẩm 2</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 2 -->
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="card h-100">
+                            <img src="https://tse2.mm.bing.net/th?id=OIP.WjwTVU4VuosvLMorXosMvgHaJ4&pid=Api&P=0&h=180" class="card-img-top" alt="...">
+                            <div class="card-body">
+                                <p class="card-text">Sản phẩm 2</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 2 -->
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="card h-100">
+                            <img src="https://tse2.mm.bing.net/th?id=OIP.WjwTVU4VuosvLMorXosMvgHaJ4&pid=Api&P=0&h=180" class="card-img-top" alt="...">
+                            <div class="card-body">
+                                <p class="card-text">Sản phẩm 2</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 2 -->
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="card h-100">
+                            <img src="https://tse2.mm.bing.net/th?id=OIP.WjwTVU4VuosvLMorXosMvgHaJ4&pid=Api&P=0&h=180" class="card-img-top" alt="...">
+                            <div class="card-body">
+                                <p class="card-text">Sản phẩm 2</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 2 -->
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="card h-100">
+                            <img src="https://tse2.mm.bing.net/th?id=OIP.WjwTVU4VuosvLMorXosMvgHaJ4&pid=Api&P=0&h=180" class="card-img-top" alt="...">
+                            <div class="card-body">
+                                <p class="card-text">Sản phẩm 2</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 2 -->
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="card h-100">
+                            <img src="https://tse2.mm.bing.net/th?id=OIP.WjwTVU4VuosvLMorXosMvgHaJ4&pid=Api&P=0&h=180" class="card-img-top" alt="...">
+                            <div class="card-body">
+                                <p class="card-text">Sản phẩm 2</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 2 -->
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="card h-100">
+                            <img src="https://tse2.mm.bing.net/th?id=OIP.WjwTVU4VuosvLMorXosMvgHaJ4&pid=Api&P=0&h=180" class="card-img-top" alt="...">
+                            <div class="card-body">
+                                <p class="card-text">Sản phẩm 2</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 2 -->
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="card h-100">
+                            <img src="https://tse2.mm.bing.net/th?id=OIP.WjwTVU4VuosvLMorXosMvgHaJ4&pid=Api&P=0&h=180" class="card-img-top" alt="...">
+                            <div class="card-body">
+                                <p class="card-text">Sản phẩm 2</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Thêm các sản phẩm khác tương tự -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phần Hóa đơn -->
+    <div class="col-lg-5 mb-5">
+        <div class="card h-100">
+            <div class="p-3 m-0 bg-light">
+                Hóa đơn
+            </div>
+
+            <!-- Thêm tính năng cuộn dọc cho toàn bộ phần hóa đơn -->
+            <div class="card-body" style="max-height: 80vh; overflow-y: auto;">
+                <div class="d-flex justify-content-end mb-3">
+                    <button type="button" class="btn btn-outline-primary d-flex align-items-center gap-2">
+                        Xem đơn đặt cọc
+                        <span class="badge badge-danger rounded-circle total_hold_orders">1</span>
+                    </button>
+                </div>
+
+                <!-- Phần chọn và thêm khách hàng -->
+                <div class="form-group justify-content-end d-flex gap-2 mb-3">
+                    <div class="row">
+                        <div class="col-7">
+                            <select class="form-control">
+                                <option>Chọn khách hàng...</option>
+                            </select>
+                        </div>
+                        <div class="col-5">
+                            <button type="button" class="btn btn-success">
+                                Thêm khách hàng
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Thông tin khách hàng -->
+                <div>
+                    <h5>Thông tin khách hàng</h5>
+                </div>
+                <div class="row form-group">
+                    <div class="col-3">Tên :</div>
+                    <div class="col-9">Nguyễn Thái Bảo</div>
+                    <div class="col-3">SĐT :</div>
+                    <div class="col-9">0384064947</div>
+                    <div class="col-3">Địa chỉ :</div>
+                    <div class="col-9">Kp5, Tam Hiệp, BH-ĐN</div>
+                </div>
+
+                <!-- Giỏ hàng -->
+                <div class="card">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Sản phẩm</th>
+                                    <th>Số lượng</th>
+                                    <th>Giá</th>
+                                    <th>Xóa</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>IP 16 prm</td>
+                                    <td><input type="number" class="form-control" /></td>
+                                    <td>16.000.000.00</td>
+                                    <td>#</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+
+                <!-- Giá giỏ hàng -->
+                <div class="form-group">
+                    <!-- Tổng phụ -->
+                    <div class="row mb-2">
+                        <div class="col-5">
+                            <p>Tổng phụ :</p>
+                        </div>
+                        <div class="col-7 text-end">
+                            <p>16.000.000.00đ</p>
+                        </div>
+                    </div>
+                    <!-- Giảm giá -->
+                    <div class="row mb-2">
+                        <div class="col-5">
+                            <p>Giảm Giá Sản Phẩm :</p>
+                        </div>
+                        <div class="col-7 text-end">
+                            <p>0đ</p>
+                        </div>
+                    </div>
+                    <!-- Các mục giá khác -->
+                    <hr />
+                    <!-- Tổng cộng -->
+                    <div class="row">
+                        <div class="col-5">
+                            <p>Tổng cộng :</p>
+                        </div>
+                        <div class="col-7 text-end">
+                            <p>16.000.000.00đ</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Thanh toán bằng -->
+                <div class="pt-3">
+                    <p>Đã thanh toán bởi :</p>
+                    <div class="d-flex justify-content-start">
+                        <button class="btn m-2 btn-outline-success">Tiền mặt</button>
+                        <button class="btn m-2 btn-outline-success">Thẻ</button>
+                    </div>
+                </div>
+
+                <!-- Các nút hành động -->
+                <div class="row d-flex justify-content-center pt-3">
+                    <div class="col-6">
+                        <button class="btn btn-danger form-control" type="button">Hủy đơn hàng</button>
+                    </div>
+                    <div class="col-6">
+                        <button class="btn btn-success form-control" type="button">Đặt đơn hàng</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

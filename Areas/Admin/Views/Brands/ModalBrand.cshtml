@@ -1,0 +1,125 @@
+﻿
+<!-- Modal -->
+<div class="modal fade" id="BrandModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" style="min-width:80vw;">
+        <form id="addBrandForm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Thêm Thương Hiệu</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- Cột trái -->
+
+                        @*Lưu trữ ID Cate*@
+                        <input type="hidden" name="brand_id"/>
+
+                        <div class="col-12">
+                            <!-- Tên danh mục -->
+                            <div class="form-group row mb-3">
+                                <label class="col-sm-4 col-form-label">Tên thương hiệu :</label>
+                                <div class="col-sm-8">
+                                    <input type="text" class="form-control" name="name" required />
+                                </div>
+
+                            </div>
+                            <!-- Mô tả -->
+                            <div class="form-group row mb-3">
+                                <label class="col-sm-4 col-form-label">Mô tả :</label>
+                                <div class="col-sm-8">
+                                    <input type="text" class="form-control" name="description" required />
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+                <div class="loading-container" style="display:none; text-align:center;">
+                    <div class="loadingio-spinner-double-ring-2by998twmg8">
+                        <div class="ldio-yzaezf3dcmj">
+                            <div></div>
+                            <div></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Hủy</button>
+                   
+                        <button type="button" id="update" class="btn btn-success" style="display:none">Lưu thay đổi</button>
+
+                    <button type="submit" id="add" class="btn btn-success" style="display:inline-block">Thêm mới</button>
+
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@* jQuert Code *@
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script type="text/javascript">
+    //Thêm Cate
+    $(document).ready(function () {
+        $('#addBrandForm').on('submit', function (event) {
+            event.preventDefault(); // Ngăn chặn hành động mặc định của form
+
+            // Hiển thị biểu tượng loading
+            $('.loading-container').show();
+
+            // Lấy dữ liệu từ form
+            var name = $("input[name='name']").val();
+            var description = $("input[name='description']").val();
+            // Gửi AJAX request
+            $.ajax({
+                method: 'POST',
+                url: 'Brands/create',
+                data: {
+                    name: name,
+                    description: description,
+                },
+                success: function (response) {
+                    $('#BrandModal').modal('hide');
+                    // Ẩn biểu tượng loading
+                    $('.loading-container').hide();
+                    location.reload();
+                },
+                error: function (xhr, status, error) {
+                    // Ẩn biểu tượng loading
+                    $('.loading-container').hide();
+                    // Xử lý lỗi (ví dụ: hiển thị thông báo lỗi)
+                    alert('Đã xảy ra lỗi: ' + error);
+                }
+            });
+        });
+
+        $(document).on('click', '#update', function () {
+            $('.loading-container').show(); // Hiển thị loader
+            var id_cate = $("input[name='brand_id']").val();
+
+            $.ajax({
+                method: 'PUT', // Đảm bảo rằng bạn đang sử dụng PUT
+                url: 'Brands/Update/' + id_cate,
+                contentType: "application/json", // Thêm dòng này
+                data: JSON.stringify({ // Chuyển đổi đối tượng thành JSON
+                    Name: $("input[name='name']").val(),
+                    Description: $("input[name='description']").val(),
+         
+                }),
+                success: function (response) {
+                    $('#BrandModal').modal('hide');
+                    location.reload();
+                },
+                error: function (xhr, status, error) {
+                    $('.loading-container').hide();
+                    alert('Đã xảy ra lỗi: ' + error);
+                }
+            });
+        });
+
+    });
+
+
+
+</script>

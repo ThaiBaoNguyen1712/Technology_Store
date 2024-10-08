@@ -1,0 +1,195 @@
+﻿@model IEnumerable<Tech_Store.Models.Voucher>
+@{
+    ViewData["Title"] = "Vouchers";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+}
+
+<div class="Container">
+    <div class="pt-3"></div>
+    <div class="tableProduct">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex align-items-center">
+                        <h4 class="card-title">DANH SÁCH MÃ KHUYẾN MÃI</h4>
+                        <button class="btn btn-primary btn-round ms-auto"
+                                data-bs-toggle="modal"
+                                data-bs-target="#VoucherModal">
+                            <i class="fa fa-plus"></i>
+                            Thêm
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Modal -->
+                    @Html.Partial("ModalVoucher")
+                    <!--End Modal-->
+                    <div class="table-responsive">
+                        <table id="add-row" class="display table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Tên</th>
+                                    <th>Mã KM</th>
+                                    <th>Mô tả</th>
+                                    <th>Ngày bắt đầu</th>
+                                    <th>Ngày hết hạn</th>
+                                    <th>Hành động</th>
+
+                                </tr>
+                            </thead>
+                            <tfoot>
+                                <tr>
+                                    <th>Tên</th>
+                                    <th>Mã KM</th>
+                                    <th>Mô tả</th>
+                                    <th>Ngày bắt đầu</th>
+                                    <th>Ngày hết hạn</th>
+                                    <th>Hành động</th>
+
+                                </tr>
+                            </tfoot>
+                            <tbody>
+                                @if (Model != null)
+                                {
+                                    @foreach (var vou in Model)
+                                    {
+                                        <tr>
+                                            <td>@vou.Name</td>
+                                            <td>@vou.Code</td>
+                                            <td>@vou.Description</td>
+                                            <td>@vou.StartedAt</td>
+                                            <td>@vou.ExpiredAt</td>
+
+                                            <td>
+                                                <div class="form-button-action">
+                                                    <button type="button"
+                                                            data-bs-toggle="tooltip" data-id="@vou.VoucherId"
+                                                            id="editVou"
+                                                            class="btn btn-link btn-primary btn-lg"
+                                                            data-original-title="Edit Task">
+                                                        <i class="fa fa-edit"></i>
+                                                    </button>
+                                                    <button type="button"
+                                                            data-bs-toggle="tooltip"
+                                                            title=""
+                                                            class="btn btn-link btn-danger"
+                                                            data-id="@vou.VoucherId"
+                                                            id="removeVou"
+                                                            data-original-title="Remove">
+                                                        <i class="fa fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        // Xử lý sự kiện click cho nút xóa
+        $(document).on('click', '#removeVou', function () {
+            var id_vou = $(this).data('id'); // Lấy ID từ thuộc tính data-id
+
+            if (confirm('Bạn có chắc chắn muốn xóa mã khuyến mãi này không?')) {
+                // Hiển thị biểu tượng loading
+                $('.loading-container').show();
+
+
+                $.ajax({
+                    method: 'DELETE', // Sử dụng phương thức DELETE
+                    url: 'Vouchers/Delete/' + id_vou, // Cập nhật URL cho đúng
+                    success: function (response) {
+                        location.reload(); // Làm mới trang sau khi xóa
+                        // Ẩn biểu tượng loading
+                        $('.loading-container').hide();
+                    },
+                    error: function (xhr, status, error) {
+                        alert("Đã xảy ra lỗi: " + error);
+                        $('.loading-container').hide();
+
+                    }
+                });
+            }
+        });
+
+        // Xử lý sự kiện click cho nút chỉnh sửa
+        $(document).on('click', '#editVou', function () {
+            var id_vou = $(this).data('id'); // Lấy ID từ thuộc tính data-id
+            $('.loading-container').show(); // Hiển thị loading
+
+            $.ajax({
+                method: 'GET',
+                url: 'Vouchers/Edit/' + id_vou, // Lấy dữ liệu từ server
+                success: function (response) {
+                    // Đặt giá trị của các input và select
+                    $('input[name="name"]').val(response.name); // Đặt giá trị cho input name
+                    $('input[name="code"]').val(response.code);
+
+
+
+                    // Kiểm tra nếu response.promotion tồn tại
+                    if (response.promotion) {
+                        // Loại bỏ khoảng trắng ở đầu và cuối chuỗi
+                        var promotion = response.promotion.trim();
+
+                        // Kiểm tra ký tự cuối cùng
+                        if (promotion.endsWith("%")) {
+                            // Lấy giá trị số tiền giảm mà không có ký tự '%'
+                            var promotionValue = promotion.slice(0, -1).trim(); // Lấy tất cả trừ ký tự cuối và loại bỏ khoảng trắng
+                            $('input[name="promotion"]').val(promotionValue);
+                            $('select[name="selectPromotion"]').val(1); // Thiết lập select thành 1
+                        } else {
+                            //Nếu giảm tiền mặt thì đổi qua đ
+                            $('input[name="promotion"]').val(promotion);
+                            $('select[name="selectPromotion"]').val(0);
+                         
+                        }
+                    }
+                    $('input[name="description"]').val(response.description); // Đặt giá trị cho input description
+                    $('input[name="startedAt"]').val(response.startedAt);
+                    $('input[name="expiredAt"]').val(response.expiredAt);
+                    $('input[name=vou_id]').val(response.voucherId);
+                    // Hiển thị nút Lưu thay đổi và ẩn nút Thêm mới
+                    $('#update').show();
+                    $('#add').hide();
+
+                    // Ẩn biểu tượng loading
+                    $('.loading-container').hide();
+                    //Mở popup
+                    $('#VoucherModal').modal('show');
+                },
+                error: function (xhr, status, error) {
+                    alert("Đã xảy ra lỗi: " + error);
+                    $('.loading-container').hide(); // Ẩn loading khi có lỗi
+                }
+            });
+        });
+
+
+        // Sự kiện khi modal bị ẩn
+        $('#VoucherModal').on('hidden.bs.modal', function () {
+            // Đặt lại các trường trong modal khi ẩn
+            // Đặt giá trị của các input và select
+            $('input[name="name"]').val(''); // Đặt giá trị cho input name
+            $('input[name="code"]').val(''); // Đặt giá trị cho input name
+            $('input[name="promotion"]').val(''); // Đặt giá trị cho input name
+            $('input[name="description"]').val(''); // Đặt giá trị cho input description
+            $('select[name="startedAt"]').val(''); // Đặt giá trị cho select visible
+            $('input[name="expiredAt"]').val('')
+            //Tắt trạng thái load
+            $('.loading-container').hide();
+
+            // Ẩn nút Lưu thay đổi và hiển thị nút Thêm mới
+            $('#update').hide();
+            $('#add').show();
+        });
+    });
+</script>

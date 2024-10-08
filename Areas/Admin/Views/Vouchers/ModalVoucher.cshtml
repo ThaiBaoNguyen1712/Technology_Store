@@ -1,0 +1,181 @@
+﻿<!-- Modal -->
+<div class="modal fade" id="VoucherModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" style="min-width:80vw;">
+        <form id="addVoucherForm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Thêm Mã Khuyến Mãi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- Cột trái -->
+                        @*Lưu trữ ID Cate*@
+                        <input type="hidden" name="vou_id" />
+
+                        <div class="col-12">
+                            <!-- Tên -->
+                            <div class="form-group row mb-3">
+                                <label class="col-sm-4 col-form-label">Tên mã KM :</label>
+                                <div class="col-sm-8">
+                                    <input type="text" class="form-control" name="name" required />
+                                </div>
+
+                            </div>
+                            <!--Code-->
+                            <div class="form-group row mb-3">
+                                <label class="col-sm-4 col-form-label">Mã KM :</label>
+                                <div class="col-sm-8">
+                                    <input type="text" class="form-control" name="code" required />
+                                </div>
+                            </div>
+                            <!-- Số tiền giảm -->
+                            <div class="form-group row mb-3">
+                                <label class="col-sm-4 col-form-label">Số tiền giảm:</label>
+                                <div class="col-sm-8">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" name="promotion" required style="flex: 4;" />
+                                        <select class="form-control text-center fw-bold border" name="selectPromotion" style="flex: 1;">
+                                            <option value="0">đ (Tiền mặt)</option>
+                                            <option value="1">% (Phần trăm)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Mô tả -->
+                            <div class="form-group row mb-3">
+                                <label class="col-sm-4 col-form-label">Mô tả :</label>
+                                <div class="col-sm-8">
+                                    <input type="text" class="form-control" name="description" required />
+                                </div>
+                            </div>
+                            <!-- Ngày bắt đầu -->
+                            <div class="form-group row mb-3">
+                                <label class="col-sm-4 col-form-label">Ngày bắt đầu:</label>
+                                <div class="col-sm-8">
+                                    <input type="date" class="form-control" name="startedAt" required />
+                                </div>
+
+                            </div>
+                            <!-- Ngày Kết thúc -->
+                            <div class="form-group row mb-3">
+                                <label class="col-sm-4 col-form-label">Ngày kết thúc:</label>
+                                <div class="col-sm-8">
+                                    <input type="date" class="form-control" name="expiredAt" required />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="loading-container" style="display:none; text-align:center;">
+                    <div class="loadingio-spinner-double-ring-2by998twmg8">
+                        <div class="ldio-yzaezf3dcmj">
+                            <div></div>
+                            <div></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Hủy</button>
+
+                    <button type="button" id="update" class="btn btn-success" style="display:none">Lưu thay đổi</button>
+
+                    <button type="submit" id="add" class="btn btn-success" style="display:inline-block">Thêm mới</button>
+
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@* jQuert Code *@
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script type="text/javascript">
+    //Thêm Cate
+    $(document).ready(function () {
+        $('#addVoucherForm').on('submit', function (event) {
+            event.preventDefault(); // Ngăn chặn hành động mặc định của form
+
+            // Hiển thị biểu tượng loading
+            $('.loading-container').show();
+
+            // Lấy dữ liệu từ form
+            var name = $("input[name='name']").val();
+            var description = $("input[name='description']").val();
+            var code = $("input[name='code']").val();
+            var startedAt = $("input[name='startedAt']").val();
+            var expiredAt = $("input[name='expiredAt']").val();
+            if ($("select[name='selectPromotion']").val() == 1) {
+                var promotion = $("input[name='promotion']").val() + '%';
+            } else {
+                var promotion = $("input[name='promotion']").val();
+            }
+
+
+            // Gửi AJAX request
+            $.ajax({
+                method: 'POST',
+                url: 'Vouchers/Create',
+                data: {
+                    name: name,
+                    description: description,
+                    Code: code,
+                    promotion: promotion,
+                    ExpiredAt: expiredAt,
+                    StartedAt: startedAt
+                },
+                success: function (response) {
+                    $('#ProductModal').modal('hide');
+                    // Ẩn biểu tượng loading
+                    $('.loading-container').hide();
+                    location.reload();
+                },
+                error: function (xhr, status, error) {
+                    // Ẩn biểu tượng loading
+                    $('.loading-container').hide();
+                    // Xử lý lỗi (ví dụ: hiển thị thông báo lỗi)
+                    alert('Đã xảy ra lỗi: ' + error);
+                }
+            });
+        });
+
+        $(document).on('click', '#update', function () {
+            $('.loading-container').show(); // Hiển thị loader
+            var id_vou = $("input[name='vou_id']").val();
+
+            $.ajax({
+                method: 'PUT', // Đảm bảo rằng bạn đang sử dụng PUT
+                url: 'Vouchers/Update/' + id_vou,
+                contentType: "application/json", // Thêm dòng này
+                data: JSON.stringify({ // Chuyển đổi đối tượng thành JSON
+                    Name: $("input[name='name']").val(),
+                    Description: $("input[name='description']").val(),
+                    Code: $("input[name='code']").val(),
+                    Promotion: (function () { // Sử dụng hàm để xác định giá trị promotion
+                        if ($("select[name='selectPromotion']").val() == 1) {
+                            return $("input[name='promotion']").val() + '%'; // Gán giá trị có ký tự '%'
+                        } else {
+                            return parseFloat($("input[name='promotion']").val()).toString() // Chuyển đổi giá trị thành số
+                        }
+                    })(),
+                    startedAt: $("input[name='startedAt']").val(),
+                    expiredAt: $("input[name='expiredAt']").val(),
+                }),
+            success: function (response) {
+                $('#VoucherModal').modal('hide');
+                location.reload();
+            },
+        error: function (xhr, status, error) {
+            $('.loading-container').hide();
+            alert('Đã xảy ra lỗi: ' + error);
+        }
+    });
+            });
+
+        });
+
+
+
+</script>
