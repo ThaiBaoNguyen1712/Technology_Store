@@ -41,6 +41,8 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<User> Users { get; set; }
 
+    public virtual DbSet<VarientProduct> VarientProducts { get; set; }
+
     public virtual DbSet<Voucher> Vouchers { get; set; }
 
     public virtual DbSet<Wishlist> Wishlists { get; set; }
@@ -269,26 +271,25 @@ public partial class ApplicationDbContext : DbContext
                 .HasColumnType("text")
                 .HasColumnName("description");
             entity.Property(e => e.DiscountPercentage).HasColumnName("discountPercentage");
-            entity.Property(e => e.DiscountedPrice)
+            entity.Property(e => e.DiscountAmount)
                 .HasColumnType("decimal(10, 2)")
-                .HasColumnName("discountedPrice");
+                .HasColumnName("discountAmount");
             entity.Property(e => e.Image)
                 .HasMaxLength(500)
                 .HasColumnName("image");
-            entity.Property(e => e.Sku)
-                .HasMaxLength(100)
-                .IsUnicode(false)
-                .HasColumnName("sku");
+            entity.Property(e => e.CostPrice)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("costPrice");
             entity.Property(e => e.Name)
                 .HasMaxLength(200)
                 .IsUnicode(false)
                 .HasColumnName("name");
-            entity.Property(e => e.ImportPrice)
-             .HasColumnType("decimal(10, 2)")
-             .HasColumnName("importPrice");
-            entity.Property(e => e.Price)
-                .HasColumnType("decimal(10, 2)")
-                .HasColumnName("Price");
+            entity.Property(e => e.OriginalPrice).HasColumnType("decimal(10, 2)").HasColumnName("originalPrice");
+            entity.Property(e => e.DiscountPrice).HasColumnType("decimal(10, 2)").HasColumnName("discountPrice");
+            entity.Property(e => e.Sku)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("sku");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
                 .HasColumnName("status");
@@ -297,20 +298,13 @@ public partial class ApplicationDbContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("updated_at");
+            entity.Property(e => e.UrlYoutube)
+                .HasMaxLength(255)
+                .HasColumnName("urlYoutube");
             entity.Property(e => e.Visible).HasColumnName("visible");
             entity.Property(e => e.WarrantyPeriod)
                 .HasMaxLength(50)
                 .HasColumnName("warrantyPeriod");
-            entity.Property(e => e.UrlYoutube)
-                .HasMaxLength(255)
-                .HasColumnName("urlYoutube");
-            entity.HasOne(d => d.Brand).WithMany(p => p.Products)
-                .HasForeignKey(d => d.BrandId)
-                .HasConstraintName("FK_Product_Brand");
-
-            entity.HasOne(d => d.Category).WithMany(p => p.Products)
-                .HasForeignKey(d => d.CategoryId)
-                .HasConstraintName("FK__Product__categor__5070F446");
         });
 
         modelBuilder.Entity<Review>(entity =>
@@ -413,6 +407,31 @@ public partial class ApplicationDbContext : DbContext
                         j.IndexerProperty<int>("UserId").HasColumnName("user_id");
                         j.IndexerProperty<int>("RoleId").HasColumnName("role_id");
                     });
+        });
+
+        modelBuilder.Entity<VarientProduct>(entity =>
+        {
+            entity.HasKey(e => e.VarientId);
+
+            entity.ToTable("VarientProduct");
+
+            entity.Property(e => e.VarientId).HasColumnName("varientId");
+            entity.Property(e => e.Attributes)
+                .HasMaxLength(255)
+                .HasColumnName("attributes");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.ProductId).HasColumnName("productId");
+            entity.Property(e => e.Sku)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("sku");
+            entity.Property(e => e.Price)
+             .HasColumnType("decimal(10, 2)")
+             .HasColumnName("price");
+            entity.Property(e => e.Stock).HasColumnName("stock");
         });
 
         modelBuilder.Entity<Voucher>(entity =>

@@ -3,6 +3,8 @@
     ViewData["Title"] = "Products";
     Layout = "/Areas/Admin/Views/Shared/Layout.cshtml";
 }
+@using System.Globalization;
+
 <style>
     .cke_contents {
         border: 2px solid #FF5733; /* Màu viền tùy chỉnh */
@@ -56,11 +58,11 @@
                                     @foreach (var product in Model)
                                     {
                                         <tr>
-                                            <td><img src="@product.Image" alt="@product.Name" style="width: 50px; height: 50px; object-fit: cover;"></td>
+                                            <td><img src="~/Upload/Products/@product.Image" alt="@product.Name" style="width: 50px; height: 50px; object-fit: cover;"></td>
                                             <td>@product.Name</td>
                                             <td>@product.Brand?.Name</td>
                                             <td>@product.Category?.Name</td>
-                                            <td>@product.Price.ToString("C")</td>
+                                            <td>@product.DiscountPrice.ToString("C0", new CultureInfo("vi-VN"))</td>
                                             <td>@product.Stock</td>
                                             <td>
                                                 <span class="badge @(product.Status == "Active" ? "bg-success" : "bg-danger")">

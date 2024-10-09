@@ -13,15 +13,15 @@ public partial class Product
 
     public string? Sku { get; set; }
 
-    public decimal ImportPrice { get; set; }
+    public decimal? CostPrice { get; set; }
 
-    public decimal Price { get; set; }
+    public decimal OriginalPrice { get; set; }
+    public decimal DiscountPrice { get; set; }
 
-    public decimal? DiscountedPrice { get; set; }
+
+    public decimal? DiscountAmount { get; set; }
 
     public int? DiscountPercentage { get; set; }
-
-    public bool? IsDiscounted { get; set; }
 
     public int Stock { get; set; }
 
@@ -41,20 +41,21 @@ public partial class Product
 
     public string? Status { get; set; }
 
+    public string? UrlYoutube { get; set; }
     public string? WarrantyPeriod { get; set; }
-    public string? UrlYoutube { get; set; } 
-
     public virtual Brand? Brand { get; set; }
-
-    public virtual ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
 
     public virtual Category? Category { get; set; }
 
-    public virtual ICollection<Gallery> Galleries { get; set; } = new List<Gallery>();
+    public virtual ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
 
+    public virtual ICollection<VarientProduct> VarientProducts { get; set; } = new List<VarientProduct>();
+
+    public virtual ICollection<Gallery> Galleries { get; set; } = new List<Gallery>();
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 
     public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
 
     public virtual ICollection<Wishlist> Wishlists { get; set; } = new List<Wishlist>();
 }
+

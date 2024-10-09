@@ -10,16 +10,20 @@
 <form asp-action="CreateProduct" asp-controller="Product" method="post" enctype="multipart/form-data">
 
     <div class="container-fluid">
-        <h3>Thêm sản phẩm mới</h3>
+        <h3 class="py-3 ms-3">
+            <i class="fas fa-box text-info pe-2"></i> Thêm sản phẩm mới
+        </h3>
         @Html.AntiForgeryToken()
         <div class="card mb-4">
             <div class="card-header">
-                <h5>Thông tin sản phẩm</h5>
+                <h5>
+                    <i class="fas fa-sticky-note text-info pe-2"></i>   Thông tin sản phẩm
+                </h5>
             </div>
             <div class="card-body">
                 <div class="mb-3">
                     <label name="Name" class="form-label">Tên Sản Phẩm (VN)</label>
-                    <input name="Name" class="form-control" required/>
+                    <input name="Name" class="form-control" required />
                 </div>
                 <div class="mb-3">
                     <label name="Description" class="form-label">Mô tả</label>
@@ -30,14 +34,14 @@
 
         <div class="card mb-4">
             <div class="card-header">
-                <h4>Thiết lập chung</h4>
+                <h5><i class="fas fa-cogs text-info pe-2"></i> Thiết lập chung</h5>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label name="Category" class="form-label">Danh Mục</label>
                         <select name="CategoryId" class="form-control border selectpicker" data-live-search="true" required>
-                            @foreach(var item in ViewBag.Categories)
+                            @foreach (var item in ViewBag.Categories)
                             {
                                 <option value="@item.CategoryId"> @item.Name</option>
                             }
@@ -55,7 +59,7 @@
                     <div class="col-md-6 mb-3">
                         <label class="form-label">SKU Sản Phẩm</label>
                         <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title='Tạo mã "Duy nhất" để quản lý sản phẩm bằng cách nhấp vào tạo mã'>
-                            <i class="fas fa-info-circle"></i>
+                             <i class="fas fa-info-circle text-info"></i>
                         </span>
                         <a href="javascript:void(0)" onclick="generateSku()" class="text-end">Tạo mã</a>
                         <input name="Sku" type="text" class="form-control" id="SkuCode" />
@@ -64,7 +68,7 @@
                     <div class="col-md-6 mb-3">
                         <label name="Brand" class="form-label">Tình trạng</label>
                         <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Nhập tình trạng để xử lý khi bán hàng">
-                            <i class="fas fa-info-circle"></i>
+                             <i class="fas fa-info-circle text-info"></i>
                         </span>
                         <select name="Status" class="form-control border selectpicker" data-live-search="true" required>
                             <option value="preorder"> Đặt trước </option>
@@ -80,51 +84,43 @@
 
         <div class="card mb-4">
             <div class="card-header">
-                <h4>Giá và các yếu tố khác</h4>
+                <h5> <i class="fas fa-tags text-info pe-2"></i> Giá và các yếu tố khác  </h5>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-3 mb-3">
                         <label name="ImportPrice" class="form-label">Giá Nhập (đ)</label>
                         <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Thêm giá nhập cho sản phẩm này">
-                            <i class="fas fa-info-circle"></i>
+                             <i class="fas fa-info-circle text-info"></i>
                         </span>
-                        <input name="ImportPrice" type="number" class="form-control" />
+                        <input name="CostPrice" type="number" class="form-control" />
                     </div>
                     <div class="col-md-3 mb-3">
-                        <label name="Price" class="form-label">Đơn Giá Bán (đ)</label>  <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Thêm giá bán cho sản phẩm này">
-                            <i class="fas fa-info-circle"></i>
+                        <label name="Price" class="form-label">Đơn Giá Gốc (đ)</label>  <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Đặt giá bán cho mỗi đơn vị của sản phẩm này. Phần đơn giá này sẽ không áp dụng nếu bạn đặt biến giá thay đổi">
+                             <i class="fas fa-info-circle text-info"></i>
                         </span>
-                        <input name="Price" type="number" class="form-control" />
+                        <input name="OriginalPrice" type="number" class="form-control" />
                     </div>
                     <div class="col-md-3 mb-3">
                         <label name="Stock" class="form-label">Số Lượng</label>
                         <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Thêm số lượng tồn kho hiện tại cho sản phẩm này">
-                            <i class="fas fa-info-circle"></i>
+                             <i class="fas fa-info-circle text-info"></i>
                         </span>
                         <input name="Stock" type="number" class="form-control" />
                     </div>
                     <div class="col-md-3 mb-3">
                         <label name="Stock" class="form-label">Bảo Hành (Tháng)</label>
                         <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Thêm chế độ bảo hành cho sản phẩm này">
-                            <i class="fas fa-info-circle"></i>
+                             <i class="fas fa-info-circle text-info"></i>
                         </span>
                         <input name="WarrantyPeriod" type="text" class="form-control" />
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <div class="card mb-4">
-            <div class="card-header">
-                <h4>Giảm giá</h4>
-            </div>
-            <div class="card-body">
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label name="DiscountPercentage" class="form-label">Loại Giảm Giá</label>
-                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Thêm hình đại diện của sản phẩm trong JPG, PNG or JPEG định dạng trong 2MB">
-                            <i class="fas fa-info-circle"></i>
+                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Chọn giảm giá bằng trừ tiền trực tiếp hoặc theo phần trăm (%). Để trống nếu bạn không muốn áp dụng khuyến mãi">
+                            <i class="fas fa-info-circle text-info"></i>
                         </span>
                         <select name="DiscountTypeId" id="DiscountType" class="form-select">
                             <option value="">Chọn loại giảm giá</option>
@@ -134,8 +130,8 @@
                     </div>
                     <div class="col-md-6 mb-3">
                         <div id="cash">
-                            <label name="discountedPrice" class="form-label">Số Tiền Giảm Giá (đ)</label>
-                            <input name="discountedPrice" type="number" class="form-control" />
+                            <label name="discountAmount" class="form-label">Số Tiền Giảm Giá (đ)</label>
+                            <input name="discountAmount" type="number" class="form-control" />
                         </div>
                         <div id="percent" style="display:none">
                             <label name="discountPercentage" class="form-label">Số Tiền Giảm Giá (%)</label>
@@ -146,228 +142,276 @@
             </div>
         </div>
 
+      @*   <div class="card mb-4">
+            <div class="card-header">
+                <h5>
+                    <i class="fas fa-tags text-info pe-2"></i>
+                    Giảm giá
+                </h5>
+            </div>
+            <div class="card-body">
+                
+            </div>
+        </div> *@
+
         <div class="card mb-4">
             <div class="card-header">
-                <h4>Màu sắc</h4>
+                <h5>
+                    <i class="fas fa-layer-group text-info pe-2"></i>
+                    Biển thể sản phẩm
+                </h5>
             </div>
-
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-12 mb-3">
-                        <label name="DiscountPercentage" class="form-label">Chọn màu sắc :</label>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Chọn màu sắc</label>
                         <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Chọn màu sắc cho sản phẩm này">
-                            <i class="fas fa-info-circle"></i>
+                             <i class="fas fa-info-circle text-info"></i>
                         </span>
-                        <select name="Color" id="SelectColor" class="form-control border selectpicker" multiple="multiple" data-live-search="true">
-                                <option value="#F0F8FF" style="background-color:#F0F8FF;">AliceBlue</option>
-                                <option value="#9966CC" style="background-color:#9966CC;">Amethyst</option>
-                                <option value="#FAEBD7" style="background-color:#FAEBD7;">AntiqueWhite</option>
-                                <option value="#00FFFF" style="background-color:#00FFFF;">Aqua</option>
-                                <option value="#7FFFD4" style="background-color:#7FFFD4;">Aquamarine</option>
-                                <option value="#F0FFFF" style="background-color:#F0FFFF;">Azure</option>
-                                <option value="#F5F5DC" style="background-color:#F5F5DC;">Beige</option>
-                                <option value="#FFE4C4" style="background-color:#FFE4C4;">Bisque</option>
-                                <option value="#000000" style="background-color:#000000;">Black</option>
-                                <option value="#FFEBCD" style="background-color:#FFEBCD;">BlanchedAlmond</option>
-                                <option value="#0000FF" style="background-color:#0000FF;">Blue</option>
-                                <option value="#8A2BE2" style="background-color:#8A2BE2;">BlueViolet</option>
-                                <option value="#A52A2A" style="background-color:#A52A2A;">Brown</option>
-                                <option value="#DEB887" style="background-color:#DEB887;">BurlyWood</option>
-                                <option value="#5F9EA0" style="background-color:#5F9EA0;">CadetBlue</option>
-                                <option value="#7FFF00" style="background-color:#7FFF00;">Chartreuse</option>
-                                <option value="#D2691E" style="background-color:#D2691E;">Chocolate</option>
-                                <option value="#FF7F50" style="background-color:#FF7F50;">Coral</option>
-                                <option value="#6495ED" style="background-color:#6495ED;">CornflowerBlue</option>
-                                <option value="#FFF8DC" style="background-color:#FFF8DC;">Cornsilk</option>
-                                <option value="#DC143C" style="background-color:#DC143C;">Crimson</option>
-                                <option value="#00008B" style="background-color:#00008B;">DarkBlue</option>
-                                <option value="#008B8B" style="background-color:#008B8B;">DarkCyan</option>
-                                <option value="#B8860B" style="background-color:#B8860B;">DarkGoldenrod</option>
-                                <option value="#A9A9A9" style="background-color:#A9A9A9;">DarkGray</option>
-                                <option value="#006400" style="background-color:#006400;">DarkGreen</option>
-                                <option value="#BDB76B" style="background-color:#BDB76B;">DarkKhaki</option>
-                                <option value="#8B008B" style="background-color:#8B008B;">DarkMagenta</option>
-                                <option value="#556B2F" style="background-color:#556B2F;">DarkOliveGreen</option>
-                                <option value="#FF8C00" style="background-color:#FF8C00;">DarkOrange</option>
-                                <option value="#9932CC" style="background-color:#9932CC;">DarkOrchid</option>
-                                <option value="#8B0000" style="background-color:#8B0000;">DarkRed</option>
-                                <option value="#E9967A" style="background-color:#E9967A;">DarkSalmon</option>
-                                <option value="#8FBC8F" style="background-color:#8FBC8F;">DarkSeaGreen</option>
-                                <option value="#483D8B" style="background-color:#483D8B;">DarkSlateBlue</option>
-                                <option value="#2F4F4F" style="background-color:#2F4F4F;">DarkSlateGray</option>
-                                <option value="#00CED1" style="background-color:#00CED1;">DarkTurquoise</option>
-                                <option value="#9400D3" style="background-color:#9400D3;">DarkViolet</option>
-                                <option value="#FF1493" style="background-color:#FF1493;">DeepPink</option>
-                                <option value="#00BFFF" style="background-color:#00BFFF;">DeepSkyBlue</option>
-                                <option value="#696969" style="background-color:#696969;">DimGray</option>
-                                <option value="#1E90FF" style="background-color:#1E90FF;">DodgerBlue</option>
-                                <option value="#B22222" style="background-color:#B22222;">FireBrick</option>
-                                <option value="#FFFAF0" style="background-color:#FFFAF0;">FloralWhite</option>
-                                <option value="#228B22" style="background-color:#228B22;">ForestGreen</option>
-                                <option value="#DCDCDC" style="background-color:#DCDCDC;">Gainsboro</option>
-                                <option value="#F8F8FF" style="background-color:#F8F8FF;">GhostWhite</option>
-                                <option value="#FFD700" style="background-color:#FFD700;">Gold</option>
-                                <option value="#DAA520" style="background-color:#DAA520;">Goldenrod</option>
-                                <option value="#808080" style="background-color:#808080;">Gray</option>
-                                <option value="#008000" style="background-color:#008000;">Green</option>
-                                <option value="#ADFF2F" style="background-color:#ADFF2F;">GreenYellow</option>
-                                <option value="#F0FFF0" style="background-color:#F0FFF0;">Honeydew</option>
-                                <option value="#FF69B4" style="background-color:#FF69B4;">HotPink</option>
-                                <option value="#CD5C5C" style="background-color:#CD5C5C;">IndianRed</option>
-                                <option value="#4B0082" style="background-color:#4B0082;">Indigo</option>
-                                <option value="#FFFFF0" style="background-color:#FFFFF0;">Ivory</option>
-                                <option value="#F0E68C" style="background-color:#F0E68C;">Khaki</option>
-                                <option value="#E6E6FA" style="background-color:#E6E6FA;">Lavender</option>
-                                <option value="#FFF0F5" style="background-color:#FFF0F5;">LavenderBlush</option>
-                                <option value="#7CFC00" style="background-color:#7CFC00;">LawnGreen</option>
-                                <option value="#FFFACD" style="background-color:#FFFACD;">LemonChiffon</option>
-                                <option value="#ADD8E6" style="background-color:#ADD8E6;">LightBlue</option>
-                                <option value="#F08080" style="background-color:#F08080;">LightCoral</option>
-                                <option value="#E0FFFF" style="background-color:#E0FFFF;">LightCyan</option>
-                                <option value="#FAFAD2" style="background-color:#FAFAD2;">LightGoldenrodYellow</option>
-                                <option value="#90EE90" style="background-color:#90EE90;">LightGreen</option>
-                                <option value="#D3D3D3" style="background-color:#D3D3D3;">LightGrey</option>
-                                <option value="#FFB6C1" style="background-color:#FFB6C1;">LightPink</option>
-                                <option value="#FFA07A" style="background-color:#FFA07A;">LightSalmon</option>
-                                <option value="#20B2AA" style="background-color:#20B2AA;">LightSeaGreen</option>
-                                <option value="#87CEFA" style="background-color:#87CEFA;">LightSkyBlue</option>
-                                <option value="#778899" style="background-color:#778899;">LightSlateGray</option>
-                                <option value="#B0C4DE" style="background-color:#B0C4DE;">LightSteelBlue</option>
-                                <option value="#FFFFE0" style="background-color:#FFFFE0;">LightYellow</option>
-                                <option value="#00FF00" style="background-color:#00FF00;">Lime</option>
-                                <option value="#32CD32" style="background-color:#32CD32;">LimeGreen</option>
-                                <option value="#FAF0E6" style="background-color:#FAF0E6;">Linen</option>
-                                <option value="#FF00FF" style="background-color:#FF00FF;">Magenta</option>
-                                <option value="#800000" style="background-color:#800000;">Maroon</option>
-                                <option value="#66CDAA" style="background-color:#66CDAA;">MediumAquamarine</option>
-                                <option value="#0000CD" style="background-color:#0000CD;">MediumBlue</option>
-                                <option value="#BA55D3" style="background-color:#BA55D3;">MediumOrchid</option>
-                                <option value="#9370DB" style="background-color:#9370DB;">MediumPurple</option>
-                                <option value="#3CB371" style="background-color:#3CB371;">MediumSeaGreen</option>
-                                <option value="#7B68EE" style="background-color:#7B68EE;">MediumSlateBlue</option>
-                                <option value="#00FA9A" style="background-color:#00FA9A;">MediumSpringGreen</option>
-                                <option value="#48D1CC" style="background-color:#48D1CC;">MediumTurquoise</option>
-                                <option value="#C71585" style="background-color:#C71585;">MediumVioletRed</option>
-                                <option value="#191970" style="background-color:#191970;">MidnightBlue</option>
-                                <option value="#F5FFFA" style="background-color:#F5FFFA;">MintCream</option>
-                                <option value="#FFE4E1" style="background-color:#FFE4E1;">MistyRose</option>
-                                <option value="#FFE4B5" style="background-color:#FFE4B5;">Moccasin</option>
-                                <option value="#FFDEAD" style="background-color:#FFDEAD;">NavajoWhite</option>
-                                <option value="#000080" style="background-color:#000080;">Navy</option>
-                                <option value="#FDF5E6" style="background-color:#FDF5E6;">OldLace</option>
-                                <option value="#808000" style="background-color:#808000;">Olive</option>
-                                <option value="#6B8E23" style="background-color:#6B8E23;">OliveDrab</option>
-                                <option value="#FFA500" style="background-color:#FFA500;">Orange</option>
-                                <option value="#FF4500" style="background-color:#FF4500;">OrangeRed</option>
-                                <option value="#DA70D6" style="background-color:#DA70D6;">Orchid</option>
-                                <option value="#EEE8AA" style="background-color:#EEE8AA;">PaleGoldenrod</option>
-                                <option value="#98FB98" style="background-color:#98FB98;">PaleGreen</option>
-                                <option value="#AFEEEE" style="background-color:#AFEEEE;">PaleTurquoise</option>
-                                <option value="#DB7093" style="background-color:#DB7093;">PaleVioletRed</option>
-                                <option value="#FFEFD5" style="background-color:#FFEFD5;">PapayaWhip</option>
-                                <option value="#FFDAB9" style="background-color:#FFDAB9;">PeachPuff</option>
-                                <option value="#CD853F" style="background-color:#CD853F;">Peru</option>
-                                <option value="#FFC0CB" style="background-color:#FFC0CB;">Pink</option>
-                                <option value="#DDA0DD" style="background-color:#DDA0DD;">Plum</option>
-                                <option value="#B0E0E6" style="background-color:#B0E0E6;">PowderBlue</option>
-                                <option value="#800080" style="background-color:#800080;">Purple</option>
-                                <option value="#FF0000" style="background-color:#FF0000;">Red</option>
-                                <option value="#BC8F8F" style="background-color:#BC8F8F;">RosyBrown</option>
-                                <option value="#4169E1" style="background-color:#4169E1;">RoyalBlue</option>
-                                <option value="#8B4513" style="background-color:#8B4513;">SaddleBrown</option>
-                                <option value="#FA8072" style="background-color:#FA8072;">Salmon</option>
-                                <option value="#F4A460" style="background-color:#F4A460;">SandyBrown</option>
-                                <option value="#2E8B57" style="background-color:#2E8B57;">SeaGreen</option>
-                                <option value="#FFF5EE" style="background-color:#FFF5EE;">Seashell</option>
-                                <option value="#A0522D" style="background-color:#A0522D;">Sienna</option>
-                                <option value="#C0C0C0" style="background-color:#C0C0C0;">Silver</option>
-                                <option value="#87CEEB" style="background-color:#87CEEB;">SkyBlue</option>
-                                <option value="#6A5ACD" style="background-color:#6A5ACD;">SlateBlue</option>
-                                <option value="#708090" style="background-color:#708090;">SlateGray</option>
-                                <option value="#FFFAFA" style="background-color:#FFFAFA;">Snow</option>
-                                <option value="#00FF7F" style="background-color:#00FF7F;">SpringGreen</option>
-                                <option value="#4682B4" style="background-color:#4682B4;">SteelBlue</option>
-                                <option value="#D2B48C" style="background-color:#D2B48C;">Tan</option>
-                                <option value="#008080" style="background-color:#008080;">Teal</option>
-                                <option value="#D8BFD8" style="background-color:#D8BFD8;">Thistle</option>
-                                <option value="#FF6347" style="background-color:#FF6347;">Tomato</option>
-                                <option value="#40E0D0" style="background-color:#40E0D0;">Turquoise</option>
-                                <option value="#EE82EE" style="background-color:#EE82EE;">Violet</option>
-                                <option value="#F5DEB3" style="background-color:#F5DEB3;">Wheat</option>
-                                <option value="#FFFFFF" style="background-color:#FFFFFF;">White</option>
-                                <option value="#F5F5F5" style="background-color:#F5F5F5;">WhiteSmoke</option>
-                            <option value="#9ACD32" style="background-color:#9ACD32;">YellowGreen</option>
-
+                        <select name="Color" id="divColor" class="form-control border selectpicker" multiple="multiple" data-live-search="true">
+                            <option value="Silver">Silver</option>
+                            <option value="Black">Black</option>
+                            <option value="Red">Red</option>
+                            <option value="Pink">Pink</option>
+                            <option value="Blue">Blue</option>
+                            <option value="Green">Green</option>
+                            <option value="Yellow">Yellow</option>
+                            <option value="Purple">Purple</option>
+                            <option value="White">White</option>
+                            <option value="Gray">Gray</option>
                         </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Thêm thuộc tính</label>
+                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Sử dụng các biến thể khác để phân biệt sản phẩm">
+                             <i class="fas fa-info-circle text-info"></i>
+                        </span>
+                        <select name="VarientSelect" id="variantSelect" class="form-control border selectpicker" multiple="multiple" data-live-search="true">
+                            <option value="rom">Bộ nhớ</option>
+                            <option value="material">Chất liệu</option>
+                            <option value="size">Kích thước</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3" id="divrom" style="display:none">
+                        <label class="form-label">Bộ nhớ</label>
+                        <select name="rom" id="romSelect" class="form-control border selectpicker" multiple="multiple" data-live-search="true">
+                            <option value="32GB">32 GB</option>
+                            <option value="64GB">64 GB</option>
+                            <option value="128GB">128 GB</option>
+                            <option value="256GB">256 GB</option>
+                            <option value="512GB">512 GB</option>
+                            <option value="1TB">1 TB</option>
+                            <option value="2TB">2 TB</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3" id="divMaterial" style="display:none">
+                        <label class="form-label">Chất liệu</label>
+                        <input name="material" id="materialInput" class="form-control border" />
+                    </div>
+                    <div class="col-md-6 mb-3" id="divSize" style="display:none">
+                        <label class="form-label">Kích thước</label>
+                        <select name="size" id="sizeSelect" class="form-control border selectpicker" multiple="multiple" data-live-search="true">
+                            <option value="S">S</option>
+                            <option value="M">M</option>
+                            <option value="L">L</option>
+                            <option value="XL">XL</option>
+                            <option value="XXL">XXL</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-responsive table-Varient mt-4" style="display:none">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>STT</th>
+                                <th>Biến thể thuộc tính</th>
+                                <th>Giá theo biến thể (đ)</th>
+                                <th>SKU
+                                    <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Nếu chưa có mã SKU đầy đủ hãy copy SKU sản phẩm phía trên để bổ sung">
+                                        <i class="fas fa-info-circle text-info"></i>
+                                    </span>
+                                </th>
+                                <th>Hàng tồn kho theo biến thể</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody id="variantTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <!-- Thẻ Hình Đại Diện -->
+            <div class="col-md-3">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Hình Ảnh Thu Nhỏ Sản Phẩm</label>
+                           
+                            <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Thêm hình đại diện của sản phẩm trong JPG, PNG or JPEG định dạng trong 2MB">
+                                <i class="fas fa-info-circle text-info"></i>
+                            </span>
+                            <div id="thumbnailPreview" class="mt-2"></div>
+                            <div id="thumbnailDropzone" class="dropzone">
+                                <input type="file" name="image" accept="image/*" style="display: none;">
+                                <i class="fas fa-cloud-upload-alt text-info"></i>
+                                <p class="text-info">Tải ảnh lên</p>
+                            </div>
+                            <small class="text-muted text-warning">Chỉ 1 ảnh, kích thước tối đa: 2MB</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Thẻ Hình Ảnh Bổ Sung -->
+            <div class="col-md-9">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Tải Lên Hình Ảnh Bổ Sung</label>
+                            <div id="additionalPreview" class="mt-2"></div>
+                            <div id="additionalDropzone" class="dropzone">
+                                <input type="file" name="Gallery" accept="image/*" multiple style="display: none;">
+                                <i class="fas fa-cloud-upload-alt text-info"></i>
+                                <p class="text-info">Tải ảnh lên</p>
+                            </div>
+                          
+                            <small class="text-muted text-warning">Tối đa 8 hình ảnh, mỗi hình tối đa 2MB</small>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+
         <div class="card mb-4">
             <div class="card-header">
-                <h4>Hình ảnh và Video</h4>
+                <h5>
+                    <i class="fas fa-play text-info pe-2"></i>
+                    Video Sản Phẩm
+                </h5>
             </div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">Hình Ảnh Thu Nhỏ Sản Phẩm</label>
-                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Thêm hình đại diện của sản phẩm trong JPG, PNG or JPEG định dạng trong 2MB"> <i class="fas fa-info-circle"></i> </span>
-                        <div id="thumbnailDropzone" class="dropzone">
-                            <input type="file" name="image" accept="image/*" style="display: none;">
-                            <i class="fas fa-cloud-upload-alt"></i>
-                            <p>Kéo và thả hoặc nhấp để chọn hình ảnh</p>
-                        </div>
-                        <div id="thumbnailPreview" class="mt-2"></div>
-                        <small class="text-muted">Chỉ 1 ảnh, kích thước tối đa: 2MB</small>
-                    </div>
-                    <div class="col-md-8 mb-3">
-                        <label class="form-label">Tải Lên Hình Ảnh Bổ Sung</label>
-                        <div id="additionalDropzone" class="dropzone">
-                            <input type="file" name="Gallery" accept="image/*" multiple style="display: none;">
-                            <i class="fas fa-cloud-upload-alt"></i>
-                            <p>Kéo và thả hoặc nhấp để chọn hình ảnh</p>
-                        </div>
-                        <div id="additionalPreview" class="mt-2"></div>
-                        <small class="text-muted">Tối đa 8 hình ảnh, mỗi hình tối đa 2MB</small>
-                    </div>
-
                 <div class="mb-3">
                     <label class="form-label">Video sản phẩm</label>
                     <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Nhập URL Youtube, video sẽ được hiển thị trên trang bán hàng">
-                        <i class="fas fa-info-circle"></i>
+                        <i class="fas fa-info-circle text-info"></i>
                     </span>
                     <input type="url" class="form-control" id="videoUrl" name="urlYoutube" placeholder="Nhập URL video YouTube" />
                     <div id="videoPreview" class="mt-2"></div>
                 </div>
             </div>
         </div>
+
         <div class="text-end">
             <button type="submit" class="btn btn-primary">Đăng sản phẩm</button>
+        </div>
         </div>
 </form>
 
 <script src="~/Admin/assets/js/core/jquery-3.7.1.min.js"></script>
-@* 
+@*
 Ckeditor *@
 <script src="~/admin/ckeditor/ckeditor.js"></script>
 <script>
     // Tạo mã SKU
     function generateSku() {
-        // Định nghĩa tiền tố SKU
-        const prefix = "TSE"; // Bạn có thể thay đổi tiền tố nếu cần
-
         // Tạo số ngẫu nhiên từ 10000 đến 99999
         const randomNum = Math.floor(10000 + Math.random() * 90000);
 
         // Kết hợp tiền tố với số ngẫu nhiên để tạo mã SKU
-        const sku = `${prefix}-${randomNum}`;
+        const sku = `${randomNum}`;
 
         // Gán mã SKU vào trường nhập liệu
         $('#SkuCode').val(sku);
     }
-</script>
-<script>
+    $(document).ready(function () {
+        $('.selectpicker').selectpicker();
 
+        function updateVariantTable() {
+            var colors = $('#divColor').val() || [];
+            var rom = $('#romSelect').val() || [];
+            var material = $('#materialInput').val().charAt(0).toUpperCase() || '';
+            var sizes = $('#sizeSelect').val() || [];
+
+            if (colors.length === 0) return;
+
+            var variants = [];
+            colors.forEach(function (color) {
+                var baseVariant = { color: color };
+                if (rom.length > 0) {
+                    rom.forEach(function (r) {
+                        var romVariant = { ...baseVariant, rom: r };
+                        if (sizes.length > 0) {
+                            sizes.forEach(function (size) {
+                                variants.push({ ...romVariant, size: size, material: material });
+                            });
+                        } else {
+                            variants.push({ ...romVariant, material: material });
+                        }
+                    });
+                } else if (sizes.length > 0) {
+                    sizes.forEach(function (size) {
+                        variants.push({ ...baseVariant, size: size, material: material });
+                    });
+                } else {
+                    variants.push({ ...baseVariant, material: material });
+                }
+            });
+
+            var tableBody = $('#variantTableBody');
+            tableBody.empty();
+
+            variants.forEach(function (variant, index) {
+                var variantString = Object.entries(variant)
+                    .filter(([key, value]) => value !== '')
+                    .map(([key, value]) => `${key}: ${value}`)
+                    .join(', ');
+                var skuProduct = $('#SkuCode').val() || '';
+                var sku = skuProduct+ '-' + Object.values(variant).filter(v => v !== '').join('-');
+
+                var row = $('<tr>');
+                row.append($('<td>').text(index + 1));
+                row.append($('<td style="display:none">').html('<input type="hidden" name="VarientProducts['+ index +'].Attributes" value="'+variantString+'"/>'));
+                row.append($('<td>').text(variantString));
+                row.append($('<td>').html('<input type="number" class="form-control" name="VarientProducts[' + index + '].Price"/>'));
+                row.append($('<td>').html('<input type="text" class="form-control" name="VarientProducts[' + index + '].Sku" value="' + sku + '"/>'));
+                row.append($('<td>').html('<input type="number" class="form-control" name="VarientProducts[' + index + '].Stock"/>'));
+                row.append($('<td style="width:10%">').html('<i class="fas fa-trash delete-btn text-center text-danger" title="Xóa"></i>'));
+
+                tableBody.append(row);
+            });
+
+            $('.table-Varient').show();
+        }
+
+        $('#divColor, #romSelect, #materialInput, #sizeSelect').on('change', updateVariantTable);
+
+        $('#variantSelect').on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
+            var selectedOptions = $(this).val() || [];
+            $('#divrom, #divMaterial, #divSize').hide();
+            if (selectedOptions.includes('rom')) {
+                $('#divrom').show();
+            }
+            if (selectedOptions.includes('material')) {
+                $('#divMaterial').show();
+            }
+            if (selectedOptions.includes('size')) {
+                $('#divSize').show();
+            }
+            updateVariantTable();
+        });
+
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    });
+    $(document).on('click', '.delete-btn', function () {
+        $(this).closest('tr').remove();
+        updateRowNumbers();
+    });
 </script>
 <script>
     $(document).ready(function () {
@@ -390,7 +434,7 @@ Ckeditor *@
         }
     });
 
-   
+
 </script>
 <script>
     function setupDropzone(dropzoneId, inputName, previewId, isSingle = false) {
@@ -426,9 +470,9 @@ Ckeditor *@
                         const div = document.createElement('div');
                         div.className = 'preview-image';
                         div.innerHTML = `
-                            <img src="${e.target.result}" alt="Preview">
-                            <button class="remove-btn">&times;</button>
-                        `;
+                                    <img src="${e.target.result}" alt="Preview">
+                                    <button class="remove-btn">&times;</button>
+                                `;
                         div.querySelector('.remove-btn').addEventListener('click', () => {
                             div.remove();
                             updateInputFiles();
@@ -494,7 +538,6 @@ Ckeditor *@
             $('.loading-container').show(); // Hiển thị loading
 
             var formData = new FormData(this); // Thu thập dữ liệu từ form
-
             $.ajax({
                 method: 'POST',
                 url: '/Products/Create', // Đảm bảo đường dẫn chính xác

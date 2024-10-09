@@ -46,11 +46,7 @@ namespace Tech_Store.Areas.Admin.Controllers
         [Route("Index")]
         public async Task<IActionResult> Index()
         {
-            var list_products = _context.Products.ToList();
-
-            ViewBag.list_cate = GetListCategories();
-            ViewBag.list_brands = GetListBrand();
-
+            var list_products = _context.Products.Include(p=>p.Brand).Include(p=>p.Category).ToList();
             return View(list_products);
         }
         [Route("Create")]
@@ -75,7 +71,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                     var imageFile = Request.Form.Files.FirstOrDefault(); // Lấy tệp hình ảnh đầu tiên
                     if (imageFile != null && imageFile.Length > 0)
                     {
-                        var fileName = $"SP_{Guid.NewGuid()}.png"; // Tạo tên tệp mới
+                        var fileName = $"SP_{product.Sku}.webp"; // Tạo tên tệp mới
                         var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Products", fileName);
                         Directory.CreateDirectory(Path.GetDirectoryName(imagePath));
 
@@ -92,18 +88,37 @@ namespace Tech_Store.Areas.Admin.Controllers
                         product.Image = "none.jpg"; // Gán hình ảnh mặc định nếu không có hình
                     }
                     //Phần khuyến mãi
-                    if (product.DiscountedPrice > 0 || product.DiscountPercentage > 0)
+                    if (product.DiscountAmount > 0 || product.DiscountPercentage > 0)
                     {
-                        product.IsDiscounted =true;
+                       product.DiscountPrice = calculateDiscountPrice(product.OriginalPrice, product.DiscountAmount,product.DiscountPercentage);
                     }
                     else
                     {
-                        product.IsDiscounted=false;
+                        product.DiscountPrice = product.OriginalPrice;
                     }
                     product.Visible = true;
                     // Thêm sản phẩm vào cơ sở dữ liệu
                     _context.Products.Add(product);
                     await _context.SaveChangesAsync();
+
+                    //Thêm các biến thể sản phẩm
+                    if (product.VarientProducts != null)
+                    {
+                        var variantList = new List<VarientProduct>(product.VarientProducts); // Sao chép danh sách
+
+                        foreach (var item in variantList)
+                        {
+                            var varient = new VarientProduct
+                            {
+                                ProductId = product.ProductId,
+                                Attributes = item.Attributes,
+                                Sku = item.Sku,
+                                Stock = item.Stock,
+                                Price = item.Price != null ? item.Price : product.DiscountPrice
+                        };
+                            _context.VarientProducts.Add(varient);
+                        }
+                    }
 
                     // Thêm danh sách hình ảnh vào bảng Gallery
                     if (gallery != null && gallery.Count > 0)
@@ -112,7 +127,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                         {
                             if (item.Length > 0) // Kiểm tra nếu có hình ảnh
                             {
-                                var galleryFileName = $"GSP_{Guid.NewGuid()}.png"; // Tên tệp cho hình ảnh trong gallery
+                                var galleryFileName = $"GSP_{product.Sku}.webp"; // Tên tệp cho hình ảnh trong gallery
                                 var galleryImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Products", galleryFileName);
                                 Directory.CreateDirectory(Path.GetDirectoryName(galleryImagePath));
 
@@ -198,6 +213,25 @@ namespace Tech_Store.Areas.Admin.Controllers
                 return BadRequest(new { message = ex.Message });
             }
             
+        }
+
+
+        private decimal calculateDiscountPrice(decimal originPrice, decimal? flat, double? percent)
+        {
+            decimal result = originPrice; 
+
+            if (flat.HasValue) 
+            {
+                result = originPrice - flat.Value; 
+            }
+            else if (percent.HasValue)
+            {
+                // Chuyển đổi percent từ double sang decimal
+                decimal discountAmount = (decimal)((percent.Value / 100) * (double)originPrice); 
+                result = originPrice - discountAmount; 
+            }
+
+            return result < 0 ? 0 : result; // Đảm bảo giá không âm
         }
 
 
