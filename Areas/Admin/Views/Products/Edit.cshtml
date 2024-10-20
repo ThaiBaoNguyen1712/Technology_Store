@@ -1,8 +1,736 @@
-﻿
+﻿@model Tech_Store.Models.Product
 @{
-    ViewData["Title"] = "View";
+    ViewData["Title"] = "Create Products";
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
 }
+<style>
 
-<h1>View</h1>
+</style>
+
+<form asp-action="EditProduct" asp-controller="Product" method="post" enctype="multipart/form-data" id="ProductForm">
+
+    <div class="container-fluid">
+        <h3 class="py-3 ms-3">
+            <i class="fas fa-box text-info pe-2"></i> Chỉnh Sửa Sản Phẩm
+        </h3>
+        @Html.AntiForgeryToken()
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>
+                    <i class="fas fa-sticky-note text-info pe-2"></i> Thông tin sản phẩm
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label name="Name" class="form-label">Tên Sản Phẩm (VN)</label>
+                    <input value="@Model.Name" name="Name" class="form-control" required />
+                </div>
+                <div class="mb-3">
+                    <label name="Description" class="form-label">Mô tả</label>
+                    <textarea name="Description" class="form-control" id="description">@Html.Raw(Model.Description)</textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-cogs text-info pe-2"></i> Thiết lập chung</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <input type="hidden" name="ProductId" value="@Model.ProductId"/>
+                        <label name="Category" class="form-label">Danh Mục</label>
+                        <select name="CategoryId" class="form-control border selectpicker" data-live-search="true" required>
+                            @foreach (var item in ViewBag.Categories)
+                            {
+                                <option value="@item.CategoryId" @(item.CategoryId == Model.CategoryId ? "Selected" : "")> @item.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label name="Brand" class="form-label">Thương Hiệu</label>
+                        <select name="BrandId" class="form-control border selectpicker" data-live-search="true" required>
+                            @foreach (var item in ViewBag.Brands)
+                            {
+                                <option value="@item.BrandId" @(item.BrandId == Model.BrandId ? "selected" : "")> @item.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">SKU Sản Phẩm</label>
+                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title='Bạn không thể thay đổi SKU'>
+                            <i class="fas fa-info-circle text-info"></i>
+                        </span>
+                        <input value="@Model.Sku" name="Sku" type="text" class="form-control" id="SkuCode" readonly/>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label name="Brand" class="form-label">Tình trạng</label>
+                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Nhập tình trạng để xử lý khi bán hàng">
+                            <i class="fas fa-info-circle text-info"></i>
+                        </span>
+                        <select name="Status" class="form-control border selectpicker" data-live-search="true" required>
+                            <option value="preorder" @(Model.Status == "preorder" ? "selected" : "")> Đặt trước </option>
+                            <option value="available" @(Model.Status == "available" ? "selected" : "")> Có sẵn </option>
+                            <option value="outstock" @(Model.Status == "outstock" ? "selected" : "")> Hết hàng </option>
+                            <option value="StopSell" @(Model.Status == "StopSell" ? "selected" : "")> Ngưng bán </option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5> <i class="fas fa-tags text-info pe-2"></i> Giá và các yếu tố khác  </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label name="ImportPrice" class="form-label">Giá Nhập (đ)</label>
+                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Thêm giá nhập cho sản phẩm này">
+                            <i class="fas fa-info-circle text-info"></i>
+                        </span>
+                        <input value="@Model.CostPrice" name="CostPrice" type="number" class="form-control" />
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label name="Price" class="form-label">Đơn Giá Gốc (đ)</label>
+                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Đặt giá bán cho mỗi đơn vị của sản phẩm này. Phần đơn giá này sẽ không áp dụng nếu bạn đặt biến giá thay đổi">
+                            <i class="fas fa-info-circle text-info"></i>
+                        </span>
+                        <input value="@Model.OriginalPrice" name="OriginalPrice" type="number" class="form-control" id="OriginalPrice" />
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label name="Stock" class="form-label">Số Lượng</label>
+                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Thêm số lượng tồn kho hiện tại cho sản phẩm này">
+                            <i class="fas fa-info-circle text-info"></i>
+                        </span>
+                        <input value="@Model.Stock" name="Stock" type="number" class="form-control" />
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label name="Stock" class="form-label">Khối Lượng (KG)</label>
+                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Thêm khối lượng cho sản phẩm này, Đơn vị là kilogram">
+                            <i class="fas fa-info-circle text-info"></i>
+                        </span>
+                        <input value="@Model.Weight" name="Weight" step="0.01" min="0" type="number" class="form-control" />
+                    </div>
+
+                </div>
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label name="Stock" class="form-label">Bảo Hành (Tháng)</label>
+                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Thêm chế độ bảo hành cho sản phẩm này">
+                            <i class="fas fa-info-circle text-info"></i>
+                        </span>
+                        <input value="@Model.WarrantyPeriod" name="WarrantyPeriod" type="number" class="form-control" />
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label name="DiscountPercentage" class="form-label">Loại Giảm Giá</label>
+                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Chọn giảm giá bằng trừ tiền trực tiếp hoặc theo phần trăm (%). Để trống nếu bạn không muốn áp dụng khuyến mãi">
+                            <i class="fas fa-info-circle text-info"></i>
+                        </span>
+                        <select name="DiscountTypeId" id="DiscountType" class="form-select">
+                            <option value="1" @(Model.DiscountAmount.HasValue ? "Selected" : "")>Cố định</option>
+                            <option value="2" @(Model.DiscountPercentage.HasValue ? "Selected" : "")>Phần trăm</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <div id="discount-section">
+                            @if (Model.DiscountAmount.HasValue)
+                            {
+                                <div>
+                                    <label for="discountAmount" class="form-label">Số Tiền Giảm Giá (đ)</label>
+                                    <input name="discountAmount" value="@(Model.DiscountAmount ?? 0)" type="number" class="form-control" id="discountAmount" />
+                                </div>
+                            }
+
+                            @if (Model.DiscountPercentage.HasValue)
+                            {
+                                <div>
+                                    <label for="discountPercentage" class="form-label">Số Tiền Giảm Giá (%)</label>
+                                    <input name="discountPercentage" value="@(Model.DiscountPercentage ?? 0)" type="number" class="form-control" id="discountPercentage" />
+                                </div>
+                            }
+                        </div>
+
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <label name="sellPrice" class="form-label">Giá Bán (đ)</label>
+                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Giá bán sẽ được tự động tính toán. Chỉ thay đổi nếu có sai số để tránh việc sai số sau này">
+                            <i class="fas fa-info-circle text-info"></i>
+                        </span>
+                        <input value="@Model.SellPrice" name="sellPrice" type="number" class="form-control" id="sellPrice" />
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>
+                    <i class="fas fa-layer-group text-info pe-2"></i>
+                    Biển thể sản phẩm
+                </h5>
+            </div>
+            <div class="card-body">
+                @{
+                    // Khai báo danh sách để lưu các thuộc tính đã tách ra
+                    List<string> colors = new List<string>();
+                    List<string> roms = new List<string>();
+                    List<string> materials = new List<string>();
+                    List<string> sizes = new List<string>();
+
+                    foreach (var attribute in Model.VarientProducts)
+                    {
+                        // Tách các thuộc tính theo dấu ','
+                        var attributesArray = attribute.Attributes.Split(',');
+
+                        // Duyệt qua từng thuộc tính
+                        foreach (var attr in attributesArray)
+                        {
+                            var trimmedAttr = attr.Trim(); // Cắt khoảng trắng thừa
+
+                            if (trimmedAttr.StartsWith("color:", StringComparison.OrdinalIgnoreCase))
+                            {
+                                colors.Add(trimmedAttr.Replace("color:", "").Trim());
+                            }
+                            else if (trimmedAttr.StartsWith("rom:", StringComparison.OrdinalIgnoreCase))
+                            {
+                                roms.Add(trimmedAttr.Replace("rom:", "").Trim());
+                            }
+                            else if (trimmedAttr.StartsWith("material:", StringComparison.OrdinalIgnoreCase))
+                            {
+                                materials.Add(trimmedAttr.Replace("material:", "").Trim());
+                            }
+                            else if (trimmedAttr.StartsWith("size:", StringComparison.OrdinalIgnoreCase))
+                            {
+                                sizes.Add(trimmedAttr.Replace("size:", "").Trim());
+                            }
+                        }
+                    }
+                }
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Chọn màu sắc</label>
+                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Chọn màu sắc cho sản phẩm này">
+                            <i class="fas fa-info-circle text-info"></i>
+                        </span>
+                        <select name="Color" id="divColor" class="form-control border selectpicker" multiple="multiple" data-live-search="true">
+                            @foreach (var option in new[] { "Silver", "Black", "Red", "Pink", "Blue", "Green", "Yellow", "Purple", "White", "Gray" })
+                            {
+                                <option value="@option" @(colors.Contains(option) ? "selected" : "")>@option</option>
+                            }
+                        </select>
+
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Thêm thuộc tính</label>
+                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Sử dụng các biến thể khác để phân biệt sản phẩm">
+                            <i class="fas fa-info-circle text-info"></i>
+                        </span>
+                        <select name="VarientSelect" id="variantSelect" class="form-control border selectpicker" multiple="multiple" data-live-search="true">
+                            <option value="rom" @(roms.Any() ? "Selected" : "")>Bộ nhớ</option>
+                            <option value="material" @(materials.Any() ? "Selected" : "")>Chất liệu</option>
+                            <option value="size" @(sizes.Any() ? "Selected" : "")>Kích thước</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3" id="divrom" style=@(roms.Any() ? "" : "Display:none")>
+                        <label class="form-label">Bộ nhớ</label>
+                        <select name="rom" id="romSelect" class="form-control border selectpicker" multiple="multiple" data-live-search="true">
+                            @foreach (var option in new[] { "32GB", "64GB", "128GB", "256GB", "512GB", "1TB", "2TB" })
+                              {
+                                 <option value="@option" @(roms.Contains(option) ? "selected" : "")>@option</option>
+                              }
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3" id="divMaterial" style=@(materials.Any() ? "" : "Display:none")>
+                        <label class="form-label">Chất liệu</label>
+                        <input name="material" id="materialInput" class="form-control border" value="@(materials.Any() ? string.Join(", ", roms) : "")" />
+                    </div>
+                    <div class="col-md-6 mb-3" id="divSize" style="@(sizes.Any() ? "" : "Display:none")">
+                        <label class="form-label">Kích thước</label>
+                        <select name="Size" id="divSize" class="form-control border selectpicker" multiple="multiple" data-live-search="true">
+                            @foreach (var option in new[] { "S", "M", "L", "XL", "XXL" })
+                            {
+                                <option value="@option" @(sizes.Contains(option) ? "selected" : "")>@option</option>
+                            }
+                        </select>
+
+                    </div>
+                </div>
+                <div class="table-responsive table-Varient mt-4" style=@(Model.VarientProducts.Any() ? "" : "display:none")>
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>STT</th>
+                                <th>Biến thể thuộc tính</th>
+                                <th>Giá theo biến thể (đ)</th>
+                                <th>
+                                    SKU
+                                    <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Nếu chưa có mã SKU đầy đủ hãy copy SKU sản phẩm phía trên để bổ sung">
+                                        <i class="fas fa-info-circle text-info"></i>
+                                    </span>
+                                </th>
+                                <th>Hàng tồn kho theo biến thể</th>
+                            
+                            </tr>
+                        </thead>
+                        <tbody id="variantTableBody">
+                            @{
+                                int index = 0;
+                            }  
+
+                            @foreach (var varient in Model.VarientProducts)
+                            {
+                                <tr>
+                                    <td>@(index + 1)</td>
+                                    <td style="display:none">
+                                        <input type="hidden" name="VarientProducts[@index].VarientId" value="@varient.VarientId" />
+                                        <input type="hidden" name="VarientProducts[@index].VarientId" value="@varient.VarientId" />
+                                        <input type="hidden" name="VarientProducts[@index].Attributes" value="@varient.Attributes" />
+                                    </td>
+                                    <td>@varient.Attributes</td>
+                                    <td>
+                                        <input type="number" class="form-control" name="VarientProducts[@index].Price" value="@varient.Price" />
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control" name="VarientProducts[@index].Sku" value="@varient.Sku" readonly />
+                                    </td>
+                                    <td>
+                                        <input type="number" class="form-control" name="VarientProducts[@index].Stock" value="@varient.Stock" required />
+                                    </td>
+                                </tr>
+                                index++;  // Tăng giá trị index sau mỗi lần lặp
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <!-- Thẻ Hình Đại Diện -->
+            <div class="col-md-3">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Hình Ảnh Thu Nhỏ Sản Phẩm</label>
+
+                            <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Thêm hình đại diện của sản phẩm trong JPG, PNG or JPEG định dạng trong 2MB">
+                                <i class="fas fa-info-circle text-info"></i>
+                            </span>
+                            <span class="badge badge-info">Ratio 1:1 (500 x 500 px)</span>
+                            <div id="thumbnailPreview" class="mt-2">
+                                <div class="preview-image">
+                                    @if (Model.Image != null)
+                                    {
+                                        <img src="~/Upload/Products/@Model.Image" alt="Preview">
+                                        <button type="button" class="deleteImg-btn" data-id="@Model.ProductId" onclick="deleteImg('@Model.ProductId')">
+                                            <i class="fas fa-trash"></i> <!-- Biểu tượng thùng rác từ Font Awesome -->
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                            <div id="thumbnailDropzone" class="dropzone">
+                                <input type="file" name="image" accept="image/*" style="display: none;">
+                                <i class="fas fa-cloud-upload-alt text-info"></i>
+                                <p class="text-info">Tải ảnh lên</p>
+                            </div>
+                            <small class="text-muted text-warning">1 ảnh, kích thước tối đa: 2MB</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Thẻ Hình Ảnh Bổ Sung -->
+            <div class="col-md-9">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Tải Lên Hình Ảnh Bổ Sung</label>
+                            <span class="badge badge-info">Ratio 1:1 (500 x 500 px)</span>
+                            <div id="additionalPreview" class="mt-2">
+                                @if (Model.Galleries.Any())
+                                {
+                                    foreach (var item in Model.Galleries)
+                                    {
+                                        <div class="preview-image">
+                                            <img src="~/Upload/Products/@item.Path" alt="Preview">
+                                            <button type="button" class="deleteImg-btn" data-id="@item.ImageId" onclick="deleteImgFromGalleries('@item.ImageId')">
+                                                <i class="fas fa-trash"></i> 
+                                            </button>
+
+                                        </div>
+                                    }
+                                }
+                            </div>
+                            <div id="additionalDropzone" class="dropzone">
+                                <input type="file" name="Galleries" accept="image/*" multiple style="display: none;">
+                                <i class="fas fa-cloud-upload-alt text-info"></i>
+                                <p class="text-info">Tải ảnh lên</p>
+                            </div>
+
+                            <small class="text-muted text-warning">Tối đa 8 hình ảnh, mỗi hình tối đa 2MB</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>
+                    <i class="fas fa-play text-info pe-2"></i>
+                    Video Sản Phẩm
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Video sản phẩm</label>
+                    <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Nhập URL Youtube, video sẽ được hiển thị trên trang bán hàng">
+                        <i class="fas fa-info-circle text-info"></i>
+                    </span>
+                    <input value="@Model.UrlYoutube" type="url" class="form-control" id="videoUrl" name="urlYoutube" placeholder="Nhập URL video YouTube" />
+                    <div id="videoPreview" class="mt-2"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-end">
+            <button type="submit" class="btn btn-primary">Cập nhật sản phẩm</button>
+        </div>
+    </div>
+</form>
+
+<script src="~/Admin/assets/js/core/jquery-3.7.1.min.js"></script>
+@*
+Ckeditor *@
+<script src="~/admin/ckeditor/ckeditor.js"></script>
+<script>
+    function deleteImgFromGalleries(id) {
+        console.log(id); // Kiểm tra giá trị id
+        if (confirm("Bạn có chắc rằng muốn gỡ ảnh này?")) {
+            $.ajax({
+                method: "POST",
+                url: "/Admin/Products/DeleteImageFromGalleries/" + id, // Đảm bảo đường dẫn này là chính xác
+                success: function () {
+                    window.location.reload(); // Tải lại trang sau khi thành công
+                    alert("Gỡ Thành công")
+                },
+                error: function (xhr, error) {
+                    alert("Đã có lỗi khi gỡ hình ảnh");
+                }
+            });
+        }
+    }
+
+    function deleteImg(id) {
+        console.log(id); // Kiểm tra giá trị id
+        if (confirm("Bạn có chắc rằng muốn gỡ ảnh thumbnail?")) {
+            $.ajax({
+                method: "POST",
+                url: "/Admin/Products/DeleteImage/" + id, 
+                success: function () {
+                    window.location.reload(); // Tải lại trang sau khi thành công
+                    alert("Gỡ Thành công")
+
+                },
+                error: function (xhr, error) {
+                    alert("Đã có lỗi khi gỡ hình ảnh");
+                }
+            });
+        }
+    }
+
+
+</script>
+<script>
+    $(document).ready(function () {
+        $('.selectpicker').selectpicker();
+
+        function updateVariantTable() {
+            var colors = $('#divColor').val() || [];
+            var rom = $('#romSelect').val() || [];
+            var material = $('#materialInput').val().charAt(0).toUpperCase() || '';
+            var sizes = $('#sizeSelect').val() || [];
+
+            if (colors.length === 0) return;
+
+            var variants = [];
+            colors.forEach(function (color) {
+                var baseVariant = { color: color };
+                if (rom.length > 0) {
+                    rom.forEach(function (r) {
+                        var romVariant = { ...baseVariant, rom: r };
+                        if (sizes.length > 0) {
+                            sizes.forEach(function (size) {
+                                variants.push({ ...romVariant, size: size, material: material });
+                            });
+                        } else {
+                            variants.push({ ...romVariant, material: material });
+                        }
+                    });
+                } else if (sizes.length > 0) {
+                    sizes.forEach(function (size) {
+                        variants.push({ ...baseVariant, size: size, material: material });
+                    });
+                } else {
+                    variants.push({ ...baseVariant, material: material });
+                }
+            });
+
+            var tableBody = $('#variantTableBody');
+            tableBody.empty();
+
+            variants.forEach(function (variant, index) {
+                var variantString = Object.entries(variant)
+                    .filter(([key, value]) => value !== '')
+                    .map(([key, value]) => `${key}: ${value}`)
+                    .join(', ');
+                var skuProduct = $('#SkuCode').val() || '';
+                var sku = skuProduct + '-' + Object.values(variant).filter(v => v !== '').join('-');
+                var price = $('#sellPrice').val();
+                var row = $('<tr>');
+                row.append($('<td>').text(index + 1));
+                row.append($('<td style="display:none">').html('<input type="hidden" name="VarientProducts[' + index + '].Attributes" value="' + variantString + '"/>'));
+                row.append($('<td>').text(variantString));
+                row.append($('<td>').html('<input type="number" class="form-control" name="VarientProducts[' + index + '].Price" value="' + price + '"/>'));
+                row.append($('<td>').html('<input type="text" class="form-control" name="VarientProducts[' + index + '].Sku" value="' + sku + '"/>'));
+                row.append($('<td>').html('<input type="number" class="form-control" name="VarientProducts[' + index + '].Stock" value="1" required/>'));
+                row.append($('<td style="width:10%">').html('<i class="fas fa-trash delete-btn text-center text-danger" title="Xóa"></i>'));
+
+                tableBody.append(row);
+            });
+
+            $('.table-Varient').show();
+            updateRowNumbers();
+        }
+
+
+        $('#divColor, #romSelect, #materialInput, #sizeSelect').on('change', updateVariantTable);
+
+        $('#variantSelect').on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
+            var selectedOptions = $(this).val() || [];
+            $('#divrom, #divMaterial, #divSize').hide();
+            if (selectedOptions.includes('rom')) {
+                $('#divrom').show();
+            }
+            if (selectedOptions.includes('material')) {
+                $('#divMaterial').show();
+            }
+            if (selectedOptions.includes('size')) {
+                $('#divSize').show();
+            }
+            updateVariantTable();
+        });
+
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    });
+
+    function updateRowNumbers() {
+        $('#variantTableBody tr').each(function (index) {
+            // Update visible row number
+            $(this).find('td:first').text(index + 1);
+
+            // Update hidden input names and visible input names
+            $(this).find('input').each(function () {
+                var name = $(this).attr('name');
+                if (name) {
+                    var newName = name.replace(/\[\d+\]/, '[' + index + ']');
+                    $(this).attr('name', newName);
+                }
+            });
+        });
+    }
+    $(document).on('click', '.delete-btn', function () {
+        $(this).closest('tr').remove();
+        updateRowNumbers();
+    });
+</script>
+<script>
+    $(document).ready(function () {
+        // Xử lý URL video YouTube
+        $('#videoUrl').change(function () {
+            const url = $(this).val();
+            const videoId = extractVideoID(url);
+            if (videoId) {
+                $('#videoPreview').html(`<iframe width="560" height="315" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`);
+            } else {
+                $('#videoPreview').empty();
+            }
+        });
+
+        // Hàm trích xuất ID video từ URL YouTube
+        function extractVideoID(url) {
+            const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[7].length == 11) ? match[7] : false;
+        }
+    });
+
+
+</script>
+<script>
+    function setupDropzone(dropzoneId, inputName, previewId, isSingle = false) {
+        const dropzone = document.getElementById(dropzoneId);
+        const input = dropzone.querySelector('input[type="file"]');
+        const preview = document.getElementById(previewId);
+
+        dropzone.addEventListener('click', () => input.click());
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('dragover');
+        });
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        input.addEventListener('change', () => handleFiles(input.files));
+
+        function handleFiles(files) {
+            if (isSingle) {
+                preview.innerHTML = '';
+                files = [files[0]];
+            }
+            Array.from(files).forEach(file => {
+                if (file.type.startsWith('image/') && file.size <= 2 * 1024 * 1024) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const div = document.createElement('div');
+                        div.className = 'preview-image';
+                        div.innerHTML = `
+                                                <img src="${e.target.result}" alt="Preview">
+                                                <button class="remove-btn">&times;</button>
+                                            `;
+                        div.querySelector('.remove-btn').addEventListener('click', () => {
+                            div.remove();
+                            updateInputFiles();
+                        });
+                        preview.appendChild(div);
+                        updateInputFiles();
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    alert(`File ${file.name} không hợp lệ. Chỉ chấp nhận hình ảnh dưới 2MB.`);
+                }
+            });
+        }
+
+        function updateInputFiles() {
+            const dataTransfer = new DataTransfer();
+            preview.querySelectorAll('img').forEach(img => {
+                fetch(img.src)
+                    .then(res => res.blob())
+                    .then(blob => {
+                        const file = new File([blob], "image.jpg", { type: "image/jpeg" });
+                        dataTransfer.items.add(file);
+                        input.files = dataTransfer.files;
+                    });
+            });
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        setupDropzone('thumbnailDropzone', 'Image', 'thumbnailPreview', true);
+        setupDropzone('additionalDropzone', 'Gallery', 'additionalPreview');
+    });
+</script>
+<script type="text/javascript">
+    CKEDITOR.replace('description');
+</script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        // Ẩn các trường nhập liệu ban đầu
+        $('#percent').hide();
+
+        // Kiểm tra giá trị của dropdown khi thay đổi
+        $('#DiscountType').on('change', function () {
+            var selectedValue = $(this).val(); // Lấy giá trị được chọn
+
+            // Ẩn tất cả các trường nhập liệu
+            $('#cash').hide();
+            $('#percent').hide();
+
+            // Hiển thị trường nhập liệu tương ứng với loại giảm giá được chọn
+            if (selectedValue === "1") { // Loại giảm giá "Cố định"
+                $('#cash').show(); // Hiện trường số tiền giảm giá
+            } else if (selectedValue === "2") { // Loại giảm giá "Phần trăm"
+                $('#percent').show(); // Hiện trường số tiền giảm giá phần trăm
+            }
+        });
+
+        // Tính toán giá bán khi có thay đổi ở các trường nhập liệu
+        $('#OriginalPrice, #discountAmount, #discountPercentage').on('input', function () {
+            calculateSellPrice();
+        });
+
+        function calculateSellPrice() {
+            let originalPrice = parseFloat($('#OriginalPrice').val()) || 0;
+            let discountType = $('#DiscountType').val();
+            let sellPrice = 0;
+
+            if (discountType == '1') { // Giảm giá cố định
+                let discountAmount = parseFloat($('#discountAmount').val()) || 0;
+                sellPrice = originalPrice - discountAmount;
+            } else if (discountType == '2') { // Giảm giá theo phần trăm
+                let discountPercentage = parseFloat($('#discountPercentage').val()) || 0;
+                sellPrice = originalPrice - (originalPrice * discountPercentage / 100);
+            }
+
+            // Đảm bảo giá bán không âm
+            if (sellPrice < 0) {
+                sellPrice = 0;
+            }
+
+            // Cập nhật giá bán
+            $('#sellPrice').val(sellPrice.toFixed(2));
+        }
+
+        // Submit form bằng AJAX
+        $('#ProductForm').on('submit', function (e) {
+            e.preventDefault(); // Ngăn chặn submit form thông thường
+            const url = '@Url.Action("Update", "Products", new { area = "Admin" })';
+            $('.loading-container').show(); // Hiển thị loading
+            var formData = new FormData(this); // Thu thập dữ liệu từ form
+            $.ajax({
+                method: 'POST',
+                url: url,
+                data: formData,
+                processData: false, // Không xử lý dữ liệu
+                contentType: false, // Không đặt content type, để trình duyệt tự làm
+                headers: {
+                    "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() // Lấy token xác thực nếu có
+                },
+                success: function (res) {
+                    $('.loading-container').hide(); // Ẩn loading
+                    alert('Thành công!'); // Thông báo thành công
+                    window.location.href = '/Admin/Products';
+
+                },
+                error: function (xhr, error, status) {
+                    $('.loading-container').hide(); // Ẩn loading
+                    alert('Đã xảy ra lỗi: ' + xhr.responseText); // Thông báo lỗi
+                    console.error('Error details:', error); // Log chi tiết lỗi
+                }
+            });
+        });
+
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip();
+        });
+
+    });
+</script>
 

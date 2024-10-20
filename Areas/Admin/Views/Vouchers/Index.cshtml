@@ -155,6 +155,7 @@
                     }
                     $('input[name="description"]').val(response.description); // Đặt giá trị cho input description
                     $('input[name="startedAt"]').val(response.startedAt);
+                    $('input[name="quantity"]').val(response.quantity);
                     $('input[name="expiredAt"]').val(response.expiredAt);
                     $('input[name=vou_id]').val(response.voucherId);
                     // Hiển thị nút Lưu thay đổi và ẩn nút Thêm mới
@@ -179,10 +180,11 @@
             // Đặt lại các trường trong modal khi ẩn
             // Đặt giá trị của các input và select
             $('input[name="name"]').val(''); // Đặt giá trị cho input name
-            $('input[name="code"]').val(''); // Đặt giá trị cho input name
-            $('input[name="promotion"]').val(''); // Đặt giá trị cho input name
-            $('input[name="description"]').val(''); // Đặt giá trị cho input description
-            $('select[name="startedAt"]').val(''); // Đặt giá trị cho select visible
+            $('input[name="code"]').val('');
+            $('input[name="quantity"]').val('');
+            $('input[name="promotion"]').val(''); 
+            $('input[name="description"]').val('');
+            $('select[name="startedAt"]').val('');
             $('input[name="expiredAt"]').val('')
             //Tắt trạng thái load
             $('.loading-container').hide();

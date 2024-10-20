@@ -86,7 +86,7 @@
                                 </div>
                             </div>
                             <div class="form-group row mb-3">
-                                <label class="col-sm-4 col-form-label">Thành phố:</label>
+                                <label class="col-sm-4 col-form-label">Tỉnh/Thành:</label>
                                 <div class="col-sm-8">
                                     <select id="citySelect" class="form-control selectpicker" data-live-search="true" title="Chọn Thành phố" required>
                                         <!-- Tùy chọn sẽ được thêm vào đây -->
@@ -205,22 +205,29 @@
 
 
         // Hàm cập nhật giá trị của địa chỉ
-        function updateAddressValues() {
-            province = $("#citySelect").val();
-            district = $("#districtSelect").val();
-            ward = $("#wardSelect").val();
-            addressLine = $("input[name='street']").val();
+        function updateAddressValues(formData) {
+            const province = $("#citySelect").val();
+            const district = $("#districtSelect").val();
+            const ward = $("#wardSelect").val();
+            const addressLine = $("input[name='street']").val();
+
+            // Thêm giá trị vào FormData
+            formData.append('Province', province);
+            formData.append('District', district);
+            formData.append('Ward', ward);
+            formData.append('AddressLine', addressLine);
+
+            console.log(province + "," + district + "," + ward + "," + addressLine);
         }
 
         var token = $('input[name="__RequestVerificationToken"]').val();
 
         $('#addUserForm').on('submit', async function (event) {
             event.preventDefault(); // Ngăn chặn hành động mặc định của form
-
-            updateAddressValues();
             $('.loading-container').show(); // Hiển thị biểu tượng loading
 
             var formData = new FormData(this); // Tạo FormData từ form
+            updateAddressValues(formData);
 
             // Lấy hình ảnh từ input file var imageFileInput = $("input[name='Image']")[0]; // Lấy phần tử input file
             var imageFileInput = document.getElementById('avatarInput');
@@ -255,12 +262,10 @@
         $(document).on('click', '#update', function () {
             $('.loading-container').show(); // Hiển thị loader
             var id_vou = $("input[name='us_id']").val();
-
-            // Cập nhật giá trị địa chỉ
-            updateAddressValues();
-
             var formElement = $('#addUserForm')[0];
             var formData = new FormData(formElement);
+            updateAddressValues(formData);
+
 
             // Lấy hình ảnh từ input file var imageFileInput = $("input[name='Image']")[0]; // Lấy phần tử input file
             var imageFileInput = document.getElementById('avatarInput');

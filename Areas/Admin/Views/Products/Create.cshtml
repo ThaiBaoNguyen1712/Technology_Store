@@ -7,7 +7,7 @@
 
 </style>
 
-<form asp-action="CreateProduct" asp-controller="Product" method="post" enctype="multipart/form-data">
+<form asp-action="CreateProduct" asp-controller="Product" method="post" enctype="multipart/form-data" id="ProductForm">
 
     <div class="container-fluid">
         <h3 class="py-3 ms-3">
@@ -96,10 +96,11 @@
                         <input name="CostPrice" type="number" class="form-control" />
                     </div>
                     <div class="col-md-3 mb-3">
-                        <label name="Price" class="form-label">Đơn Giá Gốc (đ)</label>  <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Đặt giá bán cho mỗi đơn vị của sản phẩm này. Phần đơn giá này sẽ không áp dụng nếu bạn đặt biến giá thay đổi">
-                             <i class="fas fa-info-circle text-info"></i>
+                        <label name="Price" class="form-label">Đơn Giá Gốc (đ)</label>
+                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Đặt giá bán cho mỗi đơn vị của sản phẩm này. Phần đơn giá này sẽ không áp dụng nếu bạn đặt biến giá thay đổi">
+                            <i class="fas fa-info-circle text-info"></i>
                         </span>
-                        <input name="OriginalPrice" type="number" class="form-control" />
+                        <input name="OriginalPrice" type="number" class="form-control" id="OriginalPrice" />
                     </div>
                     <div class="col-md-3 mb-3">
                         <label name="Stock" class="form-label">Số Lượng</label>
@@ -109,50 +110,55 @@
                         <input name="Stock" type="number" class="form-control" />
                     </div>
                     <div class="col-md-3 mb-3">
-                        <label name="Stock" class="form-label">Bảo Hành (Tháng)</label>
-                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Thêm chế độ bảo hành cho sản phẩm này">
-                             <i class="fas fa-info-circle text-info"></i>
+                        <label name="Stock" class="form-label">Khối Lượng (KG)</label>
+                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Thêm khối lượng cho sản phẩm này, Đơn vị là kilogram">
+                            <i class="fas fa-info-circle text-info"></i>
                         </span>
-                        <input name="WarrantyPeriod" type="text" class="form-control" />
+                        <input name="Weight" step="0.01" min="0" type="number" class="form-control" />
                     </div>
+                   
                 </div>
                 <div class="row">
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-3 mb-3">
+                        <label name="Stock" class="form-label">Bảo Hành (Tháng)</label>
+                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Thêm chế độ bảo hành cho sản phẩm này">
+                            <i class="fas fa-info-circle text-info"></i>
+                        </span>
+                        <input name="WarrantyPeriod" type="number" class="form-control" />
+                    </div>
+                    <div class="col-md-3 mb-3">
                         <label name="DiscountPercentage" class="form-label">Loại Giảm Giá</label>
                         <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Chọn giảm giá bằng trừ tiền trực tiếp hoặc theo phần trăm (%). Để trống nếu bạn không muốn áp dụng khuyến mãi">
                             <i class="fas fa-info-circle text-info"></i>
                         </span>
                         <select name="DiscountTypeId" id="DiscountType" class="form-select">
-                            <option value="">Chọn loại giảm giá</option>
                             <option value="1">Cố định</option>
                             <option value="2">Phần trăm</option>
                         </select>
                     </div>
-                    <div class="col-md-6 mb-3">
+
+                    <div class="col-md-3 mb-3">
                         <div id="cash">
                             <label name="discountAmount" class="form-label">Số Tiền Giảm Giá (đ)</label>
-                            <input name="discountAmount" type="number" class="form-control" />
+                            <input name="discountAmount" type="number" class="form-control" id="discountAmount" />
                         </div>
                         <div id="percent" style="display:none">
                             <label name="discountPercentage" class="form-label">Số Tiền Giảm Giá (%)</label>
-                            <input name="discountPercentage" type="number" class="form-control" />
+                            <input name="discountPercentage" type="number" class="form-control" id="discountPercentage" />
                         </div>
                     </div>
+
+                    <div class="col-md-3 mb-3">
+                        <label name="sellPrice" class="form-label">Giá Bán (đ)</label>
+                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Giá bán sẽ được tự động tính toán. Chỉ thay đổi nếu có sai số để tránh việc sai số sau này">
+                            <i class="fas fa-info-circle text-info"></i>
+                        </span>
+                        <input name="sellPrice" type="number" class="form-control" id="sellPrice" />
+                    </div>
                 </div>
+
             </div>
         </div>
-
-      @*   <div class="card mb-4">
-            <div class="card-header">
-                <h5>
-                    <i class="fas fa-tags text-info pe-2"></i>
-                    Giảm giá
-                </h5>
-            </div>
-            <div class="card-body">
-                
-            </div>
-        </div> *@
 
         <div class="card mb-4">
             <div class="card-header">
@@ -252,13 +258,14 @@
                             <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Thêm hình đại diện của sản phẩm trong JPG, PNG or JPEG định dạng trong 2MB">
                                 <i class="fas fa-info-circle text-info"></i>
                             </span>
+                            <span class="badge badge-info">Ratio 1:1 (500 x 500 px)</span>
                             <div id="thumbnailPreview" class="mt-2"></div>
                             <div id="thumbnailDropzone" class="dropzone">
                                 <input type="file" name="image" accept="image/*" style="display: none;">
                                 <i class="fas fa-cloud-upload-alt text-info"></i>
                                 <p class="text-info">Tải ảnh lên</p>
                             </div>
-                            <small class="text-muted text-warning">Chỉ 1 ảnh, kích thước tối đa: 2MB</small>
+                            <small class="text-muted text-warning">1 ảnh, kích thước tối đa: 2MB</small>
                         </div>
                     </div>
                 </div>
@@ -270,9 +277,11 @@
                     <div class="card-body">
                         <div class="col-md-12 mb-3">
                             <label class="form-label">Tải Lên Hình Ảnh Bổ Sung</label>
+                            <span class="badge badge-info">Ratio 1:1 (500 x 500 px)</span>
+
                             <div id="additionalPreview" class="mt-2"></div>
                             <div id="additionalDropzone" class="dropzone">
-                                <input type="file" name="Gallery" accept="image/*" multiple style="display: none;">
+                                <input type="file" name="Galleries" accept="image/*" multiple style="display: none;">
                                 <i class="fas fa-cloud-upload-alt text-info"></i>
                                 <p class="text-info">Tải ảnh lên</p>
                             </div>
@@ -368,22 +377,24 @@ Ckeditor *@
                     .map(([key, value]) => `${key}: ${value}`)
                     .join(', ');
                 var skuProduct = $('#SkuCode').val() || '';
-                var sku = skuProduct+ '-' + Object.values(variant).filter(v => v !== '').join('-');
-
+                var sku = skuProduct + '-' + Object.values(variant).filter(v => v !== '').join('-');
+                var price = $('#sellPrice').val();
                 var row = $('<tr>');
                 row.append($('<td>').text(index + 1));
-                row.append($('<td style="display:none">').html('<input type="hidden" name="VarientProducts['+ index +'].Attributes" value="'+variantString+'"/>'));
+                row.append($('<td style="display:none">').html('<input type="hidden" name="VarientProducts[' + index + '].Attributes" value="' + variantString + '"/>'));
                 row.append($('<td>').text(variantString));
-                row.append($('<td>').html('<input type="number" class="form-control" name="VarientProducts[' + index + '].Price"/>'));
+                row.append($('<td>').html('<input type="number" class="form-control" name="VarientProducts[' + index + '].Price" value="'+price+'"/>'));
                 row.append($('<td>').html('<input type="text" class="form-control" name="VarientProducts[' + index + '].Sku" value="' + sku + '"/>'));
-                row.append($('<td>').html('<input type="number" class="form-control" name="VarientProducts[' + index + '].Stock"/>'));
+                row.append($('<td>').html('<input type="number" class="form-control" name="VarientProducts[' + index + '].Stock" value="1" required/>'));
                 row.append($('<td style="width:10%">').html('<i class="fas fa-trash delete-btn text-center text-danger" title="Xóa"></i>'));
 
                 tableBody.append(row);
             });
 
             $('.table-Varient').show();
+            updateRowNumbers();
         }
+
 
         $('#divColor, #romSelect, #materialInput, #sizeSelect').on('change', updateVariantTable);
 
@@ -408,6 +419,22 @@ Ckeditor *@
             return new bootstrap.Tooltip(tooltipTriggerEl)
         });
     });
+
+    function updateRowNumbers() {
+        $('#variantTableBody tr').each(function (index) {
+            // Update visible row number
+            $(this).find('td:first').text(index + 1);
+
+            // Update hidden input names and visible input names
+            $(this).find('input').each(function () {
+                var name = $(this).attr('name');
+                if (name) {
+                    var newName = name.replace(/\[\d+\]/, '[' + index + ']');
+                    $(this).attr('name', newName);
+                }
+            });
+        });
+    }
     $(document).on('click', '.delete-btn', function () {
         $(this).closest('tr').remove();
         updateRowNumbers();
@@ -503,7 +530,7 @@ Ckeditor *@
 
     document.addEventListener('DOMContentLoaded', () => {
         setupDropzone('thumbnailDropzone', 'Image', 'thumbnailPreview', true);
-        setupDropzone('additionalDropzone', 'Gallery', 'additionalPreview');
+        setupDropzone('additionalDropzone', 'Galleries', 'additionalPreview');
     });
 </script>
 <script type="text/javascript">
@@ -512,7 +539,6 @@ Ckeditor *@
 <script type="text/javascript">
     $(document).ready(function () {
         // Ẩn các trường nhập liệu ban đầu
-        $('#cash').hide();
         $('#percent').hide();
 
         // Kiểm tra giá trị của dropdown khi thay đổi
@@ -531,6 +557,33 @@ Ckeditor *@
             }
         });
 
+        // Tính toán giá bán khi có thay đổi ở các trường nhập liệu
+        $('#OriginalPrice, #discountAmount, #discountPercentage').on('input', function () {
+            calculateSellPrice();
+        });
+
+        function calculateSellPrice() {
+            let originalPrice = parseFloat($('#OriginalPrice').val()) || 0;
+            let discountType = $('#DiscountType').val();
+            let sellPrice = 0;
+
+            if (discountType == '1') { // Giảm giá cố định
+                let discountAmount = parseFloat($('#discountAmount').val()) || 0;
+                sellPrice = originalPrice - discountAmount;
+            } else if (discountType == '2') { // Giảm giá theo phần trăm
+                let discountPercentage = parseFloat($('#discountPercentage').val()) || 0;
+                sellPrice = originalPrice - (originalPrice * discountPercentage / 100);
+            }
+
+            // Đảm bảo giá bán không âm
+            if (sellPrice < 0) {
+                sellPrice = 0;
+            }
+
+            // Cập nhật giá bán
+            $('#sellPrice').val(sellPrice.toFixed(2));
+       }
+
         // Submit form bằng AJAX
         $('#ProductForm').on('submit', function (e) {
             e.preventDefault(); // Ngăn chặn submit form thông thường
@@ -540,7 +593,7 @@ Ckeditor *@
             var formData = new FormData(this); // Thu thập dữ liệu từ form
             $.ajax({
                 method: 'POST',
-                url: '/Products/Create', // Đảm bảo đường dẫn chính xác
+                url: '/Admin/Products/Create', // Đảm bảo đường dẫn chính xác
                 data: formData,
                 processData: false, // Không xử lý dữ liệu
                 contentType: false, // Không đặt content type, để trình duyệt tự làm

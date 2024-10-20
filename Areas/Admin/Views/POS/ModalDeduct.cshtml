@@ -1,0 +1,21 @@
+﻿<!-- Modal -->
+<div class="modal fade" id="ModalDeduct" tabindex="-1" aria-labelledby="exampleModalLongTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLongTitle">Nhập số tiền giảm giá</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex justify-content-center">
+                    <input name="DeductValue" value="0" type="number" class="form-control" placeholder="Nhập số tiền.." min="0" onblur="if(this.value==''){this.value='0';}" />
+
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary btn-deduct">Đồng ý</button>
+            </div>
+        </div>
+    </div>
+</div>

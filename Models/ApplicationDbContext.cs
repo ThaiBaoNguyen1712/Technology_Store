@@ -263,29 +263,31 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.Color)
                 .HasMaxLength(155)
                 .HasColumnName("color");
+            entity.Property(e => e.CostPrice)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("costPrice");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
-            entity.Property(e => e.Description)
-                .HasColumnType("text")
-                .HasColumnName("description");
-            entity.Property(e => e.DiscountPercentage).HasColumnName("discountPercentage");
+            entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.DiscountAmount)
                 .HasColumnType("decimal(10, 2)")
                 .HasColumnName("discountAmount");
+            entity.Property(e => e.DiscountPercentage).HasColumnName("discountPercentage");
             entity.Property(e => e.Image)
                 .HasMaxLength(500)
                 .HasColumnName("image");
-            entity.Property(e => e.CostPrice)
-                .HasColumnType("decimal(10, 2)")
-                .HasColumnName("costPrice");
             entity.Property(e => e.Name)
                 .HasMaxLength(200)
                 .IsUnicode(false)
                 .HasColumnName("name");
-            entity.Property(e => e.OriginalPrice).HasColumnType("decimal(10, 2)").HasColumnName("originalPrice");
-            entity.Property(e => e.DiscountPrice).HasColumnType("decimal(10, 2)").HasColumnName("discountPrice");
+            entity.Property(e => e.OriginalPrice)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("originalPrice");
+            entity.Property(e => e.SellPrice)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("sellPrice");
             entity.Property(e => e.Sku)
                 .HasMaxLength(100)
                 .IsUnicode(false)
@@ -305,6 +307,15 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.WarrantyPeriod)
                 .HasMaxLength(50)
                 .HasColumnName("warrantyPeriod");
+            entity.Property(e => e.Weight).HasColumnName("weight");
+
+            entity.HasOne(d => d.Brand).WithMany(p => p.Products)
+                .HasForeignKey(d => d.BrandId)
+                .HasConstraintName("FK_Product_Brand");
+
+            entity.HasOne(d => d.Category).WithMany(p => p.Products)
+                .HasForeignKey(d => d.CategoryId)
+                .HasConstraintName("FK_Product_Category");
         });
 
         modelBuilder.Entity<Review>(entity =>
@@ -423,15 +434,20 @@ public partial class ApplicationDbContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+            entity.Property(e => e.Price)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("price");
             entity.Property(e => e.ProductId).HasColumnName("productId");
             entity.Property(e => e.Sku)
                 .HasMaxLength(100)
                 .IsUnicode(false)
                 .HasColumnName("sku");
-            entity.Property(e => e.Price)
-             .HasColumnType("decimal(10, 2)")
-             .HasColumnName("price");
             entity.Property(e => e.Stock).HasColumnName("stock");
+
+            entity.HasOne(d => d.Product).WithMany(p => p.VarientProducts)
+                .HasForeignKey(d => d.ProductId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_VarientProduct_Product");
         });
 
         modelBuilder.Entity<Voucher>(entity =>

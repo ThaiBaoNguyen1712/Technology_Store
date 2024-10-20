@@ -54,30 +54,36 @@ namespace Tech_Store.Areas.Admin.Controllers
             }
             return Json(voucher);
         }
-        [HttpPut("Update/{id}")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Update(int? id, Voucher vou)
+        [HttpPost("Update")]
+        public async Task<IActionResult> Update([FromBody] Voucher vou)
         {
-            if (id == null)
-                return NotFound();
             if (ModelState.IsValid)
             {
-                var voucher = await _context.Vouchers.FindAsync(id);
+                var voucher = await _context.Vouchers.FindAsync(vou.VoucherId);
                 if (voucher == null)
                 {
                     return NotFound();
                 }
                 voucher.Name = vou.Name;
                 voucher.Description = vou.Description;
-                voucher.Code = vou.Code;
+                voucher.Code = vou.Code.Trim();
                 voucher.Promotion = vou.Promotion;
+                voucher.Quantity = vou.Quantity;
                 voucher.ExpiredAt = vou.ExpiredAt;
                 voucher.StartedAt = vou.StartedAt;
                 await _context.SaveChangesAsync();
                 return Ok();
             }
             else
-                return BadRequest();
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors);
+                foreach (var error in errors)
+                {
+                    Console.WriteLine(error.ErrorMessage); // hoặc dùng log để kiểm tra
+                }
+                return BadRequest(ModelState); // có thể trả về chi tiết lỗi của model
+            }
+
         }
 
         [HttpDelete("Delete/{id}")]

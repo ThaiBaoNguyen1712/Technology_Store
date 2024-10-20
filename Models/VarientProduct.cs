@@ -11,10 +11,13 @@ public partial class VarientProduct
 
     public string Attributes { get; set; } = null!;
 
-    public decimal Price { get; set; }
     public string Sku { get; set; } = null!;
+
+    public decimal? Price { get; set; }
 
     public int? Stock { get; set; }
 
     public DateTime? CreatedAt { get; set; }
+
+    public virtual Product? Product { get; set; } = null!;
 }

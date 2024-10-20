@@ -192,7 +192,19 @@
         font-size: 12px;
         cursor: pointer;
     }
-
+     .deleteImg-btn {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        background-color: red;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        font-size: 12px;
+        cursor: pointer;
+    }
 
 
 .color-option {
@@ -206,4 +218,69 @@
     height: 50px;
     margin-right: 10px;
     border: 1px solid #000;
+}
+
+/*
+Phần card Varients Product*/
+.variant-card {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    margin: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: calc(25% - 10px); /* Adjust based on how many cards you want per row */
+}
+
+    .variant-card:hover {
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .variant-card.selected {
+        border-color: #007bff;
+        background-color: #e7f1ff;
+    }
+
+    .variant-card.out-of-stock {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+.out-of-stock-label {
+    color: red;
+    font-size: 0.8em;
+}
+
+#variantCardsContainer {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.option-buttons li {
+    display: inline-block;
+}
+
+.option-buttons label {
+    display: inline-block;
+    cursor: pointer;
+    padding: 8px 16px;
+    border: 2px solid #17a2b8; /* Màu viền xanh sáng */
+    border-radius: 4px;
+    background-color: #f0fbff; /* Màu nền nhạt */
+    color: #005f73; /* Màu chữ xanh đậm hơn để nổi bật */
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+    .option-buttons label:hover {
+        background-color: #17a2b8; /* Màu nền xanh nhạt khi hover */
+        color: #ffffff; /* Màu chữ trắng khi hover */
+    }
+
+.option-buttons input[type="radio"]:checked + label {
+    background-color: #17a2b8; /* Màu nền xanh nhạt khi được chọn */
+    color: #ffffff; /* Màu chữ trắng khi được chọn */
+}
+
+.option-buttons li:not(.d-none) {
+    margin-right: 15px;
 }

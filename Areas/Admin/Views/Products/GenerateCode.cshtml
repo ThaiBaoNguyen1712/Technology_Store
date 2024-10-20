@@ -1,0 +1,207 @@
+﻿@model Tech_Store.Models.Product;
+@{
+    ViewData["Title"] = "GenerateCode";
+    Layout = "/Areas/Admin/Views/Shared/Layout.cshtml";
+}
+@using System.Globalization;
+<div class="container-fluid">
+    <h4 class="py-3">Tạo mã vạch</h4>
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <input type="hidden" name="ProductId" value="@Model.ProductId"/>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Mã</th>
+                            <th>Tên</th>
+                            <th>Nội Dung</th>
+                            <th>
+                                Loại Mã
+                            </th>
+                            <th style="width:10%">Số Lượng</th>
+                            <th>Hành Động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                          <tr>
+                              <td>@Model.Sku</td>
+                              <td>@Model.Name</td>
+                            <td>
+                                <select name="content" class="form-control" id="contentSelect">
+                                    <option value="sku" @(ViewBag.Content == "sku" ? "selected" : "")>SKU</option>
+                                    <option value="url" @(ViewBag.Content == "url" ? "selected" : "")>Đường dẫn hiển thị</option>        
+                                </select>
+                            </td>
+                            <td>
+                                <select name="codeType" class="form-control" id="codeTypeSelect">
+                                    <option value="QRCode" @(ViewBag.CodeType == "QRCode" ? "selected" : "")>QR Code</option>
+                                    <option value="Barcode" @(ViewBag.CodeType == "Barcode" ? "selected" : "")>Barcode</option>
+                                </select>
+                            </td>
+
+                              <td>
+                                  <input type="number" min="1" name="quantity" class="form-control" value="1" require/>
+                              </td>
+                              <td>
+                                  <div class="form-input-group">
+                                  <button type="button" class="btn btn-outline-primary" onclick="Generate()">Tạo mã vạch</button>
+                                    <button type="button" class="btn btn-outline-danger" onclick="Reload()">Đặt lại</button>
+                                    <button type="button" class="btn btn-outline-info" onclick="Print()">In</button>
+                                </div>
+                              </td>
+                              </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title"><strong>@Model.Name</strong></h5>
+                    <p class="card-text text-muted">@Model.SellPrice?.ToString("C0",new CultureInfo("vi-VN"))</p>
+                    @if(ViewBag.QRCodeImage !=null)
+                    {
+                        <img name="code" src="@ViewBag.QRCodeImage" alt="QR Code" style="height:150px;width:150px; margin-bottom: 10px;" />
+
+                    }
+                    else if(ViewBag.BarcodeImage != null)
+                    {
+                        <img name="code" src="@ViewBag.BarcodeImage" alt="Barcode" style="height:auto;width:150px; margin-bottom: 10px;" />
+                    }
+                    <br />
+                    <span class="badge bg-secondary">Mã: @Model.Sku</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</div>
+<script src="~/Admin/assets/js/core/jquery-3.7.1.min.js"></script>
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('#codeTypeSelect').change(function () {
+            // Lấy giá trị đã chọn
+            var selectedCodeType = $(this).val();
+            var contentSelect = $('#contentSelect');
+
+            // Nếu chọn Barcode, kiểm tra và không cho chọn URL
+            if (selectedCodeType === 'Barcode') {
+                // Nếu đang chọn URL thì đổi sang SKU
+                if (contentSelect.val() === 'url') {
+                    contentSelect.val('sku'); // Chọn SKU
+                }
+                // Vô hiệu hóa tùy chọn URL
+                contentSelect.find('option[value="url"]').prop('disabled', true);
+            } else {
+                // Nếu chọn QR Code, bật lại tùy chọn URL
+                contentSelect.find('option[value="url"]').prop('disabled', false);
+            }
+        });
+    });
+
+    function Reload() { 
+        let url = '@Url.Action("GenerateCode","Products", new{area="Admin"})';
+        var id = $('input[name="ProductId"]').val();
+        $('.loading-container').show(); 
+        $.ajax({
+            url:url,
+            data: {
+                id: id
+            }, success: function (response) {
+                // Điều hướng đến view với dữ liệu đã có
+                window.location.href = '/Admin/Products/GenerateCode/' + id;
+                $('.loading-container').hide(); // Ẩn loading
+            },
+            error: function (xhr, error) {
+                alert("Đã có lỗi xảy ra");
+            }
+        })
+
+    }
+
+    function Generate() {
+        var content = $('select[name="content"]').val();
+        var codeType = $('select[name="codeType"]').val();
+        var id = $('input[name="ProductId"]').val();
+
+        let url = '@Url.Action("GenerateCode", "Products", new { area = "Admin" })';
+
+        $('.loading-container').show(); // Ẩn loading
+        $.ajax({
+            method: 'GET',
+            url: url,
+            data: {
+                content: content,
+                codeType: codeType
+            },
+            success: function (response) {
+                // Điều hướng đến view với dữ liệu đã có
+                window.location.href = '/Admin/Products/GenerateCode/' + id + '/' + content + '/' + codeType;
+                $('.loading-container').hide(); 
+            },
+            error: function (xhr, error) {
+                alert("Đã có lỗi xảy ra");
+                $('.loading-container').hide(); // Ẩn loading
+            }
+        });
+    }
+    function Print() {
+        var content = $('select[name="content"]').val();
+        var codeType = $('select[name="codeType"]').val();
+        var id = $('input[name="ProductId"]').val();
+        var quantity = $('input[name="quantity"]').val();
+        let url = '@Url.Action("PrintCode", "Products", new { area = "Admin" })';
+        $('.loading-container').show(); 
+        $.ajax({
+            url: url,
+            data: {
+                id: id,
+                content: content,
+                codeType: codeType,
+                quantity : quantity
+            },
+            success: function (response) {
+                if (response.success) {
+                    printCode(response.html); // Gọi hàm in khi đã có dữ liệu
+                    $('.loading-container').hide(); // Ẩn loading
+                } else {
+                    alert(response.message); // Hiển thị lỗi nếu có
+                    $('.loading-container').hide(); // Ẩn loading
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error("Đã xảy ra lỗi khi lấy dữ liệu in:", error);
+                $('.loading-container').hide(); // Ẩn loading
+            }
+        });
+    }
+
+    function printCode(html) {
+        var framePrint = document.createElement("iframe");
+        framePrint.className = "Print-Code";
+        framePrint.style.position = "absolute";
+        framePrint.style.top = "-10000px"; // Ẩn iFrame khỏi người dùng
+        document.body.appendChild(framePrint);
+
+        var frameDoc = framePrint.contentWindow || framePrint.contentDocument.document || framePrint.contentDocument;
+
+        frameDoc.document.open();
+        frameDoc.document.write(html);
+        frameDoc.document.close();
+
+        setTimeout(function () {
+            framePrint.focus();
+            framePrint.contentWindow.print(); // Gọi chức năng in
+            document.body.removeChild(framePrint); // Xóa iFrame sau khi in
+        }, 500);
+        return false;
+    }
+
+
+ </script>

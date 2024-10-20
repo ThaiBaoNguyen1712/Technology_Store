@@ -1,0 +1,258 @@
+﻿<!-- Modal -->
+<div class="modal fade" id="UserModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" style="min-width:80vw;">
+        <form id="addUserForm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Thêm Khách hàng</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="us_id" />
+                    <!-- Nav Pills -->
+                    <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="pills-info-tab" data-bs-toggle="pill" data-bs-target="#pills-info" type="button" role="tab" aria-controls="pills-info" aria-selected="true">Thông tin Khách hàng</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="pills-address-tab" data-bs-toggle="pill" data-bs-target="#pills-address" type="button" role="tab" aria-controls="pills-address" aria-selected="false">Địa chỉ</button>
+                        </li>
+                    </ul>
+
+                    <!-- Checkbox: Bỏ qua thông tin địa chỉ -->
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="skipAddress" />
+                        <label class="form-check-label" for="skipAddress">
+                            Bỏ qua thông tin địa chỉ
+                        </label>
+                    </div>
+
+                    <!-- Tab Content -->
+                    <div class="tab-content" id="pills-tabContent">
+                        <!-- Thông tin khách hàng -->
+                        <div class="tab-pane fade show active" id="pills-info" role="tabpanel" aria-labelledby="pills-info-tab">
+                            <div class="form-group row mb-3">
+                                <label class="col-sm-4 col-form-label">Họ và Tên:</label>
+                                <div class="col-sm-5">
+                                    <input type="text" class="form-control" name="LastName" placeholder="Họ và Tên Lót" required />
+                                </div>
+                                <div class="col-sm-3">
+                                    <input type="text" class="form-control" name="FirstName" placeholder="Tên" required />
+                                </div>
+                            </div>
+                            <div class="form-group row mb-3">
+                                <label class="col-sm-4 col-form-label">Số Điện Thoại:</label>
+                                <div class="col-sm-8">
+                                    <input type="tel" class="form-control" name="PhoneNumber" placeholder="Số điện thoại" required />
+                                </div>
+                            </div>
+                            <div class="form-group row mb-3">
+                                <label class="col-sm-4 col-form-label">Email:</label>
+                                <div class="col-sm-8">
+                                    <input type="email" class="form-control" name="Email" placeholder="Email" required />
+                                </div>
+                            </div>
+                            <div class="form-group row mb-3">
+                                <label class="col-sm-4 col-form-label">Kích hoạt:</label>
+                                <div class="col-sm-8">
+                                    <select class="form-control" name="isActive" required>
+                                        <option value="true" selected>Được phép</option>
+                                        <option value="false">Không được phép</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group row mb-3">
+                                <label class="col-sm-4 col-form-label">Ảnh đại diện:</label>
+                                <div class="col-sm-8">
+                                    <div class="preview-container">
+                                        <img src="~/Upload/Avatar/none.jpg" alt="Avatar Preview" id="avatarPreview" class="avatar-preview avatar-img rounded-circle" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="avatarInput" class="form-label">Chọn ảnh đại diện</label>
+                                        <input type="file" class="form-control" id="avatarInput" name="Image" accept="image/*" />
+                                        <p>Vui lòng chọn ảnh có định dạng(.jpg .png .jpeg)</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Địa chỉ -->
+                        <div class="tab-pane fade" id="pills-address" role="tabpanel" aria-labelledby="pills-address-tab">
+                            <div class="form-group row mb-3">
+                                <label class="col-sm-4 col-form-label">Số nhà:</label>
+                                <div class="col-sm-8">
+                                    <input type="text" class="form-control" name="street" placeholder="Số nhà" />
+                                </div>
+                            </div>
+                            <div class="form-group row mb-3">
+                                <label class="col-sm-4 col-form-label">Tỉnh/Thành:</label>
+                                <div class="col-sm-8">
+                                    <select id="citySelect" class="form-control selectpicker" data-live-search="true" title="Chọn Thành phố" required>
+                                        <!-- Tùy chọn sẽ được thêm vào đây -->
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group row mb-3">
+                                <label class="col-sm-4 col-form-label">Quận/Huyện:</label>
+                                <div class="col-sm-8">
+                                    <select id="districtSelect" class="form-control selectpicker" data-live-search="true" title="Chọn Quận/Huyện" required>
+                                        <!-- Tùy chọn sẽ được thêm vào đây -->
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group row mb-3">
+                                <label class="col-sm-4 col-form-label">Phường/Xã:</label>
+                                <div class="col-sm-8">
+                                    <select id="wardSelect" class="form-control selectpicker" data-live-search="true" title="Chọn Phường/Xã" required>
+                                        <!-- Tùy chọn sẽ được thêm vào đây -->
+                                    </select>
+                                </div>
+                            </div>
+
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="loading-container" style="display:none; text-align:center;">
+                    <div class="loadingio-spinner-double-ring-2by998twmg8">
+                        <div class="ldio-yzaezf3dcmj">
+                            <div></div>
+                            <div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" id="update" class="btn btn-success" style="display:none">Lưu thay đổi</button>
+                    <button type="submit" id="add" class="btn btn-success">Thêm mới</button>
+
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- jQuery Script -->
+@* jQuery Code *@
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script src="~/js/provincevn.js"></script>
+@* <script type="text/javascript">
+    $('#avatarInput').on('change', function (e) {
+        var reader = new FileReader();
+        reader.onload = function (event) {
+            $('#avatarPreview').attr('src', event.target.result); // Cập nhật ảnh xem trước
+        }
+        reader.readAsDataURL(e.target.files[0]); // Đọc file ảnh
+    });
+
+    // Sự kiện để phóng to ảnh khi bấm vào
+    $('#avatarPreview').on('click', function () {
+        var modal = $('<div class="image-modal"><span class="close">&times;</span><img class="modal-image" id="img01" /></div>');
+        $('body').append(modal); // Thêm modal vào body
+        $('#img01').attr('src', $(this).attr('src')); // Đặt ảnh phóng to
+        modal.fadeIn(); // Hiện modal
+
+        // Xóa modal khi bấm vào nút đóng
+        $('.close').on('click', function () {
+            modal.fadeOut(function () {
+                $(this).remove(); // Xóa modal khỏi DOM
+            });
+        });
+
+        // Đóng modal khi bấm ra ngoài
+        modal.on('click', function () {
+            $(this).fadeOut(function () {
+                $(this).remove(); // Xóa modal khỏi DOM
+            });
+        });
+    });
+
+    //Thêm Cate
+    $(document).ready(function () {
+        var province = '';
+        var district = '';
+        var ward = '';
+        var addressLine = '';
+
+        // Khi người dùng chọn hoặc bỏ chọn checkbox "skipAddress"
+        $('#skipAddress').change(function () {
+            if ($(this).is(':checked')) {
+                $('#pills-address-tab').hide(); // Ẩn tab Địa chỉ
+                // Vô hiệu hóa tất cả các trường nhập liệu trong tab Địa chỉ
+                $('#pills-address').find('input, select').prop('disabled', true);
+
+                // Clear giá trị của địa chỉ khi bỏ qua
+                province = '';
+                district = '';
+                ward = '';
+                addressLine = '';
+            } else {
+                $('#pills-address-tab').show(); // Hiển thị lại tab Địa chỉ
+                // Kích hoạt lại các trường nhập liệu trong tab Địa chỉ
+                $('#pills-address').find('input, select').prop('disabled', false);
+
+                // Kiểm tra xem các trường select đã được chọn chưa và cập nhật giá trị
+                updateAddressValues();
+            }
+        });
+
+
+        // Hàm cập nhật giá trị của địa chỉ
+        function updateAddressValues(formData) {
+            const province = $("#citySelect").val();
+            const district = $("#districtSelect").val();
+            const ward = $("#wardSelect").val();
+            const addressLine = $("input[name='street']").val();
+
+            // Thêm giá trị vào FormData
+            formData.append('Province', province);
+            formData.append('District', district);
+            formData.append('Ward', ward);
+            formData.append('AddressLine', addressLine);
+
+            console.log(province + "," + district + "," + ward + "," + addressLine);
+        }
+
+        var token = $('input[name="__RequestVerificationToken"]').val();
+
+        $('#addUserForm').on('submit', async function (event) {
+            event.preventDefault(); // Ngăn chặn hành động mặc định của form
+            $('.loading-container').show(); // Hiển thị biểu tượng loading
+
+            var formData = new FormData(this); // Tạo FormData từ form
+            updateAddressValues(formData);
+
+            // Lấy hình ảnh từ input file var imageFileInput = $("input[name='Image']")[0]; // Lấy phần tử input file
+            var imageFileInput = document.getElementById('avatarInput');
+            if (imageFileInput && imageFileInput.files.length > 0) { // Kiểm tra xem phần tử có tồn tại và có file
+                var imageFile = imageFileInput.files[0]; // Lấy file đầu tiên
+                formData.append('Image', imageFile); // Thêm hình ảnh vào FormData
+            }
+            // Gửi AJAX request
+            $.ajax({
+                method: 'POST',
+                url: 'Users/Create',
+                data: formData,
+                processData: false, // Ngăn jQuery tự động xử lý dữ liệu
+                contentType: false, // Ngăn jQuery tự động thiết lập Content-Type
+                headers: {
+                    "RequestVerificationToken": token // Thêm token vào header
+                },
+                success: function (response) {
+                    $('#UserModal').modal('hide');
+                    $('.loading-container').hide();
+                    location.reload();
+                },
+                error: function (xhr, status, error) {
+                    $('.loading-container').hide();
+                    alert('Đã xảy ra lỗi: ' + xhr.responseText);
+                    console.error('Error details:', error);
+                }
+            });
+        });
+
+</script> *@

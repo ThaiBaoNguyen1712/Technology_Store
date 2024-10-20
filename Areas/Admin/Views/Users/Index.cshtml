@@ -140,24 +140,44 @@
             }
         });
 
-        // Hàm lấy dữ liệu từ API (phải sử dụng async/await)
+        async function fetchStaticData() {
+            const response = await fetch('/Province_VN.json');
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return await response.json(); // Chuyển đổi phản hồi thành JSON
+        }
+
         async function getProvince(provinceId) {
-            const api = await fetch('https://provinces.open-api.vn/api/p/' + provinceId);
-            const data = await api.json(); // Chuyển đổi phản hồi thành JSON
-            return data;
+            const allData = await fetchStaticData();
+            return allData.find(province => province.code === provinceId);
         }
 
         async function getDistrict(districtId) {
-            const api = await fetch('https://provinces.open-api.vn/api/d/' + districtId);
-            const data = await api.json();
-            return data;
+            const allData = await fetchStaticData();
+            for (const province of allData) {
+                const district = province.districts.find(d => d.code === districtId);
+                if (district) {
+                    return district;
+                }
+            }
+            return null;
         }
 
         async function getWard(wardId) {
-            const api = await fetch('https://provinces.open-api.vn/api/w/' + wardId);
-            const data = await api.json();
-            return data;
+            const allData = await fetchStaticData();
+            for (const province of allData) {
+                for (const district of province.districts) {
+                    const ward = district.wards.find(w => w.code === wardId);
+                    if (ward) {
+                        return ward;
+                    }
+                }
+            }
+            return null;
         }
+
+
 
         // Xử lý sự kiện click cho nút chỉnh sửa
         $(document).on('click', '#editUs', async function () {
