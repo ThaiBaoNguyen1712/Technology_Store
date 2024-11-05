@@ -1,7 +1,7 @@
 ﻿
 <!-- Modal -->
 <div class="modal fade" id="BrandModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" style="min-width:80vw;">
+    <div class="modal-dialog modal-lg" style="min-width:70vw;">
         <form id="addBrandForm">
             <div class="modal-content">
                 <div class="modal-header">
@@ -31,19 +31,18 @@
                                     <input type="text" class="form-control" name="description" required />
                                 </div>
                             </div>
-
+                            <div class="form-group row mb-3">
+                                <label class="col-sm-4 col-form-label">Hình ảnh :</label>
+                                <div class="col-sm-8">
+                                    <img src="/Upload/Logo/none.jpg" id="ImageUrl" width="90" height="90" class="rounded border" alt="Image Preview" />
+                                    <input type="file" class="form-control" name="imageFile" accept="image/*" required />
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                 </div>
-                <div class="loading-container" style="display:none; text-align:center;">
-                    <div class="loadingio-spinner-double-ring-2by998twmg8">
-                        <div class="ldio-yzaezf3dcmj">
-                            <div></div>
-                            <div></div>
-                        </div>
-                    </div>
-                </div>
+           
                 <div class="modal-footer">
                     <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Hủy</button>
                    
@@ -68,17 +67,16 @@
             // Hiển thị biểu tượng loading
             $('.loading-container').show();
 
-            // Lấy dữ liệu từ form
-            var name = $("input[name='name']").val();
-            var description = $("input[name='description']").val();
-            // Gửi AJAX request
+            // Tạo FormData từ form
+            var formData = new FormData(this);
+
+            // Gửi AJAX request với dữ liệu FormData
             $.ajax({
                 method: 'POST',
                 url: 'Brands/create',
-                data: {
-                    name: name,
-                    description: description,
-                },
+                data: formData,
+                contentType: false, // Để jQuery không thiết lập content-type
+                processData: false, // Để jQuery không xử lý data
                 success: function (response) {
                     $('#BrandModal').modal('hide');
                     // Ẩn biểu tượng loading
@@ -94,21 +92,32 @@
             });
         });
 
+
         $(document).on('click', '#update', function () {
             $('.loading-container').show(); // Hiển thị loader
             var id_cate = $("input[name='brand_id']").val();
 
+            // Tạo FormData từ các trường cần thiết
+            var formData = new FormData();
+            formData.append('Name', $("input[name='name']").val());
+            formData.append('Description', $("input[name='description']").val());
+
+            // Thêm hình ảnh vào FormData nếu có
+            var imageFile = $("input[name='imageFile']").prop('files')[0];
+            if (imageFile) {
+                formData.append('imageFile', imageFile);
+            }
+
             $.ajax({
                 method: 'PUT', // Đảm bảo rằng bạn đang sử dụng PUT
                 url: 'Brands/Update/' + id_cate,
-                contentType: "application/json", // Thêm dòng này
-                data: JSON.stringify({ // Chuyển đổi đối tượng thành JSON
-                    Name: $("input[name='name']").val(),
-                    Description: $("input[name='description']").val(),
-         
-                }),
+                data: formData,
+                contentType: false, // Để jQuery không thiết lập content-type
+                processData: false, // Để jQuery không xử lý data
                 success: function (response) {
                     $('#BrandModal').modal('hide');
+                    // Ẩn biểu tượng loading
+                    $('.loading-container').hide();
                     location.reload();
                 },
                 error: function (xhr, status, error) {
@@ -117,6 +126,7 @@
                 }
             });
         });
+
 
     });
 

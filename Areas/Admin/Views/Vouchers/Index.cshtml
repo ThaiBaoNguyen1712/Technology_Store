@@ -127,13 +127,12 @@
 
             $.ajax({
                 method: 'GET',
-                url: 'Vouchers/Edit/' + id_vou, // Lấy dữ liệu từ server
+                url: '@Url.Action("Edit","Vouchers")',
+                data: { id: id_vou },// Lấy dữ liệu từ server
                 success: function (response) {
                     // Đặt giá trị của các input và select
                     $('input[name="name"]').val(response.name); // Đặt giá trị cho input name
                     $('input[name="code"]').val(response.code);
-
-
 
                     // Kiểm tra nếu response.promotion tồn tại
                     if (response.promotion) {

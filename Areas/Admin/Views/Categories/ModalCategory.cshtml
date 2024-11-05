@@ -1,7 +1,7 @@
 ﻿
 <!-- Modal -->
 <div class="modal fade" id="CategoryModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" style="min-width:80vw;">
+    <div class="modal-dialog modal-lg" style="min-width:70vw;">
         <form id="addCategoryForm">
             <div class="modal-content">
                 <div class="modal-header">
@@ -14,47 +14,49 @@
 
                         @*Lưu trữ ID Cate*@
                         <input type="hidden" name="cate_id"/>
+                        <form id="CategoryForm" enctype="multipart/form-data">
+                            <div class="col-12">
+                                <!-- Tên danh mục -->
+                                <div class="form-group row mb-3">
+                                    <label class="col-sm-4 col-form-label">Tên danh mục :</label>
+                                    <div class="col-sm-8">
+                                        <input type="text" class="form-control" name="name" required />
+                                    </div>
 
-                        <div class="col-12">
-                            <!-- Tên danh mục -->
-                            <div class="form-group row mb-3">
-                                <label class="col-sm-4 col-form-label">Tên danh mục :</label>
-                                <div class="col-sm-8">
-                                    <input type="text" class="form-control" name="name" required />
                                 </div>
+                                <!-- Mô tả -->
+                                <div class="form-group row mb-3">
+                                    <label class="col-sm-4 col-form-label">Mô tả :</label>
+                                    <div class="col-sm-8">
+                                        <input type="text" class="form-control" name="description" required />
+                                    </div>
+                                </div>
+                                <!-- Hiển thị -->
+                                <div class="form-group row mb-3">
+                                    <label class="col-sm-4 col-form-label">Cho phép hiển thị:</label>
+                                    <div class="col-sm-8">
+                                        <select class="form-control" name="visible">
+                                            <option value="1">Cho phép</option>
+                                            <option value="0">Không cho phép</option>
 
-                            </div>
-                            <!-- Mô tả -->
-                            <div class="form-group row mb-3">
-                                <label class="col-sm-4 col-form-label">Mô tả :</label>
-                                <div class="col-sm-8">
-                                    <input type="text" class="form-control" name="description" required />
+                                        </select>
+                                    </div>
+                                </div>
+                                @*     Hình ảnh *@
+                                <div class="form-group row mb-3">
+                                    <label class="col-sm-4 col-form-label">Hình ảnh :</label>
+                                    <div class="col-sm-8">
+                                        <img src="/Upload/Logo/none.jpg" id="ImageUrl" width="90" height="90" class="rounded border" alt="Image Preview" />
+                                        <input type="file" class="form-control" name="imageFile" required />
+                                    </div>
                                 </div>
                             </div>
-                            <!-- Hiển thị -->
-                            <div class="form-group row mb-3">
-                                <label class="col-sm-4 col-form-label">Cho phép hiển thị:</label>
-                                <div class="col-sm-8">
-                                    <select class="form-control" name="visible">
-                                        <option value="1">Cho phép</option>
-                                        <option value="0">Không cho phép</option>
-
-                                    </select>
-                                </div>
-                            </div>
-
-                        </div>
+                        </form>
+                    
                     </div>
 
                 </div>
-                <div class="loading-container" style="display:none; text-align:center;">
-                    <div class="loadingio-spinner-double-ring-2by998twmg8">
-                        <div class="ldio-yzaezf3dcmj">
-                            <div></div>
-                            <div></div>
-                        </div>
-                    </div>
-                </div>
+
                 <div class="modal-footer">
                     <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Hủy</button>
                    
@@ -79,22 +81,18 @@
             // Hiển thị biểu tượng loading
             $('.loading-container').show();
 
-            // Lấy dữ liệu từ form
-            var name = $("input[name='name']").val();
-            var description = $("input[name='description']").val();
-            var visible = $("select[name='visible']").val();
+            // Tạo FormData từ form
+            var formData = new FormData(this);
 
-            // Gửi AJAX request
+            // Gửi AJAX request với dữ liệu FormData
             $.ajax({
                 method: 'POST',
                 url: 'Categories/create',
-                data: {
-                    name: name,
-                    description: description,
-                    visible: visible
-                },
+                data: formData,
+                contentType: false, // Để jQuery không thiết lập content-type
+                processData: false, // Để jQuery không xử lý data
                 success: function (response) {
-                    $('#ProductModal').modal('hide');
+                    $('#CategoryModal').modal('hide');
                     // Ẩn biểu tượng loading
                     $('.loading-container').hide();
                     location.reload();
@@ -108,21 +106,31 @@
             });
         });
 
+
         $(document).on('click', '#update', function () {
             $('.loading-container').show(); // Hiển thị loader
             var id_cate = $("input[name='cate_id']").val();
 
+            // Tạo FormData để chứa dữ liệu
+            var formData = new FormData();
+            formData.append("Name", $("input[name='name']").val());
+            formData.append("Description", $("input[name='description']").val());
+            formData.append("Visible", $("select[name='visible']").val());
+
+            // Kiểm tra nếu có file ảnh và thêm vào FormData
+            var imageFile = $("input[name='imageFile']")[0].files[0];
+            if (imageFile) {
+                formData.append("imageFile", imageFile);
+            }
+
             $.ajax({
-                method: 'PUT', // Đảm bảo rằng bạn đang sử dụng PUT
+                method: 'PUT', // Đảm bảo rằng bạn đang sử dụng PUT (hoặc POST nếu không hỗ trợ PUT)
                 url: 'Categories/Update/' + id_cate,
-                contentType: "application/json", // Thêm dòng này
-                data: JSON.stringify({ // Chuyển đổi đối tượng thành JSON
-                    Name: $("input[name='name']").val(),
-                    Description: $("input[name='description']").val(),
-                    Visible: $("select[name='visible']").val()
-                }),
+                data: formData,
+                contentType: false, // Đặt thành false để jQuery không tự động thêm tiêu đề Content-Type
+                processData: false, // Đặt thành false để không xử lý dữ liệu
                 success: function (response) {
-                    $('#ProductModal').modal('hide');
+                    $('#CategoryModal').modal('hide');
                     location.reload();
                 },
                 error: function (xhr, status, error) {
@@ -131,6 +139,7 @@
                 }
             });
         });
+
 
     });
 

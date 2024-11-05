@@ -140,7 +140,7 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script src="~/js/provincevn.js"></script>
-@* <script type="text/javascript">
+<script type="text/javascript">
     $('#avatarInput').on('change', function (e) {
         var reader = new FileReader();
         reader.onload = function (event) {
@@ -235,7 +235,7 @@
             // Gửi AJAX request
             $.ajax({
                 method: 'POST',
-                url: 'Users/Create',
+                url: 'Admin/Users/Create',
                 data: formData,
                 processData: false, // Ngăn jQuery tự động xử lý dữ liệu
                 contentType: false, // Ngăn jQuery tự động thiết lập Content-Type
@@ -255,4 +255,4 @@
             });
         });
 
-</script> *@
+</script>

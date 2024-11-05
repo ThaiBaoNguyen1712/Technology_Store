@@ -65,9 +65,15 @@
                                             <td>@product.SellPrice?.ToString("C0", new CultureInfo("vi-VN"))</td>
                                             <td>@product.Stock</td>
                                             <td>
-                                                <span class="badge @(product.Status == "Active" ? "bg-success" : "bg-danger")">
+                                                <span class="badge @(product.Status == "available" ? "bg-success" :
+                                                      product.Status == "outstock" ? "bg-danger" :
+                                                      product.Status == "preorder" ? "bg-warning" :
+                                                      product.Status == "discontinued" ? "bg-secondary" :
+                                                      "bg-dark")">
                                                     @product.Status
                                                 </span>
+
+
                                             </td>
                                             <td>
                                                 <div class="form-button-action">
@@ -102,15 +108,16 @@
     function editProduct(id) {
         $.ajax({
             method: "GET",
-            url: "Products/Edit/" + id,
+            url: "@Url.Action("Edit", "Products", new { area = "Admin", id = "__id__" })".replace("__id__", id),
             success: function (response) {
-                window.location.href = "Products/Edit/" + id;
+                window.location.href = "@Url.Action("Edit", "Products", new { area = "Admin", id = "__id__" })".replace("__id__", id);
             },
             error: function (jqXHR, textStatus, errorThrown) {
                 console.error("Lỗi khi gọi API: " + textStatus, errorThrown);
                 alert("Có lỗi xảy ra khi lấy dữ liệu sản phẩm.");
             }
         });
+
     }
     function deleteProduct(id) { 
         if (confirm("Bạn có chắc rằng muốn xóa sản phẩm này")) {

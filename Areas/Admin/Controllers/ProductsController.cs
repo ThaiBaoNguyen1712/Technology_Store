@@ -12,16 +12,16 @@ namespace Tech_Store.Areas.Admin.Controllers
     [Area("Admin")]
     [Route("Admin/[controller]")]
 
-    public class ProductsController : Controller
+    public class ProductsController : BaseAdminController
     {
-        private readonly ApplicationDbContext _context;
-		private readonly IConfiguration _configuration;
+        private readonly IConfiguration _configuration;
 
-		public ProductsController(ApplicationDbContext context, IConfiguration configuration)
+        public ProductsController(ApplicationDbContext context, IConfiguration configuration) : base(context)
         {
             _configuration = configuration;
-            _context = context;
         }
+
+
         private List<Category> GetListCategories()
         {
             // Chọn nhiều trường từ Categories
@@ -57,14 +57,35 @@ namespace Tech_Store.Areas.Admin.Controllers
                 FirstOrDefaultAsync(x => x.ProductId == id);
             return View(detail);
         }
-
-        [Route("")]
-        [Route("Index")]
-        public async Task<IActionResult> Index()
+        //Đang Phát Triển
+        [Route("StockManager")]
+        public IActionResult StockManager()
         {
-            var list_products = _context.Products.Include(p => p.Brand).Include(p => p.Category).OrderByDescending(p => p.ProductId).ToList();
+            return View();
+        }
+
+        [Route("{status?}")]
+        [Route("Index/{status?}")] // Thêm dấu hỏi để status có thể là null
+        public async Task<IActionResult> Index(string? status)
+        {
+            // Khai báo danh sách sản phẩm
+            IQueryable<Product> query = _context.Products
+                .Include(p => p.Brand)
+                .Include(p => p.Category)
+                .OrderByDescending(p => p.ProductId);
+
+            // Nếu status không phải là null và không phải là "all", lọc theo trạng thái
+            if (!string.IsNullOrEmpty(status) && status != "all")
+            {
+                query = query.Where(p => p.Status == status);
+            }
+
+            // Lấy danh sách sản phẩm từ cơ sở dữ liệu
+            var list_products = await query.ToListAsync();
+
             return View(list_products);
         }
+
         [Route("Create")]
         public async Task<IActionResult> Create()
         {
@@ -190,7 +211,7 @@ namespace Tech_Store.Areas.Admin.Controllers
         }
 
         [HttpGet("Edit/{id}")]
-        public async Task<IActionResult> Edit(int? id)
+        public async Task<IActionResult> Edit(int id)
         {
             var _product = await _context.Products.Include(p => p.VarientProducts)
                 .Include(p => p.Brand).Include(p => p.Category).Include(p => p.Galleries)

@@ -23,6 +23,12 @@ public partial class User
 
     public DateTime? LastLogin { get; set; }
 
+    public string? VerificationCode { get; set; }
+
+    public bool? IsVerified { get; set; }
+
+    public DateTime? CreatedVerify { get; set; }
+
     public bool? IsActive { get; set; }
 
     public virtual ICollection<Address> Addresses { get; set; } = new List<Address>();

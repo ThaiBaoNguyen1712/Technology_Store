@@ -9,6 +9,8 @@ public partial class OrderItem
 
     public int? OrderId { get; set; }
 
+    public int? VarientProductId { get; set; }
+
     public int? ProductId { get; set; }
 
     public int Quantity { get; set; }
@@ -18,4 +20,6 @@ public partial class OrderItem
     public virtual Order? Order { get; set; }
 
     public virtual Product? Product { get; set; }
+
+    public virtual VarientProduct? VarientProduct { get; set; }
 }

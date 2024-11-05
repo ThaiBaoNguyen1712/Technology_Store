@@ -74,7 +74,7 @@
                             <option value="preorder" @(Model.Status == "preorder" ? "selected" : "")> Đặt trước </option>
                             <option value="available" @(Model.Status == "available" ? "selected" : "")> Có sẵn </option>
                             <option value="outstock" @(Model.Status == "outstock" ? "selected" : "")> Hết hàng </option>
-                            <option value="StopSell" @(Model.Status == "StopSell" ? "selected" : "")> Ngưng bán </option>
+                            <option value="StopSell" @(Model.Status == "discontinued" ? "selected" : "")> Ngưng bán </option>
                         </select>
                     </div>
                 </div>
@@ -290,7 +290,7 @@
                                     <td>@(index + 1)</td>
                                     <td style="display:none">
                                         <input type="hidden" name="VarientProducts[@index].VarientId" value="@varient.VarientId" />
-                                        <input type="hidden" name="VarientProducts[@index].VarientId" value="@varient.VarientId" />
+                                        <input type="hidden" name="VarientProducts[@index].ProductId" value="@varient.ProductId" />
                                         <input type="hidden" name="VarientProducts[@index].Attributes" value="@varient.Attributes" />
                                     </td>
                                     <td>@varient.Attributes</td>

@@ -76,15 +76,15 @@
             <div class="sidebar-wrapper scrollbar scrollbar-inner">
                 <div class="sidebar-content">
                     <ul class="nav nav-secondary">
-                        <li class="nav-item active">
-                            <a href="#dashboard"
+                        <li class="nav-item">
+                            <a href="/admin"
                                class="collapsed">
                                 <i class="fas fa-home"></i>
                                 <p>Bảng điều khiển</p>
                             </a>
 
                         </li>
-                        <li class="nav-item active">
+                        <li class="nav-item">
                             <a href="~/Admin/Pos"
                                class="collapsed">
                                 <i class="fas fa-store"></i>
@@ -101,7 +101,7 @@
                         </li>
                         <li class="nav-item">
                             <a data-bs-toggle="collapse" href="#base">
-                                <i class="fas fa-layer-group"></i>
+                               <i class="fa fa-chart-bar me-2"></i> 
                                 <p>Thống kê</p>
                                 <span class="caret"></span>
                             </a>
@@ -111,146 +111,138 @@
                                         <a href="components/avatars.html">
                                             <span class="sub-item">Avatars</span>
                                         </a>
-                                    </li>
-                                    <li>
-                                        <a href="components/buttons.html">
-                                            <span class="sub-item">Buttons</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="~/Admin/components/gridsystem.html">
-                                            <span class="sub-item">Grid System</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="~/Admin/components/panels.html">
-                                            <span class="sub-item">Panels</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="components/notifications.html">
-                                            <span class="sub-item">Notifications</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="components/sweetalert.html">
-                                            <span class="sub-item">Sweet Alert</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="components/font-awesome-icons.html">
-                                            <span class="sub-item">Font Awesome Icons</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="components/simple-line-icons.html">
-                                            <span class="sub-item">Simple Line Icons</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="components/typography.html">
-                                            <span class="sub-item">Typography</span>
-                                        </a>
-                                    </li>
+                                    </li
                                 </ul>
                             </div>
                         </li>
                         <li class="nav-item">
-                            <a data-bs-toggle="collapse" href="#sidebarLayouts">
-                                <i class="fas fa-th-list"></i>
+                            <a data-bs-toggle="collapse" href="#categories">
+                                <i class="fas fa-th-list me-2"></i>
                                 <p>Danh mục</p>
                                 <span class="caret"></span>
                             </a>
-                            <div class="collapse" id="sidebarLayouts">
+                            <div class="collapse" id="categories">
                                 <ul class="nav nav-collapse">
                                     <li>
-                                        <a href="~/~/Admin/Product/Index">
-                                            <span class="sub-item">Thao tác</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="icon-menu.html">
-                                            <span class="sub-item">Icon Menu</span>
+                                        <a href="~/Admin/Categories">
+                                            <span class="sub-item">Quản Lý Danh Mục</span>
                                         </a>
                                     </li>
                                 </ul>
                             </div>
                         </li>
                         <li class="nav-item">
-                            <a data-bs-toggle="collapse" href="#forms">
-                                <i class="fas fa-pen-square"></i>
+                            <a data-bs-toggle="collapse" href="#brands">
+                               <i class="fas fa-tags me-2"></i>
+                                <p>Thương hiệu</p>
+                                <span class="caret"></span>
+                            </a>
+                            <div class="collapse" id="brands">
+                                <ul class="nav nav-collapse">
+                                    <li>
+                                        <a href="~/Admin/Brands">
+                                            <span class="sub-item">Quản Lý thương hiệu</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                        <li class="nav-item">
+                            <a data-bs-toggle="collapse" href="#products">
+                                <i class="fas fa-pen-square me-2"></i>
                                 <p>Sản phẩm</p>
                                 <span class="caret"></span>
                             </a>
-                            <div class="collapse" id="forms">
+                            <div class="collapse" id="products">
                                 <ul class="nav nav-collapse">
                                     <li>
-                                        <a href="forms/forms.html">
-                                            <span class="sub-item">Basic Form</span>
+                                            <a href="~/Admin/Products/StockManager">
+                                        <span class="sub-item">Nhập/Xuất Hàng</span>
+                                    </a>
+                                      <a href="~/Admin/Products/all">
+                                            <span class="sub-item">Tổng Sản Phẩm <span class="badge badge-dark">@ViewBag.Product_all</span></span>
                                         </a>
+                                        <a href="~/Admin/Products/available">
+                                            <span class="sub-item">SP Sẵn Hàng <span class="badge badge-success">@ViewBag.Product_available</span></span>
+                                        </a>
+                                        <a href="~/Admin/Products/outstock">
+                                            <span class="sub-item">SP Hết Hàng <span class="badge badge-danger">@ViewBag.Product_outstock</span></span>
+                                        </a>
+                                        <a href="~/Admin/Products/preorder">
+                                            <span class="sub-item">SP Yêu Cầu Đặt Trước <span class="badge badge-warning">@ViewBag.Product_preorder</span></span>
+                                        </a>
+                                        <a href="~/Admin/Products/discontinued">
+                                            <span class="sub-item">SP Ngừng Bán <span class="badge badge-secondary">@ViewBag.Product_discontinued</span></span>
+                                        </a>
+
                                     </li>
                                 </ul>
                             </div>
                         </li>
                         <li class="nav-item">
-                            <a data-bs-toggle="collapse" href="#tables">
-                                <i class="fas fa-table"></i>
+                            <a data-bs-toggle="collapse" href="#customer">
+                                <i class="fa fa-user me-2"></i> 
                                 <p>Khách hàng</p>
                                 <span class="caret"></span>
                             </a>
-                            <div class="collapse" id="tables">
+                            <div class="collapse" id="customer">
                                 <ul class="nav nav-collapse">
                                     <li>
-                                        <a href="tables/tables.html">
-                                            <span class="sub-item">Basic Table</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="tables/datatables.html">
-                                            <span class="sub-item">Datatables</span>
+                                        <a href="~/Admin/Users">
+                                            <span class="sub-item">Xem Khách Hàng</span>
                                         </a>
                                     </li>
                                 </ul>
                             </div>
                         </li>
                         <li class="nav-item">
-                            <a data-bs-toggle="collapse" href="#tables">
-                                <i class="fas fa-table"></i>
+                            <a data-bs-toggle="collapse" href="#orders">
+                               <i class="fa fa-shopping-cart me-2"></i>
                                 <p>Đơn hàng</p>
                                 <span class="caret"></span>
                             </a>
-                            <div class="collapse" id="tables">
+                            <div class="collapse" id="orders">
                                 <ul class="nav nav-collapse">
-                                    <li>
-                                        <a href="tables/tables.html">
-                                            <span class="sub-item">Basic Table</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="tables/datatables.html">
-                                            <span class="sub-item">Datatables</span>
-                                        </a>
-                                    </li>
+                                   <li>
+                                    <a href="~/Admin/Orders/all">
+                                        <span class="sub-item">Tổng Đơn Hàng <span class="badge badge-dark">@ViewBag.Order_all</span></span>
+                                    </a>
+                                    <a href="~/Admin/Orders/pending">
+                                        <span class="sub-item">Đang xử lý <span class="badge badge-primary">@ViewBag.Order_pending</span></span>
+                                    </a>
+                                    <a href="~/Admin/Orders/confirmed">
+                                        <span class="sub-item">Đã xác nhận <span class="badge badge-info">@ViewBag.Order_confirmed</span></span>
+                                    </a>
+                                    <a href="~/Admin/Orders/shipped">
+                                        <span class="sub-item">Đã vận chuyển <span class="badge badge-warning">@ViewBag.Order_shipped</span></span>
+                                    </a>
+                                    <a href="~/Admin/Orders/completed">
+                                        <span class="sub-item">Hoàn tất <span class="badge badge-success">@ViewBag.Order_completed</span></span>
+                                    </a>
+                                    <a href="~/Admin/Orders/cancelled">
+                                        <span class="sub-item">Đã hủy <span class="badge badge-danger">@ViewBag.Order_cancelled</span></span>
+                                    </a>
+                                    <a href="~/Admin/Orders/refunded">
+                                        <span class="sub-item">Hoàn Tiền <span class="badge badge-secondary">@ViewBag.Order_refunded</span></span>
+                                    </a>
+                                </li>
+
+                                  
                                 </ul>
                             </div>
                         </li>
 
                         <li class="nav-item">
-                            <a data-bs-toggle="collapse" href="#maps">
-                                <i class="fas fa-map-marker-alt"></i>
+                            <a data-bs-toggle="collapse" href="#vouchers">
+                               <i class="fa fa-ticket-alt me-2"></i>
                                 <p>Voucher</p>
                                 <span class="caret"></span>
                             </a>
-                            <div class="collapse" id="maps">
+                            <div class="collapse" id="vouchers">
                                 <ul class="nav nav-collapse">
                                     <li>
-                                        <a href="maps/googlemaps.html">
-                                            <span class="sub-item">Google Maps</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="maps/jsvectormap.html">
-                                            <span class="sub-item">Jsvectormap</span>
+                                        <a href="~/Admin/Vouchers/Index">
+                                            <span class="sub-item">Mã Voucher</span>
                                         </a>
                                     </li>
                                 </ul>
@@ -653,13 +645,13 @@
                                    href="#"
                                    aria-expanded="false">
                                     <div class="avatar-sm">
-                                        <img src="assets/img/profile.jpg"
+                                        <img src="/Upload/Avatar/@ViewBag.User.Img"
                                              alt="..."
                                              class="avatar-img rounded-circle" />
                                     </div>
                                     <span class="profile-username">
                                         <span class="op-7">Hi,</span>
-                                        <span class="fw-bold">Hizrian</span>
+                                        <span class="fw-bold">@ViewBag.User.LastName @ViewBag.User.FirstName</span>
                                     </span>
                                 </a>
                                 <ul class="dropdown-menu dropdown-user animated fadeIn">
@@ -667,24 +659,28 @@
                                     <li>
                                         <div class="user-box">
                                             <div class="avatar-lg">
-                                                <img src="assets/img/profile.jpg"
+                                                <img src="/Upload/Avatar/@ViewBag.User.Img"
                                                      alt="image profile"
                                                      class="avatar-img rounded" />
                                             </div>
                                             <div class="u-text">
-                                                <h4>Hizrian</h4>
-                                                <p class="text-muted">hello@example.com</p>
+                                                <h4>@ViewBag.User.LastName @ViewBag.User.FirstName</h4>
+                                                <p class="text-muted">@ViewBag.User.Email</p>
                                                 <a href="profile.html"
-                                                   class="btn btn-xs btn-secondary btn-sm">View Profile</a>
+                                                   class="btn btn-xs btn-secondary btn-sm">Xem thông tin</a>
                                             </div>
                                         </div>
                                     </li>
                                     <li>
                                         <div class="dropdown-divider"></div>
 
-                                        <a class="dropdown-item" href="#">Account Setting</a>
-                                        <div class="dropdown-divider"></div>
-                                        <a class="dropdown-item" href="#">Logout</a>
+                                     <a class="dropdown-item" href="#"><i class="fas fa-user-cog pe-2"></i>Thiết lập tài khoản</a>
+                                    <div class="dropdown-divider"></div>
+                                       <a class="dropdown-item" href="/"><i class="fa fa-angle-double-right pe-2" aria-hidden="true"></i>
+                                            Đến trang bán hàng</a>
+                                     <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt pe-2"></i>Đăng xuất</a>
+
                                     </li>
                     </div>
                     </ul>
@@ -705,138 +701,52 @@
         </div>
 
 
-        <footer class="footer">
-
-    </div>
-
-    <!-- Custom template | don't include it in your project! -->
-    <div class="custom-template">
-        <div class="title">Settings</div>
-        <div class="custom-content">
-            <div class="switcher">
-                <div class="switch-block">
-                    <h4>Logo Header</h4>
-                    <div class="btnSwitch">
-                        <button type="button"
-                                class="selected changeLogoHeaderColor"
-                                data-color="dark"></button>
-                        <button type="button"
-                                class="changeLogoHeaderColor"
-                                data-color="blue"></button>
-                        <button type="button"
-                                class="changeLogoHeaderColor"
-                                data-color="purple"></button>
-                        <button type="button"
-                                class="changeLogoHeaderColor"
-                                data-color="light-blue"></button>
-                        <button type="button"
-                                class="changeLogoHeaderColor"
-                                data-color="green"></button>
-                        <button type="button"
-                                class="changeLogoHeaderColor"
-                                data-color="orange"></button>
-                        <button type="button"
-                                class="changeLogoHeaderColor"
-                                data-color="red"></button>
-                        <button type="button"
-                                class="changeLogoHeaderColor"
-                                data-color="white"></button>
-                        <br />
-                        <button type="button"
-                                class="changeLogoHeaderColor"
-                                data-color="dark2"></button>
-                        <button type="button"
-                                class="changeLogoHeaderColor"
-                                data-color="blue2"></button>
-                        <button type="button"
-                                class="changeLogoHeaderColor"
-                                data-color="purple2"></button>
-                        <button type="button"
-                                class="changeLogoHeaderColor"
-                                data-color="light-blue2"></button>
-                        <button type="button"
-                                class="changeLogoHeaderColor"
-                                data-color="green2"></button>
-                        <button type="button"
-                                class="changeLogoHeaderColor"
-                                data-color="orange2"></button>
-                        <button type="button"
-                                class="changeLogoHeaderColor"
-                                data-color="red2"></button>
-                    </div>
+        <div class="footer">
+            <div class="row justify-content-between align-items-center">
+                <div class="col-lg-4 mb-3 mb-lg-0">
+                    <p class="font-size-sm mb-0 title-color text-center text-lg-left">
+                        © Mua sắm online. <span class="d-none d-sm-inline-block">Thai Bao Nguyen</span>
+                    </p>
                 </div>
-                <div class="switch-block">
-                    <h4>Navbar Header</h4>
-                    <div class="btnSwitch">
-                        <button type="button"
-                                class="changeTopBarColor"
-                                data-color="dark"></button>
-                        <button type="button"
-                                class="changeTopBarColor"
-                                data-color="blue"></button>
-                        <button type="button"
-                                class="changeTopBarColor"
-                                data-color="purple"></button>
-                        <button type="button"
-                                class="changeTopBarColor"
-                                data-color="light-blue"></button>
-                        <button type="button"
-                                class="changeTopBarColor"
-                                data-color="green"></button>
-                        <button type="button"
-                                class="changeTopBarColor"
-                                data-color="orange"></button>
-                        <button type="button"
-                                class="changeTopBarColor"
-                                data-color="red"></button>
-                        <button type="button"
-                                class="selected changeTopBarColor"
-                                data-color="white"></button>
-                        <br />
-                        <button type="button"
-                                class="changeTopBarColor"
-                                data-color="dark2"></button>
-                        <button type="button"
-                                class="changeTopBarColor"
-                                data-color="blue2"></button>
-                        <button type="button"
-                                class="changeTopBarColor"
-                                data-color="purple2"></button>
-                        <button type="button"
-                                class="changeTopBarColor"
-                                data-color="light-blue2"></button>
-                        <button type="button"
-                                class="changeTopBarColor"
-                                data-color="green2"></button>
-                        <button type="button"
-                                class="changeTopBarColor"
-                                data-color="orange2"></button>
-                        <button type="button"
-                                class="changeTopBarColor"
-                                data-color="red2"></button>
-                    </div>
-                </div>
-                <div class="switch-block">
-                    <h4>Sidebar</h4>
-                    <div class="btnSwitch">
-                        <button type="button"
-                                class="changeSideBarColor"
-                                data-color="white"></button>
-                        <button type="button"
-                                class="selected changeSideBarColor"
-                                data-color="dark"></button>
-                        <button type="button"
-                                class="changeSideBarColor"
-                                data-color="dark2"></button>
+                <div class="col-lg-8">
+                    <div class="d-flex justify-content-center justify-content-lg-end">
+                        <!-- List Dot -->
+                        <ul class="list-inline list-footer-icon justify-content-center justify-content-lg-start mb-0">
+                            <li class="list-inline-item pe-2">
+                                <a class="fw-bold" href="https://santhuongmai.citgroup.vn/admin/business-settings/web-config">
+                                    <i class="fas fa-cog"></i>
+                                    Thiết lập website
+                                </a>
+                            </li>
+
+                            <li class="list-inline-item pe-2">
+                                <a class="fw-bold" href="https://santhuongmai.citgroup.vn/admin/profile/update/1">
+                                    <i class="fas fa-user"></i>
+                                    Hồ sơ
+                                </a>
+                            </li>
+
+                            <li class="list-inline-item pe-2">
+                                <a class="fw-bold" href="https://santhuongmai.citgroup.vn/admin/dashboard">
+                                    <i class="fas fa-home"></i>
+                                    Trang chủ
+                                </a>
+                            </li>
+
+                            <li class="list-inline-item">
+                                <label class="badge badge-soft-version text-capitalize">
+                                    Version 1.0
+                                </label>
+                            </li>
+                        </ul>
+                        <!-- End List Dot -->
                     </div>
                 </div>
             </div>
         </div>
-        <div class="custom-toggle">
-            <i class="icon-settings"></i>
-        </div>
+
     </div>
-    <!-- End Custom template -->
+
     </div>
     <!--   Core JS Files   -->
     <script src="~/Admin/assets/js/core/jquery-3.7.1.min.js"></script>

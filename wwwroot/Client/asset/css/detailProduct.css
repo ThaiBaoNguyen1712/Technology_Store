@@ -1,0 +1,453 @@
+﻿/* Variables */
+:root {
+    --primary-color: #007bff;
+    --secondary-color: orangered;
+    --text-color: #333;
+    --light-bg: #f8f9fa;
+    --border-color: #e1e1e1;
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+    --transition-base: all 0.3s ease;
+}
+
+/* Gallery Section */
+.gallery-wrapper {
+    display: flex;
+    gap: 20px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.thumbnail-container-wrapper {
+    display: flex;
+    flex-direction: column;
+    width: 80px;
+    position: relative;
+}
+
+.thumbnail-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: 400px;
+    padding: 10px 0;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+    .thumbnail-container::-webkit-scrollbar {
+        display: none;
+    }
+
+.thumbnail {
+    width: 80px;
+    height: 80px;
+    background-size: cover;
+    background-position: center;
+    border: 2px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: var(--transition-base);
+    flex-shrink: 0;
+}
+
+    .thumbnail:hover {
+        opacity: 0.8;
+    }
+
+    .thumbnail.active {
+        border-color: var(--primary-color);
+        transform: scale(1.1);
+    }
+/* Thẻ biến thể */
+.varient-card {
+    width: 160px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    text-align: center;
+    border: 1px solid #e1e1e1;
+    position: relative;
+    cursor: pointer;
+}
+
+.icon-container {
+    font-size: 24px;
+    color: #007bff;
+    margin-bottom: 10px;
+}
+.product-info .price {
+    font-size: 26px;
+    font-weight: bold;
+    color: #e74c3c;
+    margin-bottom: 20px;
+}
+/* Hiệu ứng cho thẻ được chọn */
+.varient-card.selected {
+    background-color: orangered; /* Màu nền nổi bật */
+    color: #fff; /* Màu chữ sáng */
+}
+
+.varient-attributes {
+    font-size: 16px;
+    font-weight: bold;
+    color: inherit;
+    margin-bottom: 8px;
+}
+
+/* Buttons Buy & Cart */
+.btn-buy-now {
+    background: linear-gradient(45deg, #ff4d4d, #ff1a1a);
+    transition: all 0.3s ease;
+}
+
+    .btn-buy-now:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 77, 77, 0.4) !important;
+    }
+
+.btn-cart:hover {
+    transform: translateY(-2px);
+}
+/* Product Gallery */
+.product-gallery {
+    width: 400px;
+    height: 400px;
+    border-radius: 8px;
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+}
+
+    .product-gallery img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease-in-out;
+    }
+
+/* Navigation Controls */
+.thumbnail-control {
+    background-color: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+}
+
+    .thumbnail-control:hover {
+        background-color: rgba(0, 0, 0, 0.7);
+    }
+
+    .thumbnail-control.prev {
+        top: -15px;
+    }
+
+    .thumbnail-control.next {
+        bottom: -15px;
+    }
+
+/* Phần COMMENT - Giữ nguyên code gốc */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+.comments-section {
+    padding: 25px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    width: 100%;
+}
+
+.title-container {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.new-comment {
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.comment-textarea,
+.reply-textarea {
+    border: 1px solid #e2e8f0;
+    padding: 12px 15px;
+    border-radius: 6px;
+    resize: none;
+    background-color: #ffffff;
+    transition: all 0.3s ease;
+    flex: 1;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 45px;
+}
+
+    .comment-textarea:focus,
+    .reply-textarea:focus {
+        outline: none;
+        border-color: #4299e1;
+        box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15);
+    }
+
+.comment-btn,
+.reply-btn {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 100px;
+}
+
+.comment-btn {
+    background-color: #4299e1;
+    color: #ffffff;
+}
+
+.reply-btn {
+    background-color: #718096;
+    color: #ffffff;
+}
+
+    .comment-btn:hover,
+    .reply-btn:hover {
+        transform: translateY(-1px);
+        filter: brightness(110%);
+    }
+
+    .comment-btn i,
+    .reply-btn i {
+        margin-right: 8px;
+    }
+
+.media {
+    padding: 25px;
+    border-radius: 8px;
+    background-color: #f8fafc;
+    margin-bottom: 20px;
+}
+
+.media-body {
+    margin-left: 20px;
+    flex: 1;
+}
+
+.comment-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+    .comment-header h5 {
+        font-size: 16px;
+        margin: 0;
+        color: #2d3748;
+    }
+
+    .comment-header small {
+        color: #718096;
+    }
+
+.user-avatar {
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.comment-content {
+    color: #4a5568;
+    margin-bottom: 15px;
+    line-height: 1.6;
+    font-size: 15px;
+}
+
+.reply-container {
+    margin-top: 15px;
+}
+
+.reply-form {
+    display: none;
+    margin-top: 15px;
+}
+
+    .reply-form.active {
+        display: flex;
+        gap: 12px;
+    }
+
+.reply-link {
+    color: #4299e1;
+    cursor: pointer;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 0;
+}
+
+    .reply-link:hover {
+        text-decoration: underline;
+    }
+
+    .reply-link i {
+        font-size: 12px;
+    }
+
+.d-flex {
+    display: flex;
+}
+
+.align-items-start {
+    align-items: flex-start;
+}
+
+/* Product Details and Variants */
+.product-detail {
+    position: relative;
+    max-height: 300px;
+    overflow: hidden;
+    padding: 15px;
+    transition: max-height 0.3s ease;
+}
+
+    .product-detail.expanded {
+        max-height: none;
+    }
+
+.description-content {
+    margin-bottom: 30px;
+}
+
+.fade-bottom {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 150px;
+    background: linear-gradient(rgba(255,255,255,0), rgba(255,255,255,1));
+    pointer-events: none;
+}
+
+.product-detail.expanded .fade-bottom {
+    display: none;
+}
+
+.btn-see-more {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    min-width: 120px;
+}
+
+.product-detail.expanded .btn-see-more {
+    position: relative;
+    bottom: 0;
+    margin-top: 20px;
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+    .gallery-wrapper {
+        flex-direction: column-reverse;
+        align-items: center;
+    }
+
+    .thumbnail-container-wrapper {
+        flex-direction: row;
+        width: 100%;
+        height: 80px;
+    }
+
+    .thumbnail-container {
+        flex-direction: row;
+        height: auto;
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 0 10px;
+    }
+
+    .product-gallery {
+        width: 300px;
+        height: 300px;
+    }
+
+    .thumbnail-control {
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+        .thumbnail-control.prev {
+            left: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .thumbnail-control.next {
+            right: -15px;
+            left: auto;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .thumbnail-control .fas.fa-chevron-up,
+        .thumbnail-control .fas.fa-chevron-down {
+            transform: rotate(-90deg);
+        }
+
+    .comments-section {
+        padding: 15px;
+    }
+
+    .new-comment {
+        padding: 15px;
+    }
+
+    .comment-btn,
+    .reply-btn {
+        min-width: auto;
+    }
+
+        .comment-btn span,
+        .reply-btn span {
+            display: none;
+        }
+
+        .comment-btn i,
+        .reply-btn i {
+            margin: 0;
+        }
+}
+
+
+.varient-card.disabled {
+    cursor: not-allowed;
+    background-color: #f8f9fa; /* Màu xám hoặc nhạt hơn */
+}

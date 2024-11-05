@@ -12,13 +12,11 @@ namespace Tech_Store.Areas.Admin.Controllers
 {
     [Area("Admin")]
     [Route("admin/[controller]")]
-    public class VouchersController : Controller
+    public class VouchersController : BaseAdminController
     {
-        private readonly ApplicationDbContext _context;
 
-        public VouchersController(ApplicationDbContext context)
+        public VouchersController(ApplicationDbContext context) : base(context)
         {
-            _context = context;
         }
 
         // GET: Admin/Vouchers
@@ -41,8 +39,8 @@ namespace Tech_Store.Areas.Admin.Controllers
             return BadRequest();
         }
 
-        [Route("Edit/{id}")]
-        public async Task<IActionResult> Edit(int? id)
+        [Route("Edit")]
+        public async Task<IActionResult> Edit(int id)
         {
             if (id == null)
                 return NotFound();

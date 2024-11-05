@@ -1,407 +1,412 @@
-﻿@model Tech_Store.Models.Product;
+﻿@model Tech_Store.Models.Product
 @{
-    ViewData["Title"] = "View";
+    ViewData["Title"] = "Thông tin sản phẩm";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-
 @using System.Globalization;
-<!-- BREADCRUMB -->
-	<div id="breadcrumb" class="section">
-		<!-- container -->
-		<div class="container">
-			<!-- row -->
-			<div class="row">
-				<div class="col-md-12">
-					<ul class="breadcrumb-tree">
-						<li><a href="#">Trang Chủ</a></li>
-						<li><a href="#">Danh Mục</a></li>
-						<li><a href="#">@Model.Category?.Name</a></li>
-						<li><a href="#">DMCON</a></li>
-						<li class="active">@Model.Name</li>
-					</ul>
-				</div>
-			</div>
-			<!-- /row -->
-		</div>
-		<!-- /container -->
-	</div>
-	<!-- /BREADCRUMB -->
-	<!-- SECTION -->
-	<div class="section">
-		<!-- container -->
-		<div class="container">
-			<!-- row -->
-			<div class="row">
-				<!-- Product main img -->
-				<div class="col-md-5 col-md-push-2">
-					<div id="product-main-img">
-						<div class="product-preview">
-							<img src="~/Upload/Products/@Model.Image" alt="">
-						</div>
-					@foreach (var img in Model.Galleries)
-					{
-						<div class="product-preview">
-							<img src="~/Upload/Products/@img.Path" alt="">
-						</div>
-					}
-					</div>
-				</div>
-				<!-- /Product main img -->
-				<!-- Product thumb imgs -->
-				<div class="col-md-2  col-md-pull-5">
-					<div id="product-imgs">
-					<div class="product-preview">
-						<img src="~/Upload/Products/@Model.Image" alt="">
-					</div>
-					@foreach (var img in Model.Galleries)
-					{
-						<div class="product-preview">
-							<img src="~/Upload/Products/@img.Path" alt="">
-						</div>
-					}
-					</div>
-				</div>
-				<!-- /Product thumb imgs -->
-				<!-- Product details -->
-				<div class="col-md-5">
-					<div class="product-details">
-						<h2 class="product-name">@Model.Name</h2>
-						<div>
-							<div class="product-rating">
-								<i class="fa fa-star"></i>
-								<i class="fa fa-star"></i>
-								<i class="fa fa-star"></i>
-								<i class="fa fa-star"></i>
-								<i class="fa fa-star-o"></i>
-							</div>
-							<a class="review-link" href="#">10 Review(s) | Add your review</a>
-						</div>
-						<div>
-						<h3 class="product-price">
-							@Model.SellPrice?.ToString("C0", new CultureInfo("vi-VN"))
-							@if (Model.SellPrice != Model.OriginalPrice)
-							{
-								<del class="product-old-price">@Model.OriginalPrice?.ToString("C0",new CultureInfo("vi-VN"))</del>
-							}
-						</h3>
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="gallery-wrapper">
+                <!-- Thumbnails Section -->
+                <div class="thumbnail-container-wrapper">
+                    <button class="thumbnail-control prev">
+                        <i class="fas fa-chevron-up"></i>
+                    </button>
+                    <div class="thumbnail-container">
+                        <div class="thumbnail active" data-src="/Upload/Products/@Model.Image" style="background-image: url('/Upload/Products/@Model.Image')"></div>
 
-							<span class="product-available">@Model.Status</span>
-						</div>
-						@* <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p> *@
+                        @foreach (var img in Model.Galleries)
+                        {
+                            <div class="thumbnail" data-src="/Upload/Products/@img.Path" style="background-image: url('/Upload/Products/@img.Path')"></div>
+                        }
 
-						<div class="product-options">
-							<label>
-								Size
-								<select class="input-select">
-									<option value="0">X</option>
-								</select>
-							</label>
-							<label>
-								Color
-								<select class="input-select">
-									<option value="0">Red</option>
-								</select>
-							</label>
-						</div>
+                    </div>
+                    <button class="thumbnail-control next">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
 
-						<div class="add-to-cart">
-							<div class="qty-label">
-								Qty
-								<div class="input-number">
-									<input type="number">
-									<span class="qty-up">+</span>
-									<span class="qty-down">-</span>
-								</div>
-							</div>
-							<button class="add-to-cart-btn"><i class="fa fa-shopping-cart"></i> Thêm vào giỏ hàng</button>
-						</div>
+                <!-- Main Image Gallery -->
+                <div class="product-gallery">
+                    <img id="mainImage" src="/Upload/Products/@Model.Image" alt="Product Image">
 
-						<ul class="product-btns">
-							<li><a href="#"><i class="fa fa-heart-o"></i> Yêu thích</a></li>
-							<li><a href="#"><i class="fa fa-exchange"></i> So sánh</a></li>
-						</ul>
+                </div>
+            </div>
+        </div>
 
-						<ul class="product-links">
-							<li>Danh Mục:</li>
-							<li><a href="#">@Model.Category?.Name</a></li>
-						</ul>
+        <div class="col-md-5 product-info">
+            <h3>@Model.Name</h3>
+            <div class="rating">
+                <span class="text-muted">(0 Đánh giá)</span>
+            </div>
+            <div class="d-flex flex-wrap gap-3">
+                @foreach (var varient in Model.VarientProducts)
+                {
+                    <div class="card varient-card @(varient.Stock <= 0 ? "disabled" : "")" data-id="@varient.VarientId" @(varient.Stock <= 0 ? "style='pointer-events: none; opacity: 0.5;'" : "")>
+                        <div class="varient-attributes">
+                            <span>@varient.Attributes</span>
+                        </div>
+                        <div class="varient-price">
+                            <span>@varient.Price?.ToString("C0", new CultureInfo("vi-VN"))</span>
+                        </div>
+                    </div>
+                }
 
-						<ul class="product-links">
-							<li>Share:</li>
-							<li><a href="#"><i class="fa fa-facebook"></i></a></li>
-							<li><a href="#"><i class="fa fa-twitter"></i></a></li>
-							<li><a href="#"><i class="fa fa-google-plus"></i></a></li>
-							<li><a href="#"><i class="fa fa-envelope"></i></a></li>
-						</ul>
+            </div>
 
-					</div>
-				</div>
-				<!-- /Product details -->
-				<!-- Product tab -->
-				<div class="col-md-12">
-					<div id="product-tab">
-						<!-- product tab nav -->
-						<ul class="tab-nav">
-							<li class="active"><a data-toggle="tab" href="#tab1">Chi Tiết</a></li>
-							<li><a data-toggle="tab" href="#tab2">Đánh Giá (3)</a></li>
-						</ul>
-						<!-- /product tab nav -->
-						<!-- product tab content -->
-						<div class="tab-content">
-							<!-- tab1  -->
-							<div id="tab1" class="tab-pane fade in active">
-								<div class="row">
-									<div class="col-md-12">
-										<p>
-										@Html.Raw(Model.Description)
-
-										</p>
-									</div>
-								</div>
-							</div>
-							<!-- /tab1  -->
-							<!-- tab2  -->
-							<div id="tab2" class="tab-pane fade in">
-								<div class="row">
-									<!-- Rating -->
-									<div class="col-md-3">
-										<div id="rating">
-											<div class="rating-avg">
-												<span>4.5</span>
-												<div class="rating-stars">
-													<i class="fa fa-star"></i>
-													<i class="fa fa-star"></i>
-													<i class="fa fa-star"></i>
-													<i class="fa fa-star"></i>
-													<i class="fa fa-star-o"></i>
-												</div>
-											</div>
-											<ul class="rating">
-												<li>
-													<div class="rating-stars">
-														<i class="fa fa-star"></i>
-														<i class="fa fa-star"></i>
-														<i class="fa fa-star"></i>
-														<i class="fa fa-star"></i>
-														<i class="fa fa-star"></i>
-													</div>
-													<div class="rating-progress">
-														<div style="width: 80%;"></div>
-													</div>
-													<span class="sum">3</span>
-												</li>
-												<li>
-													<div class="rating-stars">
-														<i class="fa fa-star"></i>
-														<i class="fa fa-star"></i>
-														<i class="fa fa-star"></i>
-														<i class="fa fa-star"></i>
-														<i class="fa fa-star-o"></i>
-													</div>
-													<div class="rating-progress">
-														<div style="width: 60%;"></div>
-													</div>
-													<span class="sum">2</span>
-												</li>
-												<li>
-													<div class="rating-stars">
-														<i class="fa fa-star"></i>
-														<i class="fa fa-star"></i>
-														<i class="fa fa-star"></i>
-														<i class="fa fa-star-o"></i>
-														<i class="fa fa-star-o"></i>
-													</div>
-													<div class="rating-progress">
-														<div></div>
-													</div>
-													<span class="sum">0</span>
-												</li>
-												<li>
-													<div class="rating-stars">
-														<i class="fa fa-star"></i>
-														<i class="fa fa-star"></i>
-														<i class="fa fa-star-o"></i>
-														<i class="fa fa-star-o"></i>
-														<i class="fa fa-star-o"></i>
-													</div>
-													<div class="rating-progress">
-														<div></div>
-													</div>
-													<span class="sum">0</span>
-												</li>
-												<li>
-													<div class="rating-stars">
-														<i class="fa fa-star"></i>
-														<i class="fa fa-star-o"></i>
-														<i class="fa fa-star-o"></i>
-														<i class="fa fa-star-o"></i>
-														<i class="fa fa-star-o"></i>
-													</div>
-													<div class="rating-progress">
-														<div></div>
-													</div>
-													<span class="sum">0</span>
-												</li>
-											</ul>
-										</div>
-									</div>
-									<!-- /Rating -->
-									<!-- Reviews -->
-									<div class="col-md-6">
-										<div id="reviews">
-											<ul class="reviews">
-												<li>
-													<div class="review-heading">
-														<h5 class="name">John</h5>
-														<p class="date">27 DEC 2018, 8:0 PM</p>
-														<div class="review-rating">
-															<i class="fa fa-star"></i>
-															<i class="fa fa-star"></i>
-															<i class="fa fa-star"></i>
-															<i class="fa fa-star"></i>
-															<i class="fa fa-star-o empty"></i>
-														</div>
-													</div>
-													<div class="review-body">
-														<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua</p>
-													</div>
-												</li>
-												<li>
-													<div class="review-heading">
-														<h5 class="name">John</h5>
-														<p class="date">27 DEC 2018, 8:0 PM</p>
-														<div class="review-rating">
-															<i class="fa fa-star"></i>
-															<i class="fa fa-star"></i>
-															<i class="fa fa-star"></i>
-															<i class="fa fa-star"></i>
-															<i class="fa fa-star-o empty"></i>
-														</div>
-													</div>
-													<div class="review-body">
-														<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua</p>
-													</div>
-												</li>
-												<li>
-													<div class="review-heading">
-														<h5 class="name">John</h5>
-														<p class="date">27 DEC 2018, 8:0 PM</p>
-														<div class="review-rating">
-															<i class="fa fa-star"></i>
-															<i class="fa fa-star"></i>
-															<i class="fa fa-star"></i>
-															<i class="fa fa-star"></i>
-															<i class="fa fa-star-o empty"></i>
-														</div>
-													</div>
-													<div class="review-body">
-														<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua</p>
-													</div>
-												</li>
-											</ul>
-											<ul class="reviews-pagination">
-												<li class="active">1</li>
-												<li><a href="#">2</a></li>
-												<li><a href="#">3</a></li>
-												<li><a href="#">4</a></li>
-												<li><a href="#"><i class="fa fa-angle-right"></i></a></li>
-											</ul>
-										</div>
-									</div>
-									<!-- /Reviews -->
-									<!-- Review Form -->
-									<div class="col-md-3">
-										<div id="review-form">
-											<form class="review-form">
-												<input class="input" type="text" placeholder="Your Name">
-												<input class="input" type="email" placeholder="Your Email">
-												<textarea class="input" placeholder="Your Review"></textarea>
-												<div class="input-rating">
-													<span>Your Rating: </span>
-													<div class="stars">
-														<input id="star5" name="rating" value="5" type="radio"><label for="star5"></label>
-														<input id="star4" name="rating" value="4" type="radio"><label for="star4"></label>
-														<input id="star3" name="rating" value="3" type="radio"><label for="star3"></label>
-														<input id="star2" name="rating" value="2" type="radio"><label for="star2"></label>
-														<input id="star1" name="rating" value="1" type="radio"><label for="star1"></label>
-													</div>
-												</div>
-												<button class="primary-btn">Submit</button>
-											</form>
-										</div>
-									</div>
-									<!-- /Review Form -->
-								</div>
-							</div>
-							<!-- /tab3  -->
-						</div>
-						<!-- /product tab content  -->
-					</div>
-				</div>
-				<!-- /product tab -->
-			</div>
-			<!-- /row -->
-		</div>
-		<!-- /container -->
-	</div>
-	<!-- /SECTION -->
-	<!-- Section -->
-	<div class="section">
-		<!-- container -->
-		<div class="container">
-			<!-- row -->
-			<div class="row">
-
-				<div class="col-md-12">
-					<div class="section-title text-center">
-						<h3 class="title">Sản phẩm liên quan</h3>
-					</div>
-				</div>
-
-				<!-- product -->
-				@foreach(var item in ViewBag.related_products)
-				{
-				<div class="col-md-3 col-xs-6">
-					<div class="product">
-						<div class="product-img">
-							<img src="~/Upload/Products/@item.Image" alt="">
-							<div class="product-label">
-								@if(item.DiscountPercentage !=null)
-								{
-									<span class="sale">@item.DiscountPercentage</span>
-								}
-							</div>
-						</div>
-						<div class="product-body">
-							<p class="product-category">@item.Category?.Name</p>
-							<h3 class="product-name"><a href="#">@item.Name</a></h3>
-							<h4 class="product-price">@item.SellPrice
-								@if(item.SellPrice != item.OriginalPrice)
-								{
-								<del class="product-old-price">@item.OriginalPrice</del>
-									
-								}
-							</h4>
-							<div class="product-rating">
-							</div>
-							<div class="product-btns">
-								<button class="add-to-wishlist"><i class="fa fa-heart-o"></i><span class="tooltipp">Yêu thích</span></button>
-								<button class="add-to-compare"><i class="fa fa-exchange"></i><span class="tooltipp">So sánh</span></button>
-								<button class="quick-view"><i class="fa fa-eye"></i><span class="tooltipp">Xem thêm</span></button>
-							</div>
-						</div>
-						<div class="add-to-cart">
-							<button class="add-to-cart-btn"><i class="fa fa-shopping-cart"></i> Thêm vào giỏ hàng</button>
-						</div>
-					</div>
-				</div>
-				}
-				<!-- /product -->
-			</div>
-			<!-- /row -->
-		</div>
-		<!-- /container -->
-	</div>
-	
+            <style>
+              
+            </style>
+            <div class="price">
+                @Model.SellPrice?.ToString("C0",new CultureInfo("vi-VN"))
+            </div>
+            <div class="row g-3 p-3 bg-white rounded-3 shadow-sm">
+                <!-- Nút Mua ngay -->
+                <div class="col-md-8">
+                    <button type="button" class="btn btn-buy-now text-white w-100 py-3 fw-semibold text-uppercase shadow">
+                        <i class="fas fa-bolt me-2"></i>
+                        Mua ngay
+                    </button>
+                </div>
+                <!-- Nút Thêm vào giỏ -->
+                <div class="col-md-4 ">
+                    <button type="button" id="AddToCart" class="btn btn-cart btn-outline-danger w-100 py-3">
+                        <i class="fa fa-cart-plus" aria-hidden="true"></i>
+                        Thêm vào giỏ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row pt-3">
+        <div class="col-12">
+          
+                <div class="product-detail">
+                <div class="title-container">
+                    <h4 class="product-title">Thông tin sản phẩm</h4>
+                </div>
 
 
+                    <div class="description-content">
+                        <p class="product-description">@Html.Raw(Model.Description)</p>
+                    </div>
+                    <div class="fade-bottom"></div>
+                    <button class="btn btn-outline-danger btn-see-more">Xem thêm</button>
+                </div>
+         
+        </div>
+    </div>
+    <section class="products">
+        <div class="container">
+            <div class="product-section" data-section="new-products">
+                <div class="card mx-auto title-product-card py-2 position-relative" style="max-width: 85vw; background: linear-gradient(145deg, #707070, #b98888); border: none; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); border-radius: 8px;">
+                    <h4 class="text-start ms-5 title-section text-light mb-0">Có thể bạn sẽ quan tâm</h4>
+                    <a href="#" class="text-decoration-none text-light position-absolute end-0 me-5 d-flex align-items-center">
+                        <span>Xem tất cả</span>
+                        <i class="fa fa-angle-right ms-2" aria-hidden="true"></i>
+                    </a>
+                </div>
+
+                <!-- Nút điều hướng cho phần sản phẩm mới -->
+                <div class="d-flex justify-content-between">
+                    <button class="btn-scroll btn-prev" data-target="new-products">
+                        <i class="fa fa-chevron-left"></i>
+                    </button>
+                    <button class="btn-scroll btn-next" data-target="new-products">
+                        <i class="fa fa-chevron-right"></i>
+                    </button>
+                </div>
+
+                <div class="scrolling-wrapper" data-wrapper="new-products">
+                    <div class="row pt-2 mx-auto">
+                        <div class="card product-card" style="max-width: 280px;">
+                            <!-- Sale Badge -->
+                            <div class="position-absolute d-flex gap-2" style="top: 10px; left: 10px; z-index: 2;">
+                                <span class="badge bg-danger p-2">Giảm 14%</span>
+                            </div>
+
+                            <!-- Installment Badge -->
+                            <div class="position-absolute" style="top: 10px; right: 10px; z-index: 2;">
+                                <span class="badge bg-white text-primary border border-primary p-2">Trả góp 0%</span>
+                            </div>
+
+                            <!-- Product Image -->
+                            <div class="position-relative">
+                                <img src="https://th.bing.com/th/id/R.e6c9f8c0f4285c2ea3b73d6046efc0ec?rik=R2HWLjXDEtFp0A&pid=ImgRaw&r=0" class="card-img-top p-3" alt="Laptop Acer">
+                            </div>
+
+                            <!-- Product Info -->
+                            <div class="card-body p-3">
+                                <!-- Specs Pills -->
+                                <div class="d-flex gap-2 mb-2">
+                                    <span class="badge bg-light text-dark border">R7-5700U</span>
+                                    <span class="badge bg-light text-dark border">AMD Radeon</span>
+                                </div>
+                                <div class="d-flex gap-2 mb-2">
+                                    <span class="badge bg-light text-dark border">16GB</span>
+                                    <span class="badge bg-light text-dark border">512GB</span>
+                                    <span class="badge bg-light text-dark border">14" Full HD</span>
+                                </div>
+
+                                <!-- Product Title -->
+                                <h6 class="card-title mb-2">Laptop Acer Aspire 3 A314-42P-R3B3 NX.KSFSV.001</h6>
+
+                                <!-- Price -->
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <span class="text-danger fw-bold" style="font-size: 1.2rem;">11.990.000đ</span>
+                                    <span class="text-decoration-line-through text-muted">13.990.000đ</span>
+                                </div>
+                                <!-- Wishlist Button -->
+                                <button class="btn btn-outline-danger btn-sm w-100">
+                                    <i class="far fa-heart"></i> Yêu thích
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <div class="container">
+        <div class="comments-section">
+            <div class="title-container">
+                <h4 class="product-title">Đánh giá</h4>
+            </div>
+
+            <div class="new-comment">
+                <img src="/api/placeholder/40/40" class="user-avatar" alt="User Avatar">
+                <textarea class="comment-textarea" placeholder="Viết bình luận của bạn..." rows="1"></textarea>
+                <button class="comment-btn">
+                    <i class="fas fa-paper-plane"></i>
+                    <span>Gửi</span>
+                </button>
+            </div>
+
+            <div class="media">
+                <div class="d-flex align-items-start">
+                    <img src="/api/placeholder/50/50" class="user-avatar" alt="User Avatar">
+                    <div class="media-body">
+                        <div class="comment-header">
+                            <h5>John Doe</h5>
+                            <small>2 days ago</small>
+                        </div>
+                        <p class="comment-content">Great product! Highly recommended.</p>
+                        <div class="reply-container">
+                            <span class="reply-link">
+                                <i class="fas fa-reply"></i>
+                                Trả lời
+                            </span>
+                            <div class="reply-form">
+                                <textarea class="reply-textarea" placeholder="Trả lời bình luận..." rows="1"></textarea>
+                                <button class="reply-btn">
+                                    <i class="fas fa-paper-plane"></i>
+                                    <span>Gửi</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function () {
+        // Cập nhật ảnh chính khi click vào thumbnail
+        $('.thumbnail').click(function () {
+            $('.thumbnail').removeClass('active');
+            $(this).addClass('active');
+            const newSrc = $(this).data('src');
+            $('#mainImage').attr('src', newSrc);
+        });
+
+        // Điều khiển nút prev và next
+        const scrollAmount = 150;
+
+        $('.thumbnail-control.prev').click(function () {
+            $('.thumbnail-container').animate({
+                scrollTop: '-=' + scrollAmount
+            }, 1);
+        });
+
+        $('.thumbnail-control.next').click(function () {
+            $('.thumbnail-container').animate({
+                scrollTop: '+=' + scrollAmount
+            }, 1);
+        });
+
+        // Kiểm tra và ẩn/hiện nút điều hướng
+        function checkScrollPosition() {
+            const container = $('.thumbnail-container');
+            const scrollTop = container.scrollTop();
+            const maxScroll = container[0].scrollHeight - container.height();
+
+            $('.thumbnail-control.prev').toggle(scrollTop > 0);
+            $('.thumbnail-control.next').toggle(scrollTop < maxScroll);
+
+            // Xử lý cho mobile view
+            if (window.innerWidth <= 768) {
+                const scrollLeft = container.scrollLeft();
+                const maxScrollLeft = container[0].scrollWidth - container.width();
+
+                $('.thumbnail-control.prev').toggle(scrollLeft > 0);
+                $('.thumbnail-control.next').toggle(scrollLeft < maxScrollLeft);
+            }
+        }
+
+        // Gọi hàm kiểm tra khi tải trang và khi cuộn
+        checkScrollPosition();
+        $('.thumbnail-container').scroll(checkScrollPosition);
+
+        // Kiểm tra khi resize window
+        $(window).resize(checkScrollPosition);
+    });
+</script>
+<script>
+    // Đợi cho DOM load xong
+    window.addEventListener('DOMContentLoaded', function () {
+        // Kiểm tra xem các element có tồn tại không
+        const productDetail = document.querySelector('.product-detail');
+        const seeMoreBtn = document.querySelector('.btn-see-more');
+        const content = document.querySelector('.description-content');
+
+        // Chỉ thực hiện nếu tìm thấy tất cả các element cần thiết
+        if (productDetail && seeMoreBtn && content) {
+            // Hàm kiểm tra chiều cao nội dung
+            function checkContentHeight() {
+                try {
+                    const contentHeight = content.offsetHeight;
+                    const maxHeight = 200; // Chiều cao tối đa trước khi hiện nút xem thêm
+
+                    if (contentHeight <= maxHeight) {
+                        seeMoreBtn.style.display = 'none';
+                        productDetail.style.maxHeight = 'none';
+                        const fadeBottom = document.querySelector('.fade-bottom');
+                        if (fadeBottom) {
+                            fadeBottom.style.display = 'none';
+                        }
+                    } else {
+                        seeMoreBtn.style.display = 'block';
+                        if (!productDetail.classList.contains('expanded')) {
+                            productDetail.style.maxHeight = '300px';
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking content height:', error);
+                }
+            }
+
+            // Xử lý sự kiện click
+            seeMoreBtn.addEventListener('click', function () {
+                if (productDetail.classList.contains('expanded')) {
+                    productDetail.classList.remove('expanded');
+                    this.textContent = 'Xem thêm';
+                    productDetail.style.maxHeight = '300px';
+                    // Scroll back to top of description
+                    productDetail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    productDetail.classList.add('expanded');
+                    this.textContent = 'Thu gọn';
+                    productDetail.style.maxHeight = 'none';
+                }
+            });
+
+            // Chạy kiểm tra ban đầu sau một khoảng thời gian ngắn để đảm bảo nội dung đã được render
+            setTimeout(checkContentHeight, 100);
+
+            // Thêm sự kiện resize
+            window.addEventListener('resize', checkContentHeight);
+        } else {
+            console.warn('Some elements are missing from the DOM');
+        }
+    });
+</script>
+
+<script>
+    // Auto-resize textarea
+    function autoResize(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+    }
+
+    // Add auto-resize to all textareas
+    document.querySelectorAll('textarea').forEach(textarea => {
+        textarea.addEventListener('input', () => autoResize(textarea));
+    });
+
+    // Toggle reply form
+    document.querySelectorAll('.reply-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            const replyForm = e.target.closest('.reply-container').querySelector('.reply-form');
+            replyForm.classList.toggle('active');
+
+            if (replyForm.classList.contains('active')) {
+                const textarea = replyForm.querySelector('textarea');
+                textarea.focus();
+            }
+        });
+    });
+
+    // Handle click outside to close reply form
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.reply-container')) {
+            document.querySelectorAll('.reply-form').forEach(form => {
+                form.classList.remove('active');
+            });
+        }
+    });
+</script>
+
+<script>
+    // Định nghĩa biến variantId ở bên ngoài
+    let variantId = null;
+
+    document.querySelectorAll('.varient-card').forEach(function (card) {
+        card.addEventListener('click', function () {
+            // Xóa lớp 'selected' khỏi tất cả các thẻ
+            document.querySelectorAll('.varient-card').forEach(function (c) {
+                c.classList.remove('selected');
+            });
+
+            // Thêm lớp 'selected' vào thẻ được nhấp vào
+            this.classList.add('selected');
+
+            // Lấy ID của biến thể được chọn
+            variantId = this.getAttribute('data-id');
+            console.log('ID của biến thể:', variantId);
+        });
+    });
+</script>
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('#AddToCart').on('click', function () {
+            if (!variantId) {
+                alert("Vui lòng chọn một biến thể trước khi thêm vào giỏ hàng.");
+                return;
+            }
+
+            $.ajax({
+                method: 'POST',
+                url: '@Url.Action("AddToCart", "User")',
+                data: {
+                    itemId: variantId,  // Sử dụng variantId đã chọn
+                    quantity: 1
+                },
+                success: function (response) {
+                    if (response.success) {
+                        alert("Đã thêm vào giỏ hàng");
+                    } else {
+                        alert("Đã có lỗi " + response.message);
+                    }
+                },
+                error: function (response) {
+                    alert("Đã có lỗi " + response.message);
+                }
+            });
+        });
+    });
+</script>

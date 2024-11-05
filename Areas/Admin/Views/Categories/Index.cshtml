@@ -29,14 +29,16 @@
                             <thead>
                                 <tr>
                                     <th>Tên</th>
+                                    <th>Hình ảnh</th>
                                     <th>Mô tả</th>
-                                    <th>Hiển thị</th>
+                                    <th style="width:15%">Hiển thị</th>
                                     <th style="width:10%">Hành động</th>
                                 </tr>
                             </thead>
                             <tfoot>
                                 <tr>
                                     <th>Tên</th>
+                                    <th>Hình ảnh</th>
                                     <th>Mô tả</th>
                                     <th>Hiển thị</th>
                                     <th>Hành động</th>
@@ -49,8 +51,19 @@
                                 {
                                     <tr>
                                         <td>@cate.Name</td>
+                                        <td class="text-center">
+                                           <img src="/Upload/Logo/@cate.Image" width="60px" height="60px" class="rounded border" />
+                                        </td>
                                         <td>@cate.Description</td>
-                                        <td>@(cate.Visible ==1 ? "Cho phép" : "Không cho phép")</td>
+                                       
+                                        <td>
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="flexSwitchCheckChecked" @(cate.Visible == 1 ? "checked" : "") data-id="@cate.CategoryId">
+                                                    <label class="form-check-label" for="flexSwitchCheckChecked">
+                                                       Ẩn/Hiện
+                                                    </label>
+                                                </div>
+                                        </td>
                                         <td>
                                             <div class="form-button-action">
                                                 <button type="button"
@@ -124,7 +137,8 @@
                     $('input[name="name"]').val(response.name); // Đặt giá trị cho input name
                     $('input[name="description"]').val(response.description); // Đặt giá trị cho input description
                     $('select[name="visible"]').val(response.visible); // Đặt giá trị cho select visible
-                    $('input[name="cate_id"]').val(response.categoryId)
+                    $('input[name="cate_id"]').val(response.categoryId);
+                    $('#ImageUrl').attr('src','/Upload/Logo/' + response.image);
                     // Hiển thị nút Lưu thay đổi và ẩn nút Thêm mới
                     $('#update').show();
                     $('#add').hide();
@@ -140,6 +154,42 @@
                 }
             });
         });
+        //Thay đổi ẩn/hiện
+        $(document).on('change', '#flexSwitchCheckChecked', function () {
+            // Lấy ID danh mục từ thuộc tính data-id của checkbox
+            var id = $(this).data('id');
+            var isVisible = $(this).is(':checked') ? 1 : 0; // 1 cho "Hiện", 0 cho "Ẩn"
+
+            // Hiển thị hộp thoại xác nhận
+            var confirmMessage = isVisible ? "Bạn có chắc chắn muốn hiển thị danh mục này không?" : "Bạn có chắc chắn muốn ẩn danh mục này không?";
+            var confirmed = confirm(confirmMessage);
+
+            if (confirmed) {
+                // Gửi AJAX request để thay đổi trạng thái hiển thị
+                $.ajax({
+                    method: 'POST', // Sử dụng POST hoặc PUT tùy theo cách bạn thiết lập API
+                    url: 'Categories/ChangeVisible', // Đường dẫn đến API
+                    data: { id: id }, // Gửi ID danh mục để thay đổi trạng thái
+                    success: function (response) {
+                        if (response.success) {
+                            // Có thể hiển thị thông báo thành công hoặc thực hiện hành động nào đó
+                            alert(response.message);
+                        } else {
+                            // Thông báo lỗi nếu không thành công
+                            alert(response.message);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        // Xử lý lỗi nếu có
+                        alert('Đã xảy ra lỗi: ' + error);
+                    }
+                });
+            } else {
+                // Nếu người dùng không xác nhận, khôi phục lại trạng thái của checkbox
+                $(this).prop('checked', !isVisible);
+            }
+        });
+
 
 
         // Sự kiện khi modal bị ẩn
@@ -149,6 +199,7 @@
             $('input[name="description"]').val('');
             $('select[name="visible"]').val('1'); // Đặt lại giá trị mặc định cho select
             $('input[name="cate_id"]').val('');
+            $('#ImageUrl').attr('src', '/Upload/Logo/none.jpg');
             //Tắt trạng thái load
             $('.loading-container').hide();
 

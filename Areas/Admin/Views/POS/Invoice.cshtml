@@ -1,0 +1,233 @@
+﻿@model Tech_Store.Models.Order
+@{
+    ViewData["Title"] = "Invoice";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+}
+@using System.Globalization;
+<div class="container-fluid">
+    <div class="card pt-4 pb-4 bg-light text-center shadow-sm">
+        <div class="card-body">
+            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+            <h3 class="text-success">Thanh Toán Thành Công!</h3>
+            <p class="fs-5">Đơn Hàng <strong>#@Model.OrderId</strong> đã được thanh toán thành công.</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-7 col-sm-12">
+            <div class="card p-3 mb-4">
+                <h4 class="card-title">Thông tin khách hàng</h4>
+                <hr />
+                <div class="row">
+                    <div class="col-6">
+                        <p><strong>Tên KH:</strong> @Model.User.LastName @Model.User.FirstName</p>
+                        <p><strong>SĐT:</strong> @Model.User.PhoneNumber</p>
+                    </div>
+                    <div class="col-6">
+                        <p><strong>Email:</strong> @Model.User.Email</p>
+                        <p><strong>Địa chỉ KH:</strong> @ViewBag.Address</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card p-3">
+                <h4 class="card-title">Chi tiết đơn hàng</h4>
+                <hr />
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Ảnh</th>
+                                <th>SKU</th>
+                                <th>Tên SP</th>
+                                <th>Biến Thể</th>
+                                <th>Số lượng</th>
+                                <th>Giá</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                int i = 1;
+                            }
+                            @foreach (var item in Model.OrderItems)
+                            {
+                                <tr>
+                                    <td>@i</td>
+                                    <td>
+                                        <img src="/Upload/Products/@item.Product.Image" style="width:60px;height:60px;object-fit:cover" alt="Ảnh sản phẩm" />
+                                    </td>
+                                    <td>@item.VarientProduct.Sku</td>
+                                    <td>@item.Product.Name</td>
+                                    <td>@item.VarientProduct.Attributes</td>
+                                    <td>@item.Quantity</td>
+                                    <td>@((item.VarientProduct.Price * item.Quantity)?.ToString("C0", new CultureInfo("vi-VN")))</td>
+                                </tr>
+                                i++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-5 col-sm-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="container mb-5 mt-3">
+                        <div class="row d-flex align-items-baseline">
+                            <div class="col-xl-6">
+                                <p style="color: #7e8d9f;font-size: 20px;">Hóa Đơn >> <strong>ID: #@Model.OrderId</strong></p>
+                            </div>
+                            <div class="col-xl-6 float-end">
+                                <a data-mdb-ripple-init class="btn btn-light text-capitalize border-0" id="Print" data-mdb-ripple-color="dark">
+                                    <i class="fas fa-print text-primary"></i> In HĐ
+                                </a>
+                                <a data-mdb-ripple-init class="btn btn-light text-capitalize" id="ToFilePDF" data-mdb-ripple-color="dark">
+                                    <i class="far fa-file-pdf text-danger"></i> Xuất
+                                </a>
+                            </div>
+                            <hr>
+                        </div>
+
+                        <div class="container" id="printSection">
+                            <!-- Header/Logo Section -->
+                            <div class="row mb-4">
+                                <div class="col-12 text-center">
+                                    <i class="fab fa-mdb fa-4x" style="color:#5d9fc5;"></i>
+                                    <h4 class="mt-2">TechStore.com</h4>
+                                </div>
+                            </div>
+
+                            <!-- Info Section -->
+                            <div class="row mb-4">
+                                <!-- Customer Info -->
+                                <div class="col-md-6">
+                                    <h6 class="text-muted mb-3">Thông tin khách hàng</h6>
+                                    <ul class="list-unstyled">
+                                        <li class="mb-2">
+                                            <strong>Người nhận:</strong>
+                                            <span style="color:#5d9fc5;">@Model.User.LastName @Model.User.FirstName</span>
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="fas fa-map-marker-alt me-2"></i>
+                                            <strong>Địa chỉ:</strong> @ViewBag.Address
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="fas fa-phone me-2"></i>
+                                            <strong>SĐT:</strong> @Model.User.PhoneNumber
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <!-- Order Info -->
+                                <div class="col-md-6">
+                                    <h6 class="text-muted mb-3">Thông tin đơn hàng</h6>
+                                    <ul class="list-unstyled">
+                                        <li class="mb-2">
+                                            <i class="fas fa-circle me-2" style="color:#84B0CA;"></i>
+                                            <strong>Mã đơn hàng:</strong> #@Model.OrderId
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="fas fa-circle me-2" style="color:#84B0CA;"></i>
+                                            <strong>Ngày đặt:</strong> @Model.OrderDate
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="fas fa-circle me-2" style="color:#84B0CA;"></i>
+                                            <strong>Trạng thái:</strong>
+                                            <span class="badge bg-warning text-black ms-2">@Model.OrderStatus</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Products Table -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-bordered">
+                                            <thead style="background-color:#84B0CA;" class="text-white">
+                                                <tr>
+                                                    <th scope="col" class="text-center" width="5%">#</th>
+                                                    <th scope="col" width="55%">Sản phẩm</th>
+                                                    <th scope="col" class="text-center" width="15%">Số lượng</th>
+                                                    <th scope="col" class="text-end" width="25%">Đơn giá</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @{
+                                                    int index = 1;
+                                                }
+                                                @foreach (var item in Model.OrderItems)
+                                                {
+                                                    <tr>
+                                                        <td class="text-center">@(index++)</td>
+                                                        <td>@item.Product.Name (@item.VarientProduct.Attributes)</td>
+                                                        <td class="text-center">@item.Quantity</td>
+                                                        <td class="text-end">@item.VarientProduct.Price?.ToString("C0", new CultureInfo("vi-VN"))</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Total Section -->
+                            <div class="row">
+                                <div class="col-md-12 offset-md-12">
+                                    <ul class="list-unstyled">
+                                        <li class="d-flex justify-content-between mb-2">
+                                            <span class="fw-bold">Tổng tiền hàng:</span>
+                                            <span>@ViewBag.payment.OriginAmount?.ToString("C0", new CultureInfo("vi-VN"))</span>
+                                        </li>
+                                        <li class="d-flex justify-content-between mb-2">
+                                            <span class="fw-bold">Giảm giá khuyến mãi:</span>
+                                            <span>@ViewBag.payment.DiscountAmount?.ToString("C0", new CultureInfo("vi-VN"))</span>
+                                        </li>
+                                        <li class="d-flex justify-content-between mb-2">
+                                            <span class="fw-bold">Giảm giá thêm:</span>
+                                            <span>@ViewBag.payment.DeductAmount?.ToString("C0", new CultureInfo("vi-VN"))</span>
+                                        </li>
+                                        <li class="d-flex justify-content-between mt-3 pt-2 border-top">
+                                            <span class="fw-bold fs-5">Tổng thanh toán:</span>
+                                            <span class="fs-5">@ViewBag.payment.Amount?.ToString("C0", new CultureInfo("vi-VN"))</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        // Xử lý tải PDF
+        $('#ToFilePDF').click(function () {
+            $('.loading-container').show();
+            var id = '@Model.OrderId';
+
+            // Tải PDF từ URL và chờ quá trình tải xuống hoàn tất
+            window.location.href = '/Admin/POS/Print-Invoice?id=' + id;
+            setTimeout(function () {
+                $('.loading-container').hide();
+            }, 3000); // Đợi 3 giây
+        });
+        // Xử lý nút In
+        $('#Print').click(function () {
+            var printContent = $("#printSection").html();
+            var originalContent = $('body').html();
+
+            $('body').html(printContent);
+            window.print();
+            $('body').html(originalContent);
+
+            return false;
+        });
+
+    });
+</script>

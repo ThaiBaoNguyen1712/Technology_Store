@@ -13,12 +13,10 @@ namespace Tech_Store.Areas.Admin.Controllers
 {
     [Area("Admin")]
     [Route("Admin/[controller]")]
-    public class UsersController : Controller
+    public class UsersController : BaseAdminController
     {
-        private readonly ApplicationDbContext _context;
-
-        public UsersController(ApplicationDbContext context)
-        {  _context = context; }
+        public UsersController(ApplicationDbContext context) : base(context) { }
+     
         [Route("")]
         [Route("Index")]
         public async Task<IActionResult> Index()
@@ -98,14 +96,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                         AddressLine = us.AddressLine,
                     };
                     _context.Addresses.Add(address);
-                    // Thêm wishlist
-                    var wishlist = new Wishlist
-                    {
-                        UserId = user.UserId,
-                        AddedDate = DateTime.Now,
-                    };
-                    _context.Wishlists.Add(wishlist);
-
+                    
                     // Thêm giỏ hàng
                     var cart = new Cart
                     {
@@ -258,11 +249,6 @@ namespace Tech_Store.Areas.Admin.Controllers
                 return BadRequest(ex.Message);
             }
         }
-
-
-
-
-
 
         [HttpDelete("Delete/{id}")]
         public async Task<ActionResult> Delete(int? id)

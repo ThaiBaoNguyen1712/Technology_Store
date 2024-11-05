@@ -10,6 +10,7 @@ public partial class Category
     public string Name { get; set; } = null!;
 
     public string? Description { get; set; }
+    public string? Image { get; set; }
 
     public int? Visible { get; set; }
 

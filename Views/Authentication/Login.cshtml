@@ -1,0 +1,180 @@
+﻿@{
+    Layout = null;
+}
+@model Tech_Store.Models.DTO.Authentication.LoginDTo
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Form</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha384-k6RqeWeci5ZR/Lv4MR0sA0FfDOM9y8e4tW49WSoL3RjD5j0pN9KiT2J4uB1qF5" crossorigin="anonymous">
+
+    <style>
+        body {
+            background-color: #f8f9fa;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 40px 0;
+        }
+
+        .login-container {
+            max-width: 400px;
+            width: 90%;
+            margin: auto;
+        }
+
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        .card-body {
+            padding: 2rem;
+        }
+
+        .logo {
+            color: #0d6efd;
+            font-size: 2rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: #212529;
+        }
+
+        .btn-primary {
+            padding: 0.8rem;
+            font-weight: 500;
+        }
+
+        .captcha-container {
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        .text-danger {
+            color: red; /* Màu sắc cho thông báo lỗi */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="login-container">
+            <div class="card">
+                <div class="card-body">
+                    <div class="logo">Shop</div>
+                    <h4 class="text-center mb-1">Đăng Nhập</h4>
+
+                    <form method="POST" action="@Url.Action("Login", "Authentication")">
+                        @Html.AntiForgeryToken()
+
+                        <div class="mb-3 pt-3">
+                            <label class="form-label">Email Của Bạn</label>
+                            <input type="email" name="Email" class="form-control" placeholder="email@address.com" value="@Html.DisplayFor(model => model.Email)" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Mật Khẩu</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" name="Password" placeholder="Yêu cầu ít nhất 8 ký tự" id="passwordInput" required>
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye" viewBox="0 0 16 16" id="eyeIcon">
+                                        <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M8 3.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9" />
+                                        <path d="M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            @if (ViewData["ValidateMessage"] != null)
+                            {
+                                <span class="text-danger">@ViewData["ValidateMessage"]</span> <!-- Thông báo lỗi -->
+                            }
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" name="Remember" id="remember" value="true">
+                                    <label class="form-check-label" for="remember" style="font-size: 0.85rem;">Ghi Nhớ Tôi</label>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="mb-3">
+                                    <a href="~/Auth/forgot-password" style="font-size: 0.85rem;">Quên Mật Khẩu?</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3 captcha-container">
+                            <label style="font-size: 0.85rem;">Chưa có tài khoản? <a href="~/Auth/Register">Đăng ký ngay</a></label>
+                        </div>
+                        <div class="mb-3 captcha-container">
+                            <div class="row align-items-center">
+                                <!-- Google reCAPTCHA -->
+                                <div class="g-recaptcha mb-4" data-sitekey="@Configuration["reCAPTCHA:SiteKey"]"></div>
+                            </div>
+                        </div>
+                    
+
+                        <button type="submit" class="btn btn-primary w-100 pt-3">Đăng nhập</button>
+                        <div class="text-center my-3">
+                            <span>Hoặc đăng nhập bằng</span>
+                        </div>
+                        <div class="d-flex justify-content-center">
+                            <a href="your-google-login-url" class="btn btn-light me-2">
+                                <img src="/Upload/Logo/icons8-google-48.png" alt="Google" style="width: 20px; height: 20px;" class="me-1"> Google
+                            </a>
+                            <a href="your-facebook-login-url" class="btn btn-light">
+                                <img src="/Upload/Logo/icons8-facebook-48.png" alt="Facebook" style="width: 20px; height: 20px;" class="me-1"> Facebook
+                            </a>
+                        </div>
+                      
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* CSS để chỉnh sửa kích thước chữ */
+        .form-check-label, a {
+            font-size: 0.85rem; /* Thay đổi kích thước font ở đây */
+        }
+    </style>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <!-- Thêm script reCAPTCHA -->
+    <script src="https://www.google.com/recaptcha/api.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const togglePassword = document.getElementById("togglePassword");
+            const passwordInput = document.getElementById("passwordInput");
+            const eyeIcon = document.getElementById("eyeIcon");
+
+            togglePassword.addEventListener("click", function () {
+                // Toggle mật khẩu hiển thị
+                const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
+                passwordInput.setAttribute("type", type);
+
+                // Thay đổi icon mắt
+                if (type === "text") {
+                    eyeIcon.setAttribute("fill", "green"); // Có thể thay đổi màu hoặc đổi icon
+                } else {
+                    eyeIcon.setAttribute("fill", "currentColor"); // Trả về màu gốc
+                }
+            });
+        });
+    </script>
+</body>
+</html>

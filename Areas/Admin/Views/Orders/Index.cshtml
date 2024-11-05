@@ -1,0 +1,124 @@
+﻿@model IEnumerable<Tech_Store.Models.Order>
+@{
+    ViewData["Title"] = "Đơn Hàng";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+}
+@using System.Globalization;
+<div class="Container">
+    <div class="pt-3"></div>
+    <div class="tableProduct">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex align-items-center">
+                        <h4 class="card-title">DANH SÁCH ĐƠN HÀNG</h4>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="add-row" class="display table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID Đơn Hàng</th>
+                                    <th>Ngày Đặt</th>
+                                    <th>Thông Tin Khách Hàng</th>
+                                    <th>Tổng Số Tiền</th>
+                                    <th>Trạng Thái Đơn Hàng</th>
+                                    <th style="width:10%">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tfoot>
+                                <tr>
+                                    <th>ID Đơn Hàng</th>
+                                    <th>Ngày Đặt</th>
+                                    <th>Thông Tin Khách Hàng</th>
+                                    <th>Tổng Số Tiền</th>
+                                    <th>Trạng Thái Đơn Hàng</th>
+                                    <th style="width:10%">Hành động</th>
+                                </tr>
+                            </tfoot>
+                            <tbody>
+                                @if (Model != null)
+                                {
+                                    @foreach (var order in Model)
+                                    {
+                                        <tr>
+                                            <td>@order.OrderId</td>
+                                            <td>@order.OrderDate</td>
+                                            <td>
+                                                <p>@order.User.LastName @order.User.FirstName</p>
+                                                <p>@order.User.PhoneNumber</p>
+                                            </td>
+                                            <td>
+                                                <p>@order.TotalAmount.ToString("C0", new CultureInfo("vi-VN"))</p>
+                                                
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge
+                                                @(order.OrderStatus == "Pending" ? "badge-primary" :
+                                                  order.OrderStatus == "Confirmed" ? "badge-info" :
+                                                  order.OrderStatus == "Shipped" ? "badge-warning" :
+                                                  order.OrderStatus == "Completed" ? "badge-success" :
+                                                  order.OrderStatus == "Cancelled" ? "badge-danger" :
+                                                  "badge-secondary")">
+                                                    @order.OrderStatus
+                                                </span>
+
+                                            </td>
+                                          
+                                            <td>
+                                                <div class="form-button-action">
+                                                    <a 
+                                                            data-bs-toggle="tooltip" href="~/Admin/Orders/View/@order.OrderId"
+                                                            class="btn btn-link btn-primary btn-lg"
+                                                            title="Chi Tiết Hóa Đơn">
+                                                        <i class="fa fa-eye"></i>
+                                                    </a>
+                                                    <button type="button"
+                                                            data-bs-toggle="tooltip"
+                                                            title="Xuất Hóa Đơn PDF"
+                                                            class="btn btn-link btn-success print-pdf"
+                                                            data-id="@order.OrderId">
+                                                        <i class="fa fa-download"></i>
+                                                    </button>
+
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td class="text-center" colspan="6">
+                                            <span>Không có đơn hàng phù hợp</span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/Admin/assets/js/core/jquery-3.7.1.min.js"></script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        // Hiển thị tooltip khi di chuột qua nút
+        $('[data-bs-toggle="tooltip"]').tooltip();
+
+        // Xử lý tải PDF cho tất cả các nút
+        $('.print-pdf').click(function () {
+            $('.loading-container').show();
+            var id = $(this).data('id');
+            console.log("Exporting invoice for ID:", id);
+            // Tải PDF từ URL
+            window.location.href = '/Admin/POS/Print-Invoice?id=' + id;
+            setTimeout(function () {
+                $('.loading-container').hide();
+            }, 3000); // Đợi 3 giây
+        });
+    });
+</script>

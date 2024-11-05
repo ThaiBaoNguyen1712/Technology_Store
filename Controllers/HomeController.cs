@@ -5,79 +5,57 @@ using Tech_Store.Models;
 
 namespace Tech_Store.Controllers
 {
-    public class HomeController : Controller
+    public class HomeController : BaseController
     {
-        private readonly ILogger<HomeController> _logger;
-        private readonly IConfiguration _configuration;
-        private readonly ApplicationDbContext _context;
+		private readonly ILogger<HomeController> _logger;
+		private readonly IConfiguration _configuration;
 
-        public HomeController(ILogger<HomeController> logger, IConfiguration configuration, ApplicationDbContext context)
-        {
-            _logger = logger;
-            _configuration = configuration;
-            _context = context;
-        }
+		// Khai báo chỉ cần ILogger và IConfiguration
+		public HomeController(ILogger<HomeController> logger, IConfiguration configuration, ApplicationDbContext context)
+			: base(context) // Gọi constructor của BaseController
+		{
+			_logger = logger;
+			_configuration = configuration;
+		}
 
         public IActionResult Index()
         {
-            //Cate ID 
-            // 1 Điện Thoại, 2 Laptop, 3 Máy tính Bảng ,4 Đồng hồ điện tử, 5 phụ kiện
-            var categories = _context.Categories.Where(x=>x.Visible == 1).ToList();
-            var smartphone_products = _context.Products.Where(x => x.CategoryId == 1).OrderByDescending(x => x.CreatedAt).Take(10).ToList(); ;
-            var laptop_products = _context.Products.Where(x => x.CategoryId == 2).OrderByDescending(x => x.CreatedAt).Take(10).ToList();
-			var tablet_products = _context.Products.Where(x => x.CategoryId == 3).OrderByDescending(x => x.CreatedAt).Take(10).ToList();
-			var watch_products = _context.Products.Where(x => x.CategoryId == 4).OrderByDescending(x => x.CreatedAt).Take(10).ToList();
-			var accessory_products = _context.Products.Where(x => x.CategoryId == 5).OrderByDescending(x => x.CreatedAt).Take(10).ToList();
+            // Lấy danh sách danh mục có trạng thái hiển thị
+            var list_cate = _context.Categories
+                .Where(x => x.Visible == 1)
+                .ToList();
 
-   //         var hot_smartphones = _context.Products.Where(_x => _x.CategoryId == 1).OrderBy(x => x.OrderItems).Take(10).ToList();
-			//var hot_laptop = _context.Products.Where(_x => _x.CategoryId == 2).OrderBy(x => x.OrderItems).Take(10).ToList();
-			//var hot_tablet = _context.Products.Where(_x => _x.CategoryId == 3).OrderBy(x => x.OrderItems).Take(10).ToList();
-			//var hot_watch = _context.Products.Where(_x => _x.CategoryId == 4).OrderBy(x => x.OrderItems).Take(10).ToList();
-			//var hot_accessory = _context.Products.Where(_x => _x.CategoryId == 5).OrderBy(x => x.OrderItems).Take(10).ToList();
+            // Lấy tối đa 10 sản phẩm cho mỗi danh mục
+            var productsByCategory = list_cate.Select(category => new
+            {
+                Category = category,
+                Products = _context.Products
+                    .Where(p => p.CategoryId == category.CategoryId)
+                    .Take(10) // Lấy 10 sản phẩm đầu tiên của danh mục
+                    .ToList()
+            }).ToList();
 
-			ViewBag.Categories = categories;
-            ViewBag.phone = smartphone_products;
-            ViewBag.laptop = laptop_products;
-            ViewBag.tablet = tablet_products;
-            ViewBag.watch = watch_products;
-            //ViewBag.hot_phone = hot_smartphones;
-            //ViewBag.hot_laptop = hot_laptop;
-            //ViewBag.hot_tablet = hot_tablet;
-            //ViewBag.hot_watch = hot_watch;
-            //ViewBag.hot_accessory = hot_accessory;
-            ViewBag.accessory = accessory_products;
-
+            // Sử dụng ViewBag để truyền dữ liệu vào View
+            ViewBag.List_cate = list_cate;
+            ViewBag.ProductsByCategory = productsByCategory;
             return View();
         }
+
         [Route("View/{id}")]
         public IActionResult View(int id)
         {
-			var categories = _context.Categories.Where(x => x.Visible == 1).ToList();
-			var smartphone_products = _context.Products.Where(x => x.CategoryId == 1).OrderByDescending(x => x.CreatedAt).Take(10).ToList(); ;
-			var laptop_products = _context.Products.Where(x => x.CategoryId == 2).OrderByDescending(x => x.CreatedAt).Take(10).ToList();
-			var tablet_products = _context.Products.Where(x => x.CategoryId == 3).OrderByDescending(x => x.CreatedAt).Take(10).ToList();
-			var watch_products = _context.Products.Where(x => x.CategoryId == 4).OrderByDescending(x => x.CreatedAt).Take(10).ToList();
-			var accessory_products = _context.Products.Where(x => x.CategoryId == 5).OrderByDescending(x => x.CreatedAt).Take(10).ToList();
+			LoadProductsAndCategories(); // Gọi phương thức từ BaseController
 
-			//         var hot_smartphones = _context.Products.Where(_x => _x.CategoryId == 1).OrderBy(x => x.OrderItems).Take(10).ToList();
-			//var hot_laptop = _context.Products.Where(_x => _x.CategoryId == 2).OrderBy(x => x.OrderItems).Take(10).ToList();
-			//var hot_tablet = _context.Products.Where(_x => _x.CategoryId == 3).OrderBy(x => x.OrderItems).Take(10).ToList();
-			//var hot_watch = _context.Products.Where(_x => _x.CategoryId == 4).OrderBy(x => x.OrderItems).Take(10).ToList();
-			//var hot_accessory = _context.Products.Where(_x => _x.CategoryId == 5).OrderBy(x => x.OrderItems).Take(10).ToList();
+			var product = _context.Products
+				.Include(x => x.VarientProducts)
+				.Include(x => x.Galleries)
+				.Include(x => x.Reviews)
+				.FirstOrDefault(x => x.ProductId == id);
 
-			ViewBag.Categories = categories;
-			ViewBag.phone = smartphone_products;
-			ViewBag.laptop = laptop_products;
-			ViewBag.tablet = tablet_products;
-			ViewBag.watch = watch_products;
-			var product = _context.Products.Include(x=>x.VarientProducts).Include(x=>x.Galleries)
-                .Include(x=>x.Reviews).FirstOrDefault(x=>x.ProductId == id);
-
-            var related_products = _context.Products.Where(x => x.CategoryId == product.CategoryId).Take(10).ToList();
-
+			var related_products = _context.Products.Where(x => x.CategoryId == product.CategoryId).Take(10).ToList();
             ViewBag.related_products = related_products;
-            return View(product);
-        }
+			return View(product);
+		}
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()

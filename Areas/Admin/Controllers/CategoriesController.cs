@@ -6,15 +6,11 @@ namespace Tech_Store.Areas.Admin.Controllers
 {
     [Area("Admin")]
     [Route("admin/[controller]")]
-    public class CategoriesController : Controller
+    public class CategoriesController : BaseAdminController
     {
-        private readonly ApplicationDbContext _context;
-
-        public CategoriesController(ApplicationDbContext context)
-        {
-            _context = context;
-        }
-
+   
+        public CategoriesController(ApplicationDbContext context) : base(context) { }
+      
         [HttpGet]
         public IActionResult Index()
         {
@@ -24,8 +20,26 @@ namespace Tech_Store.Areas.Admin.Controllers
 
         [Route("Create")]
         [HttpPost]
-        public async Task<IActionResult> Create(Category cate)
+        public async Task<IActionResult> Create([FromForm]Category cate,IFormFile? imageFile)
         {
+            // Lưu hình ảnh vào file
+            if (imageFile.Length > 0 && imageFile != null)
+            {
+                var fileName = $"Cate_{Guid.NewGuid()}.png";
+                var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Logo", fileName);
+                Directory.CreateDirectory(Path.GetDirectoryName(imagePath));
+
+                using (var stream = new FileStream(imagePath, FileMode.Create))
+                {
+                    await imageFile.CopyToAsync(stream);
+                }
+
+                cate.Image = fileName;
+            }
+            else
+            {
+                cate.Image = "none.jpg";
+            }
             _context.Categories.Add(cate);
             await _context.SaveChangesAsync();
             return Ok();
@@ -41,7 +55,7 @@ namespace Tech_Store.Areas.Admin.Controllers
             return Json(cate);
         }
         [HttpPut("Update/{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] Category cate)
+        public async Task<IActionResult> Update(int id, [FromForm] Category cate, IFormFile? imageFile)
         {
             try
             {
@@ -51,9 +65,37 @@ namespace Tech_Store.Areas.Admin.Controllers
                     return NotFound();
                 }
 
+                // Kiểm tra và xóa ảnh cũ nếu có
+                if (!string.IsNullOrEmpty(category.Image) && category.Image != "none.jpg")
+                {
+                    var oldImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Logo", category.Image);
+                    if (System.IO.File.Exists(oldImagePath))
+                    {
+                        System.IO.File.Delete(oldImagePath);
+                    }
+                }
+
+                // Lưu hình ảnh mới nếu có
+                if (imageFile != null && imageFile.Length > 0)
+                {
+                    var fileName = $"Cate_{Guid.NewGuid()}.png";
+                    var newImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Logo", fileName);
+                    Directory.CreateDirectory(Path.GetDirectoryName(newImagePath)!);
+
+                    using (var stream = new FileStream(newImagePath, FileMode.Create))
+                    {
+                        await imageFile.CopyToAsync(stream);
+                    }
+
+                    // Cập nhật tên file vào thuộc tính Image của `category`
+                    category.Image = fileName;
+                }
+
+                // Cập nhật các thuộc tính khác
                 category.Name = cate.Name;
                 category.Description = cate.Description;
                 category.Visible = cate.Visible;
+
                 await _context.SaveChangesAsync();
                 return Ok();
             }
@@ -63,6 +105,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
+
 
         [HttpDelete("Delete/{id}")]
         public async Task<IActionResult> Delete(int id)
@@ -85,5 +128,26 @@ namespace Tech_Store.Areas.Admin.Controllers
             }
 
         }
+        [HttpPost("ChangeVisible")]
+        public async Task<JsonResult> ChangeVisible(int id)
+        {
+            if (id == 0)
+            {
+                return Json(new { success = false, message = "Không tìm thấy ID danh mục" });
+            }
+
+            var cate = await _context.Categories.FirstOrDefaultAsync(x => x.CategoryId == id);
+            if (cate == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy danh mục" });
+            }
+
+            // Đảo ngược giá trị Visible
+            cate.Visible = cate.Visible == 0 ? 1 : 0;
+
+            await _context.SaveChangesAsync();
+            return Json(new { success = true, message = "Thay đổi thành công", visible = cate.Visible });
+        }
+
     }
 }

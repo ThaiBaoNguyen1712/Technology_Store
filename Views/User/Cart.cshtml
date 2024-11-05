@@ -1,0 +1,285 @@
+﻿@model Tech_Store.Models.Cart
+@{
+    ViewData["Title"] = "Giỏ hàng của tôi";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@using System.Globalization
+<div class="container d-flex justify-content-center mt-5">
+    <div class="w-100" style="max-width: 800px;">
+        @if (Model != null && Model.CartItems != null && Model.CartItems.Any())
+        {
+            <div class="d-flex justify-content-end mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="selectAll" style="cursor: pointer;">
+                    <label class="form-check-label ms-2" for="selectAll" style="cursor: pointer;">
+                        Chọn tất cả
+                    </label>
+                </div>
+            </div>
+
+
+            <div id="cartItemsContainer">
+                @foreach (var item in Model.CartItems)
+                {
+                    <div class="card mb-3 cart-item shadow-sm border-0" data-item-id="@item.VarientProductId">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <input type="hidden" name="ProductId" value="@item.ProductId"/>
+                                <!-- Hình ảnh sản phẩm -->
+                                <div class="col-4 col-md-2">
+                                    <img src="/Upload/Products/@item.Product.Image"
+                                         class="img-fluid rounded shadow-sm"
+                                         alt="Product Image">
+                                </div>
+
+                                <!-- Thông tin sản phẩm -->
+                                <div class="col-8 col-md-4 text-md-start text-center mt-2 mt-md-0">
+                                    <h5 class="product-name mb-1">@item.Product.Name</h5>
+                                    <p class="text-muted mb-0 small">@item.VarientProduct.Attributes</p>
+                                </div>
+
+                                <!-- Giá và số lượng -->
+                                <div class="col-12 col-md-5 mt-3 mt-md-0 text-md-end text-center">
+                                    <div class="d-flex justify-content-md-end align-items-center flex-md-row flex-column">
+                                        <!-- Giá sản phẩm -->
+                                        <div class="product-price me-md-4 mb-2 mb-md-0">
+                                            <span class="fw-bold" style="white-space: nowrap;">
+                                                @((item.VarientProduct.Price ?? 0).ToString("C0", new CultureInfo("vi-VN")))
+                                            </span>
+                                        </div>
+
+                                        <!-- Nút tăng giảm số lượng -->
+                                        <div class="input-group input-group-sm qty-control mb-2 mb-md-0" style="max-width: 120px;">
+                                            <button class="btn btn-outline-secondary minus-btn">-</button>
+                                            <input type="number" class="form-control text-center qty-input"
+                                                   value="1" min="1" data-price="@item.VarientProduct.Price">
+                                            <button class="btn btn-outline-secondary plus-btn">+</button>
+                                        </div>
+
+                                        <!-- Nút xóa sản phẩm -->
+                                        <button class="btn btn-danger btn-sm ms-md-3 delete-item" data-item-id="@item.ProductId">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Checkbox chọn sản phẩm -->
+                                <div class="col-md-1 col-2 text-center">
+                                    <input type="checkbox" class="form-check-input product-checkbox"
+                                           data-price="@item.VarientProduct.Price"
+                                           data-VarientId="@item.VarientProduct.VarientId"
+                                           data-productId="@item.ProductId"
+                                    >
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                }
+            </div>
+
+            <div class="d-flex justify-content-end align-items-center mt-3" id="checkout-form">
+                <h5 class="me-4">Tổng giá tạm tính: <span id="subtotal">0₫</span></h5>
+                <button type="button" id="PayBtn" class="btn btn-lg btn-danger">Thanh Toán</button>
+            </div>
+
+        }
+        else
+        {
+            <div class="alert alert-warning text-center">
+                Bạn chưa có món đồ nào trong giỏ hàng
+            </div>
+        }
+    </div>
+      
+ 
+</div>
+<section class="products">
+    <div class="container">
+        <div class="product-section" data-section="productRelated">
+            <div style="max-width: 85vw; padding: 10px; display: flex; justify-content: space-between; align-items: center;">
+                <h3 class="text-dark mb-0">Gợi ý cho bạn</h3>
+            </div>
+
+            <!-- Nút điều hướng cho phần sản phẩm mới -->
+            <button class="btn-scroll btn-prev" data-target="productRelated">
+                <i class="fa fa-chevron-left"></i>
+            </button>
+            <button class="btn-scroll btn-next" data-target="productRelated">
+                <i class="fa fa-chevron-right"></i>
+            </button>
+            <div class="scrolling-wrapper" data-wrapper="productRelated">
+                <div class="row pt-2 mx-auto">
+                    @foreach (var product in ViewBag.Product_Related)
+                    {
+                        <div class="card product-card" style="max-width: 250px;" data-id="@product.ProductId">
+                            <!-- Sale Badge -->
+                            <div class="position-absolute d-flex gap-2" style="top: 10px; left: 10px; z-index: 2;">
+                                @if (product.SellPrice != product.OriginalPrice)
+                                {
+                                    @if (product.DiscountPercentage != null)
+                                    {
+                                        <span class="badge bg-danger p-2">Giảm @product.DiscountPercentage%</span>
+                                    }
+                                    @if (product.DiscountAmount != null)
+                                    {
+
+                                        <span class="badge bg-danger p-2">Giảm @((product.OriginalPrice - product.SellPrice).ToString("C0", new CultureInfo("vi-VN")))</span>
+                                    }
+
+                                }
+                            </div>
+                            <!-- Installment Badge -->
+                            <div class="position-absolute" style="top: 10px; right: 10px; z-index: 2;">
+                                <span class="badge bg-white text-primary border border-primary p-2">Trả góp 0%</span>
+                            </div>
+
+                            <div class="image-container">
+                                <img src="/Upload/Products/@product.Image" class="product-image" alt="@product.Name">
+                            </div>
+
+                            <div class="card-body p-3">
+                                <h6 class="card-title mb-2 product-title">@product.Name</h6>
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <span class="text-danger fw-bold" style="">@product.SellPrice?.ToString("C0", new CultureInfo("vi-VN"))</span>
+                                    @if (product.SellPrice != product.OriginalPrice)
+                                    {
+                                        <span class="text-decoration-line-through text-muted" style="font-size:0.8rem">@product.OriginalPrice?.ToString("C0", new CultureInfo("vi-VN"))</span>
+                                    }
+                                </div>
+                                <button class="btn btn-outline-danger btn-sm w-100">
+                                    <i class="far fa-heart"></i> Yêu thích
+                                </button>
+                            </div>
+                        </div>
+
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function () {
+        // Chọn tất cả sản phẩm
+        $("#selectAll").change(function () {
+            $(".product-checkbox").prop('checked', $(this).prop('checked'));
+            calculateSubtotal();
+        });
+
+        // Sự kiện checkbox riêng lẻ
+        $(document).on('change', '.product-checkbox', calculateSubtotal);
+
+        // Sự kiện thay đổi số lượng
+        $(document).on('input', '.qty-input', calculateSubtotal);
+
+        // Xử lý nút xóa
+        $(document).on('click', '.delete-item', function () {
+            const itemId = $(this).data('item-id');
+            const cartItem = $(this).closest('.cart-item');
+
+            $.ajax({
+                url: '@Url.Action("DeleteCartItem", "User")',
+                type: 'POST',
+                data: { itemId: itemId },
+                success: function (response) {
+                    if (response.success) {
+                        cartItem.fadeOut(300, function () {
+                            $(this).remove();
+                            if ($('.cart-item').length === 0) {
+                                $('#checkout-form').addClass('d-none');
+                                $('#cartItemsContainer').html(
+                                    '<div class="alert alert-warning text-center">' +
+                                    'Bạn chưa có món đồ nào trong giỏ hàng</div>'
+                                );
+                            }
+                            calculateSubtotal();
+                        });
+                    }
+                },
+                error: function () {
+                    console.error('Lỗi khi xóa sản phẩm');
+                }
+            });
+        });
+
+        // Nút giảm số lượng
+        $(document).on('click', '.minus-btn', function () {
+            const input = $(this).siblings('.qty-input');
+            const currentValue = parseInt(input.val()) || 1;
+            if (currentValue > 1) {
+                input.val(currentValue - 1);
+                calculateSubtotal();
+            }
+        });
+
+        // Nút tăng số lượng
+        $(document).on('click', '.plus-btn', function () {
+            const input = $(this).siblings('.qty-input');
+            const currentValue = parseInt(input.val()) || 1;
+            input.val(currentValue + 1);
+            calculateSubtotal();
+        });
+
+        // Tính tổng giá
+        function calculateSubtotal() {
+            let subtotal = 0;
+            $('.product-checkbox:checked').each(function () {
+                const row = $(this).closest('.row');
+                const price = parseFloat($(this).data('price')) || 0;
+                const quantity = parseInt(row.find('.qty-input').val()) || 1;
+                subtotal += price * quantity;
+            });
+            $('#subtotal').text(new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND'
+            }).format(subtotal));
+        }
+
+        // Khởi tạo tổng giá ban đầu khi trang được tải lại
+        calculateSubtotal();
+    });
+
+</script>
+<script>
+    $(document).ready(function () {
+        $('#PayBtn').on('click', function () {
+            var cartItems = [];
+
+            $('#cartItemsContainer .cart-item').each(function () {
+                var item = $(this);
+
+                // Lấy các giá trị cần thiết từ các thuộc tính của phần tử
+                var varientId = item.find('.product-checkbox').data('varientid');
+                var productId = item.find('input[name="ProductId"]').val();
+                var quantity = item.find('.qty-input').val();
+
+                // Đẩy đối tượng vào mảng
+                cartItems.push({
+                    VarientProductId: varientId,
+                    ProductId: productId,
+                    Quantity: quantity
+                });
+            });
+
+
+            $.ajax({
+                method: 'POST',
+                url: '@Url.Action("ToCheckout", "User")',
+                contentType: 'application/json', // Đặt Content-Type cho JSON
+                data: JSON.stringify({ cartDTos: cartItems }), // Chuyển đổi mảng thành chuỗi JSON
+                dataType: 'json',
+                success: function (response) {
+                    if (response.redirectUrl) {
+                        window.location.href = response.redirectUrl; // Điều hướng đến trang CheckoutView
+                    }
+                },
+                error: function (response) {
+                    alert(response.responseJSON?.message || 'Có lỗi xảy ra, vui lòng thử lại.');
+                }
+            });
+        });
+    });
+</script>
+

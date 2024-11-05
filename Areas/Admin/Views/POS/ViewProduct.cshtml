@@ -1,59 +1,65 @@
 ﻿<!-- Modal -->
 <div class="modal fade" id="productDetail" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" style="min-width:60vw">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
+            <!-- Modal Header -->
             <div class="modal-header">
                 <h5 class="modal-title" id="exampleModalLabel">Chi tiết sản phẩm</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+
+            <!-- Modal Body -->
             <div class="modal-body">
-                <div class="row d-flex">
-                    <!-- Hình ảnh sản phẩm -->
-                    <div class="col-md-4 text-center">
-                        <img class="img-fluid rounded shadow" id="imgProduct" src="https://126.cdn.vccloud.vn/uploads/2024/02/ip16promaxx.webp" style="height:250px;width:auto%;object-fit:cover;" alt="iPhone 16 Pro Max" />
+                <div class="row">
+                    <!-- Left Column (Product Image) -->
+                    <div class="col-12 col-md-4 text-center mb-3 mb-md-0">
+                        <img id="imgProduct" class="img-fluid rounded shadow"
+                             src="https://126.cdn.vccloud.vn/uploads/2024/02/ip16promaxx.webp"
+                             style="height: 250px; width: auto; object-fit: cover;"
+                             alt="iPhone 16 Pro Max" />
                     </div>
-                    <!-- Thông tin sản phẩm -->
-                    <div class="col-md-8">
-                        <div class="product-name mb-2">
-                            <div>
-                                <span class="badge badge-success stockValue" style="font-size: 1.05em; padding: 0.4em 1.2em;">Còn hàng</span>
 
-
-                            </div>
-                            <input type="hidden" id="IdProduct"/>
-                            <h3 id="nameProduct" class="fw-bold">iPhone 16 Pro Max</h3>
+                    <!-- Right Column (Product Info) -->
+                    <div class="col-12 col-md-8">
+                        <h3 id="nameProduct" class="fw-bold mb-2">iPhone 16 Pro Max</h3>
+                        <div class="d-flex align-items-center mb-3">
+                            <span id="priceProduct" class="fs-4 text-danger fw-semibold me-2">16.000.000đ</span>
+                            <span id="originalPriceProduct" class="fs-6 text-muted text-decoration-line-through">18.000.000đ</span>
                         </div>
                         <div class="mb-3">
-                            <span id="priceProduct" class="fs-4 text-danger fw-semibold">Giá: 16.000.000đ</span>
+                            <span class="badge bg-success stockValue" style="font-size: 1em; padding: 0.3em 1em;">Còn hàng</span>
                         </div>
 
-                        <div id="variantCardsContainer" class="d-flex flex-wrap justify-content-start">
-                            <!-- Variant cards will be inserted here -->
+                        <!-- Quantity Input and Variant Cards -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="input-group mb-3" style="max-width: 150px;">
+                                    <span class="input-group-text">Số lượng:</span>
+                                    <input type="number" class="form-control" name="quantityValue" min="1" value="1" style="max-width: 80px;" />
+                                </div>
+
+                            </div>
+                            <div id="variantCardsContainer" class="d-flex flex-wrap mt-3">
+                                <!-- Variant cards go here -->
+                            </div>
                         </div>
-                        <style>
-                           
-                        </style>
-                      
                     </div>
                 </div>
-                <div class="row py-3">
-                    <div>
-                        <strong>Danh Mục:</strong>
-                        <p class="text-muted d-inline-block" id="categoryName"></p>
-                    </div>
-                    <div> 
-                        <strong>Thương Hiệu:</strong>
-                        <p class="text-muted d-inline-block" id="brandName"></p>
-                    </div>
-                    <div>
-                        <strong>SKU:</strong>
-                        <p class="text-muted d-inline-block" id="sku"></p>
-                    </div>
 
+                <!-- Additional Info (Category, Brand, SKU) -->
+                <div class="row py-3">
+                    <div class="col-6">
+                        <div><strong>Danh Mục:</strong> <span id="categoryName" class="text-muted">Điện thoại</span></div>
+                        <div><strong>Thương Hiệu:</strong> <span id="brandName" class="text-muted">Apple</span></div>
+                    </div>
+                    <div class="col-6">
+                        <div><strong>SKU:</strong> <span id="sku" class="text-muted">SKU12345</span></div>
+                    </div>
                 </div>
             </div>
+
+            <!-- Modal Footer -->
             <div class="modal-footer">
-                <!-- Nút hành động -->
                 <button type="button" id="AddToCart" class="btn btn-outline-primary btn-lg">Thêm vào giỏ hàng</button>
                 <button type="button" class="btn btn-outline-danger btn-lg" data-bs-dismiss="modal">Hủy</button>
             </div>

@@ -1,15 +1,23 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Tech_Store.Models;
 
 namespace Tech_Store.Areas.Admin.Controllers
 {
 	[Area("Admin")]
 	[Route("admin")]
-	public class HomeController : Controller
+    [Authorize(Roles = "Admin")]
+    public class HomeController : BaseAdminController
 	{
-		[Route("")]
+        public HomeController(ApplicationDbContext context) : base(context)
+        {
+        }
+
+        [Route("")]
 		[Route("Index")]
 		public IActionResult Index()
 		{
+		
 			return View();
 		}
 	}

@@ -1,0 +1,107 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+</head>
+<body>
+    <div class="card">
+        <div class="card-body">
+            <div class="container mb-5 mt-3">
+                <div class="text-center mb-4">
+                    <i class="fab fa-mdb fa-4x" style="color:#5d9fc5;"></i>
+                    <h4 class="mt-2">TechStore.com</h4>
+                </div>
+
+                <div class="row mb-4">
+                    <!-- Thông tin khách hàng -->
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3">Thông tin khách hàng</h6>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <strong>Người nhận:</strong>
+                                <span style="color:#5d9fc5;">{{name}}</span>
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-map-marker-alt me-2"></i>
+                                <strong>Địa chỉ:</strong> {{address}}
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-phone me-2"></i>
+                                <strong>SĐT:</strong> {{phoneNumber}}
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Thông tin hóa đơn -->
+                    <div class="col-md-6 text-md-end text-start">
+                        <h6 class="text-muted mb-3">Thông tin đơn hàng</h6>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fas fa-circle me-2" style="color:#84B0CA;"></i>
+                                <strong>Mã đơn hàng:</strong>#{{orderID}}
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-circle me-2" style="color:#84B0CA;"></i>
+                                <strong>Ngày đặt:</strong> {{orderDate}}
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-circle me-2" style="color:#84B0CA;"></i>
+                                <strong>Trạng thái:</strong>
+                                <span class="badge bg-warning text-black fw-bold">{{oderStatus}}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Bảng sản phẩm -->
+                <div class="row my-2">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered">
+                            <thead class="text-white" style="background-color:#84B0CA;">
+                                <tr>
+                                    <th scope="col" class="text-center" width="5%">#</th>
+                                    <th scope="col" width="55%">Tên</th>
+                                    <th scope="col" class="text-center" width="15%">SL</th>
+                                    <th scope="col" class="text-end" width="25%">Giá</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{productRows}}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tổng cộng và Thanh toán -->
+                <div class="row">
+                    <div class="col-md-12 offset-md-12">
+                        <ul class="list-unstyled">
+                            <li class="d-flex justify-content-between mb-2 text-muted">
+                                <span class="fw-bold">Tổng Giá:</span>
+                                <span>{{originAmount}}</span>
+                            </li>
+                            <li class="d-flex justify-content-between mb-2 text-muted">
+                                <span class="fw-bold">Giảm giá khuyến mãi:</span>
+                                <span>{{discountAmount}}</span>
+                            </li>
+                            <li class="d-flex justify-content-between mb-2 text-muted">
+                                <span class="fw-bold">Giảm giá thêm:</span>
+                                <span>{{deductAmount}}</span>
+                            </li>
+                            <li class="d-flex justify-content-between mt-3 pt-2 border-top">
+                                <span class="fw-bold fs-5">Thanh Toán:</span>
+                                <span class="fs-5">{{amount}}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+</body>
+</html>

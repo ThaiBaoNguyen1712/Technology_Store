@@ -1,6 +1,6 @@
 ﻿@model IEnumerable<Tech_Store.Models.Brand>
 @{
-    ViewData["Title"] = "Category";
+    ViewData["Title"] = "Brand";
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
 }
 
@@ -29,6 +29,7 @@
                             <thead>
                                 <tr>
                                     <th>Tên</th>
+                                    <th>Hình ảnh</th>
                                     <th>Mô tả</th>
                                     <th style="width:10%">Hành động</th>
                                 </tr>
@@ -36,6 +37,7 @@
                             <tfoot>
                                 <tr>
                                     <th>Tên</th>
+                                    <th>Hình ảnh</th>
                                     <th>Mô tả</th>
                                     <th>Hành động</th>
                                 </tr>
@@ -47,6 +49,9 @@
                                 {
                                     <tr>
                                             <td>@brand.Name</td>
+                                            <td class="text-center">
+                                                <img src="/Upload/Logo/@(brand.Image ?? "none.jpg")" width="90px" height="90px" class="rounded circle" />
+                                            </td>
                                             <td>@brand.Description</td>
                                         <td>
                                             <div class="form-button-action">
@@ -121,6 +126,7 @@
                     $('input[name="name"]').val(response.name); // Đặt giá trị cho input name
                     $('input[name="description"]').val(response.description); // Đặt giá trị cho input description
                     $('input[name="brand_id"]').val(response.brandId)
+                    $('#ImageUrl').attr('src', '/Upload/Logo/' + response.image);
                     // Hiển thị nút Lưu thay đổi và ẩn nút Thêm mới
                     $('#update').show();
                     $('#add').hide();
@@ -144,6 +150,7 @@
             $('input[name="name"]').val('');
             $('input[name="description"]').val('');
             $('input[name="brand_id"]').val('');
+            $('#ImageUrl').attr('src', '/Upload/Logo/none.jpg');
             //Tắt trạng thái load
             $('.loading-container').hide();
 

@@ -13,6 +13,12 @@ public partial class Payment
 
     public string PaymentMethod { get; set; } = null!;
 
+    public decimal? DiscountAmount { get; set; }
+
+    public decimal? DeductAmount { get; set; }
+
+    public decimal? OriginAmount { get; set; }
+
     public decimal Amount { get; set; }
 
     public string Status { get; set; } = null!;
