@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Tech_Store.Models.DTO
+namespace Tech_Store.Models.DTO.Payment.Admin
 {
     public class InvoicesDTo
     {
@@ -15,7 +15,7 @@ namespace Tech_Store.Models.DTO
 
         public string PaymentMethod { get; set; }
 
-        public string? Voucher {  get; set; }
+        public string? Voucher { get; set; }
 
         public decimal OriginTotalPrice { get; set; }
 

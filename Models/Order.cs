@@ -11,6 +11,14 @@ public partial class Order
 
     public DateTime? OrderDate { get; set; }
 
+    public decimal? OriginAmount { get; set; }
+
+    public decimal? DeductAmount { get; set; }
+
+    public decimal? DiscountAmount { get; set; }
+
+    public decimal? ShippingAmount { get; set; }
+
     public decimal TotalAmount { get; set; }
 
     public string OrderStatus { get; set; } = null!;
@@ -18,6 +26,7 @@ public partial class Order
     public int? ShippingAddressId { get; set; }
 
     public string? Note { get; set; }
+
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();

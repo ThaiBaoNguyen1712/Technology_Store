@@ -1,4 +1,4 @@
-﻿namespace Tech_Store.Models.DTO
+﻿namespace Tech_Store.Models.DTO.Payment.Admin
 {
     public class PaymentLinkDTo
     {

@@ -109,10 +109,7 @@ namespace Tech_Store.Controllers
             if (user_Infor == null)
                 return NotFound();
 
-            if (!string.IsNullOrEmpty(address.AddressLine) &&
-                !string.IsNullOrEmpty(address.Province) &&
-                !string.IsNullOrEmpty(address.Ward) &&
-                !string.IsNullOrEmpty(address.District))
+            if (address != null && !string.IsNullOrEmpty(address.AddressLine))
             {
                 // Read the JSON file
                 var jsonString = await System.IO.File.ReadAllTextAsync("wwwroot/Province_VN.json");

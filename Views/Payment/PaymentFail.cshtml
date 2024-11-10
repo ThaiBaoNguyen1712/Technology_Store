@@ -1,0 +1,66 @@
+﻿@{
+    ViewData["Title"] = "Thanh toán thất bại";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container min-vh-75 d-flex align-items-center justify-content-center py-5">
+    <div class="card shadow-lg" style="max-width: 500px;">
+        <div class="card-body text-center p-5">
+            <!-- Icon -->
+            <div class="mb-4">
+                <div class="rounded-circle bg-danger bg-opacity-10 mx-auto d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                    <i class="fas fa-times-circle text-danger" style="font-size: 2.5rem;"></i>
+
+                </div>
+            </div>
+
+            <!-- Title -->
+            <h1 class="card-title h3 mb-4">Thanh toán thất bại</h1>
+
+            <!-- Error Message -->
+            <div class="alert alert-danger mb-4">
+                @TempData["Message"]
+            </div>
+
+            <!-- Helpful Information -->
+            <div class="text-muted mb-4">
+                <p class="mb-3">Vui lòng kiểm tra:</p>
+                <ul class="list-group list-group-flush text-start mb-4">
+                    <li class="list-group-item text-muted bg-transparent">
+                        <i class="bi bi-check-circle me-2"></i>Thông tin thẻ thanh toán của bạn
+                    </li>
+                    <li class="list-group-item text-muted bg-transparent">
+                        <i class="bi bi-check-circle me-2"></i>Số dư tài khoản
+                    </li>
+                    <li class="list-group-item text-muted bg-transparent">
+                        <i class="bi bi-check-circle me-2"></i>Kết nối internet
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-grid gap-2 d-md-flex justify-content-center mb-4">
+                <a href="@Url.Action("Index", "Payment")" class="btn btn-danger px-4">
+                    <i class="bi bi-arrow-repeat me-2"></i>Thử lại
+                </a>
+                <a href="@Url.Action("Index", "Home")" class="btn btn-secondary px-4">
+                    <i class="bi bi-house me-2"></i>Về trang chủ
+                </a>
+            </div>
+
+            <!-- Support Information -->
+            <div class="text-muted small">
+                <p class="mb-2">Cần hỗ trợ? Liên hệ với chúng tôi:</p>
+                <p class="mb-0">
+                    <a href="tel:1900xxxx" class="text-decoration-none me-2">
+                        <i class="bi bi-telephone me-1"></i>1900 xxxx
+                    </a>
+                    <span class="text-muted mx-1">|</span>
+                    <a href="mailto:support@example.com" class="text-decoration-none">
+                        <i class="bi bi-envelope me-1"></i>support@example.com
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

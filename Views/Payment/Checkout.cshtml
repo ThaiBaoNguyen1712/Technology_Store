@@ -2,7 +2,7 @@
     ViewData["Title"] = "Checkout";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-@model Tuple<List<Tech_Store.Models.DTO.CheckoutDTo>, Tech_Store.Models.DTO.UserDTo>
+@model Tuple<List<Tech_Store.Models.DTO.Payment.Client.CheckoutDTo>, Tech_Store.Models.DTO.UserDTo>
 @using System.Globalization
 <style>
     .payment-method-logo {
@@ -53,33 +53,49 @@
                             <label class="form-label">Email</label>
                             <input type="email" class="form-control" value="@Model.Item2.Email">
                         </div>
+                        @if(ViewBag.Address!=null)
+                        {
                         <div class="mb-3">
-                            <label class="form-label">Địa chỉ nhận hàng *</label>
-                            <input type="text" class="form-control" value="@Model.Item2.AddressLine" required>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Tỉnh/Thành phố</label>
-                                <select id="citySelect" class="form-control selectpicker" data-live-search="true" title="Chọn Thành phố" required>
-                                    <!-- Tùy chọn sẽ được thêm vào đây -->
-                                </select>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Quận/Huyện</label>
-                                <select id="districtSelect" class="form-control selectpicker" data-live-search="true" title="Chọn Quận/Huyện" required>
-                                    <!-- Tùy chọn sẽ được thêm vào đây -->
-                                </select>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Phường/Xã</label>
-                                <select id="wardSelect" class="form-control selectpicker" data-live-search="true" title="Chọn Phường/Xã" required>
-                                    <!-- Tùy chọn sẽ được thêm vào đây -->
-                                </select>
+                            <div class="card p-3">
+                                <p class="mt-2 text-muted">Địa chỉ hiện tại: <strong>@ViewBag.Address</strong></p>
+                                <div class="form-check">
+                                    <input type="checkbox" name="IsOldAddress" class="form-check-input" id="isOldAddressCheckbox" />
+                                    <label class="form-check-label" for="isOldAddressCheckbox">Giao hàng đến địa chỉ khác?</label>
+                                </div>
                             </div>
                         </div>
+                        }
+                        <div id="FormNewAddress" style=" @(ViewBag.Address ==null ? "" : "display:none" )">
+                            <div class="mb-3">
+                                <label class="form-label">Địa chỉ nhận hàng *</label>
+                                <input type="text" class="form-control" name="AddressLine" value="@Model.Item2.AddressLine" required>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Tỉnh/Thành phố</label>
+                                    <select id="citySelect" class="form-control selectpicker" name="Ward" data-live-search="true" title="Chọn Thành phố" required>
+                                        <!-- Tùy chọn sẽ được thêm vào đây -->
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Quận/Huyện</label>
+                                    <select id="districtSelect" class="form-control selectpicker" name="District" data-live-search="true" title="Chọn Quận/Huyện" required>
+                                        <!-- Tùy chọn sẽ được thêm vào đây -->
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Phường/Xã</label>
+                                    <select id="wardSelect" class="form-control selectpicker" name="Province" data-live-search="true" title="Chọn Phường/Xã" required>
+                                        <!-- Tùy chọn sẽ được thêm vào đây -->
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="mb-3">
                             <label class="form-label">Ghi chú</label>
-                            <textarea class="form-control" rows="3"></textarea>
+                            <textarea class="form-control" name="Note" rows="3"></textarea>
                         </div>
                     </form>
                 </div>
@@ -92,26 +108,27 @@
                 <div class="card-body">
                     <h4 class="mb-4">Đơn hàng của bạn</h4>
                     <div class="table-responsive">
-                     <table class="table table-hover">
-                        @foreach(var item in Model.Item1)
-                        {
-                      <tr>
-                          <td>
-                            <img src="~/Upload/Products/@item.ImageUrl" class="img-fluid" style="max-width: 60px; max-height: 60px;">
-                          </td>
-                          <td>@item.ProductName</td>
-                          <td>@item.Attributes</td>
-                          <td class="text-nowrap">
-                            <del class="text-muted">@item.OriginPrice?.ToString("C0", new CultureInfo("vi-VN"))</del>
-                          </td>
-                          <td class="text-nowrap text-success">@item.SellPrice.ToString("C0", new CultureInfo("vi-VN"))</td>
-                          <td>@item.Quantity</td>
-                        </tr>
-                        }
-                    
-                    </table>
+                        <table class="table table-hover">
+                            @foreach (var item in Model.Item1)
+                            {
+                                <tr class="product-row" data-variantid="@item.VarientId" data-productid="@item.ProductId">
+                                    <td>
+                                        <img src="~/Upload/Products/@item.ImageUrl" class="img-fluid" style="max-width: 60px; max-height: 60px;">
+                                    </td>
+                                    <td>@item.ProductName</td>
+                                    <td>@item.Attributes</td>
+                                    <td class="text-nowrap">
+                                        <del class="text-muted">@item.OriginPrice?.ToString("C0", new CultureInfo("vi-VN"))</del>
+                                    </td>
+                                    <td class="text-nowrap text-success">@item.SellPrice.ToString("C0", new CultureInfo("vi-VN"))</td>
+                                    <td>@item.Quantity</td>
+                                </tr>
+                            }
+
+
+                        </table>
                     </div>
-               
+
                     <div class="d-flex justify-content-between mb-2">
                         <span>Tạm tính</span>
                         <span id="subtotal">@(ViewBag.totalPrice.ToString("C0", new CultureInfo("vi-VN")) ?? "0 ₫")</span>
@@ -127,8 +144,9 @@
                     </div>
                     <div class="d-flex jutify-content-between mb-2">
                         <div class="input-group">
-                          <input type="text" class="form-control" name="Voucher" placeholder="Mã giảm giá..." aria-describedby="button-Checkvoucher">
-                          <button class="btn btn-outline-danger" type="button" id="button-Checkvoucher">Kiểm tra</button>
+                            <input type="hidden" id="validVoucherCode" name="validVoucherCode" value="">
+                            <input type="text" class="form-control" name="Voucher" placeholder="Mã giảm giá..." aria-describedby="button-Checkvoucher">
+                            <button class="btn btn-outline-danger" type="button" id="button-Checkvoucher">Kiểm tra</button>
                         </div>
                     </div>
                     <p class="text-success mb-2" id="resultVoucher"></p>
@@ -141,7 +159,7 @@
                     <h5 class="mb-3">Phương thức thanh toán</h5>
                     <div class="payment-methods">
                         <!-- MOMO -->
-                        <div class="card mb-2 payment-method cursor-pointer">
+                        <div class="card mb-2 payment-method cursor-pointer" data="momo">
                             <div class="card-body d-flex align-items-center">
                                 <img src="/Upload/Logo/Logo-MoMo-Square-1024x1024.webp" width="60px" height="60px" alt="MOMO" class="payment-method-logo me-3">
                                 <div>
@@ -152,7 +170,7 @@
                         </div>
 
                         <!-- VNPAY -->
-                        <div class="card mb-4 payment-method cursor-pointer">
+                        <div class="card mb-2 payment-method cursor-pointer" data="vnpay">
                             <div class="card-body d-flex align-items-center">
                                 <img src="/Upload/Logo/LogoVNPay.png" width="60px" height="60px" alt="VNPAY" class="payment-method-logo me-3">
                                 <div>
@@ -162,18 +180,18 @@
                             </div>
                         </div>
                         <!--Ship Cod-->
-                        <div class="card mb-4 payment-method cursor-pointer">
+                        <div class="card mb-4 payment-method cursor-pointer" data="cod">
                             <div class="card-body d-flex align-items-center">
-                                <img src="/Upload/Logo/shipcod.png" width="60px" height="60px" alt="VNPAY" class="payment-method-logo me-3">
+                                <img src="/Upload/Logo/shipcod.png" width="60px" height="60px" alt="ShipCOD" class="payment-method-logo me-3">
                                 <div>
-                                    <h6 class="mb-0">VNPAY</h6>
+                                    <h6 class="mb-0">Ship COD</h6>
                                     <small class="text-muted">Thanh toán khi nhận hàng</small>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <button class="btn btn-primary w-100 py-2" type="submit" form="checkoutForm">
+                    <button class="btn btn-primary w-100 py-2" id="PayBtn" type="button" form="checkoutForm">
                         Đặt hàng
                         <i class="fas fa-arrow-right ms-2"></i>
                     </button>
@@ -221,7 +239,7 @@
                 $.ajax({
                     method: 'GET',
                     url: '@Url.Action("CheckVoucher", "Payment")',
-                    data: { code : voucher },
+                    data: { code: voucher },
                     success: function (res) {
                         if (res.success) {
                             $('#resultVoucher').text("Voucher đã được áp dụng thành công").removeClass('text-danger').addClass('text-success').show();
@@ -231,9 +249,11 @@
                                 // Nếu là giảm tiền mặt (không có %), chuyển đổi sang số và format thành tiền VND
                                 var promotionAmount = parseFloat(res.voucher.promotion.replace(/,/g, '')); // Loại bỏ dấu phẩy (nếu có) và chuyển thành số
                                 var formattedPromotion = promotionAmount.toLocaleString() + 'đ';
-
+                                // Lưu mã voucher hợp lệ vào input hidden
+                                $('#validVoucherCode').val(voucher);
                                 $('#Discount').text(formattedPromotion);
                             } else {
+                                $('#validVoucherCode').val('');
                                 // Nếu là phần trăm giảm giá (%)
                                 $('#Discount').text(res.voucher.promotion);
                             }
@@ -283,7 +303,7 @@
                 }
             }
             // Tính tổng tiền thanh toán
-            var total = totalPrice  - discountPrice;
+            var total = totalPrice - discountPrice;
 
             // Hiển thị tổng tiền thanh toán với định dạng có dấu chấm ngăn cách
             $('#totalPrice').text(total.toLocaleString() + 'đ');
@@ -294,17 +314,107 @@
     });
 </script>
 <script>
-// Gọi fillAddressData khi trang được tải
-document.addEventListener('DOMContentLoaded', function () {
-    // Thay thế các giá trị provinceCode, districtCode, wardCode bằng các giá trị thực tế
-    const provinceCode = @Model.Item2.Province; // Ví dụ: '01'
-    const districtCode = @Model.Item2.District; // Ví dụ: '001'
-    const wardCode = @Model.Item2.Ward; // Ví dụ: '0001'
-    
-    fillAddressData(provinceCode, districtCode, wardCode);
+    $(document).ready(function () {
+        $('#isOldAddressCheckbox').change(function () {
+            if ($(this).is(':checked')) {
+                $('#FormNewAddress').slideDown();
+            } else {
+                $('#FormNewAddress').slideUp();
+            }
+        });
+        $('.payment-method').on('click', function () {
+            // Lấy giá trị data từ phần tử được click
+            var payMethod = $(this).attr('data');
+            console.log(payMethod);
 
-    updateTotalPayment();
+            // Lưu trữ phương thức thanh toán vào một biến ẩn hoặc hiển thị nó trên nút thanh toán
+            $('#PayBtn').data('selectedMethod', payMethod);
+        });
 
-});
+        $('#PayBtn').on('click', function () {
+            var selectedMethod = $(this).data('selectedMethod');
+            var addressline, ward, district, province;
+            var validVoucher = $('#validVoucherCode').val();
+            var note = $('textarea[name="Note"]').val();
+            var isNewAddress = false;
+            var paymentMethod = $(this).data('selectedMethod');
+            // Kiểm tra nếu là địa chỉ mới hoặc đã có địa chỉ cũ
+            if ($('#isOldAddressCheckbox').is(':checked')) {
+                addressline = $('input[name="AddressLine"]').val();
+                ward = $('select[name="Ward"]').val();
+                district = $('select[name="District"]').val();
+                province = $('select[name="Province"]').val();
+                isNewAddress = true; // Địa chỉ mới
+            }
+
+            // Tạo mảng chứa sản phẩm
+            var products = [];
+
+            // Duyệt qua tất cả các dòng có class 'product-row'
+            $('.product-row').each(function () {
+                // Lấy các giá trị từ data-attributes của từng dòng
+                var variantId = $(this).data('variantid');  
+                var productId = $(this).data('productid'); 
+                var quantity = $(this).find('td').eq(5).text().trim();  // Lấy giá trị Quantity từ cột thứ 6 (chỉ số bắt đầu từ 0)
+
+                // Thêm thông tin vào mảng products
+                products.push({
+                    VarientProductID: variantId,  // Đổi tên cho đúng với DTO
+                    ProductId: productId,
+                    Quantity: quantity
+                });
+            });
+
+                $.ajax({
+                    method: 'POST',
+                    url: '@Url.Action("Checkout", "Payment")',
+                    data: {
+                        // Chuyển đổi thông tin sang DTO
+                        Products: products,
+                        VoucherCode: validVoucher,
+                        Note: note,
+                        NewAddress: isNewAddress,
+                        // Nếu có địa chỉ mới, thêm địa chỉ vào request
+                        Address: isNewAddress ? {
+                            AddressLine: addressline,
+                            Ward: ward,
+                            District: district,
+                            Province: province
+                        } : null,
+                    PaymentMethod: paymentMethod
+                    },
+                    success: function (response) {
+                    if (response.vnPayUrl) {
+                        // Chuyển hướng người dùng đến URL VNPay
+                        window.location.href = response.vnPayUrl;
+                    }
+                    else if (response.momoPayUrl) {
+                        // Chuyển hướng người dùng đến URL MoMoPay
+                        window.location.href = response.momoPayUrl;
+                    } else {
+                        // Xử lý các phương thức thanh toán khác hoặc hiển thị thông báo thành công
+                        console.log('Thanh toán thành công', response);
+                    }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Có lỗi xảy ra:', error);
+                    }
+                });
+            
+        });
+
+    });
+</script>
+<script>
+    // Gọi fillAddressData khi trang được tải
+    document.addEventListener('DOMContentLoaded', function () {
+        // Thay thế các giá trị provinceCode, districtCode, wardCode bằng các giá trị thực tế
+        const provinceCode = @Model.Item2.Province; // Ví dụ: '01'
+        const districtCode = @Model.Item2.District; // Ví dụ: '001'
+        const wardCode = @Model.Item2.Ward; // Ví dụ: '0001'
+
+        fillAddressData(provinceCode, districtCode, wardCode);
+
+    });
 
 </script>

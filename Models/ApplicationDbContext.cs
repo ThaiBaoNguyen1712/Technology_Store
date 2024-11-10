@@ -62,7 +62,6 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.AddressId).HasColumnName("address_id");
             entity.Property(e => e.AddressLine)
                 .HasMaxLength(100)
-                .IsUnicode(false)
                 .HasColumnName("address_line");
             entity.Property(e => e.District)
                 .HasMaxLength(100)
@@ -89,7 +88,9 @@ public partial class ApplicationDbContext : DbContext
             entity.ToTable("Brand");
 
             entity.Property(e => e.Description).HasColumnName("description");
-            entity.Property(e => e.Image).HasColumnName("image");
+            entity.Property(e => e.Image)
+                .HasMaxLength(255)
+                .HasColumnName("image");
             entity.Property(e => e.Name)
                 .HasMaxLength(155)
                 .HasColumnName("name");
@@ -152,7 +153,9 @@ public partial class ApplicationDbContext : DbContext
 
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
             entity.Property(e => e.Description).HasColumnName("description");
-            entity.Property(e => e.Image).HasColumnName("image");
+            entity.Property(e => e.Image)
+                .HasMaxLength(255)
+                .HasColumnName("image");
             entity.Property(e => e.Name)
                 .HasMaxLength(100)
                 .HasColumnName("name");
@@ -183,6 +186,13 @@ public partial class ApplicationDbContext : DbContext
             entity.ToTable("Order");
 
             entity.Property(e => e.OrderId).HasColumnName("order_id");
+            entity.Property(e => e.DeductAmount)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("deduct_amount");
+            entity.Property(e => e.DiscountAmount)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("discount_amount");
+            entity.Property(e => e.Note).HasColumnName("note");
             entity.Property(e => e.OrderDate)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
@@ -191,9 +201,13 @@ public partial class ApplicationDbContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false)
                 .HasColumnName("order_status");
-            entity.Property(e => e.Note)
-              .HasColumnName("note");
+            entity.Property(e => e.OriginAmount)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("origin_amount");
             entity.Property(e => e.ShippingAddressId).HasColumnName("shipping_address_id");
+            entity.Property(e => e.ShippingAmount)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("shipping_amount");
             entity.Property(e => e.TotalAmount)
                 .HasColumnType("decimal(10, 2)")
                 .HasColumnName("total_amount");
@@ -246,16 +260,7 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.Amount)
                 .HasColumnType("decimal(10, 2)")
                 .HasColumnName("amount");
-            entity.Property(e => e.DeductAmount)
-                .HasColumnType("decimal(10, 2)")
-                .HasColumnName("deductAmount");
-            entity.Property(e => e.DiscountAmount)
-                .HasColumnType("decimal(10, 2)")
-                .HasColumnName("discountAmount");
             entity.Property(e => e.OrderId).HasColumnName("order_id");
-            entity.Property(e => e.OriginAmount)
-                .HasColumnType("decimal(10, 2)")
-                .HasColumnName("originAmount");
             entity.Property(e => e.PaymentDate)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
@@ -305,7 +310,6 @@ public partial class ApplicationDbContext : DbContext
                 .HasColumnName("image");
             entity.Property(e => e.Name)
                 .HasMaxLength(200)
-                .IsUnicode(false)
                 .HasColumnName("name");
             entity.Property(e => e.OriginalPrice)
                 .HasColumnType("decimal(10, 2)")

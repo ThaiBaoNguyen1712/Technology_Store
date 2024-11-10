@@ -254,15 +254,17 @@
                 var varientId = item.find('.product-checkbox').data('varientid');
                 var productId = item.find('input[name="ProductId"]').val();
                 var quantity = item.find('.qty-input').val();
+                var isChecked = item.find('.product-checkbox').prop('checked');  
 
-                // Đẩy đối tượng vào mảng
-                cartItems.push({
-                    VarientProductId: varientId,
-                    ProductId: productId,
-                    Quantity: quantity
-                });
+                // Chỉ thêm sản phẩm vào mảng nếu checkbox được chọn
+                if (isChecked) {
+                    cartItems.push({
+                        VarientProductId: varientId,
+                        ProductId: productId,
+                        Quantity: quantity
+                    });
+                }
             });
-
 
             $.ajax({
                 method: 'POST',

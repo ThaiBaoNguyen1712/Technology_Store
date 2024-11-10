@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Text;
 using Tech_Store.Models;
 using Tech_Store.Models.DTO;
+using Tech_Store.Models.DTO.Payment.Admin;
 using ZXing.QrCode.Internal;
 using static Tech_Store.Models.DTO.Province;
 
@@ -366,13 +367,18 @@ namespace Tech_Store.Areas.Admin.Controllers
                     }
 
                     // Tạo đơn hàng
+                    decimal deductPrice = ParseCurrency(invoice.DeductPrice, invoice.TotalPrice);
+                    decimal discountPrice = ParseCurrency(invoice.DiscountPrice, invoice.TotalPrice);
                     var order = new Order
                     {
                         UserId = invoice.UserId,
+                        DeductAmount = deductPrice,
+                        DiscountAmount = discountPrice,
+                        OriginAmount = invoice.OriginTotalPrice,
                         TotalAmount = invoice.TotalPrice,
                         ShippingAddressId = address.AddressId,
                         OrderDate = DateTime.Now, // Ghi nhận thời gian tạo đơn hàng
-                        OrderStatus = "Pending" // Trạng thái đơn hàng ban đầu
+                        OrderStatus = "Completed" // Trạng thái đơn hàng ban đầu
                     };
 
                     _context.Orders.Add(order);
@@ -414,17 +420,13 @@ namespace Tech_Store.Areas.Admin.Controllers
                     await _context.SaveChangesAsync();
 
                     // Xử lý thanh toán
-                    decimal deductPrice = ParseCurrency(invoice.DeductPrice,invoice.TotalPrice);
-                    decimal discountPrice = ParseCurrency(invoice.DiscountPrice,invoice.TotalPrice);
+                  
                     var payment = new Payment
                     {
                         OrderId = order.OrderId,
                         PaymentMethod = invoice.PaymentMethod,
                         Amount = invoice.TotalPrice,
-                        OriginAmount= invoice.OriginTotalPrice,
                         Status = "Paid", // Đánh dấu thanh toán thành công
-                        DiscountAmount = discountPrice,
-                        DeductAmount = deductPrice,
                     };
                     _context.Payments.Add(payment);
 
@@ -511,9 +513,9 @@ namespace Tech_Store.Areas.Admin.Controllers
             htmlTemplate = htmlTemplate.Replace("{{orderID}}", invoice.OrderId.ToString());
             htmlTemplate = htmlTemplate.Replace("{{orderDate}}", invoice.OrderDate?.ToString("dd/MM/yyyy"));
             htmlTemplate = htmlTemplate.Replace("{{oderStatus}}", invoice.OrderStatus);
-            htmlTemplate = htmlTemplate.Replace("{{originAmount}}", payment.OriginAmount?.ToString("C0", new CultureInfo("vi-VN")));
-            htmlTemplate = htmlTemplate.Replace("{{discountAmount}}", payment.DiscountAmount?.ToString("C0", new CultureInfo("vi-VN")));
-            htmlTemplate = htmlTemplate.Replace("{{deductAmount}}", payment.DeductAmount?.ToString("C0", new CultureInfo("vi-VN")));
+            htmlTemplate = htmlTemplate.Replace("{{originAmount}}", invoice.OriginAmount?.ToString("C0", new CultureInfo("vi-VN")));
+            htmlTemplate = htmlTemplate.Replace("{{discountAmount}}", invoice.DiscountAmount?.ToString("C0", new CultureInfo("vi-VN")));
+            htmlTemplate = htmlTemplate.Replace("{{deductAmount}}", invoice.DeductAmount?.ToString("C0", new CultureInfo("vi-VN")));
             htmlTemplate = htmlTemplate.Replace("{{amount}}", payment.Amount.ToString("C0", new CultureInfo("vi-VN")));
 
             // Thay thế chi tiết sản phẩm

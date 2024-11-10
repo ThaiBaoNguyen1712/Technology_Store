@@ -25,7 +25,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                 .Include(x => x.Payments)
                 .Include(x => x.ShippingAddress)
                 .Include(x => x.User)
-                .OrderByDescending(x => x.OrderId)
+                .OrderByDescending(x => x.OrderDate)
                 .AsQueryable();
 
             if (!string.IsNullOrEmpty(status) && status != "all")
