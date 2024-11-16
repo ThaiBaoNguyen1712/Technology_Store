@@ -107,45 +107,60 @@
     display: none;
 }
 
-/*switch button*/
-.form-check-input {
-    width: 40px !important; /* Độ rộng của switch */
-    height: 20px !important; /* Độ cao của switch */
-    background-color: #ddd; /* Màu nền khi tắt */
-    border-radius: 10px; /* Làm tròn góc cho switch */
-    position: relative;
-    appearance: none; /* Ẩn kiểu checkbox mặc định */
-    outline: none;
-    transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out; /* Hiệu ứng chuyển động */
+/* Switch button */
+/*.form-check-input {
+    width: 50px;
+    height: 25px;
+    background-color: #ddd;
+    border-radius: 25px;*/ /* Giữ nguyên để làm tròn phần khung */
+    /*position: relative;
+    appearance: none;
+    border: none;*/ /* Loại bỏ viền */
+    /*outline: none;
+    transition: all 0.3s ease;
     cursor: pointer;
-}
+    padding: 0;*/ /* Loại bỏ padding mặc định */
+    /*margin: 0;*/ /* Loại bỏ margin mặc định */
+/*}*/
 
-    .form-check-input:before {
-        content: '';
-        position: absolute;
-        width: 16px;
-        height: 16px;
-        background-color: white; /* Màu của nút */
-        border-radius: 50%; /* Làm tròn nút */
-        top: 2px;
-        left: 2px;
-        transition: transform 0.2s ease-in-out; /* Hiệu ứng di chuyển nút */
-    }
+/* Nút bên trong của switch */
+/*.form-check-input:before {
+    content: '';
+    position: absolute;
+    width: 21px;*/ /* Tăng kích thước nút để trông cân đối hơn */
+    /*height: 21px;
+    background-color: white;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);*/ /* Thêm bóng để tạo độ nổi */
+/*}*/
 
-    /* Khi bật switch */
-    .form-check-input:checked {
-        background-color: #0d6efd; /* Màu nền khi bật */
-    }
+/* Khi bật switch */
+/*.form-check-input:checked {
+    background-color: #2196F3;*/ /* Màu xanh dương nhạt hơn */
+/*}*/
 
-        .form-check-input:checked:before {
-            transform: translateX(20px); /* Di chuyển nút sang phải khi bật */
-        }
+/* Di chuyển nút sang phải khi bật */
+/*.form-check-input:checked:before {
+    transform: translateX(25px);
+}*/
 
-    /* Hiệu ứng khi focus */
-    .form-check-input:focus {
-        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25); /* Hiệu ứng focus */
-    }
+/* Hiệu ứng hover */
+/*.form-check-input:hover {
+    opacity: 0.85;
+}*/
 
+/* Hiệu ứng khi focus */
+/*.form-check-input:focus {
+    box-shadow: none;*/ /* Loại bỏ focus outline mặc định */
+/*}*/
+
+/* Thêm đổ bóng khi hover */
+/*.form-check-input:hover:before {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}*/
 .form-check {
     position: relative;
 }

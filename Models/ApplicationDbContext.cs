@@ -35,9 +35,15 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<Product> Products { get; set; }
 
+    public virtual DbSet<ProductHistory> ProductHistories { get; set; }
+
+    public virtual DbSet<ProductHistoryDetail> ProductHistoryDetails { get; set; }
+
     public virtual DbSet<Review> Reviews { get; set; }
 
     public virtual DbSet<Role> Roles { get; set; }
+
+    public virtual DbSet<Setting> Settings { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
 
@@ -347,6 +353,55 @@ public partial class ApplicationDbContext : DbContext
                 .HasConstraintName("FK_Product_Category");
         });
 
+        modelBuilder.Entity<ProductHistory>(entity =>
+        {
+            entity.ToTable("ProductHistory");
+
+            entity.Property(e => e.ProductHistoryId).HasColumnName("product_historyId");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Note).HasColumnName("note");
+            entity.Property(e => e.ProductId).HasColumnName("productId");
+            entity.Property(e => e.Type)
+                .HasMaxLength(50)
+                .HasColumnName("type");
+            entity.Property(e => e.UserId).HasColumnName("userId");
+
+            entity.HasOne(d => d.Product).WithMany(p => p.ProductHistories)
+                .HasForeignKey(d => d.ProductId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ProductHistory_Product");
+
+            entity.HasOne(d => d.User).WithMany(p => p.ProductHistories)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ProductHistory_User");
+        });
+
+        modelBuilder.Entity<ProductHistoryDetail>(entity =>
+        {
+            entity.HasKey(e => e.HistoryDetailId);
+
+            entity.ToTable("ProductHistoryDetail");
+
+            entity.Property(e => e.HistoryDetailId).HasColumnName("historyDetail_Id");
+            entity.Property(e => e.HistoryId).HasColumnName("historyId");
+            entity.Property(e => e.Quantity).HasColumnName("quantity");
+            entity.Property(e => e.VarientId).HasColumnName("varientId");
+
+            entity.HasOne(d => d.History).WithMany(p => p.ProductHistoryDetails)
+                .HasForeignKey(d => d.HistoryId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ProductHistoryDetail_ProductHistory");
+
+            entity.HasOne(d => d.Varient).WithMany(p => p.ProductHistoryDetails)
+                .HasForeignKey(d => d.VarientId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ProductHistoryDetail_VarientProduct");
+        });
+
         modelBuilder.Entity<Review>(entity =>
         {
             entity.HasKey(e => e.ReviewId).HasName("PK__Review__60883D9045574F64");
@@ -386,6 +441,23 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.RoleName)
                 .HasMaxLength(50)
                 .HasColumnName("role_name");
+        });
+
+        modelBuilder.Entity<Setting>(entity =>
+        {
+            entity.ToTable("Setting");
+
+            entity.Property(e => e.SettingId).HasColumnName("settingId");
+            entity.Property(e => e.DataType)
+                .HasMaxLength(50)
+                .HasColumnName("dataType");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.Key)
+                .HasMaxLength(50)
+                .HasColumnName("key");
+            entity.Property(e => e.Value)
+                .HasMaxLength(255)
+                .HasColumnName("value");
         });
 
         modelBuilder.Entity<User>(entity =>

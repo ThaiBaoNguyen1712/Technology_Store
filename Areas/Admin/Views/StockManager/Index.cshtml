@@ -1,0 +1,339 @@
+﻿
+@{
+    ViewData["Title"] = "StockManager";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+}
+@model IEnumerable<Tech_Store.Models.Product>
+@using System.Globalization;
+
+<div class="container-fluid">
+    <h2 class="my-4">Quản lý Kho</h2>
+
+    <!-- Filter Section -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <!-- Hàng 1: Thông tin cơ bản -->
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">SKU sản phẩm</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Nhập hoặc scan mã SKU" id="filterCode">
+                        <span class="input-group-text cursor-pointer" title="Quét mã vạch">
+                            <i class="fas fa-barcode"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="col-md-5">
+                    <label class="form-label fw-semibold">Tên sản phẩm</label>
+                    <input type="text" class="form-control" placeholder="Nhập tên sản phẩm cần tìm" id="filterName">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Trạng thái</label>
+                    <select class="form-control border selectpicker" data-live-search="true" id="filterStatus">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="available">Sẵn hàng</option>
+                        <option value="outstock">Hết hàng</option>
+                        <option value="preorder">Yêu cầu đặt trước</option>
+                        <option value="discontinued">Ngưng bán</option>
+                    </select>
+                </div>
+
+                <!-- Hàng 2: Phân loại -->
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Danh mục</label>
+                    <select class="form-control border selectpicker" data-live-search="true" id="filterCategory">
+                        <option value="">Tất cả danh mục</option>
+                        @foreach (var item in ViewBag.cate)
+                        {
+                            <option value="@item.CategoryId">@item.Name</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Thương hiệu</label>
+                    <select class="form-control border selectpicker" data-live-search="true" id="filterBrand">
+                        <option value="">Tất cả thương hiệu</option>
+                        @foreach (var item in ViewBag.brand)
+                        {
+                            <option value="@item.BrandId">@item.Name</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Hàng 3: Khoảng tồn kho -->
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Khoảng tồn kho</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" placeholder="Từ" id="filterStockFrom">
+                        <span class="input-group-text">-</span>
+                        <input type="number" class="form-control" placeholder="Đến" id="filterStockTo">
+                    </div>
+                </div>
+
+                <!-- Nút tìm kiếm và reset -->
+                <div class="col-12 mt-4">
+                    <div class="d-flex gap-2 justify-content-end">
+                        <button type="button" class="btn btn-light px-4" id="btnReset">
+                            <i class="fas fa-redo me-1"></i> Đặt lại
+                        </button>
+                        <button type="button" class="btn btn-primary px-4" id="btnSearch">
+                            <i class="fas fa-search me-1"></i> Tìm kiếm
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="mb-4">
+        <button class="btn btn-success" id="exportExcel" data-bs-toggle="modal" data-bs-target="#productModal">
+            <i class="fas fa-file-excel"></i> Xuất Excel
+        </button>
+        <a class="btn btn-light" href="~/Admin/StockManager/History">
+            <i class="fas fa-history"></i> Lịch sử
+        </a>
+    </div>
+
+    <!-- Table -->
+    <div class="card-body">
+        <!-- Modal -->
+        <div class="table-responsive">
+            <table id="add-row" class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Ảnh</th>
+                        <th>Tên</th>
+                        <th>SKU</th>
+                        <th>Thương Hiệu</th>
+                        <th>Danh Mục</th>
+                        <th>Giá</th>
+                        <th>Số lượng</th>
+                        <th>Tình trạng</th>
+                        <th style="width:10%">Action</th>
+                    </tr>
+                </thead>
+
+                <tfoot>
+                    <tr>
+                        <th>Ảnh</th>
+                        <th>Tên</th>
+                        <th>SKU</th>
+                        <th>Thương Hiệu</th>
+                        <th>Danh Mục</th>
+                        <th>Giá</th>
+                        <th>Số lượng</th>
+                        <th>Tình trạng</th>
+                        <th>Action</th>
+                    </tr>
+                </tfoot>
+                <tbody id="productList">
+                    @if (Model != null)
+                    {
+                        @foreach (var product in Model)
+                        {
+                            <tr>
+                                <td><img src="~/Upload/Products/@product.Image" alt="@product.Name" style="width: 50px; height: 50px; object-fit: cover;"></td>
+                                <td>@product.Name</td>
+                                <td>@product.Sku</td>
+                                <td>@product.Brand?.Name</td>
+                                <td>@product.Category?.Name</td>
+                                <td style="white-space:nowrap">@product.SellPrice?.ToString("C0", new CultureInfo("vi-VN"))</td>
+                                <td>@product.Stock</td>
+                                <td>
+                                    <span class="badge @(product.Status == "available" ? "bg-success" :
+                                    product.Status == "outstock" ? "bg-danger" :
+                                    product.Status == "preorder" ? "bg-warning" :
+                                    product.Status == "discontinued" ? "bg-secondary" :
+                                    "bg-dark")">
+                                        @(product.Status == "available" ? "Sẵn hàng" :
+                                            product.Status == "outstock" ? "Hết hàng" :
+                                            product.Status == "preorder" ? "Đặt trước" :
+                                            product.Status == "discontinued" ? "Ngừng bán" :
+                                            "Không xác định")
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="form-button-action">
+                                        <button type="button" class="btn btn-link btn-danger btn-get" data-itemid="@product.ProductId" data-bs-toggle="modal" data-bs-target="#ImExportModal">
+                                            <i class="fa fa-plus-circle"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+@Html.Partial("ModalAddHistory")
+@Html.Partial("ModalImExport")
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $('#btnSearch').on('click', function () {
+            var filterData = {
+                sku: $('#filterCode').val(),
+                name: $('#filterName').val(),
+                status: $('#filterStatus').val(),
+                categoryId: $('#filterCategory').val(),
+                brandId: $('#filterBrand').val(),
+                stockFrom: $('#filterStockFrom').val(),
+                stockTo: $('#filterStockTo').val()
+            };
+            var table = $("#add-row").DataTable();
+            $.ajax({
+                url: '/Admin/StockManager/Filter',
+                type: 'POST',
+                data: filterData,
+                success: function (response) {
+                    $('#productList').empty();
+                    // Xóa dữ liệu cũ trong DataTable
+                    table.clear();
+
+                    response.forEach(function (product) {
+                        // Xác định màu sắc và tên trạng thái
+                        var statusClass = product.status === "available" ? "bg-success" :
+                            product.status === "outstock" ? "bg-danger" :
+                                product.status === "preorder" ? "bg-warning" :
+                                    product.status === "discontinued" ? "bg-secondary" :
+                                        "bg-dark";
+
+                        var statusText = product.status === "available" ? "Còn hàng" :
+                            product.status === "outstock" ? "Hết hàng" :
+                                product.status === "preorder" ? "Đặt trước" :
+                                    product.status === "discontinued" ? "Ngừng bán" :
+                                        "Không xác định";
+
+                            // Chuỗi HTML cho mỗi hàng sản phẩm
+                        // Thêm hàng vào DataTable
+                        table.row.add([
+                            `<img src="/Upload/Products/${product.image}" alt="${product.name}" style="width: 50px; height: 50px; object-fit: cover;">`,
+                            product.name,
+                            product.sku,
+                            product.brandName || '',
+                            product.categoryName || '',
+                            product.sellPrice ? product.sellPrice.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' }) : '',
+                            product.stock,
+                            `<span class="badge ${statusClass}">${statusText}</span>`,
+                            `<div class="form-button-action">
+                                     <button type="button" class="btn btn-link btn-danger btn-get" data-itemid="${product.ProductId}" data-bs-toggle="modal" data-bs-target="#ImExportModal">
+                                                <i class="fa fa-plus-circle"></i>
+                                            </button>
+                            </div>`
+                        ]);
+                    });
+
+                    // Cập nhật lại DataTable sau khi thêm dữ liệu
+                    table.draw();
+                },
+                error: function (error) {
+                    console.error("Error fetching data", error);
+                }
+            });
+        });
+
+        // Đặt lại các bộ lọc khi nhấn nút "Đặt lại"
+        $('#btnReset').on('click', function () {
+            $('#filterCode').val('');
+            $('#filterName').val('');
+            $('#filterStatus').val('');
+            $('#filterCategory').val('');
+            $('#filterBrand').val('');
+            $('#filterStockFrom').val('');
+            $('#filterStockTo').val('');
+        });
+
+        $('.btn-get').on('click', function () {
+            var id = $(this).data('itemid'); // 'data-itemid' thay vì 'data-id'
+
+            $('.loading-container').show();
+            $.ajax({
+                method: "GET",
+                url: "/admin/StockManager/GetProduct/" + id,
+                success: function (response) {
+                    $('.loading-container').hide();
+                    $('#skuProduct').text(response.product.sku);
+                    $('#nameProduct').text(response.product.name);
+                    $('#load-varient').empty();
+                    $('#ImExportModal').data('product-id',response.product.productId);
+                    // Duyệt qua từng biến thể sản phẩm và thêm vào bảng
+                    response.product.varientProducts.forEach(function (variant) {
+                        // Tạo một hàng <tr> mới với dữ liệu từ variant
+                            var row = `
+                                <tr>
+                                    <td>${variant.sku}</td>
+                                    <td>${variant.attributes}</td>
+                                    <td>${variant.price.toLocaleString()}</td>
+                                    <td>${variant.stock}</td>
+                                    <td>
+                                        <input type="number" class="form-control" />
+                                    </td>
+                                    <td class="text-center">
+                                        <input type="checkbox" min="0" name="name" class="" value="${variant.varientId}" />
+                                    </td>
+                                </tr>
+                            `;
+
+                        // Thêm hàng mới vào tbody
+                        $('#load-varient').append(row);
+                    });
+                },
+                error: function (response) {
+                    $('.loading-container').hide();
+                    alert(response.message);
+                }
+            });
+        });
+        $('#exportExcel').on('click', function () {
+            var table = $("#add-row-child").DataTable();
+
+            $.ajax({
+                method: 'GET',
+                url: '/admin/StockManager/GetVariantProduct',
+                success: function (response) {
+                    if (response) {
+                        // Xóa dữ liệu cũ trong DataTable
+                        table.clear();
+
+                        // Duyệt qua từng phần tử trong response và thêm vào DataTable
+                        response.forEach(function (variant) {
+                            table.row.add([
+                                '<input type="checkbox" name="selectVariant" value="' + variant.id + '">', // Cột "Chọn"
+                                variant.sku, // Cột SKU
+                                '<img src="/upload/Products/' + variant.imageUrl + '" alt="' + variant.productName + '" style="width:50px;height:50px;">',
+                                variant.productName, // Cột Tên sản phẩm
+                                variant.attribute, // Cột Biến thể sản phẩm
+                                variant.sellPrice.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' }), // Cột Đơn giá
+                                variant.stock // Cột SL
+                            ]);
+                        });
+
+                        // Cập nhật lại DataTable để hiển thị dữ liệu mới
+                        table.draw();
+                    }
+                },
+                error: function () {
+                    alert('Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại!');
+                }
+            });
+        });
+
+        // Sự kiện khi modal bị ẩn
+        $('#ImExportModal').on('hidden.bs.modal', function () {
+            // Đặt lại các trường trong modal khi ẩn
+            $('#skuProduct').text("");
+            $('#nameProduct').text("");
+      
+            $('.loading-container').hide();
+        });
+    });
+
+</script>

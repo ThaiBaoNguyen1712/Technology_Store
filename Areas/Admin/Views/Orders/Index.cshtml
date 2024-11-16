@@ -22,8 +22,10 @@
                                     <th>ID Đơn Hàng</th>
                                     <th>Ngày Đặt</th>
                                     <th>Thông Tin Khách Hàng</th>
+                                    <th>Sản Phẩm</th>
                                     <th>Tổng Số Tiền</th>
                                     <th>Trạng Thái Đơn Hàng</th>
+                                    <th>Chuyển TT Đơn Hàng</th>
                                     <th style="width:10%">Hành động</th>
                                 </tr>
                             </thead>
@@ -32,8 +34,10 @@
                                     <th>ID Đơn Hàng</th>
                                     <th>Ngày Đặt</th>
                                     <th>Thông Tin Khách Hàng</th>
+                                    <th>Sản Phẩm</th>
                                     <th>Tổng Số Tiền</th>
                                     <th>Trạng Thái Đơn Hàng</th>
+                                    <th>Chuyển TT Đơn Hàng</th>
                                     <th style="width:10%">Hành động</th>
                                 </tr>
                             </tfoot>
@@ -49,23 +53,38 @@
                                                 <p>@order.User.LastName @order.User.FirstName</p>
                                                 <p>@order.User.PhoneNumber</p>
                                             </td>
+                                            <td>@(string.Join(", ", order.OrderItems.Select(item => item.Product?.Name ?? "Không có sản phẩm")))</td>
+
+
                                             <td>
-                                                <p>@order.TotalAmount.ToString("C0", new CultureInfo("vi-VN"))</p>
-                                                
+                                                <p style="white-space:nowrap">@order.TotalAmount.ToString("C0", new CultureInfo("vi-VN"))</p>
                                             </td>
                                             <td class="text-center">
                                                 <span class="badge
-                                                @(order.OrderStatus == "Pending" ? "badge-primary" :
-                                                  order.OrderStatus == "Confirmed" ? "badge-info" :
-                                                  order.OrderStatus == "Shipped" ? "badge-warning" :
-                                                  order.OrderStatus == "Completed" ? "badge-success" :
-                                                  order.OrderStatus == "Cancelled" ? "badge-danger" :
-                                                  "badge-secondary")">
-                                                    @order.OrderStatus
+                                                  @(order.OrderStatus == "Pending" ? "badge-primary" :
+                                                    order.OrderStatus == "Confirmed" ? "badge-info" :
+                                                    order.OrderStatus == "Shipped" ? "badge-warning" :
+                                                    order.OrderStatus == "Completed" ? "badge-success" :
+                                                    order.OrderStatus == "Cancelled" ? "badge-danger" :
+                                                    "badge-secondary")">
+                                                    @(order.OrderStatus == "Pending" ? "Đang chờ" :
+                                                        order.OrderStatus == "Confirmed" ? "Đã xác nhận" :
+                                                        order.OrderStatus == "Shipped" ? "Đã giao hàng" :
+                                                        order.OrderStatus == "Completed" ? "Hoàn thành" :
+                                                        order.OrderStatus == "Cancelled" ? "Đã hủy" :
+                                                        "Không xác định")
                                                 </span>
-
                                             </td>
-                                          
+                                            <td>
+                                                <select class="form-control border selectpicker changeStatus" data-id="@order.OrderId" data-current-status="@order.OrderStatus" data-live-search="true">
+                                                    <option value="Pending" @(order.OrderStatus == "Pending" ? "selected" : "")>Đang chờ</option>
+                                                    <option value="Confirmed" @(order.OrderStatus == "Confirmed" ? "selected" : "")>Đã xác nhận</option>
+                                                    <option value="Shipped" @(order.OrderStatus == "Shipped" ? "selected" : "")>Đã giao hàng</option>
+                                                    <option value="Completed" @(order.OrderStatus == "Completed" ? "selected" : "")>Hoàn thành</option>
+                                                    <option value="Cancelled" @(order.OrderStatus == "Cancelled" ? "selected" : "")>Đã hủy</option>
+                                                </select>
+                                            </td>
+
                                             <td>
                                                 <div class="form-button-action">
                                                     <a 
@@ -104,7 +123,7 @@
     </div>
 </div>
 <script src="~/Admin/assets/js/core/jquery-3.7.1.min.js"></script>
-<script type="text/javascript">
+<script>
     $(document).ready(function () {
         // Hiển thị tooltip khi di chuột qua nút
         $('[data-bs-toggle="tooltip"]').tooltip();
@@ -114,11 +133,97 @@
             $('.loading-container').show();
             var id = $(this).data('id');
             console.log("Exporting invoice for ID:", id);
-            // Tải PDF từ URL
             window.location.href = '/Admin/POS/Print-Invoice?id=' + id;
             setTimeout(function () {
                 $('.loading-container').hide();
-            }, 3000); // Đợi 3 giây
+            }, 3000);
+        });
+
+        // Xóa tất cả các event handler cũ trước khi đăng ký mới
+        $(document).off('change', '.changeStatus');
+
+        // Biến cờ riêng cho từng select
+        let processingFlags = {};
+
+        $(document).on('change', '.changeStatus', function (e) {
+            e.stopPropagation(); // Ngăn chặn sự kiện lan rộng
+
+            var $select = $(this);
+            var newStatus = $select.val();
+            var id = $select.data('id');
+            var currentStatus = $select.data('current-status');
+
+            // Nếu đã có cờ xử lý cho ID này, không làm gì cả
+            if (processingFlags[id]) return;
+
+            // Đánh dấu trạng thái đang xử lý
+            processingFlags[id] = true;
+
+            // Hiển thị hộp thoại xác nhận
+            var confirmMessage = `Bạn có muốn đổi trạng thái từ "${currentStatus}" thành "${newStatus}" không?`;
+
+            if (!confirm(confirmMessage)) {
+                $select.val(currentStatus); // Khôi phục giá trị cũ nếu từ chối
+                processingFlags[id] = false; // Reset cờ
+                return;
+            }
+
+            $('.loading-container').show();
+
+            $.ajax({
+                method: 'POST',
+                url: '/admin/Orders/ChangeStatus',
+                data: {
+                    status: newStatus,
+                    id: id
+                },
+                success: function (response) {
+                    if (response.success) {
+                        alert(response.message);
+
+                        // Cập nhật trạng thái mới
+                        $select.data('current-status', newStatus);
+
+                        // Cập nhật badge và nội dung trạng thái
+                        var badge = $select.closest('tr').find('.badge'); // Tìm badge trong cùng dòng tr
+                        badge.removeClass('badge-primary badge-info badge-warning badge-success badge-danger badge-secondary');
+
+                        // Thêm class mới và thay đổi nội dung badge
+                        switch (newStatus) {
+                            case 'Pending':
+                                badge.addClass('badge-primary').text('Đang chờ');
+                                break;
+                            case 'Confirmed':
+                                badge.addClass('badge-info').text('Đã xác nhận');
+                                break;
+                            case 'Shipped':
+                                badge.addClass('badge-warning').text('Đã giao hàng');
+                                break;
+                            case 'Completed':
+                                badge.addClass('badge-success').text('Hoàn thành');
+                                break;
+                            case 'Cancelled':
+                                badge.addClass('badge-danger').text('Đã hủy');
+                                break;
+                            default:
+                                badge.addClass('badge-secondary').text('Không xác định');
+                                break;
+                        }
+
+                    } else {
+                        alert(response.message);
+                        $select.val(currentStatus); // Khôi phục trạng thái cũ nếu có lỗi
+                    }
+                },
+                error: function (response) {
+                    alert('Đã xảy ra lỗi: ' + response.message);
+                    $select.val(currentStatus); // Khôi phục trạng thái cũ nếu có lỗi
+                },
+                complete: function () {
+                    processingFlags[id] = false; // Reset cờ xử lý
+                    $('.loading-container').hide();
+                }
+            });
         });
     });
 </script>

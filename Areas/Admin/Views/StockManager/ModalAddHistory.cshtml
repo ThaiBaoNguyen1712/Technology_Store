@@ -1,0 +1,115 @@
+﻿<!-- Modal -->
+<div class="modal fade" id="productModal" tabindex="-1">
+    <div class="modal-dialog" style="min-width:90vw">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Chọn xuất sản phẩm Excel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="table-responsive">
+                    <table id="add-row-child" class="table table-hover">
+                      <thead>
+                          <tr>
+                              <th style="width:10%">
+                                    <input type="checkbox" id="check-all"/>
+                              </th>
+                              <th>SKU</th>
+                              <th style="width:15%">Ảnh</th>
+                              <th>Tên sản phẩm</th>
+                              <th>Biến thể sản phẩm</th>
+                               <th>Đơn giá</th>
+                              <th>SL</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+
+                      </tbody>
+                  </table>
+              </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-success" id="ExportToExcel">
+                    <i class="fas fa-file-excel"></i> Xuất ra Excel
+                </button>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script type="text/javascript">
+    $('document').ready(function () {
+        // Xử lý checkbox "Chọn tất cả"
+        $('#check-all').on('change', function () {
+            var isChecked = $(this).is(':checked');
+            var table = $('#add-row-child').DataTable();
+            var selectedIds = [];
+
+            // Đặt trạng thái checked cho tất cả checkbox trên tất cả các trang
+            table.rows().every(function () {
+                var checkbox = $(this.node()).find('input[name="selectVariant"]');
+                if (checkbox.length) {
+                    checkbox.prop('checked', isChecked); // Đánh dấu tất cả checkbox
+                    if (isChecked) {
+                        selectedIds.push(checkbox.val()); // Lấy giá trị của checkbox khi checked
+                    }
+                }
+            });
+        });
+
+        // Xử lý nút "Xuất ra Excel"
+        $('#ExportToExcel').on('click', function () {
+            var table = $('#add-row-child').DataTable();
+            var variantIds = [];
+
+            // Lấy danh sách ID đã chọn
+            table.rows().every(function () {
+                var checkbox = $(this.node()).find('input[name="selectVariant"]:checked');
+                if (checkbox.length) {
+                    variantIds.push(checkbox.val());
+                }
+            });
+
+            if (variantIds.length === 0) {
+                alert("Vui lòng chọn ít nhất một sản phẩm để xuất Excel.");
+                return;
+            }
+            // Hiển thị loader (nếu có)
+            $('.loading-container').show();
+
+            // Gửi AJAX yêu cầu xuất Excel
+            $.ajax({
+                method: 'POST',
+                url: '/Admin/StockManager/ExportToExcel',
+                contentType: 'application/json',
+                data: JSON.stringify(variantIds),
+                xhrFields: {
+                    responseType: 'blob' // Nhận phản hồi là file blob
+                },
+                success: function (response) {
+                    // Tạo URL từ blob và tự động tải xuống
+                    var blob = new Blob([response], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+                    var url = window.URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'Products.xlsx';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                },
+                error: function () {
+                    alert("Đã xảy ra lỗi khi xuất Excel.");
+                },
+                complete: function () {
+                    // Ẩn loader
+                    $('.loading-container').hide();
+                }
+            });
+        });
+
+    })
+</script>

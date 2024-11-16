@@ -31,6 +31,7 @@
                                 <tr>
                                     <th>Ảnh</th>
                                     <th>Tên</th>
+                                    <th>SKU</th>
                                     <th>Thương Hiệu</th>
                                     <th>Danh Mục</th>
                                     <th>Giá</th>
@@ -44,6 +45,7 @@
                                 <tr>
                                     <th>Ảnh</th>
                                     <th>Tên</th>
+                                    <th>SKU</th>
                                     <th>Thương Hiệu</th>
                                     <th>Danh Mục</th>
                                     <th>Giá</th>
@@ -60,20 +62,23 @@
                                         <tr>
                                             <td><img src="~/Upload/Products/@product.Image" alt="@product.Name" style="width: 50px; height: 50px; object-fit: cover;"></td>
                                             <td>@product.Name</td>
+                                            <td>@product.Sku</td>
                                             <td>@product.Brand?.Name</td>
                                             <td>@product.Category?.Name</td>
                                             <td>@product.SellPrice?.ToString("C0", new CultureInfo("vi-VN"))</td>
                                             <td>@product.Stock</td>
                                             <td>
                                                 <span class="badge @(product.Status == "available" ? "bg-success" :
-                                                      product.Status == "outstock" ? "bg-danger" :
-                                                      product.Status == "preorder" ? "bg-warning" :
-                                                      product.Status == "discontinued" ? "bg-secondary" :
-                                                      "bg-dark")">
-                                                    @product.Status
+                                                    product.Status == "outstock" ? "bg-danger" :
+                                                    product.Status == "preorder" ? "bg-warning" :
+                                                    product.Status == "discontinued" ? "bg-secondary" :
+                                                    "bg-dark")">
+                                                    @(product.Status == "available" ? "Còn hàng" :
+                                                        product.Status == "outstock" ? "Hết hàng" :
+                                                        product.Status == "preorder" ? "Đặt trước" :
+                                                        product.Status == "discontinued" ? "Ngừng bán" :
+                                                        "Không xác định")
                                                 </span>
-
-
                                             </td>
                                             <td>
                                                 <div class="form-button-action">

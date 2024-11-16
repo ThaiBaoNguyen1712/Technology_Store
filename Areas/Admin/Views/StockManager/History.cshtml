@@ -1,0 +1,287 @@
+﻿@{
+    ViewData["Title"] = "History";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+}
+@using X.PagedList;
+@using X.PagedList.Mvc.Core
+@model IPagedList<Tech_Store.Models.ProductHistoryViewModel>
+
+<style>
+    .history-card {
+        transition: transform 0.2s;
+    }
+
+        .history-card:hover {
+            transform: translateY(-3px);
+            cursor: pointer;
+        }
+
+    .import-card {
+        border-left: 5px solid #198754;
+    }
+
+    .export-card {
+        border-left: 5px solid #dc3545;
+    }
+
+    .quick-view {
+        height: calc(100vh - 200px);
+        overflow-y: auto;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <!-- Filter Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <form method="post" action="/admin/StockManager/FilterHistoryDetail">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label class="form-label">Từ ngày</label>
+                                    <input type="date" class="form-control" name="startDate" value="@ViewBag.StartDate" id="startDate">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Đến ngày</label>
+                                    <input type="date" class="form-control" name="endDate" value="@ViewBag.EndDate" id="endDate">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Loại</label>
+                                    <select class="form-control" value="@ViewBag.FilterType" name="filterType" id="typeFilter">
+                                        <option value="">Tất cả</option>
+                                        <option value="import">Nhập kho</option>
+                                        <option value="export">Xuất kho</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Tìm kiếm</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" value="@ViewBag.FilterCode" name="filterCode" placeholder="Nhập/Scan SKU sản phẩm hoặc mã phiếu" id="filterCode">
+                                        <span class="input-group-text cursor-pointer" title="Quét mã vạch">
+                                            <i class="fas fa-barcode"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-md-1">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button type="submit" class="btn btn-primary w-100" id="searchBtn">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Section -->
+    <div class="row">
+        <!-- History List -->
+        <div class="col-md-8">
+            <div class="history-list">
+                @foreach (var item in Model)
+                {
+                    <div class="card mb-3 shadow-sm history-card @(item.Type =="Import" ? "import-card" : "export-card")" data-id="@item.Id">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">@(item.Type == "Import" ? "Nhập kho" : "Xuất kho") #@item.ProductHistoryId</h6>
+                                    <p class="text-muted mb-0">
+                                        <small>
+                                            <i class="fas fa-calendar-alt me-1"></i> @item.Product.CreatedAt
+                                        </small>
+                                    </p>
+                                </div>
+                                <span class="badge @(item.Type =="Import" ? "bg-success" : "bg-danger")">@(item.Type == "Import" ? "Nhập kho" : "Xuất kho")</span>
+                            </div>
+                            <hr>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-1"><strong>SKU:</strong> @item.Product.Sku</p>
+                                    <p class="mb-1"><strong>Tên SP:</strong> @item.Product.Name</p>
+                                </div>
+                                <div class="col-md-6 text-md-end">
+                                    <p class="mb-1">
+                                        <strong>Số lượng:</strong>  @(item.ProductHistoryDetails != null && item.ProductHistoryDetails.Any()
+                                    ? item.ProductHistoryDetails.Sum(d => d.Quantity)
+                                    : 0)
+                                    </p>
+
+                                    <p class="mb-1"><strong>Người tạo:</strong> @item.UserName (@item.UserRole)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+            <!-- Pagination -->
+            <div class="d-flex justify-content-center mt-3">
+                @Html.PagedListPager(Model, page => Url.Action("History", new { page }), new PagedListRenderOptions
+           {
+               UlElementClasses = new[] { "pagination" }, // Sử dụng lớp `pagination` của Bootstrap
+               LiElementClasses = new[] { "page-item" },  // Sử dụng lớp `page-item` của Bootstrap
+               PageClasses = new[] { "page-link" },       // Sử dụng lớp `page-link` của Bootstrap
+               ActiveLiElementClass = "active",          // Đánh dấu trang hiện tại bằng `active`
+               LinkToPreviousPageFormat = "&laquo;",     // Sử dụng ký tự Bootstrap mặc định cho trang trước
+               LinkToNextPageFormat = "&raquo;",         // Sử dụng ký tự Bootstrap mặc định cho trang sau
+               DisplayLinkToFirstPage = PagedListDisplayMode.Always, // Hiển thị nút về trang đầu
+               DisplayLinkToLastPage = PagedListDisplayMode.Always,  // Hiển thị nút về trang cuối
+               DisplayEllipsesWhenNotShowingAllPageNumbers = true    // Hiển thị dấu "..." nếu không hiển thị hết số trang
+           })
+            </div>
+
+
+
+
+
+        </div>
+
+        <!-- Quick View -->
+        <div class="col-md-4">
+            <div class="card shadow-sm quick-view">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">Chi tiết phiếu</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center py-5 text-muted" id="emptyState" style="display: none;">
+                        <i class="fas fa-file-alt fa-3x mb-3"></i>
+                        <p>Chọn một phiếu để xem chi tiết</p>
+                    </div>
+                    <div id="detailView" style="display: none;">
+                        <h6 class="border-bottom pb-2">Thông tin phiếu</h6>
+                        <div class="mb-3">
+                            <p class="mb-1"><strong>Mã phiếu:</strong> <span id="ticketCode"></span></p>
+                            <p class="mb-1"><strong>Thời gian:</strong> <span id="ticketTime"></span></p>
+                            <p class="mb-1"><strong>Người tạo:</strong> <span id="ticketCreator"></span></p>
+                            <p class="mb-1"><strong>Sản phẩm:</strong> <span id="ticketProduct"></span></p>
+                            <p class="mb-1"><strong>Loại:</strong> <span id="ticketType" class="badge"></span></p>
+                        </div>
+                        <h6 class="border-bottom pb-2">Chi tiết sản phẩm</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>SKU</th>
+                                        <th>Biến thể</th>
+                                        <th class="text-end">SL</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productDetails">
+                                </tbody>
+                            </table>
+                        </div>
+                        <h6 class="border-bottom pb-2">Ghi chú</h6>
+                        <p id="ticketNote" class="text-muted"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script>
+    $(document).ready(function () {
+        // Xử lý click vào card lịch sử
+        $('.history-card').click(function () {
+            var id = $(this).data('id');
+            var historyContainer = $('#historyContainer');
+            $('.loading-container').show();
+            $.ajax({
+                method: 'GET',
+                url: '/admin/StockManager/GetHistoryDetail/' + id,
+                success: function (response) {
+                    if (response.success) {
+                        $('.loading-container').hide();
+                        var history = response.history;
+
+                        // Xác định loại lịch sử và cập nhật badge
+                        if (history.type === "Import") {
+                            $('#historyBadge')
+                                .text('Nhập kho')
+                                .removeClass('bg-danger')
+                                .addClass('bg-success');
+                        } else {
+                            $('#historyBadge')
+                                .text('Xuất kho')
+                                .removeClass('bg-success')
+                                .addClass('bg-danger');
+                        }
+
+                        // Cập nhật thông tin sản phẩm và người dùng
+                        $('#ticketCode').text(history.id);
+                        $('#ticketTime').text(new Date(history.createdAt).toLocaleString());
+                        $('#ticketCreator').text(history.userName + ' (' + history.userRole +')');
+                        if (history.type == "Import") {
+                            $('#ticketType').removeClass('bg-danger').addClass('bg-success');
+                            $('#ticketType').text('Nhập kho');
+                        }
+                        else {
+                            $('#ticketType').removeClass('bg-success').addClass('bg-danger');
+                            $('#ticketType').text('Xuất kho');
+                        }
+                   
+                        $('#ticketNote').text(history.note);
+                        $('#ticketProduct').text(history.product.name);
+                        
+                        // Xóa các dòng chi tiết cũ
+                        $('#productDetails').empty();
+
+                        // Thêm mỗi dòng `varientId` và `quantity`
+                        history.productHistoryDetails.forEach(detail => {
+                            var detailHtml = `
+                      <tr>
+                          <td>${detail.varientSku}</td>
+                          <td>${detail.varientName}</td>
+                          <td class="text-end">${detail.quantity}</td>
+                      </tr>
+                    `;
+                            $('#productDetails').append(detailHtml);
+                        });
+
+                        // Show modal with populated data
+                        $('#emptyState').hide();
+                        $('#detailView').show();
+                    }
+                },
+                error: function () {
+                    $('.loading-container').hide();
+                    alert('Không thể tải chi tiết lịch sử!');
+                }
+            });
+        });
+
+        $('#searchBtn').on('click', function () {
+            var startDate = $('#startDate').val(); // Lấy giá trị startDate
+            var endDate = $('#endDate').val(); // Lấy giá trị endDate
+            var type = $('#typeFilter').val();
+            var sku = $('#filterCode').val(); 
+            var page = 1;
+
+            $.ajax({
+                url: '/Admin/StockManager/FilterHistoryDetail',
+                method: 'POST',
+                data: {
+                    startDate: startDate,
+                    endDate: endDate,
+                    filterType: type,
+                    filterCode: sku,
+                    page: page, // Gửi tham số page để phân trang
+                },
+                success: function (response) {
+                    if (response.success) {
+                        // Cập nhật kết quả lên giao diện, ví dụ hiển thị các sản phẩm hoặc trang
+                        renderData(response.data);
+                    }
+                }
+            });
+        });
+
+    });
+</script>

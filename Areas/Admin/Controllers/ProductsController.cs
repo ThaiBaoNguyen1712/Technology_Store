@@ -3,8 +3,10 @@ using Microsoft.EntityFrameworkCore;
 using QRCoder;
 using System.Diagnostics;
 using System.Net.NetworkInformation;
+using System.Security.Claims;
 using System.Text;
 using Tech_Store.Models;
+using Tech_Store.Models.DTO;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace Tech_Store.Areas.Admin.Controllers
@@ -56,12 +58,6 @@ namespace Tech_Store.Areas.Admin.Controllers
                 .Include(x=>x.Galleries).Include(x=>x.Reviews).Include(x=>x.VarientProducts).
                 FirstOrDefaultAsync(x => x.ProductId == id);
             return View(detail);
-        }
-        //Đang Phát Triển
-        [Route("StockManager")]
-        public IActionResult StockManager()
-        {
-            return View();
         }
 
         [Route("{status?}")]

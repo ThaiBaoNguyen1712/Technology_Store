@@ -1,0 +1,123 @@
+﻿<!-- Modal -->
+<div class="modal fade" id="ImExportModal" tabindex="-1">
+    <div class="modal-dialog" style="min-width:60vw">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Phiếu nhập/xuất sản phẩm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="productForm">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">SKU sản phẩm</label>
+                        <div class="input-group">
+                            <span id="skuProduct" class="form-control bg-light">
+                            </span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tên sản phẩm</label>
+                        <span id="nameProduct" class="form-control bg-light">
+                        </span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Loại</label>
+                        <select class="form-select" name="Type">
+                            <option value="Import">Nhập kho</option>
+                            <option value="Export">Xuất kho</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>SKU biến thể</th>
+                                        <th>Biến thể</th>
+                                        <th>Đơn giá</th>
+                                        <th style="width:15%">Tồn hàng</th>
+                                        <th style="width:15%">SL Nhập/xuất</th>
+                                        <th style="width:10%">Chọn</th>
+
+                                    </tr>
+                                </thead>
+                                <tbody id="load-varient">
+                                    <tr>
+                                       
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ghi chú</label>
+                        <textarea class="form-control" name="note" id="noteInput" placeholder="Nhập ghi chú cho phiếu này...."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" id="saveProduct">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        $(document).on('click', '#saveProduct', function () {
+            var productId = $('#ImExportModal').data('product-id');
+
+            var type = $('select[name="Type"]').val();
+            var note = $('#noteInput').val();
+
+            // Kiểm tra giá trị note
+            console.log("Note value:", note);
+            console.log("Textarea element exists:", $('textarea[name="note"]').length > 0);
+            var variants = [];
+
+            $('#load-varient tr').each(function () {
+                var variantId = $(this).find('input[type="checkbox"]').val();
+                var quantity = $(this).find('input[type="number"]').val();
+
+                if ($(this).find('input[type="checkbox"]').is(':checked')) {
+                    variants.push({
+                        VariantId: variantId,
+                        Quantity: parseInt(quantity)
+                    });
+                }
+            });
+
+            var productHistoryDTo = {
+                ProductId: productId,
+                Type: type,
+                Note: note,
+                Variants: variants
+            };
+
+            console.log("Dữ liệu gửi đi:", productHistoryDTo);
+
+            $.ajax({
+                url: '/admin/StockManager/AddProductHistory',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(productHistoryDTo),
+                success: function (response) {
+                    console.log("Phản hồi từ server:", response);
+                    if (response.success) {
+                        alert(response.message);
+                        $('#ImExportModal').modal('hide');
+                    } else {
+                        alert(response.message);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.log("Có lỗi xảy ra:", error);
+                    alert('Có lỗi xảy ra, vui lòng thử lại.');
+                }
+            });
+        });
+    });
+
+</script>

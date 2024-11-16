@@ -72,5 +72,23 @@ namespace Tech_Store.Areas.Admin.Controllers
             return View(order);
         }
 
+        [HttpPost("ChangeStatus")]
+        public async Task<JsonResult> ChangeStatus(string status,int id)
+        {
+            if(status == null || id < 0)
+            {
+                return Json(new { success = false, message = "Đã có lỗi khi truyền dữ liệu" });
+            }
+
+            var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == id);
+            if(order == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy đơn hàng" });
+
+            }
+            order.OrderStatus = status;
+            await _context.SaveChangesAsync();
+            return Json(new { success = true, message = "Thay đổi thành công" });
+        }
     }
 }
