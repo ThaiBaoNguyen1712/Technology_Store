@@ -15,6 +15,7 @@ using Tech_Store.Services.VNPayServices;
 
 namespace Tech_Store.Controllers
 {
+    [Authorize]
     [Route("Payment")]
     public class PaymentController : BaseController
     {

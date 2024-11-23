@@ -1,18 +1,23 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using NuGet.Protocol;
+using System.Globalization;
 using System.Security.Claims;
 using Tech_Store.Helper;
 using Tech_Store.Models;
 using Tech_Store.Models.DTO;
 using Tech_Store.Models.DTO.Authentication;
+using Tech_Store.Models.ViewModel;
 
 namespace Tech_Store.Controllers
 {
+    [Authorize]
     [Route("User")]
     public class UserController : BaseController
     {
-        public UserController(ApplicationDbContext context): base(context) { }
+        public UserController(ApplicationDbContext context) : base(context) { }
         public IActionResult Index()
         {
             return View();
@@ -66,7 +71,7 @@ namespace Tech_Store.Controllers
                 .Where(p => !cartProductIds.Contains(p.ProductId))
                 .ToListAsync(); // Using ToListAsync here to perform client-side filtering
 
-           
+
             relatedByName = relatedByName
                 .Where(p => cartProductNames.Any(name =>
                     p.Name.Contains(name, StringComparison.OrdinalIgnoreCase)))
@@ -121,7 +126,7 @@ namespace Tech_Store.Controllers
                 var ward = district?.Wards?.FirstOrDefault(w => w.Code == int.Parse(address.Ward));
                 // Assign to ViewBag
                 ViewBag.Address = $"{address.AddressLine},{ward?.Name}, {district?.Name}, {province?.Name}";
-            }       
+            }
             var usDto = new UserDTo
             {
                 UserId = user_Infor.UserId,
@@ -141,11 +146,11 @@ namespace Tech_Store.Controllers
         }
         [HttpPost("ChangeAddress")]
         [ValidateAntiForgeryToken]
-        public async Task<JsonResult> ChangeAddress(string addressLine,string ward,string province,string district)
+        public async Task<JsonResult> ChangeAddress(string addressLine, string ward, string province, string district)
         {
             try
             {
-                if(!ModelState.IsValid)
+                if (!ModelState.IsValid)
                 {
                     return Json(new { success = false, message = "Thông tin không hợp lệ." });
                 }
@@ -173,7 +178,7 @@ namespace Tech_Store.Controllers
                     var address_add = new Address
                     {
                         UserId = parsedUserId, // Thêm UserId vào địa chỉ mới
-                        AddressLine =addressLine,
+                        AddressLine = addressLine,
                         Ward = ward,
                         District = district,
                         Province = province
@@ -192,7 +197,7 @@ namespace Tech_Store.Controllers
         }
         [HttpPost("ChangePersonalInfo")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ChangePersonalInfo(string LastName,string FirstName,string Email,string PhoneNumber)
+        public async Task<IActionResult> ChangePersonalInfo(string LastName, string FirstName, string Email, string PhoneNumber)
         {
             try
             {
@@ -211,7 +216,7 @@ namespace Tech_Store.Controllers
                 await _context.SaveChangesAsync();
                 return Json(new { success = true, message = "Thay đổi thông tin thành công" });
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return Json(new { success = false, message = "Đã xảy ra lỗi: " + ex.Message });
             }
@@ -228,7 +233,7 @@ namespace Tech_Store.Controllers
 
             // Lưu vào Session dưới dạng chuỗi JSON
             HttpContext.Session.SetString("CartItems", JsonConvert.SerializeObject(listItemCartDTo));
-            return Ok(new { redirectUrl = Url.Action("Checkout","Payment") });
+            return Ok(new { redirectUrl = Url.Action("Checkout", "Payment") });
         }
         #region Cart 
         [HttpPost("AddToCart")]
@@ -357,9 +362,9 @@ namespace Tech_Store.Controllers
         public async Task<JsonResult> ChangeInformation(UserDTo user)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if(userId == null)
+            if (userId == null)
             {
-                return Json(new { success = false , message ="Đã có lỗi xác thực"});
+                return Json(new { success = false, message = "Đã có lỗi xác thực" });
             }
             var user_get = await _context.Users.FirstOrDefaultAsync(x => x.UserId == int.Parse(userId));
             user_get.LastName = user.LastName;
@@ -378,6 +383,216 @@ namespace Tech_Store.Controllers
 
         }
 
+        #endregion
+
+
+        #region ViewOrder
+        [Route("MyOrders")]
+        public IActionResult MyOrders()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            //Thêm dictionary để tạo o ánh xạ sắp xếp thứ tự 
+            var statusOrder = new Dictionary<string, int>
+                {
+                    { "pending", 1 },
+                    { "confirmed", 2 },
+                    { "shipping", 3 },
+                     { "delivered", 4 },
+                    { "completed", 5},
+                    { "refunded", 6},
+                    { "cancelled", 7 }
+                };
+            var orders = _context.Orders
+                 .Include(o => o.OrderItems)
+                     .ThenInclude(oi => oi.VarientProduct)
+                         .ThenInclude(vp => vp.Product)
+                 .Include(o => o.Payments)
+                 .Where(o => o.UserId == int.Parse(userId))
+                 .AsEnumerable() // Chuyển sang xử lý trên client
+                 .OrderBy(o => statusOrder[o.OrderStatus.ToLower()]) // Sắp xếp theo trạng thái
+                 .ThenByDescending(o => o.OrderDate) // Sau đó sắp xếp theo ngày đặt hàng
+                 .ToList();
+
+
+
+            // Map dữ liệu sang ViewModel
+            var orderViewModel = orders.Select(o => new OrderViewModelClient
+            {
+                Id = o.OrderId,
+                ImageUrl = o.OrderItems.FirstOrDefault()?.VarientProduct?.Product?.Image ?? "/default-image.jpg", // Kiểm tra null và thêm ảnh mặc định
+                variantIds = o.OrderItems.Select(x => x.VarientProductId).ToArray(),
+                OrderStatus = o.OrderStatus,
+                Is_Reviewed = (bool)o.Is_Reviewed,
+                OrderDate = (DateTime)o.OrderDate, // Chỉ lấy ngày (DateOnly)
+                Amount = o.TotalAmount
+            }).ToList();
+
+
+            ViewBag.OrderCount = orderViewModel.Count();
+
+            // Trả về View với ViewModel
+            return View(orderViewModel);
+        }
+
+
+        [HttpPost("CancelOrder")]
+        public async Task<JsonResult> CancelOrder(int orderId, string reason)
+        {
+            if (orderId == 0)
+            {
+                return Json(new { success = false, message = "Không gửi được mã đơn hàng" });
+            }
+            var order = await _context.Orders.FirstOrDefaultAsync(x => x.OrderId.Equals(orderId));
+            if (order == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy đơn hàng" });
+            }
+            order.Note = reason;
+            order.OrderStatus = "Cancelled";
+            await _context.SaveChangesAsync();
+            return Json(new { success = true, message = "Đơn hàng đã hủy" });
+        }
+
+        [HttpPost("SendReview")]
+        public async Task<JsonResult> SendReview(int orderId, int[] variantIds, string content, int starPoint)
+        {
+            // Kiểm tra điều kiện dữ liệu đầu vào
+            if (orderId == 0 || string.IsNullOrEmpty(content))
+            {
+                return Json(new { success = false, message = "Có lỗi khi gửi thông tin" });
+            }
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // Duyệt qua các variantIds và tạo các đánh giá
+            foreach (var variant in variantIds)
+            {
+                var product = _context.VarientProducts
+               .Where(x => x.VarientId == variant)
+               .Select(x => new { x.ProductId, x.VarientId })
+               .FirstOrDefault();
+
+                var review = new Review
+                {
+                    UserId = int.Parse(userId),
+                    ProductId = (int)product.ProductId,
+                    VarientId = variant,
+                    Rating = starPoint,
+                    Comment = content,
+                    ReviewDate = DateTime.Now,
+                };
+
+                // Thêm review vào context
+                _context.Reviews.Add(review);
+            }
+            var order = await _context.Orders.FirstOrDefaultAsync(x => x.OrderId == orderId);
+            order.Is_Reviewed = true;
+            // Lưu thay đổi vào cơ sở dữ liệu
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, message = "Gửi đánh giá thành công" });
+        }
+
+        [Route("MyOrders/OrderDetail/{orderId}")]
+        public IActionResult OrderDetail(int orderId)
+        {
+            // Lấy thông tin đơn hàng từ cơ sở dữ liệu
+            var order = _context.Orders
+                .Include(x => x.Payments)
+                .Include(x => x.User)
+                .Include(x => x.OrderItems)
+                    .ThenInclude(x => x.VarientProduct)
+                    .ThenInclude(x => x.Product)
+                .FirstOrDefault(x => x.OrderId == orderId); // Lọc theo orderId
+
+            if (order == null)
+            {
+                return NotFound("Order not found");
+            }
+            // Read the JSON file
+            var jsonString = System.IO.File.ReadAllText("wwwroot/Province_VN.json");
+            var provinces = JsonConvert.DeserializeObject<List<Province>>(jsonString);
+
+            // Find the province, district, and ward by ID
+            var province = provinces?.FirstOrDefault(p => p.Code == int.Parse(order.ShippingAddress.Province));
+            var district = province?.Districts?.FirstOrDefault(d => d.Code == int.Parse(order.ShippingAddress.District));
+            var ward = district?.Wards?.FirstOrDefault(w => w.Code == int.Parse(order.ShippingAddress.Ward));
+            // Map dữ liệu sang ViewModel
+            var result = new OrderDetailVM
+            {
+                OrderId = order.OrderId,
+                TotalPrice = order.TotalAmount.ToString("C0", new CultureInfo("vi-VN")),
+                DiscountPrice = (order.DeductAmount + order.DiscountAmount)?.ToString("C0", new CultureInfo("vi-VN")) ?? "0 ₫", // Format giá trị nếu cần
+                ShippingPrice = order.ShippingAmount?.ToString("C0", new CultureInfo("vi-VN")),
+                PaymentMethod = order.Payments.FirstOrDefault()?.PaymentMethod ?? "N/A",
+                OriginTotalPrice = (decimal)order.OriginAmount, // Tính tổng giá gốc
+                OrderStatus = order.OrderStatus,
+                User = new Generate_User
+                {
+                    FullName = order.User.LastName + " " + order.User.FirstName,
+                    PhoneNumber = order.User.PhoneNumber,
+                    Address = order.ShippingAddress.AddressLine + ", " + province?.Name + ", " + district.Name + ", " + ward.Name,
+                },
+                ListVarientProduct = order.OrderItems.Select(item => new ProductVariant
+                {
+                    ProductId = item.ProductId,
+                    VarientProductId = item.VarientProduct.VarientId,
+                    Price = item.Price.ToString("C0", new CultureInfo("vi-VN")),
+                    ImageUrl = item.Product.Image,
+                    Quantity = item.Quantity,
+                    NameProduct = item.Product.Name,
+                    Attributes = item.VarientProduct.Attributes
+                }).ToList()
+            };
+
+            // Truyền ViewModel sang view
+            return View(result);
+        }
+
+        #endregion
+
+        #region WishList
+        [HttpPost("AddToWishlist")]
+        public async Task<JsonResult> AddtoWishlist(int productId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if(userId == null) {
+                return Json(new { success = false, message = "Cần đăng nhập trước" });
+            }
+            if(productId == 0) { return Json(new { success = false ,message ="Không nhận được mã sản phẩm"}); }
+
+            var wishlist = new Wishlist
+            {
+                UserId = int.Parse(userId),
+                ProductId = productId,
+                AddedDate = DateTime.Now
+            };
+            _context.Wishlists.Add(wishlist);
+            await _context.SaveChangesAsync();
+            return Json(new { success = true, message = "Đã thêm vào DS yêu thích" });
+        }
+        [HttpPost("RemoveItemFromWishlist")]
+        public async Task<JsonResult> RemoveItemFromWishlist(int productId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var wishlist = await _context.Wishlists.FirstOrDefaultAsync(x=>x.UserId == int.Parse(userId) && x.ProductId == productId);
+            if(wishlist == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy sản phẩm trong ds yêu thích" });
+            }
+            _context.Wishlists.Remove(wishlist);
+            await _context.SaveChangesAsync();
+            return Json(new { success = true, message = "Đã xóa sản phẩm ra khỏi ds" });
+        }
+
+        [Route("Wishlist")]
+        public IActionResult Wishlist()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var wishlist = _context.Wishlists.Where(x=>x.UserId == int.Parse(userId)).ToList();
+            return View(wishlist);
+        }
         #endregion
     }
 }

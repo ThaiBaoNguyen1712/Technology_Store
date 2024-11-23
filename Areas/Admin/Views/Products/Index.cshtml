@@ -65,7 +65,7 @@
                                             <td>@product.Sku</td>
                                             <td>@product.Brand?.Name</td>
                                             <td>@product.Category?.Name</td>
-                                            <td>@product.SellPrice?.ToString("C0", new CultureInfo("vi-VN"))</td>
+                                            <td style="white-space:nowrap">@product.SellPrice?.ToString("C0", new CultureInfo("vi-VN"))</td>
                                             <td>@product.Stock</td>
                                             <td>
                                                 <span class="badge @(product.Status == "available" ? "bg-success" :
@@ -124,19 +124,67 @@
         });
 
     }
-    function deleteProduct(id) { 
-        if (confirm("Bạn có chắc rằng muốn xóa sản phẩm này")) {
-            $.ajax({
-                method: "POST",
-                url: "/Admin/Products/Delete/" + id,
-                success: function (respones) {
-                    window.location.reload();
-                },
-                error(xhr, error) {
-                    alert("Đã có lỗi khi xóa")
-                }
-            })
-        }
-        
+    function deleteProduct(id) {
+        // Hiển thị hộp thoại xác nhận bằng SweetAlert2
+        Swal.fire({
+            title: 'Bạn có chắc rằng muốn xóa sản phẩm này?',
+            text: "Hành động này không thể hoàn tác.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Xóa sản phẩm',
+            cancelButtonText: 'Hủy',
+            reverseButtons: true // Đảo ngược các nút để nút Hủy ở bên trái
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Hiển thị biểu tượng loading khi thực hiện xóa
+                $('.loading-container').show();
+
+                $.ajax({
+                    method: "POST",
+                    url: "/Admin/Products/Delete/" + id,
+                    success: function (response) {
+                        // Ẩn biểu tượng loading
+                        $('.loading-container').hide();
+
+                        if (response.success) {
+                            // Hiển thị thông báo thành công
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Sản phẩm đã được xóa!',
+                                text: 'Sản phẩm đã được xóa thành công khỏi danh sách.',
+                                confirmButtonText: 'OK'
+                            }).then(() => {
+                                // Tải lại trang sau khi xóa thành công
+                                window.location.reload();
+                            });
+                        } else {
+                            // Hiển thị thông báo lỗi nếu có
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Đã xảy ra lỗi!',
+                                text: response.message || 'Không thể xóa sản phẩm, vui lòng thử lại.',
+                                confirmButtonText: 'OK'
+                            });
+                        }
+                    },
+                    error: function (xhr, error) {
+                        // Ẩn biểu tượng loading khi có lỗi
+                        $('.loading-container').hide();
+
+                        // Hiển thị thông báo lỗi
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Đã có lỗi khi xóa!',
+                            text: 'Vui lòng thử lại sau.',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                });
+            } else {
+                // Nếu người dùng hủy, không làm gì cả
+                console.log('Xóa sản phẩm đã bị hủy');
+            }
+        });
     }
+
 </script>

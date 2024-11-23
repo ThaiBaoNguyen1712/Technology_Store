@@ -56,12 +56,13 @@ namespace Tech_Store.Areas.Admin.Controllers
             //Count Orders
             var orders = _context.Orders.ToList();
             ViewBag.Order_all = orders.Count;
-            ViewBag.Order_pending = orders.Count(x => x.OrderStatus == "Pending");
-            ViewBag.Order_confirmed = orders.Count(x => x.OrderStatus == "Confirmed");
-            ViewBag.Order_shipped = orders.Count(x => x.OrderStatus == "Shipped");
-            ViewBag.Order_completed = orders.Count(x => x.OrderStatus == "Completed");
-            ViewBag.Order_cancelled = orders.Count(x => x.OrderStatus == "Cancelled");
-            ViewBag.Order_refunded = orders.Count(x => x.OrderStatus == "Refunded");
+            ViewBag.Order_pending = orders.Count(x => x.OrderStatus.ToLower() == "pending");
+            ViewBag.Order_confirmed = orders.Count(x => x.OrderStatus.ToLower() == "confirmed");
+            ViewBag.Order_shipping = orders.Count(x => x.OrderStatus.ToLower() == "shipping");
+            ViewBag.Order_delivered = orders.Count(x => x.OrderStatus.ToLower() == "delivered");
+            ViewBag.Order_completed = orders.Count(x => x.OrderStatus.ToLower() == "completed");
+            ViewBag.Order_cancelled = orders.Count(x => x.OrderStatus.ToLower() == "cancelled");
+            ViewBag.Order_refunded = orders.Count(x => x.OrderStatus.ToLower() == "refunded");
 
             //Count Product Status
             var products = _context.Products.ToList();

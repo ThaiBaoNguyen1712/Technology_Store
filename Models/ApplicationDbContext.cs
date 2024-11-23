@@ -25,6 +25,8 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<Category> Categories { get; set; }
 
+    public virtual DbSet<Comment> Comments { get; set; }
+
     public virtual DbSet<Gallery> Galleries { get; set; }
 
     public virtual DbSet<Order> Orders { get; set; }
@@ -159,6 +161,9 @@ public partial class ApplicationDbContext : DbContext
 
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
             entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.EngTitle)
+                .HasMaxLength(50)
+                .HasColumnName("eng_title");
             entity.Property(e => e.Image)
                 .HasMaxLength(255)
                 .HasColumnName("image");
@@ -166,6 +171,24 @@ public partial class ApplicationDbContext : DbContext
                 .HasMaxLength(100)
                 .HasColumnName("name");
             entity.Property(e => e.Visible).HasColumnName("visible");
+        });
+
+        modelBuilder.Entity<Comment>(entity =>
+        {
+            entity.ToTable("Comment");
+
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+
+            entity.HasOne(d => d.Product).WithMany(p => p.Comments)
+                .HasForeignKey(d => d.ProductId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Comment_Product");
+
+            entity.HasOne(d => d.User).WithMany(p => p.Comments)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Comment_User");
         });
 
         modelBuilder.Entity<Gallery>(entity =>
@@ -218,7 +241,7 @@ public partial class ApplicationDbContext : DbContext
                 .HasColumnType("decimal(10, 2)")
                 .HasColumnName("total_amount");
             entity.Property(e => e.UserId).HasColumnName("user_id");
-
+            entity.Property(e => e.Is_Reviewed).HasColumnName("is_reviewed");
             entity.HasOne(d => d.ShippingAddress).WithMany(p => p.Orders)
                 .HasForeignKey(d => d.ShippingAddressId)
                 .HasConstraintName("FK__Order__shipping___5DCAEF64");
@@ -245,14 +268,17 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasOne(d => d.Order).WithMany(p => p.OrderItems)
                 .HasForeignKey(d => d.OrderId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__OrderItem__order__6C190EBB");
 
             entity.HasOne(d => d.Product).WithMany(p => p.OrderItems)
                 .HasForeignKey(d => d.ProductId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__OrderItem__produ__619B8048");
 
             entity.HasOne(d => d.VarientProduct).WithMany(p => p.OrderItems)
                 .HasForeignKey(d => d.VarientProductId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_OrderItem_VarientProduct");
         });
 
@@ -419,14 +445,22 @@ public partial class ApplicationDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("review_date");
             entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.VarientId).HasColumnName("varient_id");
 
             entity.HasOne(d => d.Product).WithMany(p => p.Reviews)
                 .HasForeignKey(d => d.ProductId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Review__product___6E01572D");
 
             entity.HasOne(d => d.User).WithMany(p => p.Reviews)
                 .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Review__user_id__6EF57B66");
+
+            entity.HasOne(d => d.Varient).WithMany(p => p.Reviews)
+                .HasForeignKey(d => d.VarientId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Review_VarientProduct");
         });
 
         modelBuilder.Entity<Role>(entity =>

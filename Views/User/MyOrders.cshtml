@@ -1,8 +1,377 @@
-﻿
+﻿@model IEnumerable<Tech_Store.Models.ViewModel.OrderViewModelClient>
+@using System.Globalization
 @{
     ViewData["Title"] = "MyOrders";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+<link href="~/client/asset/css/ordersview.css" rel="stylesheet" />
 
-<h1>MyOrders</h1>
+<style>
+   
+</style>
 
+<div class="page-header">
+    <div class="container">
+        <h1 class="display-6 mb-0">Đơn hàng của tôi</h1>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Filter Section -->
+    <div class="filter-card animate-fade-in">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <label class="form-label mb-2">Lọc theo trạng thái</label>
+                <select class="form-select w-100" id="statusFilter">
+                    <option value="all">Tất cả đơn hàng</option>
+                    <option value="completed">Đã hoàn thành</option>
+                    <option value="pending">Đang xử lý</option>
+                    <option value="confirmed">Đã xác nhận</option>
+                    <option value="shipping">Đang giao hàng</option>
+                    <option value="delivered">Đã giao hàng</option>
+                    <option value="cancelled">Đã hủy</option>
+                    <option value="refurned">Yêu cầu hoàn tiền</option>
+                </select>
+            </div>
+            <div class="col-md-6 text-md-end mt-3 mt-md-0">
+                <span class="info-label">Tổng đơn hàng:</span>
+                <span class="info-value">@ViewBag.OrderCount đơn</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order List -->
+    <div class="order-list">
+        @foreach(var item in Model)
+        {
+            <!-- Completed Order -->
+            if(item.OrderStatus == "Completed")
+            {
+                <div class="card animate-fade-in" data-status="completed">
+                    <div class="card-body p-4">
+                        <div class="row align-items-center flex-column flex-md-row text-center text-md-start">
+                            <div class="col-12 col-md-2 mb-3 mb-md-0">
+                                <img src="/Upload/Products/@item.ImageUrl" alt="Product" class="product-image">
+                            </div>
+                            <div class="col-12 col-md-6 mb-3 mb-md-0">
+                                <div class="order-info">
+                                    <h5 class="card-title mb-3">Đơn hàng #@item.Id</h5>
+                                    <div class="d-flex align-items-center justify-content-center justify-content-md-start mb-2">
+                                        <span class="order-status status-completed">
+                                            <span class="timeline-dot dot-completed"></span>
+                                            Đã hoàn thành
+                                        </span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="info-label">Ngày đặt:</span>
+                                        <span class="info-value">@item.OrderDate.ToString("dd/MM/yyyy")</span>
+                                    </div>
+                                    <div>
+                                        <span class="info-label">Tổng tiền:</span>
+                                        <span class="info-value">@item.Amount.ToString("C0", new CultureInfo("vi-VN"))</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-4 text-center text-md-end">
+                                <a class="btn btn-outline mb-2 me-md-2" href="/user/MyOrders/OrderDetail/@item.Id">Chi tiết</a>
+                                @if(!item.Is_Reviewed)
+                                {
+                                    <button class="btn btn-primary review-btn" data-orderid="@item.Id" data-ids='@Newtonsoft.Json.JsonConvert.SerializeObject(item.variantIds)'>
+                                        <i class="fas fa-star me-2"></i>Đánh giá
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            }
+           else{
+        <!-- Processing Order -->
+                <div class="card animate-fade-in" data-status="@item.OrderStatus.ToLower()">
+                    <div class="card-body p-4">
+                        <div class="row align-items-center flex-column flex-md-row text-center text-md-start">
+                            <div class="col-12 col-md-2 mb-3 mb-md-0">
+                                <img src="/Upload/Products/@item.ImageUrl" alt="Product" class="product-image">
+                            </div>
+                            <div class="col-12 col-md-6 mb-3 mb-md-0">
+                                <div class="order-info">
+                                    <h5 class="card-title mb-3">Đơn hàng #@item.Id</h5>
+                                    <div class="d-flex align-items-center justify-content-center justify-content-md-start mb-2">
+                                        <span class="order-status
+                                        @(
+                                            item.OrderStatus == "Completed" ? "status-completed" :
+                                            item.OrderStatus == "Processing" ? "status-processing" :
+                                            item.OrderStatus == "Shipping" ? "status-shipping" :
+                                             item.OrderStatus == "Delivered" ? "status-delivered" :
+                                            item.OrderStatus == "Pending" ? "status-pending" :
+                                            item.OrderStatus == "Confirmed" ? "status-confirmed" :
+                                            item.OrderStatus == "Cancelled" ? "status-Cancelled" :
+                                            item.OrderStatus == "Refunded" ? "status-refunded" : ""
+                                        )">
+                                            <span class="timeline-dot dot-@item.OrderStatus.ToLower()"></span>
+                                            @(
+                                                item.OrderStatus == "Completed" ? "Đã hoàn thành" :
+                                                item.OrderStatus == "Processing" ? "Đang xử lý" :
+                                                item.OrderStatus == "Shipping" ? "Đang giao hàng" :
+                                                item.OrderStatus == "Delivered" ? "Đã giao hàng" :
+                                                item.OrderStatus == "Pending" ? "Đang chờ xử lý" :
+                                                item.OrderStatus == "Confirmed" ? "Đã xác nhận" :
+                                                item.OrderStatus == "Cancelled" ? "Đã hủy" :
+                                                item.OrderStatus == "Refunded" ? "Đã hoàn tiền" : "Không xác định"
+                                                )
+                                        </span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="info-label">Ngày đặt:</span>
+                                        <span class="info-value">@item.OrderDate.ToString("dd/MM/yyyy")</span>
+                                    </div>
+                                    <div>
+                                        <span class="info-label">Tổng tiền:</span>
+                                        <span class="info-value">@item.Amount.ToString("C0", new CultureInfo("vi-VN"))</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-4 text-center text-md-end">
+                                <a class="btn btn-outline mb-2 me-md-2" href="/user/MyOrders/OrderDetail/@item.Id">Chi tiết</a>
+                                @if (item.OrderStatus == "Pending")
+                                {
+                                    <button class="btn btn-outline-danger" data-orderid="@item.Id" id="cancelOrder-btn" data-bs-toggle="modal" data-bs-target="#cancelOrderModal">Hủy đơn hàng</button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+        }
+      
+           
+        }
+       
+      
+    </div>
+</div>
+
+<!-- Review Modal -->
+<div class="modal fade" id="reviewModal" data-orderid="" data-ids="" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Đánh giá đơn hàng #123456</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <div class="rating justify-content-center">
+                        <i class="far fa-star text-warning" data-rating="1"></i>
+                        <i class="far fa-star text-warning" data-rating="2"></i>
+                        <i class="far fa-star text-warning" data-rating="3"></i>
+                        <i class="far fa-star text-warning" data-rating="4"></i>
+                        <i class="far fa-star text-warning" data-rating="5"></i>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Nhận xét của bạn</label>
+                    <textarea class="form-control" rows="3" placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm..." id="reviewText"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" id="submitReview">
+                    <i class="fas fa-paper-plane me-2"></i>Gửi đánh giá
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Cancel Order Modal -->
+<div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-labelledby="cancelOrderModalLabel" data-OrderId ="" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="cancelOrderModalLabel">Hủy Đơn Hàng #<span id="OrderIdText"></span></h5>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">Vui lòng cho chúng tôi biết lý do bạn muốn hủy đơn hàng:</p>
+                <form id="cancelOrderForm">
+                    <div class="mb-3">
+                        <label for="cancelReason" class="form-label">Lý do hủy:</label>
+                        <select class="form-select" id="cancelReason" name="cancelReason" required>
+                            <option value="" disabled selected>Chọn lý do</option>
+                            <option value="Đổi ý, không muốn mua nữa">Đổi ý, không muốn mua nữa</option>
+                            <option value="Tìm thấy giá rẻ hơn">Tìm thấy giá rẻ hơn</option>
+                            <option value="Tôi muốn thay đổi nơi nhận hàng">Tôi muốn thay đổi nơi nhận hàng</option>
+                            <option value="Khác">Khác</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="otherReasonContainer" style="display: none;">
+                        <label for="otherReason" class="form-label">Lý do khác:</label>
+                        <textarea class="form-control" id="otherReason" name="otherReason" rows="3" placeholder="Nhập lý do..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="submit" class="btn btn-danger" form="cancelOrderForm">Xác nhận hủy</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script>
+    $(document).ready(function () {
+        // Filter orders
+        $('#statusFilter').change(function () {
+            const status = $(this).val();
+            $('.card').each(function () {
+                $(this).removeClass('animate-fade-in');
+                if (status === 'all' || $(this).data('status') === status) {
+                    $(this).show().addClass('animate-fade-in');
+                } else {
+                    $(this).hide();
+                }
+            });
+        });
+
+        // Show review modal
+        $('.review-btn').click(function () {
+            // Lấy giá trị từ data-ids của nút
+            var ids = $(this).data('ids');
+            var orderId = $(this).data('orderid');
+
+            // Gán giá trị vào modal
+            $('#reviewModal')
+            .attr('data-ids',ids)         // Gán giá trị vào data-ids
+                .attr('data-OrderId', orderId); // Gán giá trị vào data-OrderId
+
+            $('#reviewModal').modal('show');
+        });
+        // Show CancelOrder modal
+        $('#cancelOrder-btn').click(function () {
+            var orderId = $(this).data('orderid');
+
+            // Gán giá trị vào modal
+            $('#cancelOrderModal').attr('data-OrderId', orderId);
+
+            $('#OrderIdText').text(orderId);
+
+            $('#cancelOrderModal').modal('show');
+        });
+
+        // Star rating functionality
+        let selectedRating = 0;
+
+        $('.rating i').hover(
+            function () {
+                const rating = $(this).data('rating');
+                updateStars(rating);
+            },
+            function () {
+                updateStars(selectedRating);
+            }
+        );
+
+        $('.rating i').click(function () {
+            selectedRating = $(this).data('rating');
+            updateStars(selectedRating);
+        });
+
+        function updateStars(rating) {
+            $('.rating i').each(function () {
+                const starRating = $(this).data('rating');
+                if (starRating <= rating) {
+                    $(this).removeClass('far').addClass('fas');
+                } else {
+                    $(this).removeClass('fas').addClass('far');
+                }
+            });
+        }
+
+        // Cancel Order Modal Submission
+        $('#cancelOrderForm').on('submit', function (e) {
+            e.preventDefault();
+            var orderId = $('#cancelOrderModal').data('orderid');
+            var reason = $('#cancelReason').val();
+            var otherReason = $('#otherReason').val();
+           
+            // If 'Other' is selected, use the other reason text
+            if (reason === 'Khác') {
+                reason = otherReason;
+            }
+
+            $.ajax({
+                type: 'POST',
+                url: '/User/CancelOrder',
+                data: {
+                    orderId: orderId,
+                    reason: reason
+                },
+                success: function (response) {
+                    if (response.success) {
+                        alert(response.message);
+                        $('#cancelOrderModal').modal('hide');
+                        // Optional: Refresh the page or update order status
+                        location.reload();
+                    } else {
+                        alert(response.message);
+                    }
+                },
+                error: function () {
+                    alert('Đã xảy ra lỗi. Vui lòng thử lại.');
+                }
+            });
+        });
+
+        // Khi click vào nút "Gửi đánh giá"
+        $('#submitReview').click(function () {
+            // Lấy dữ liệu từ modal
+            var orderId = $('#reviewModal').data('orderid'); // Lấy OrderId từ data attribute của modal
+            var variantIds = $('#reviewModal').data('ids'); // Lấy variantIds từ data attribute của modal
+            var reviewText = $('#reviewText').val(); // Lấy nội dung đánh giá từ textarea
+
+            // Kiểm tra nếu có nội dung đánh giá
+            if (!reviewText.trim()) {
+                alert('Vui lòng nhập nhận xét trước khi gửi!');
+                return;
+            }
+
+            // Thực hiện AJAX request để gửi dữ liệu đánh giá
+            $.ajax({
+                type: 'POST',
+                url: '/user/SendReview', // Đường dẫn API hoặc controller xử lý
+                data: {
+                    orderId: orderId,
+                    variantIds: variantIds,
+                    content: reviewText,
+                    starPoint: selectedRating
+                },
+                success: function (response) {
+                    // Xử lý thành công, có thể hiển thị thông báo
+                    alert('Đánh giá của bạn đã được gửi thành công!');
+                    $('#reviewModal').modal('hide'); // Đóng modal sau khi gửi
+                },
+                error: function (error) {
+                    // Xử lý lỗi
+                    alert('Đã có lỗi xảy ra, vui lòng thử lại!');
+                    console.error(error);
+                }
+            });
+        });
+
+        // Show other reason textarea when 'Khác' is selected
+        $('#cancelReason').change(function () {
+            if ($(this).val() === 'Khác') {
+                $('#otherReasonContainer').show();
+            } else {
+                $('#otherReasonContainer').hide();
+            }
+        });
+    });
+</script>

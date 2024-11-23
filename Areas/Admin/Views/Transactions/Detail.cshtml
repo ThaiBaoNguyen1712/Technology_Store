@@ -1,0 +1,200 @@
+﻿
+@{
+    ViewData["Title"] = "Chi tiết giao dịch";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+}
+
+    <style>
+        .transaction-timeline {
+            position: relative;
+            padding-left: 50px;
+        }
+
+            .transaction-timeline::before {
+                content: '';
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 2px;
+                height: 100%;
+                background-color: #e0e0e0;
+            }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+            padding-left: 30px;
+        }
+
+            .timeline-item::before {
+                content: '';
+                position: absolute;
+                left: -39px;
+                top: 0;
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+                background-color: #007bff;
+            }
+
+        .transaction-detail-card {
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+    </style>
+
+    <div class="container-fluid py-4">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card transaction-detail-card mb-4">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-cash-coin me-2"></i>Chi Tiết Giao Dịch
+                        </h5>
+                        <span class="badge bg-light text-dark">Mã GD: #TRX2023112201</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Thông Tin Giao Dịch</h6>
+                                <table class="table table-borderless">
+                                    <tbody>
+                                        <tr>
+                                            <td class="text-muted">Loại Giao Dịch:</td>
+                                            <td>
+                                                <span class="badge bg-success">Thanh Toán Đơn Hàng</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Phương Thức:</td>
+                                            <td>
+                                                <i class="bi bi-credit-card me-2"></i>Chuyển Khoản Ngân Hàng
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Trạng Thái:</td>
+                                            <td>
+                                                <span class="badge bg-primary">Thành Công</span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Chi Tiết Số Tiền</h6>
+                                <table class="table table-borderless">
+                                    <tbody>
+                                        <tr>
+                                            <td class="text-muted">Tổng Tiền:</td>
+                                            <td class="text-end fw-bold text-success">1,500,000 VNĐ</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Phí Giao Dịch:</td>
+                                            <td class="text-end text-danger">-15,000 VNĐ</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Số Tiền Nhận:</td>
+                                            <td class="text-end fw-bold">1,485,000 VNĐ</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card transaction-detail-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-clock-history me-2"></i>Lịch Sử Giao Dịch
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="transaction-timeline">
+                            <div class="timeline-item">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <strong>Bắt Đầu Giao Dịch</strong>
+                                        <p class="text-muted mb-0">Khởi tạo đơn hàng và thanh toán</p>
+                                    </div>
+                                    <small class="text-muted">22/11/2023 10:30:45</small>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <strong>Xác Nhận Thanh Toán</strong>
+                                        <p class="text-muted mb-0">Giao dịch được xác nhận bởi hệ thống ngân hàng</p>
+                                    </div>
+                                    <small class="text-muted">22/11/2023 10:31:12</small>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <strong>Hoàn Tất</strong>
+                                        <p class="text-muted mb-0">Giao dịch được xử lý thành công</p>
+                                    </div>
+                                    <small class="text-muted">22/11/2023 10:31:45</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card transaction-detail-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-person-lines-fill me-2"></i>Thông Tin Người Thực Hiện
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center mb-3">
+                            <img src="https://via.placeholder.com/100" class="rounded-circle mb-2" alt="Avatar">
+                            <h6 class="mb-1">Nguyễn Văn A</h6>
+                            <small class="text-muted">ID Khách Hàng: KH2023112201</small>
+                        </div>
+                        <table class="table table-borderless">
+                            <tbody>
+                                <tr>
+                                    <td class="text-muted">Email:</td>
+                                    <td>nguyenvana@example.com</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Số Điện Thoại:</td>
+                                    <td>0987654321</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Địa Chỉ:</td>
+                                    <td>123 Đường ABC, Quận XYZ, TP HCM</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Optional: Add some interactive features
+            $('.timeline-item').hover(
+                function () {
+                    $(this).addClass('bg-light');
+                },
+                function () {
+                    $(this).removeClass('bg-light');
+                }
+            );
+
+            // Copy transaction ID
+            $('.badge-light').on('click', function () {
+                navigator.clipboard.writeText($(this).text()).then(function () {
+                    alert('Đã sao chép mã giao dịch');
+                });
+            });
+        });
+    </script>

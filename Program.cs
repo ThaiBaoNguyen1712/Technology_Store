@@ -9,6 +9,8 @@ using Tech_Store.Services;
 using Tech_Store.Services.VNPayServices;
 using Tech_Store.Models.DTO.Payment.Client.Momo;
 using Tech_Store.Services.MomoServices;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,7 +22,6 @@ builder.Services.AddControllersWithViews().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
 });
-
 // VNPay and Momo Payment Services
 builder.Services.AddSingleton<IVnPayService, VnPayService>();
 builder.Services.AddSingleton<IMomoService, MomoService>();
@@ -42,14 +43,6 @@ builder.Services.AddRecaptcha(options =>
     options.SecretKey = builder.Configuration["ReCaptcha:SecretKey"];
 });
 
-// Authentication and Authorization
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
-    {
-        options.LoginPath = "/Access/Login";
-        options.ExpireTimeSpan = TimeSpan.FromDays(1);
-    });
-
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
@@ -63,6 +56,32 @@ builder.Services.AddSession(options =>
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
+
+//Config Login Google account & Authentication and Authorization
+builder.Services.AddAuthentication(option =>
+{
+    // Đặt mặc định là Cookie
+    option.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    option.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    option.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+})
+.AddCookie(options =>
+{
+    options.LoginPath = "/Auth/Login"; // Đường dẫn khi chưa đăng nhập
+    options.ExpireTimeSpan = TimeSpan.FromDays(1); // Thời gian hết hạn cookie
+})
+.AddGoogle(GoogleDefaults.AuthenticationScheme, option =>
+{
+    option.ClientId = builder.Configuration.GetSection("GoogleKeys:ClientId").Value;
+    option.ClientSecret = builder.Configuration.GetSection("GoogleKeys:ClientSecret").Value;
+})
+.AddFacebook(facebookOptions =>
+{
+    facebookOptions.AppId = builder.Configuration.GetSection("Facebook:AppId").Value;
+    facebookOptions.AppSecret = builder.Configuration.GetSection("Facebook:AppSecret").Value;
+    facebookOptions.AccessDeniedPath = "/AccessDeniedPathInfo";
+}); ;
+
 
 var app = builder.Build();
 

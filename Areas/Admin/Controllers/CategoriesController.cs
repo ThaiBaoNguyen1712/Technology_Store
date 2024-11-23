@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Tech_Store.Models;
 
 namespace Tech_Store.Areas.Admin.Controllers
 {
+    [Authorize(Policy = "AdminOnly")]
     [Area("Admin")]
     [Route("admin/[controller]")]
     public class CategoriesController : BaseAdminController
@@ -65,19 +67,18 @@ namespace Tech_Store.Areas.Admin.Controllers
                     return NotFound();
                 }
 
-                // Kiểm tra và xóa ảnh cũ nếu có
-                if (!string.IsNullOrEmpty(category.Image) && category.Image != "none.jpg")
-                {
-                    var oldImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Logo", category.Image);
-                    if (System.IO.File.Exists(oldImagePath))
-                    {
-                        System.IO.File.Delete(oldImagePath);
-                    }
-                }
-
                 // Lưu hình ảnh mới nếu có
                 if (imageFile != null && imageFile.Length > 0)
                 {
+                    // Kiểm tra và xóa ảnh cũ nếu có
+                    if (!string.IsNullOrEmpty(category.Image) && category.Image != "none.jpg")
+                    {
+                        var oldImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Logo", category.Image);
+                        if (System.IO.File.Exists(oldImagePath))
+                        {
+                            System.IO.File.Delete(oldImagePath);
+                        }
+                    }
                     var fileName = $"Cate_{Guid.NewGuid()}.png";
                     var newImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Logo", fileName);
                     Directory.CreateDirectory(Path.GetDirectoryName(newImagePath)!);
@@ -93,6 +94,7 @@ namespace Tech_Store.Areas.Admin.Controllers
 
                 // Cập nhật các thuộc tính khác
                 category.Name = cate.Name;
+                category.EngTitle = cate.EngTitle;
                 category.Description = cate.Description;
                 category.Visible = cate.Visible;
 

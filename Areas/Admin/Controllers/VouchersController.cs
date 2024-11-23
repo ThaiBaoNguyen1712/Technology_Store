@@ -14,7 +14,6 @@ namespace Tech_Store.Areas.Admin.Controllers
     [Route("admin/[controller]")]
     public class VouchersController : BaseAdminController
     {
-
         public VouchersController(ApplicationDbContext context) : base(context)
         {
         }
@@ -84,13 +83,12 @@ namespace Tech_Store.Areas.Admin.Controllers
 
         }
 
-        [HttpDelete("Delete/{id}")]
-        [ValidateAntiForgeryToken]
+        [HttpDelete("Delete")]
         public async Task<IActionResult> Delete(int id)
         {
             try
             {
-                var vou = await _context.Vouchers.FindAsync(id); // Tìm danh mục theo ID
+                var vou = await _context.Vouchers.FindAsync(id); 
                 if (vou == null)
                 {
                     return BadRequest();

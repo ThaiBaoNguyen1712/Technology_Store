@@ -698,34 +698,63 @@ Ckeditor *@
             $('#sellPrice').val(sellPrice.toFixed(2));
         }
 
-        // Submit form bằng AJAX
+        // Submit form bằng AJAX với xác nhận trước
         $('#ProductForm').on('submit', function (e) {
             e.preventDefault(); // Ngăn chặn submit form thông thường
-            const url = '@Url.Action("Update", "Products", new { area = "Admin" })';
-            $('.loading-container').show(); // Hiển thị loading
-            var formData = new FormData(this); // Thu thập dữ liệu từ form
-            $.ajax({
-                method: 'POST',
-                url: url,
-                data: formData,
-                processData: false, // Không xử lý dữ liệu
-                contentType: false, // Không đặt content type, để trình duyệt tự làm
-                headers: {
-                    "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() // Lấy token xác thực nếu có
-                },
-                success: function (res) {
-                    $('.loading-container').hide(); // Ẩn loading
-                    alert('Thành công!'); // Thông báo thành công
-                    window.location.href = '/Admin/Products';
 
-                },
-                error: function (xhr, error, status) {
-                    $('.loading-container').hide(); // Ẩn loading
-                    alert('Đã xảy ra lỗi: ' + xhr.responseText); // Thông báo lỗi
-                    console.error('Error details:', error); // Log chi tiết lỗi
+            // Hiển thị hộp thoại xác nhận với SweetAlert2
+            Swal.fire({
+                title: 'Bạn có chắc chắn muốn cập nhật sản phẩm này?',
+                text: "Bạn sẽ không thể hoàn tác hành động này!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Cập nhật sản phẩm',
+                cancelButtonText: 'Hủy',
+                reverseButtons: true // Đảo ngược các nút để nút Hủy ở bên trái
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const url = '@Url.Action("Update", "Products", new { area = "Admin" })';
+                    $('.loading-container').show(); // Hiển thị loading
+
+                    var formData = new FormData(this); // Thu thập dữ liệu từ form
+
+                    $.ajax({
+                        method: 'POST',
+                        url: url,
+                        data: formData,
+                        processData: false, // Không xử lý dữ liệu
+                        contentType: false, // Không đặt content type, để trình duyệt tự làm
+                        headers: {
+                            "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() // Lấy token xác thực nếu có
+                        },
+                        success: function (res) {
+                            $('.loading-container').hide(); // Ẩn loading
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Cập nhật thành công!',
+                                text: 'Sản phẩm đã được cập nhật.',
+                                confirmButtonText: 'OK'
+                            }).then(() => {
+                                window.location.href = '/Admin/Products'; // Điều hướng lại trang sản phẩm
+                            });
+                        },
+                        error: function (xhr, error, status) {
+                            $('.loading-container').hide(); // Ẩn loading
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Đã xảy ra lỗi!',
+                                text: 'Vui lòng thử lại sau.',
+                                confirmButtonText: 'OK'
+                            });
+                            console.error('Error details:', error); // Log chi tiết lỗi
+                        }
+                    });
+                } else {
+                    console.log('Cập nhật sản phẩm đã bị hủy');
                 }
             });
         });
+
 
         $(function () {
             $('[data-toggle="tooltip"]').tooltip();

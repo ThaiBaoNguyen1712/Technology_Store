@@ -7,6 +7,7 @@
     <title>Trang Chủ</title>
     <link href="~/Client/asset/css/site.css" rel="stylesheet">
     <link href="~/client/asset/css/detailproduct.css" rel="stylesheet" />
+    <link href="~/client/asset/css/categoryview.css" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Roboto:wght@400&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -39,7 +40,7 @@
                         @foreach(var cate in ViewBag.Categories)
                         {
                             <li>
-                                <a class="dropdown-item" href="#">
+                                <a class="dropdown-item" href="~/Category/@cate.EngTitle">
                                 <img src="/Upload/Logo/@cate.Image" width="30px" height="30px" class="rounded"/> @cate.Name
                                 </a>
                             </li>
@@ -78,7 +79,7 @@
 
                             <ul class="dropdown-menu dropdown-menu-dark animate slideIn" aria-labelledby="accountDropdown">
                                 <li><a class="dropdown-item" href="/user/Information"><i class="fas fa-user me-2"></i>Tài Khoản</a></li>
-                                <li><a class="dropdown-item" href="#"><i class="fas fa-shopping-cart me-2"></i>Đơn Hàng</a></li>
+                                <li><a class="dropdown-item" href="/user/MyOrders"><i class="fas fa-shopping-cart me-2" ></i>Đơn Hàng</a></li>
                                 <li>
                                     <a class="dropdown-item" href="@Url.Action("Logout", "Authentication")">
                                         <i class="fas fa-sign-out-alt me-2"></i>Đăng Xuất

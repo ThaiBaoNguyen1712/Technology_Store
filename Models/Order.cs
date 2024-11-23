@@ -27,6 +27,7 @@ public partial class Order
 
     public string? Note { get; set; }
 
+    public bool? Is_Reviewed { get; set; }
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();

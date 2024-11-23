@@ -238,7 +238,7 @@
             // Gửi AJAX request
             $.ajax({
                 method: 'POST',
-                url: 'Users/Create',
+                url: '/Admin/Users/Create',
                 data: formData,
                 processData: false, // Ngăn jQuery tự động xử lý dữ liệu
                 contentType: false, // Ngăn jQuery tự động thiết lập Content-Type
@@ -260,40 +260,62 @@
 
 
         $(document).on('click', '#update', function () {
-            $('.loading-container').show(); // Hiển thị loader
-            var id_vou = $("input[name='us_id']").val();
-            var formElement = $('#addUserForm')[0];
-            var formData = new FormData(formElement);
-            updateAddressValues(formData);
+            // Hiển thị SweetAlert confirm
+            Swal.fire({
+                title: 'Bạn có chắc chắn muốn cập nhật người dùng này?',
+                text: 'Hành động này sẽ thay đổi thông tin người dùng!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Có, cập nhật!',
+                cancelButtonText: 'Không, hủy!',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $('.loading-container').show(); // Hiển thị loader
 
+                    var id_vou = $("input[name='us_id']").val();
+                    var formElement = $('#addUserForm')[0];
+                    var formData = new FormData(formElement);
+                    updateAddressValues(formData);
 
-            // Lấy hình ảnh từ input file var imageFileInput = $("input[name='Image']")[0]; // Lấy phần tử input file
-            var imageFileInput = document.getElementById('avatarInput');
-            if (imageFileInput && imageFileInput.files.length > 0) { // Kiểm tra xem phần tử có tồn tại và có file
-                var imageFile = imageFileInput.files[0]; // Lấy file đầu tiên
-                formData.append('Image', imageFile); // Thêm hình ảnh vào FormData
-            }
+                    // Lấy hình ảnh từ input file
+                    var imageFileInput = document.getElementById('avatarInput');
+                    if (imageFileInput && imageFileInput.files.length > 0) { // Kiểm tra xem phần tử có tồn tại và có file
+                        var imageFile = imageFileInput.files[0]; // Lấy file đầu tiên
+                        formData.append('Image', imageFile); // Thêm hình ảnh vào FormData
+                    }
 
-            $.ajax({
-                method: 'PUT',
-                url: 'Users/Update/' + id_vou,
-                processData: false, // Ngăn jQuery tự động xử lý dữ liệu
-                contentType: false,
-
-                headers: {
-                    "RequestVerificationToken": token,
-                },
-                data:formData,
-                success: function (response) {
-                    $('#UserModal').modal('hide');
-                    location.reload();
-                },
-                error: function (xhr, status, error) {
-                    $('.loading-container').hide();
-                    alert('Đã xảy ra lỗi: ' + error);
+                    $.ajax({
+                        method: 'PUT',
+                        url: '/Admin/Users/Update/' + id_vou,
+                        processData: false, // Ngăn jQuery tự động xử lý dữ liệu
+                        contentType: false,
+                        headers: {
+                            "RequestVerificationToken": token,
+                        },
+                        data: formData,
+                        success: function (response) {
+                            $('#UserModal').modal('hide');
+                          
+                            Swal.fire(
+                                'Thành công!',
+                                'Thông tin người dùng đã được cập nhật.',
+                                'success'
+                            );
+                            location.reload();
+                        },
+                        error: function (xhr, status, error) {
+                            $('.loading-container').hide();
+                            Swal.fire(
+                                'Lỗi!',
+                                'Đã xảy ra lỗi khi cập nhật. Vui lòng thử lại.',
+                                'error'
+                            );
+                        }
+                    });
                 }
             });
         });
+
     });
 
 

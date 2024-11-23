@@ -154,57 +154,71 @@
             });
         });
         $(document).on('click', '#update', function () {
-            $('.loading-container').show(); // Hiển thị loader
+            // Hiển thị confirm trước khi tiếp tục
+            Swal.fire({
+                title: 'Bạn có chắc chắn muốn cập nhật?',
+                text: "Thông tin sẽ được cập nhật ngay lập tức.",
+                icon: 'question', // Biểu tượng câu hỏi
+                showCancelButton: true, // Hiển thị nút hủy
+                confirmButtonText: 'Có, cập nhật!',
+                cancelButtonText: 'Hủy',
+                reverseButtons: true // Đảo ngược thứ tự nút
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $('.loading-container').show(); // Hiển thị loader
 
-            var id_vou = $("input[name='vou_id']").val();
-            const url = '@Url.Action("Update", "Vouchers", new { area = "Admin" })';
+                    var id_vou = $("input[name='vou_id']").val();
+                    const url = '@Url.Action("Update", "Vouchers", new { area = "Admin" })';
 
-            $.ajax({
-                method: 'POST',
-                url: url,
-                contentType: "application/json",
-                headers: {
-                    'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() // Thêm token chống giả mạo
-                },
-                data: JSON.stringify({
-                    VoucherId: parseInt(id_vou, 10),
-                    Name: $("input[name='name']").val(),
-                    Description: $("input[name='description']").val(),
-                    Quantity : $("input[name='quantity']").val(),
-                    Code: $("input[name='code']").val(),
-                    Promotion: (function () {
-                        if ($("select[name='selectPromotion']").val() == 1) {
-                            return $("input[name='promotion']").val() + '%'; // Gán giá trị có ký tự '%'
-                        } else {
-                            return parseFloat($("input[name='promotion']").val()).toString(); // Chuyển đổi giá trị thành số
+                    $.ajax({
+                        method: 'POST',
+                        url: url,
+                        contentType: "application/json",
+                        headers: {
+                            'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() // Thêm token chống giả mạo
+                        },
+                        data: JSON.stringify({
+                            VoucherId: parseInt(id_vou, 10),
+                            Name: $("input[name='name']").val(),
+                            Description: $("input[name='description']").val(),
+                            Quantity: $("input[name='quantity']").val(),
+                            Code: $("input[name='code']").val(),
+                            Promotion: (function () {
+                                if ($("select[name='selectPromotion']").val() == 1) {
+                                    return $("input[name='promotion']").val() + '%'; // Gán giá trị có ký tự '%'
+                                } else {
+                                    return parseFloat($("input[name='promotion']").val()).toString(); // Chuyển đổi giá trị thành số
+                                }
+                            })(),
+                            startedAt: $("input[name='startedAt']").val(),
+                            expiredAt: $("input[name='expiredAt']").val(),
+                        }),
+                        success: function (response) {
+                            $('#VoucherModal').modal('hide');
+                            location.reload(); // Reload lại trang nếu thành công
+                        },
+                        error: function (xhr, status, error) {
+                            $('.loading-container').hide();
+
+                            // Hiển thị lỗi từ ModelState
+                            if (xhr.status === 400 && xhr.responseJSON) {
+                                var errors = xhr.responseJSON;
+                                var errorMessage = '';
+
+                                // Lặp qua các lỗi và hiển thị
+                                $.each(errors, function (key, value) {
+                                    errorMessage += value[0] + '\n'; // Hiển thị từng lỗi một
+                                });
+                                alert('Đã xảy ra lỗi: \n' + errorMessage);
+                            } else {
+                                alert('Đã xảy ra lỗi: ' + error);
+                            }
                         }
-                    })(),
-                    startedAt: $("input[name='startedAt']").val(),
-                    expiredAt: $("input[name='expiredAt']").val(),
-                }),
-                success: function (response) {
-                    $('#VoucherModal').modal('hide');
-                    location.reload(); // Reload lại trang nếu thành công
-                },
-                error: function (xhr, status, error) {
-                    $('.loading-container').hide();
-
-                    // Hiển thị lỗi từ ModelState
-                    if (xhr.status === 400 && xhr.responseJSON) {
-                        var errors = xhr.responseJSON;
-                        var errorMessage = '';
-
-                        // Lặp qua các lỗi và hiển thị
-                        $.each(errors, function (key, value) {
-                            errorMessage += value[0] + '\n'; // Hiển thị từng lỗi một
-                        });
-                        alert('Đã xảy ra lỗi: \n' + errorMessage);
-                    } else {
-                        alert('Đã xảy ra lỗi: ' + error);
-                    }
+                    });
                 }
             });
         });
+
 
 
         // Khi nhấn vào nút "Tạo Mã"

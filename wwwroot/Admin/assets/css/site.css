@@ -299,3 +299,30 @@ Phần card Varients Product*/
 .option-buttons li:not(.d-none) {
     margin-right: 15px;
 }
+.nav-link.active {
+    background: rgba(255,255,255,0.1);
+    color: #fff !important;
+}
+
+.nav-item.active > .nav-link {
+    background: rgba(255,255,255,0.1);
+}
+
+.sidebar .nav-item .nav-link p {
+    margin-bottom: 0;
+    margin-left: 10px;
+}
+
+.nav-section {
+    margin-top: 20px;
+    padding: 10px 15px;
+}
+
+.text-section {
+    color: #6c7293;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+}

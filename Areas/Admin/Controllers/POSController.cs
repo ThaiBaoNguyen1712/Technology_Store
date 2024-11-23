@@ -401,7 +401,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                         var orderItem = new OrderItem
                         {
                             OrderId = order.OrderId,
-                            ProductId = varientproduct.ProductId,
+                            ProductId = (int)varientproduct.ProductId,
                             VarientProductId = varient.VarientProductId,
                             Quantity = varient.Quantity,
                             Price = (decimal)varientproduct.Price

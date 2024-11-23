@@ -29,6 +29,7 @@
                             <thead>
                                 <tr>
                                     <th>Tên</th>
+                                    <th>Tiêu đề tiếng Anh</th>
                                     <th>Hình ảnh</th>
                                     <th>Mô tả</th>
                                     <th style="width:15%">Hiển thị</th>
@@ -38,6 +39,7 @@
                             <tfoot>
                                 <tr>
                                     <th>Tên</th>
+                                    <th>Tiêu đề tiếng Anh</th>
                                     <th>Hình ảnh</th>
                                     <th>Mô tả</th>
                                     <th>Hiển thị</th>
@@ -51,13 +53,14 @@
                                 {
                                     <tr>
                                         <td>@cate.Name</td>
+                                            <td>@cate.EngTitle</td>
                                         <td class="text-center">
                                            <img src="/Upload/Logo/@cate.Image" width="60px" height="60px" class="rounded border" />
                                         </td>
                                         <td>@cate.Description</td>
                                        
                                         <td>
-                                                <div class="form-check form-switch">
+                                                <div class="form-check form-switch d-flex justify-content-center">
                                                     <input class="form-check-input" type="checkbox" id="flexSwitchCheckChecked" @(cate.Visible == 1 ? "checked" : "") data-id="@cate.CategoryId">
                                                     <label class="form-check-label" for="flexSwitchCheckChecked">
                                                        Ẩn/Hiện
@@ -102,27 +105,53 @@
         $(document).on('click', '#removeCate', function () {
             var id_cate = $(this).data('id'); // Lấy ID từ thuộc tính data-id
 
-            if (confirm('Bạn có chắc chắn muốn xóa danh mục này không?')) {
-                // Hiển thị biểu tượng loading
-                $('.loading-container').show();
+            // Thêm SweetAlert2 xác nhận
+            Swal.fire({
+                title: 'Bạn có chắc chắn muốn xóa danh mục này không?',
+                text: "Hành động này không thể hoàn tác!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6', // Màu nút xác nhận
+                cancelButtonColor: '#d33', // Màu nút hủy
+                confirmButtonText: 'Xóa',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Hiển thị biểu tượng loading
+                    $('.loading-container').show();
 
+                    $.ajax({
+                        method: 'DELETE', // Sử dụng phương thức DELETE
+                        url: 'Categories/Delete/' + id_cate, // Cập nhật URL cho đúng
+                        success: function (response) {
+                            // Ẩn biểu tượng loading
+                            $('.loading-container').hide();
 
-                $.ajax({
-                    method: 'DELETE', // Sử dụng phương thức DELETE
-                    url: 'Categories/Delete/' + id_cate, // Cập nhật URL cho đúng
-                    success: function (response) {
-                        location.reload(); // Làm mới trang sau khi xóa
-                          // Ẩn biểu tượng loading
-                        $('.loading-container').hide();
-                    },
-                    error: function (xhr, status, error) {
-                        alert("Đã xảy ra lỗi: " + error);
-                        $('.loading-container').hide();
+                            // Thông báo xóa thành công
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Đã xóa!',
+                                text: 'Danh mục đã được xóa thành công!'
+                            }).then(() => {
+                                location.reload(); // Làm mới trang sau khi xóa
+                            });
+                        },
+                        error: function (xhr, status, error) {
+                            // Ẩn biểu tượng loading
+                            $('.loading-container').hide();
 
-                    }
-                });
-            }
+                            // Thông báo lỗi
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Lỗi',
+                                text: 'Đã xảy ra lỗi khi xóa danh mục: ' + error
+                            });
+                        }
+                    });
+                }
+            });
         });
+
 
         // Xử lý sự kiện click cho nút chỉnh sửa
         $(document).on('click', '#editCategory', function () {
@@ -135,6 +164,7 @@
                 success: function (response) {
                     // Đặt giá trị của các input và select
                     $('input[name="name"]').val(response.name); // Đặt giá trị cho input name
+                    $('input[name="EngTitle"]').val(response.engTitle);
                     $('input[name="description"]').val(response.description); // Đặt giá trị cho input description
                     $('select[name="visible"]').val(response.visible); // Đặt giá trị cho select visible
                     $('input[name="cate_id"]').val(response.categoryId);
@@ -196,6 +226,7 @@
         $('#CategoryModal').on('hidden.bs.modal', function () {
             // Đặt lại các trường trong modal khi ẩn
             $('input[name="name"]').val('');
+            $('input[name="engTitle"]').val('');
             $('input[name="description"]').val('');
             $('select[name="visible"]').val('1'); // Đặt lại giá trị mặc định cho select
             $('input[name="cate_id"]').val('');

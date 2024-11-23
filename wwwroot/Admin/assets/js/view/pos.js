@@ -544,53 +544,85 @@ $(document).ready(function () {
     }
 
     $('.btn-Order').click(function () {
-        var userId = $('select[name="selectCustomer"]').val(); // Thêm name vào selector
-        var totalAmountTxt = $('#TotalPayment').text().replace(/[.,đ\s]/g, ''); 
+        var userId = $('select[name="selectCustomer"]').val(); // Lấy giá trị UserId từ dropdown
+        var totalAmountTxt = $('#TotalPayment').text().replace(/[.,đ\s]/g, '');
         var totalAmount = parseInt(totalAmountTxt, 10);
-        var originAmountTxt = $('#TotalPrice').text().replace(/[.,đ\s]/g, ''); 
+        var originAmountTxt = $('#TotalPrice').text().replace(/[.,đ\s]/g, '');
         var originAmount = parseInt(originAmountTxt, 10);
-        var varientsProductIds = ProductId; 
-        var voucher = $('input[name="Voucher"]').val(); 
-        var deductPrice = $('#Deduct').text().replace(/[.,đ\s]/g, ''); 
-        /*var deductPrice = parseInt(deductPriceTxt, 10); */
-        var discountPrice = $('#Discount').text().replace(/[.,đ\s]/g, ''); 
-       /* var discountPrice = parseInt(discountPriceTxt, 10); */
-        var paymentMethod = $('input[name="type"]:checked').val(); 
+        var varientsProductIds = ProductId; // Lấy danh sách ID sản phẩm
+        var voucher = $('input[name="Voucher"]').val();
+        var deductPrice = $('#Deduct').text().replace(/[.,đ\s]/g, ''); // Trích giá trị giảm giá
+        var discountPrice = $('#Discount').text().replace(/[.,đ\s]/g, ''); // Trích giá trị giảm giá thêm
+        var paymentMethod = $('input[name="type"]:checked').val(); // Lấy phương thức thanh toán
 
-        console.log({
-         userId, totalAmount,varientsProductIds, voucher,deductPrice,deductPrice,paymentMethod
-        });
-        $('.loading-container').show(); 
+        // Hiển thị hộp thoại xác nhận trước khi tiếp tục
+        Swal.fire({
+            title: 'Bạn có chắc chắn muốn đặt đơn hàng này?',
+            text: "Hãy kiểm tra lại thông tin trước khi xác nhận.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Đặt hàng',
+            cancelButtonText: 'Hủy',
+            reverseButtons: true // Đảo ngược các nút để nút Hủy ở bên trái
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Nếu người dùng xác nhận, tiếp tục gửi yêu cầu AJAX
+                $('.loading-container').show(); // Hiển thị loading
 
-        $.ajax({
-            method: 'POST',
-            url: '/Admin/POS/Order',
-            contentType: 'application/json',
-            data: JSON.stringify({
-                UserId: userId,
-                TotalPrice: totalAmount,
-                OriginTotalPrice: originAmount,
-                DeductPrice: deductPrice,
-                DiscountPrice: discountPrice,
-                ListVarientProduct: varientsProductIds,
-                PaymentMethod: paymentMethod,
-                Voucher: voucher // Gửi giá trị voucher
-            }),
-            success: function (res) {
-                $('.loading-container').hide(); // Ẩn loading
+                $.ajax({
+                    method: 'POST',
+                    url: '/Admin/POS/Order',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        UserId: userId,
+                        TotalPrice: totalAmount,
+                        OriginTotalPrice: originAmount,
+                        DeductPrice: deductPrice,
+                        DiscountPrice: discountPrice,
+                        ListVarientProduct: varientsProductIds,
+                        PaymentMethod: paymentMethod,
+                        Voucher: voucher // Gửi giá trị voucher
+                    }),
+                    success: function (res) {
+                        $('.loading-container').hide(); // Ẩn loading
 
-                if (res.success) {
-                    window.location.href = '/Admin/POS/Invoice/' + res.id;
-                } else {
-                    alert("Đặt hàng không thành công: " + res.message); // Thông báo lỗi từ máy chủ
-                }
-            },
-            error: function (res) {
-                $('.loading-container').hide(); // Ẩn loading
-                alert("Đã có lỗi xảy ra: " + (res.responseJSON ? res.responseJSON.message : "Vui lòng thử lại."));
+                        if (res.success) {
+                            // Hiển thị thông báo thành công với SweetAlert2
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Đặt hàng thành công!',
+                                text: 'Đơn hàng của bạn đã được tạo thành công. Chuyển đến hóa đơn...',
+                                confirmButtonText: 'Xem hóa đơn'
+                            }).then(() => {
+                                // Chuyển hướng tới trang hóa đơn sau khi người dùng nhấn nút "Xem hóa đơn"
+                                window.location.href = '/Admin/POS/Invoice/' + res.id;
+                            });
+                        } else {
+                            // Hiển thị thông báo lỗi với SweetAlert2
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Đặt hàng không thành công',
+                                text: res.message || 'Vui lòng thử lại sau.'
+                            });
+                        }
+                    },
+                    error: function (res) {
+                        $('.loading-container').hide(); // Ẩn loading
+
+                        // Hiển thị thông báo lỗi với SweetAlert2
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Đã có lỗi xảy ra',
+                            text: res.responseJSON ? res.responseJSON.message : 'Vui lòng thử lại.'
+                        });
+                    }
+                });
+            } else {
+                // Nếu người dùng hủy, không làm gì cả
+                console.log('Đặt hàng đã bị hủy');
             }
         });
-
     });
+
 
 });

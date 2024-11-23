@@ -1,0 +1,277 @@
+﻿.page-header {
+    background: red;
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+    border-radius: 0 0 2rem 2rem;
+}
+
+.card {
+    border: none;
+    border-radius: 1rem;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    margin-bottom: 1.5rem;
+}
+
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    }
+
+.product-image {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+@media (min-width: 768px) {
+    .product-image
+
+{
+    width: 180px;
+    height: 180px;
+}
+
+}
+
+.info-label {
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+.info-value {
+    color: #555;
+}
+
+
+.order-status {
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.status-completed {
+    background-color: #dcfce7;
+    color: #16a34a;
+}
+
+.status-processing {
+    background-color: #fef9c3;
+    color: #ca8a04;
+}
+
+.status-shipping {
+    background-color: #e0f2fe;
+    color: #0284c7;
+}
+
+.status-delivered {
+    background-color: #d4edda;
+    color: #0284c7;
+}
+
+.status-pending {
+    background-color: #fef3c7;
+    color: #b45309;
+}
+
+.status-confirmed {
+    background-color: #e9d5ff;
+    color: #7c3aed;
+}
+
+.status-cancelled {
+    background-color: #fee2e2;
+    color: #dc2626;
+}
+
+.status-refunded {
+    background-color: #ede9fe;
+    color: #4c1d95;
+}
+
+
+.btn {
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.75rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    border: none;
+}
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        transform: translateY(-2px);
+    }
+
+.btn-outline {
+    border: 2px solid #e2e8f0;
+    background: white;
+    color: #64748b;
+}
+
+    .btn-outline:hover {
+        border-color: #cbd5e1;
+        background: #f8fafc;
+        color: #334155;
+    }
+
+.filter-card {
+    background: white;
+    padding: 1rem;
+    border-radius: 1rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+}
+
+.form-select {
+    border-radius: 0.75rem;
+    border: 2px solid #e2e8f0;
+    padding: 0.6rem 1rem;
+}
+
+    .form-select:focus {
+        border-color: #6366f1;
+        box-shadow: none;
+    }
+
+/* Star Rating Styles */
+.rating {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 1.5rem;
+}
+
+    .rating i {
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+        .rating i:hover {
+            transform: scale(1.2);
+        }
+
+/* Modal Styles */
+.modal-content {
+    border: none;
+    border-radius: 1rem;
+}
+
+.modal-header {
+    border-bottom: none;
+    padding: 1.5rem;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    border-top: none;
+    padding: 1.5rem;
+}
+
+.form-control {
+    border-radius: 0.75rem;
+    border: 2px solid #e2e8f0;
+    padding: 0.75rem;
+}
+
+    .form-control:focus {
+        border-color: #6366f1;
+        box-shadow: none;
+    }
+
+/* Timeline dots */
+.timeline-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.dot-processing {
+    background-color: #fbbf24;
+    box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.2);
+}
+
+.dot-completed {
+    background-color: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+}
+
+.dot-shipping {
+    background-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2);
+}
+.dot-delivered {
+    background-color: #0284c7; /* Xanh dương nhạt */
+    box-shadow: 0 0 0 3px rgba(212, 237, 218, 0.8); 
+}
+.dot-pending {
+    background-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+
+.dot-confirmed {
+    background-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+}
+
+.dot-cancelled {
+    background-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
+}
+
+.dot-refunded {
+    background-color: #4c1d95;
+    box-shadow: 0 0 0 3px rgba(76, 29, 149, 0.2);
+}
+
+
+/* Order Info Section */
+.order-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.info-label {
+    color: #64748b;
+    font-size: 0.875rem;
+}
+
+.info-value {
+    font-weight: 500;
+    color: #1e293b;
+}
+
+/* Animations */
+.animate-fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from
+
+{
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+to {
+    opacity: 1;
+    transform: translateY(0);
+}
+}

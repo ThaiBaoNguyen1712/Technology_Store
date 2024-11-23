@@ -1,4 +1,4 @@
-﻿@model IEnumerable<Tech_Store.Models.User>
+﻿@model IEnumerable<Tech_Store.Models.ViewModel.UserVM>
 @{
     ViewData["Title"] = "User";
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
@@ -35,7 +35,8 @@
                                     <th>Tên</th>
                                     <th>Số điện thoại</th>
                                     <th>Email</th>
-                                    <th>Kích hoạt</th>
+                                    <th>Đã mua</th>
+                                     <th>Kích hoạt</th>
                                     <th style="width: 10%">Hành động</th>
                                 </tr>
                             </thead>
@@ -46,7 +47,8 @@
                                     <th>Tên</th>
                                     <th>Số điện thoại</th>
                                     <th>Email</th>
-                                    <th>Kích hoạt</th>
+                                    <th>Đã mua</th>
+                                      <th>Kích hoạt</th>
                                     <th>Hành động</th>
                                 </tr>
                             </tfoot>
@@ -59,7 +61,16 @@
                                         <tr>
                                             <td>
                                                 <div class="avatar">
-                                                    <img src="~/Upload/Avatar/@us.Img" alt="..." class="avatar-img rounded-circle">
+                                                    @if(us.ImageUrl !=null)
+                                                    {
+                                                        <img src="~/Upload/Avatar/@us.ImageUrl" alt="..." class="avatar-img rounded-circle">
+
+                                                    }
+                                                    else
+                                                    {
+                                                        <img src="~/Upload/Avatar/none.png" alt="..." class="avatar-img rounded-circle">
+                                                        
+                                                    }
                                                 </div>
 
                                             </td>
@@ -67,7 +78,7 @@
                                             <td>@us.FirstName</td>
                                             <td>@us.PhoneNumber</td>
                                             <td>@us.Email</td>
-
+                                            <td style="white-space:nowrap">@us.OrderCount đơn hàng</td>
                                             <td>
 
                                                 <p class="badge badge-pill @(us.IsActive ==true ? "badge-success" : "badge-danger") text-center">
@@ -84,6 +95,14 @@
                                                             data-original-title="Edit Task">
                                                         <i class="fa fa-edit"></i>
                                                     </button>
+                                                    <button type="button"
+                                                            data-bs-toggle="tooltip" data-id="@us.UserId"
+                                                            id="banUs"
+                                                            class="btn btn-link btn-danger btn-lg"
+                                                            data-original-title="Chặn người dùng">
+                                                        <i class="fa fa-ban"></i> <!-- Thêm icon "Ban" -->
+                                                    </button>
+
                                                     <button type="button"
                                                             data-bs-toggle="tooltip"
                                                             title=""
@@ -111,34 +130,129 @@
 <script type="text/javascript">
     $(document).ready(function () {
         var token = $('input[name="__RequestVerificationToken"]').val();
+        //Xử lý sự kiện click nút chặn
+        $(document).on('click', '#banUs', function () {
+            var id_us = $(this).data('id'); // Lấy ID từ thuộc tính data-id
 
+            // Hiển thị hộp thoại xác nhận với SweetAlert
+            Swal.fire({
+                title: 'Bạn có chắc chắn muốn chặn người dùng này không?',
+                text: "Người dùng này không thể mua sắm ở cửa hàng bạn nữa!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Chặn',
+                cancelButtonText: 'Hủy',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Hiển thị biểu tượng loading
+                    $('.loading-container').show();
+
+                    // Gửi yêu cầu AJAX để xóa người dùng
+                    $.ajax({
+                        method: 'POST', // Sử dụng phương thức DELETE
+                        url: '/Admin/Users/BanUser',
+                        data: { id: id_us },
+                        headers: {
+                            "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() // Thêm token xác thực vào header
+                        },
+                        success: function (response) {
+                            $('.loading-container').hide(); // Ẩn biểu tượng loading
+
+                            // Kiểm tra phản hồi từ server
+                            if (response.success) {
+                                Swal.fire(
+                                    'Đã chặn người dùng!',
+                                    response.message,
+                                    'success'
+                                ).then(() => {
+                                    location.reload(); // Làm mới trang sau khi xóa thành công
+                                });
+                            } else {
+                                Swal.fire(
+                                    'Không thể chặn!',
+                                    response.message,
+                                    'error'
+                                );
+                            }
+                        },
+                        error: function (xhr, status, error) {
+                            $('.loading-container').hide(); // Ẩn biểu tượng loading
+                            Swal.fire(
+                                'Lỗi!',
+                                'Đã xảy ra lỗi khi chặn người dùng. Vui lòng thử lại.',
+                                'error'
+                            );
+                            console.error('Error details:', error);
+                        }
+                    });
+                } else {
+                    console.log('Hành động xóa đã bị hủy');
+                }
+            });
+        });
         // Xử lý sự kiện click cho nút xóa
         $(document).on('click', '#removeUs', function () {
             var id_us = $(this).data('id'); // Lấy ID từ thuộc tính data-id
 
-            if (confirm('Bạn có chắc chắn muốn xóa người dùng này không?')) {
-                // Hiển thị biểu tượng loading
-                $('.loading-container').show();
+            // Hiển thị hộp thoại xác nhận với SweetAlert
+            Swal.fire({
+                title: 'Bạn có chắc chắn muốn xóa người dùng này không?',
+                text: "Hành động này không thể hoàn tác!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Xóa',
+                cancelButtonText: 'Hủy',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Hiển thị biểu tượng loading
+                    $('.loading-container').show();
 
+                    // Gửi yêu cầu AJAX để xóa người dùng
+                    $.ajax({
+                        method: 'DELETE', // Sử dụng phương thức DELETE
+                        url: '/Admin/Users/Delete/' + id_us, // Cập nhật URL cho đúng
+                        headers: {
+                            "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() // Thêm token xác thực vào header
+                        },
+                        success: function (response) {
+                            $('.loading-container').hide(); // Ẩn biểu tượng loading
 
-                $.ajax({
-                    method: 'DELETE', // Sử dụng phương thức DELETE
-                    url: 'Users/Delete/' + id_us, // Cập nhật URL cho đúng
-                    headers: {
-                        "RequestVerificationToken": token // Thêm token vào header
-                    },
-                    success: function (response) {
-                        location.reload(); // Làm mới trang sau khi xóa
-                        // Ẩn biểu tượng loading
-                        $('.loading-container').hide();
-                    },
-                    error: function (xhr, status, error) {
-                        alert("Đã xảy ra lỗi: " + xhr.message)
-                        $('.loading-container').hide();
-                    }
-                });
-            }
+                            // Kiểm tra phản hồi từ server
+                            if (response.success) {
+                                Swal.fire(
+                                    'Xóa thành công!',
+                                    response.message,
+                                    'success'
+                                ).then(() => {
+                                    location.reload(); // Làm mới trang sau khi xóa thành công
+                                });
+                            } else {
+                                Swal.fire(
+                                    'Không thể xóa!',
+                                    response.message,
+                                    'error'
+                                );
+                            }
+                        },
+                        error: function (xhr, status, error) {
+                            $('.loading-container').hide(); // Ẩn biểu tượng loading
+                            Swal.fire(
+                                'Lỗi!',
+                                'Đã xảy ra lỗi khi xóa. Vui lòng thử lại.',
+                                'error'
+                            );
+                            console.error('Error details:', error); // Log chi tiết lỗi
+                        }
+                    });
+                } else {
+                    console.log('Hành động xóa đã bị hủy');
+                }
+            });
         });
+
+
 
         async function fetchStaticData() {
             const response = await fetch('/Province_VN.json');
@@ -186,14 +300,14 @@
 
             $.ajax({
                 method: 'GET',
-                url: 'Users/Edit/' + id_us, // Lấy dữ liệu từ server
+                url: '/Admin/Users/Edit/' + id_us, // Lấy dữ liệu từ server
 
                 success: async function (response) {
                     // Đặt giá trị của các input và select
                     $('input[name=us_id]').val(response.userId);
                     $('input[name="LastName"]').val(response.lastName); // Đặt giá trị cho input name
                     $('input[name="FirstName"]').val(response.firstName);
-                    $('input[name="PhoneNumber"]').val(response.phoneNumber.trim()); // Đặt giá trị cho input description
+                    $('input[name="PhoneNumber"]').val(response.phoneNumber); // Đặt giá trị cho input description
                     $('input[name="Email"]').val(response.email);
                     $('select[name="isActive"]').val(response.isActive.toString());
                     $('input[name="street"]').val(response.addressLine);

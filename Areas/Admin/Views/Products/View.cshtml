@@ -40,7 +40,7 @@
                         </a>
                         
                         </h5>
-                        <p>0 Đơn hàng | 0 Đánh giá</p>
+                        <p> @ViewBag.Order_Count Đơn hàng | @ViewBag.Review_Count Đánh giá</p>
                         <a href="@Url.Action("View", "Home", new { id = Model.ProductId })"
                            type="button" class="btn btn-outline-primary rounded-pill">
                             <i class="fas fa-globe"></i>
@@ -154,7 +154,7 @@
                             foreach (var review in Model.Reviews)
                             {
                                 <tr>
-                                    <td>@index++</td>
+                                    <td>@index</td>
                                     <td>@review.User.FirstName @review.User.LastName</td>
                                     <td><i class="fas fa-star text-warning"></i> @review.Rating</td>
                                     <td>@review.Comment</td>

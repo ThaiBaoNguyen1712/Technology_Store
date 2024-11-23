@@ -68,7 +68,6 @@
     $(document).ready(function () {
         $(document).on('click', '#saveProduct', function () {
             var productId = $('#ImExportModal').data('product-id');
-
             var type = $('select[name="Type"]').val();
             var note = $('#noteInput').val();
 
@@ -96,28 +95,43 @@
                 Variants: variants
             };
 
-            console.log("Dữ liệu gửi đi:", productHistoryDTo);
-
-            $.ajax({
-                url: '/admin/StockManager/AddProductHistory',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(productHistoryDTo),
-                success: function (response) {
-                    console.log("Phản hồi từ server:", response);
-                    if (response.success) {
-                        alert(response.message);
-                        $('#ImExportModal').modal('hide');
-                    } else {
-                        alert(response.message);
-                    }
-                },
-                error: function (xhr, status, error) {
-                    console.log("Có lỗi xảy ra:", error);
-                    alert('Có lỗi xảy ra, vui lòng thử lại.');
+            // Hiển thị hộp thoại xác nhận với SweetAlert2
+            Swal.fire({
+                title: 'Bạn có chắc chắn muốn lưu lịch sử sản phẩm này?',
+                text: "Hành động này sẽ không thể hoàn tác!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Lưu lịch sử',
+                cancelButtonText: 'Hủy',
+                reverseButtons: true // Đảo ngược các nút để nút Hủy ở bên trái
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Nếu người dùng xác nhận, gửi yêu cầu AJAX
+                    $.ajax({
+                        url: '/admin/StockManager/AddProductHistory',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(productHistoryDTo),
+                        success: function (response) {
+                            console.log("Phản hồi từ server:", response);
+                            if (response.success) {
+                                alert(response.message);
+                                $('#ImExportModal').modal('hide');
+                            } else {
+                                alert(response.message);
+                            }
+                        },
+                        error: function (xhr, status, error) {
+                            console.log("Có lỗi xảy ra:", error);
+                            alert('Có lỗi xảy ra, vui lòng thử lại.');
+                        }
+                    });
+                } else {
+                    console.log('Lưu lịch sử sản phẩm đã bị hủy');
                 }
             });
         });
+
     });
 
 </script>

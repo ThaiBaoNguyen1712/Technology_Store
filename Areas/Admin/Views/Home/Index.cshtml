@@ -3,18 +3,17 @@
     ViewData["Title"] = "Index";
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
 }
-
+@using System.Globalization;
 
     <div class="page-inner">
         <div class="d-flex align-items-left align-items-md-center flex-column flex-md-row pt-2 pb-4">
             <div>
-                <h3 class="fw-bold mb-3">Dashboard</h3>
-                <h6 class="op-7 mb-2">Free Bootstrap 5 Admin Dashboard</h6>
+                <h3 class="fw-bold mb-3">Trang chủ</h3>
             </div>
-            <div class="ms-md-auto py-2 py-md-0">
+           @*  <div class="ms-md-auto py-2 py-md-0">
                 <a href="#" class="btn btn-label-info btn-round me-2">Manage</a>
                 <a href="#" class="btn btn-primary btn-round">Add Customer</a>
-            </div>
+            </div> *@
         </div>
         <div class="row">
             <div class="col-sm-6 col-md-3">
@@ -48,7 +47,7 @@
                             <div class="col col-stats ms-3 ms-sm-0">
                                 <div class="numbers">
                                     <p class="card-category">Người Đăng ký</p>
-                                    <h4 class="card-title">1303</h4>
+                                <h4 class="card-title">@ViewBag.User_count</h4>
                                 </div>
                             </div>
                         </div>
@@ -61,13 +60,14 @@
                         <div class="row align-items-center">
                             <div class="col-icon">
                                 <div class="icon-big text-center icon-success bubble-shadow-small">
-                                    <i class="fas fa-luggage-cart"></i>
+                                <i class="fas fa-cube"></i>
+
                                 </div>
                             </div>
                             <div class="col col-stats ms-3 ms-sm-0">
                                 <div class="numbers">
-                                    <p class="card-category">Sales</p>
-                                    <h4 class="card-title">$ 1,345</h4>
+                                    <p class="card-category">Sản phẩm</p>
+                                    <h4 class="card-title">@ViewBag.Product_count</h4>
                                 </div>
                             </div>
                         </div>
@@ -86,7 +86,7 @@
                             <div class="col col-stats ms-3 ms-sm-0">
                                 <div class="numbers">
                                     <p class="card-category">Đơn Hàng</p>
-                                    <h4 class="card-title">576</h4>
+                                <h4 class="card-title">@ViewBag.Order_count</h4>
                                 </div>
                             </div>
                         </div>
@@ -95,41 +95,95 @@
             </div>
         </div>
         <div class="row">
-            <div class="col-md-8">
-                <div class="card card-round">
-                    <div class="card-header">
-                        <div class="card-head-row">
-                            <div class="card-title">User Statistics</div>
-                            <div class="card-tools">
-                                <a href="#"
-                                   class="btn btn-label-success btn-round btn-sm me-2">
-                                    <span class="btn-label">
-                                        <i class="fa fa-pencil"></i>
-                                    </span>
-                                    Export
-                                </a>
-                                <a href="#" class="btn btn-label-info btn-round btn-sm">
-                                    <span class="btn-label">
-                                        <i class="fa fa-print"></i>
-                                    </span>
-                                    Print
-                                </a>
+        <div class="col-md-8">
+            <div class="card card-round">
+                <div class="card-header">
+                    <div class="card-head-row card-tools-still-right">
+                        <div class="card-title">Đơn hàng mới</div>
+                        <div class="card-tools">
+                            <div class="dropdown">
+                                <button class="btn btn-icon btn-clean me-0"
+                                        type="button"
+                                        id="dropdownMenuButton"
+                                        data-bs-toggle="dropdown"
+                                        aria-haspopup="true"
+                                        aria-expanded="false">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                                <div class="dropdown-menu"
+                                     aria-labelledby="dropdownMenuButton">
+                                    <a class="dropdown-item" href="/Admin/Orders/all">Xem thêm</a>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <div class="chart-container" style="min-height: 375px">
-                            <canvas id="statisticsChart"></canvas>
-                        </div>
-                        <div id="myChartLegend"></div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <!-- Projects table -->
+                        <table class="table align-items-center mb-0">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th scope="col">Mã đơn hàng</th>
+                                    <th scope="col" class="text-end">Sản phẩm</th>
+                                    <th scope="col" class="text-end">Người mua</th>
+                                    <th scope="col" class="text-end">Số tiền</th>
+                                    <th scope="col" class="text-end">Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var order in ViewBag.New_orders)
+                                {
+                                    <tr>
+                                        <th scope="row" style="white-space:nowrap">
+                                            <a href="/Admin/Orders/View/@order.OrderId">
+                                                Đơn hàng #@order.OrderId
+
+                                            </a>
+                                        </th>
+                                        <td class="text-end text-truncate" style="max-width: 250px;">
+                                            @order.TopProduct
+                                            @if (order.OtherProductsCount > 0)
+                                            {
+                                                <span class="text-muted">và @order.OtherProductsCount sản phẩm khác</span>
+                                            }
+                                        </td>
+
+                                        <td class="text-end text-truncate" style="max-width: 150px;">@order.Email</td>
+                                        <td class="text-end" style="white-space:nowrap">@order.TotalAmount.ToString("C0", new CultureInfo("vi-VN"))</td>
+                                        <td class="text-end">
+                                            <span class="badge
+                                                  @(order.OrderStatus == "Pending" ? "badge-primary" :
+                                                    order.OrderStatus == "Confirmed" ? "badge-info" :
+                                                    order.OrderStatus == "Shipping" ? "badge-warning" :
+                                                     order.OrderStatus == "Delivered" ? "badge-light" :
+                                                    order.OrderStatus == "Completed" ? "badge-success" :
+                                                    order.OrderStatus == "Cancelled" ? "badge-danger" :
+                                                    "badge-secondary")">
+                                                @(order.OrderStatus == "Pending" ? "Đang chờ" :
+                                                    order.OrderStatus == "Confirmed" ? "Đã xác nhận" :
+                                                    order.OrderStatus == "Shipping" ? "Đang giao hàng" :
+                                                    order.OrderStatus == "Delivered" ? "Đã giao hàng" :
+                                                    order.OrderStatus == "Completed" ? "Hoàn thành" :
+                                                    order.OrderStatus == "Cancelled" ? "Đã hủy" :
+                                                    order.OrderStatus == "Refunded" ? "Đã hoàn tiền" :
+                                                    "Không xác định")
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
+        </div>
             <div class="col-md-4">
                 <div class="card card-primary card-round">
                     <div class="card-header">
                         <div class="card-head-row">
-                            <div class="card-title">Daily Sales</div>
+                            <div class="card-title">Doanh thu gần nhất</div>
                             <div class="card-tools">
                                 <div class="dropdown">
                                     <button class="btn btn-sm btn-label-light dropdown-toggle"
@@ -149,11 +203,14 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="card-category">March 25 - April 02</div>
+                    <div class="card-category">
+                        @(DateTime.Now.AddMonths(-1).ToString("dd 'tháng' MM") + " - " + DateTime.Now.ToString("dd 'tháng' MM"))
+                    </div>
+
                     </div>
                     <div class="card-body pb-0">
                         <div class="mb-4 mt-2">
-                            <h1>$4,578.58</h1>
+                        <h1>@ViewBag.Revenue.ToString("C0",new CultureInfo("vi-VN"))</h1>
                         </div>
                         <div class="pull-in">
                             <canvas id="dailySalesChart"></canvas>
@@ -173,121 +230,11 @@
             </div>
         </div>
         <div class="row">
-            <div class="col-md-12">
-                <div class="card card-round">
-                    <div class="card-header">
-                        <div class="card-head-row card-tools-still-right">
-                            <h4 class="card-title">Users Geolocation</h4>
-                            <div class="card-tools">
-                                <button class="btn btn-icon btn-link btn-primary btn-xs">
-                                    <span class="fa fa-angle-down"></span>
-                                </button>
-                                <button class="btn btn-icon btn-link btn-primary btn-xs btn-refresh-card">
-                                    <span class="fa fa-sync-alt"></span>
-                                </button>
-                                <button class="btn btn-icon btn-link btn-primary btn-xs">
-                                    <span class="fa fa-times"></span>
-                                </button>
-                            </div>
-                        </div>
-                        <p class="card-category">
-                            Map of the distribution of users around the world
-                        </p>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="table-responsive table-hover table-sales">
-                                    <table class="table">
-                                        <tbody>
-                                            <tr>
-                                                <td>
-                                                    <div class="flag">
-                                                        <img src="assets/img/flags/id.png"
-                                                             alt="indonesia" />
-                                                    </div>
-                                                </td>
-                                                <td>Indonesia</td>
-                                                <td class="text-end">2.320</td>
-                                                <td class="text-end">42.18%</td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    <div class="flag">
-                                                        <img src="assets/img/flags/us.png"
-                                                             alt="united states" />
-                                                    </div>
-                                                </td>
-                                                <td>USA</td>
-                                                <td class="text-end">240</td>
-                                                <td class="text-end">4.36%</td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    <div class="flag">
-                                                        <img src="assets/img/flags/au.png"
-                                                             alt="australia" />
-                                                    </div>
-                                                </td>
-                                                <td>Australia</td>
-                                                <td class="text-end">119</td>
-                                                <td class="text-end">2.16%</td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    <div class="flag">
-                                                        <img src="assets/img/flags/ru.png"
-                                                             alt="russia" />
-                                                    </div>
-                                                </td>
-                                                <td>Russia</td>
-                                                <td class="text-end">1.081</td>
-                                                <td class="text-end">19.65%</td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    <div class="flag">
-                                                        <img src="assets/img/flags/cn.png"
-                                                             alt="china" />
-                                                    </div>
-                                                </td>
-                                                <td>China</td>
-                                                <td class="text-end">1.100</td>
-                                                <td class="text-end">20%</td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    <div class="flag">
-                                                        <img src="assets/img/flags/br.png"
-                                                             alt="brazil" />
-                                                    </div>
-                                                </td>
-                                                <td>Brasil</td>
-                                                <td class="text-end">640</td>
-                                                <td class="text-end">11.63%</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mapcontainer">
-                                    <div id="world-map"
-                                         class="w-100"
-                                         style="height: 300px"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="row">
             <div class="col-md-4">
                 <div class="card card-round">
                     <div class="card-body">
                         <div class="card-head-row card-tools-still-right">
-                            <div class="card-title">New Customers</div>
+                            <div class="card-title">Người dùng mới</div>
                             <div class="card-tools">
                                 <div class="dropdown">
                                     <button class="btn btn-icon btn-clean me-0"
@@ -300,23 +247,33 @@
                                     </button>
                                     <div class="dropdown-menu"
                                          aria-labelledby="dropdownMenuButton">
-                                        <a class="dropdown-item" href="#">Action</a>
-                                        <a class="dropdown-item" href="#">Another action</a>
-                                        <a class="dropdown-item" href="#">Something else here</a>
+                                        <a class="dropdown-item" href="/Admin/Users/Index">Xem thêm</a>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="card-list py-4">
+                        @foreach (var user in ViewBag.New_users)
+                        {
                             <div class="item-list">
                                 <div class="avatar">
-                                    <img src="assets/img/jm_denis.jpg"
-                                         alt="..."
-                                         class="avatar-img rounded-circle" />
+                                    @if(user.Img !=null)
+                                    {
+                                        <img src="/Upload/Avatar/@user.Img"
+                                             alt="..."
+                                        class="avatar-img rounded-circle" />
+                                    }
+                                    else
+                                    {
+                                        <img src="/Upload/Avatar/none.png"
+                                             alt="..."
+                                             class="avatar-img rounded-circle" />
+                                    }
+
                                 </div>
                                 <div class="info-user ms-3">
-                                    <div class="username">Jimmy Denis</div>
-                                    <div class="status">Graphic Designer</div>
+                                    <div class="username">@user.LastName @user.FirstName</div>
+                                    <div class="status">@user.CreatedAt</div>
                                 </div>
                                 <button class="btn btn-icon btn-link op-8 me-1">
                                     <i class="far fa-envelope"></i>
@@ -325,85 +282,8 @@
                                     <i class="fas fa-ban"></i>
                                 </button>
                             </div>
-                            <div class="item-list">
-                                <div class="avatar">
-                                    <span class="avatar-title rounded-circle border border-white">CF</span>
-                                </div>
-                                <div class="info-user ms-3">
-                                    <div class="username">Chandra Felix</div>
-                                    <div class="status">Sales Promotion</div>
-                                </div>
-                                <button class="btn btn-icon btn-link op-8 me-1">
-                                    <i class="far fa-envelope"></i>
-                                </button>
-                                <button class="btn btn-icon btn-link btn-danger op-8">
-                                    <i class="fas fa-ban"></i>
-                                </button>
-                            </div>
-                            <div class="item-list">
-                                <div class="avatar">
-                                    <img src="assets/img/talha.jpg"
-                                         alt="..."
-                                         class="avatar-img rounded-circle" />
-                                </div>
-                                <div class="info-user ms-3">
-                                    <div class="username">Talha</div>
-                                    <div class="status">Front End Designer</div>
-                                </div>
-                                <button class="btn btn-icon btn-link op-8 me-1">
-                                    <i class="far fa-envelope"></i>
-                                </button>
-                                <button class="btn btn-icon btn-link btn-danger op-8">
-                                    <i class="fas fa-ban"></i>
-                                </button>
-                            </div>
-                            <div class="item-list">
-                                <div class="avatar">
-                                    <img src="assets/img/chadengle.jpg"
-                                         alt="..."
-                                         class="avatar-img rounded-circle" />
-                                </div>
-                                <div class="info-user ms-3">
-                                    <div class="username">Chad</div>
-                                    <div class="status">CEO Zeleaf</div>
-                                </div>
-                                <button class="btn btn-icon btn-link op-8 me-1">
-                                    <i class="far fa-envelope"></i>
-                                </button>
-                                <button class="btn btn-icon btn-link btn-danger op-8">
-                                    <i class="fas fa-ban"></i>
-                                </button>
-                            </div>
-                            <div class="item-list">
-                                <div class="avatar">
-                                    <span class="avatar-title rounded-circle border border-white bg-primary">H</span>
-                                </div>
-                                <div class="info-user ms-3">
-                                    <div class="username">Hizrian</div>
-                                    <div class="status">Web Designer</div>
-                                </div>
-                                <button class="btn btn-icon btn-link op-8 me-1">
-                                    <i class="far fa-envelope"></i>
-                                </button>
-                                <button class="btn btn-icon btn-link btn-danger op-8">
-                                    <i class="fas fa-ban"></i>
-                                </button>
-                            </div>
-                            <div class="item-list">
-                                <div class="avatar">
-                                    <span class="avatar-title rounded-circle border border-white bg-secondary">F</span>
-                                </div>
-                                <div class="info-user ms-3">
-                                    <div class="username">Farrah</div>
-                                    <div class="status">Marketing</div>
-                                </div>
-                                <button class="btn btn-icon btn-link op-8 me-1">
-                                    <i class="far fa-envelope"></i>
-                                </button>
-                                <button class="btn btn-icon btn-link btn-danger op-8">
-                                    <i class="fas fa-ban"></i>
-                                </button>
-                            </div>
+                        }
+                   
                         </div>
                     </div>
                 </div>
@@ -412,7 +292,7 @@
                 <div class="card card-round">
                     <div class="card-header">
                         <div class="card-head-row card-tools-still-right">
-                            <div class="card-title">Transaction History</div>
+                            <div class="card-title">Lịch sử giao dịch</div>
                             <div class="card-tools">
                                 <div class="dropdown">
                                     <button class="btn btn-icon btn-clean me-0"
@@ -425,9 +305,7 @@
                                     </button>
                                     <div class="dropdown-menu"
                                          aria-labelledby="dropdownMenuButton">
-                                        <a class="dropdown-item" href="#">Action</a>
-                                        <a class="dropdown-item" href="#">Another action</a>
-                                        <a class="dropdown-item" href="#">Something else here</a>
+                                        <a class="dropdown-item" href="/Admin/Transactions/Index">Xem thêm</a>
                                     </div>
                                 </div>
                             </div>
@@ -439,104 +317,41 @@
                             <table class="table align-items-center mb-0">
                                 <thead class="thead-light">
                                     <tr>
-                                        <th scope="col">Payment Number</th>
-                                        <th scope="col" class="text-end">Date & Time</th>
-                                        <th scope="col" class="text-end">Amount</th>
-                                        <th scope="col" class="text-end">Status</th>
+                                        <th scope="col">Mã Giao Dịch</th>
+                                        <th scope="col" class="text-end">Thời gian</th>
+                                        <th scope="col" class="text-end">Số tiền</th>
+                                    <th scope="col" class="text-end">Hình thức gd</th>
+                                        <th scope="col" class="text-end">Trạng thái</th>
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    @foreach(var transaction in ViewBag.Payments)
+                                {
                                     <tr>
-                                        <th scope="row">
-                                            <button class="btn btn-icon btn-round btn-success btn-sm me-2">
-                                                <i class="fa fa-check"></i>
-                                            </button>
-                                            Payment from #10231
+                                        <th scope="row" style="white-space:nowrap">
+                                            <a href="/Admin/Transactions/View/@transaction.PaymentId">
+                                                Giao dịch #@transaction.PaymentId
+
+                                            </a>
                                         </th>
-                                        <td class="text-end">Mar 19, 2020, 2.45pm</td>
-                                        <td class="text-end">$250.00</td>
+                                        <td class="text-end" style="white-space:nowrap">@transaction.PaymentDate</td>
+                                        <td class="text-end" style="white-space:nowrap">@transaction.Amount.ToString("C0", new CultureInfo("vi-VN"))</td>
+                                        <td class="text-end">@transaction.PaymentMethod</td>
+
                                         <td class="text-end">
-                                            <span class="badge badge-success">Completed</span>
+                                            @if (transaction.Status.ToLower() == "paid")
+                                            {
+                                                <span class="badge badge-success">Đã thanh toán</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge badge-danger">Chưa thanh toán</span>
+
+                                            }
                                         </td>
                                     </tr>
-                                    <tr>
-                                        <th scope="row">
-                                            <button class="btn btn-icon btn-round btn-success btn-sm me-2">
-                                                <i class="fa fa-check"></i>
-                                            </button>
-                                            Payment from #10231
-                                        </th>
-                                        <td class="text-end">Mar 19, 2020, 2.45pm</td>
-                                        <td class="text-end">$250.00</td>
-                                        <td class="text-end">
-                                            <span class="badge badge-success">Completed</span>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th scope="row">
-                                            <button class="btn btn-icon btn-round btn-success btn-sm me-2">
-                                                <i class="fa fa-check"></i>
-                                            </button>
-                                            Payment from #10231
-                                        </th>
-                                        <td class="text-end">Mar 19, 2020, 2.45pm</td>
-                                        <td class="text-end">$250.00</td>
-                                        <td class="text-end">
-                                            <span class="badge badge-success">Completed</span>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th scope="row">
-                                            <button class="btn btn-icon btn-round btn-success btn-sm me-2">
-                                                <i class="fa fa-check"></i>
-                                            </button>
-                                            Payment from #10231
-                                        </th>
-                                        <td class="text-end">Mar 19, 2020, 2.45pm</td>
-                                        <td class="text-end">$250.00</td>
-                                        <td class="text-end">
-                                            <span class="badge badge-success">Completed</span>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th scope="row">
-                                            <button class="btn btn-icon btn-round btn-success btn-sm me-2">
-                                                <i class="fa fa-check"></i>
-                                            </button>
-                                            Payment from #10231
-                                        </th>
-                                        <td class="text-end">Mar 19, 2020, 2.45pm</td>
-                                        <td class="text-end">$250.00</td>
-                                        <td class="text-end">
-                                            <span class="badge badge-success">Completed</span>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th scope="row">
-                                            <button class="btn btn-icon btn-round btn-success btn-sm me-2">
-                                                <i class="fa fa-check"></i>
-                                            </button>
-                                            Payment from #10231
-                                        </th>
-                                        <td class="text-end">Mar 19, 2020, 2.45pm</td>
-                                        <td class="text-end">$250.00</td>
-                                        <td class="text-end">
-                                            <span class="badge badge-success">Completed</span>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th scope="row">
-                                            <button class="btn btn-icon btn-round btn-success btn-sm me-2">
-                                                <i class="fa fa-check"></i>
-                                            </button>
-                                            Payment from #10231
-                                        </th>
-                                        <td class="text-end">Mar 19, 2020, 2.45pm</td>
-                                        <td class="text-end">$250.00</td>
-                                        <td class="text-end">
-                                            <span class="badge badge-success">Completed</span>
-                                        </td>
-                                    </tr>
+                                }
+                                
                                 </tbody>
                             </table>
                         </div>

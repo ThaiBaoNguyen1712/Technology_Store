@@ -54,9 +54,16 @@ namespace Tech_Store.Areas.Admin.Controllers
         [Route("View/{id}")]
         public async Task<IActionResult> View(int id)
         {
+            
             var detail = await _context.Products.Include(x=> x.Category).Include(x=> x.Brand)
                 .Include(x=>x.Galleries).Include(x=>x.Reviews).Include(x=>x.VarientProducts).
                 FirstOrDefaultAsync(x => x.ProductId == id);
+            var review = await _context.Reviews.Where(x=>x.ProductId == id).ToListAsync();
+            var order = await _context.OrderItems.Where(x => x.ProductId == id).ToListAsync();
+
+            ViewBag.Review_Count = review.Count();
+            ViewBag.Order_Count = order.Count();
+
             return View(detail);
         }
 

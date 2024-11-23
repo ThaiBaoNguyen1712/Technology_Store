@@ -53,7 +53,6 @@
     transition: var(--transition-base);
     flex-shrink: 0;
 }
-
     .thumbnail:hover {
         opacity: 0.8;
     }
@@ -451,3 +450,155 @@
     cursor: not-allowed;
     background-color: #f8f9fa; /* Màu xám hoặc nhạt hơn */
 }
+
+/* Base styles */
+.reviews-section {
+    padding: 1rem;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin: 1rem auto;
+}
+
+/* Rating summary section */
+.rating-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .rating-summary {
+        flex-direction: row;
+    }
+}
+
+/* Average rating styles */
+.average-rating {
+    text-align: center;
+    min-width: 200px;
+}
+
+.rating-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #333;
+}
+
+@media (max-width: 576px) {
+    .rating-number {
+        font-size: 2rem;
+    }
+}
+
+/* Rating bars section */
+.rating-bars {
+    flex-grow: 1;
+    width: 100%;
+}
+
+.rating-bar-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    gap: 0.5rem;
+}
+
+.star-count {
+    min-width: 50px;
+    font-size: 0.9rem;
+}
+
+.progress {
+    flex-grow: 1;
+    height: 8px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.rating-count {
+    min-width: 35px;
+    text-align: right;
+    font-size: 0.9rem;
+}
+.stars {
+    color: #ffc107;
+    margin: 10px 0;
+}
+
+/* Review list section */
+.review-item {
+    padding: 1rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.review-content {
+    width: 100%;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 1rem;
+}
+
+@media (min-width: 576px) {
+    .user-avatar {
+        width: 50px;
+        height: 50px;
+    }
+}
+
+.review-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+    .review-header h5 {
+        margin: 0;
+        font-size: 1rem;
+    }
+
+.review-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0.5rem 0;
+}
+
+    .review-images img {
+        max-width: 100px;
+        height: auto;
+        border-radius: 4px;
+    }
+
+@media (min-width: 768px) {
+    .review-images img {
+        max-width: 150px;
+    }
+}
+.video-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    margin: 0 auto;
+    max-width: 1000px; /* Có thể điều chỉnh max-width tùy theo thiết kế */
+}
+
+    .video-container iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 8px; /* Tùy chọn: thêm bo góc */
+    }

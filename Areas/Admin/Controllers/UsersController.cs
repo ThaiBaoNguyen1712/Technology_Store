@@ -8,6 +8,7 @@ using System.Net;
 using System.Transactions;
 using Tech_Store.Models;
 using Tech_Store.Models.DTO;
+using Tech_Store.Models.ViewModel;
 
 namespace Tech_Store.Areas.Admin.Controllers
 {
@@ -16,14 +17,30 @@ namespace Tech_Store.Areas.Admin.Controllers
     public class UsersController : BaseAdminController
     {
         public UsersController(ApplicationDbContext context) : base(context) { }
-     
+
         [Route("")]
         [Route("Index")]
         public async Task<IActionResult> Index()
         {
-            var list_Users = await _context.Users.ToListAsync();
+            var list_Users = await _context.Users
+                .OrderByDescending(x => x.UserId)
+                .Select(x => new UserVM
+                {
+                    UserId = x.UserId,
+                    LastName = x.LastName,
+                    FirstName = x.FirstName,
+                    PhoneNumber = x.PhoneNumber,
+                    Email = x.Email,
+                    ImageUrl = x.Img,
+                    IsActive = (bool)x.IsActive,
+                    OrderCount = x.Orders.Count
+                })
+                .ToListAsync();
+
             return View(list_Users);
         }
+
+
         [AutoValidateAntiforgeryToken]
         [HttpPost("Create")]
         [DisableRequestSizeLimit]
@@ -330,6 +347,19 @@ namespace Tech_Store.Areas.Admin.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+        [HttpPost("BanUser")]
+        public async Task<JsonResult> BanUser(int id)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(x=>x.UserId == id);
+            if (user == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy người dùng" });
+            }
+            user.IsActive = false;
+            await _context.SaveChangesAsync();
+            return Json(new { success = true, message = "Đã chặn người dùng" });
+        }
+
         private bool CheckPhoneNumberExist(string phoneNumber)
         {
             return !_context.Users.Any(x => x.PhoneNumber == phoneNumber);

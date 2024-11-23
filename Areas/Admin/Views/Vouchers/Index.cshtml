@@ -98,27 +98,38 @@
         $(document).on('click', '#removeVou', function () {
             var id_vou = $(this).data('id'); // Lấy ID từ thuộc tính data-id
 
-            if (confirm('Bạn có chắc chắn muốn xóa mã khuyến mãi này không?')) {
-                // Hiển thị biểu tượng loading
-                $('.loading-container').show();
+            // Sử dụng SweetAlert2 để xác nhận
+            Swal.fire({
+                title: 'Bạn có chắc chắn muốn xóa mã khuyến mãi này không?',
+                text: "Hành động này không thể hoàn tác.",
+                icon: 'warning', // Biểu tượng cảnh báo
+                showCancelButton: true, // Hiển thị nút hủy
+                confirmButtonText: 'Có, xóa nó!',
+                cancelButtonText: 'Hủy',
+                reverseButtons: true // Đảo ngược thứ tự nút
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Hiển thị biểu tượng loading
+                    $('.loading-container').show();
 
-
-                $.ajax({
-                    method: 'DELETE', // Sử dụng phương thức DELETE
-                    url: 'Vouchers/Delete/' + id_vou, // Cập nhật URL cho đúng
-                    success: function (response) {
-                        location.reload(); // Làm mới trang sau khi xóa
-                        // Ẩn biểu tượng loading
-                        $('.loading-container').hide();
-                    },
-                    error: function (xhr, status, error) {
-                        alert("Đã xảy ra lỗi: " + error);
-                        $('.loading-container').hide();
-
-                    }
-                });
-            }
+                    $.ajax({
+                        method: 'DELETE', // Sử dụng phương thức DELETE
+                        url: '/Admin/Vouchers/Delete',
+                        data: { id: id_vou },
+                        success: function (response) {
+                            location.reload(); // Làm mới trang sau khi xóa
+                            // Ẩn biểu tượng loading
+                            $('.loading-container').hide();
+                        },
+                        error: function (xhr, status, error) {
+                            alert("Đã xảy ra lỗi: " + error);
+                            $('.loading-container').hide();
+                        }
+                    });
+                }
+            });
         });
+
 
         // Xử lý sự kiện click cho nút chỉnh sửa
         $(document).on('click', '#editVou', function () {

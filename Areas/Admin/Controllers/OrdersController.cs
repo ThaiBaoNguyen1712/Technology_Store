@@ -15,17 +15,16 @@ namespace Tech_Store.Areas.Admin.Controllers
 
         [Route("{status}")]
         [Route("Index/{status}")]
-        [HttpGet]
         public async Task<IActionResult> Index(string? status)
         {
             var query = _context.Orders
                 .Include(x => x.OrderItems)
                     .ThenInclude(oi => oi.Product)
-                        .ThenInclude(p => p.VarientProducts) // Include VariantProduct from Product
+                        .ThenInclude(p => p.VarientProducts)
                 .Include(x => x.Payments)
                 .Include(x => x.ShippingAddress)
                 .Include(x => x.User)
-                .OrderByDescending(x => x.OrderDate)
+                .OrderByDescending(x => x.OrderId)
                 .AsQueryable();
 
             if (!string.IsNullOrEmpty(status) && status != "all")

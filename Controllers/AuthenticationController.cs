@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Facebook;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -73,7 +75,165 @@ namespace Tech_Store.Controllers
                 return View(loginDto);
             }
         }
+        [Route("LoginByGoogle")]
+        public async Task LoginByGoogle()
+        {
+            await HttpContext.ChallengeAsync(GoogleDefaults.AuthenticationScheme, new AuthenticationProperties
+            {
+                RedirectUri = Url.Action("GoogleResponse")
+            });
+        }
+        [Route("GoogleResponse")]
+        public async Task<IActionResult> GoogleResponse()
+        {
+            try
+            {
+                // Lấy thông tin từ Google
+                var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                if (result?.Principal == null)
+                {
+                    ViewData["ValidateMessage"] = "Không thể xác thực tài khoản Google. Vui lòng thử lại.";
+                    return View("Login");
+                }
 
+                var claims = result.Principal.Identities.FirstOrDefault()?.Claims.ToList();
+                if (claims == null || !claims.Any())
+                {
+                    ViewData["ValidateMessage"] = "Không tìm thấy thông tin người dùng từ Google.";
+                    return View("Login");
+                }
+
+                // Trích xuất thông tin
+                var email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+                var firstName = claims.FirstOrDefault(c => c.Type == ClaimTypes.GivenName)?.Value ?? "Unknown";
+                var lastName = claims.FirstOrDefault(c => c.Type == ClaimTypes.Surname)?.Value ?? "Unknown";
+  
+                if (string.IsNullOrEmpty(email))
+                {
+                    ViewData["ValidateMessage"] = "Không tìm thấy email từ Google.";
+                    return View("Login");
+                }
+
+                // Kiểm tra người dùng tồn tại
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+                if (user == null)
+                {
+                    // Người dùng chưa tồn tại -> tạo mới
+                    var passwordHash = PasswordHelper.HashPassword(Guid.NewGuid().ToString()); // Mật khẩu ngẫu nhiên
+                    user = new User
+                    {
+                        Email = email,
+                        FirstName = firstName,
+                        LastName = lastName,
+                        PasswordHash = passwordHash,
+                        IsVerified = true,
+                        IsActive = true,
+                        Img = "none.png"
+                    };
+
+                    _context.Users.Add(user);
+                    await _context.SaveChangesAsync();
+
+                    // Thiết lập vai trò và giỏ hàng
+                    await SetupUserRole(user.UserId);
+                    await CreateCart(user);
+                }
+
+                // Tự động đăng nhập
+                await SignInUser(user, true);
+                HttpContext.Session.SetString("UserEmail", email);
+
+                return RedirectToAction("Index", "Home");
+            }
+            catch (Exception ex)
+            {
+                // Log lỗi nếu cần thiết
+                // _logger.LogError(ex, "Lỗi trong quá trình xử lý Google login");
+                ViewData["ValidateMessage"] = "Đã xảy ra lỗi. Vui lòng thử lại.";
+                return View("Login");
+            }
+        }
+        [Route("LoginByFacebook")]
+        public async Task LoginByFacebook()
+        {
+            await HttpContext.ChallengeAsync(FacebookDefaults.AuthenticationScheme, new AuthenticationProperties
+            {
+                RedirectUri = Url.Action("FacebookResponse")
+            });
+        }
+        [Route("FacebookResponse")]
+        public async Task<IActionResult> FacebookResponse()
+        {
+            try
+            {
+                // Lấy thông tin từ Google
+                var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                if (result?.Principal == null)
+                {
+                    ViewData["ValidateMessage"] = "Không thể xác thực tài khoản Google. Vui lòng thử lại.";
+                    return View("Login");
+                }
+
+                var claims = result.Principal.Identities.FirstOrDefault()?.Claims.ToList();
+                if (claims == null || !claims.Any())
+                {
+                    ViewData["ValidateMessage"] = "Không tìm thấy thông tin người dùng từ Facebook.";
+                    return View("Login");
+                }
+
+                // Trích xuất thông tin
+                var email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+                var firstName = claims.FirstOrDefault(c => c.Type == ClaimTypes.GivenName)?.Value ?? "Unknown";
+                var lastName = claims.FirstOrDefault(c => c.Type == ClaimTypes.Surname)?.Value ?? "Unknown";
+
+                if (string.IsNullOrEmpty(email))
+                {
+                    ViewData["ValidateMessage"] = "Không tìm thấy email từ Facebook.";
+                    return View("Login");
+                }
+
+                // Kiểm tra người dùng tồn tại
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+                if (user == null)
+                {
+                    // Người dùng chưa tồn tại -> tạo mới
+                    var passwordHash = PasswordHelper.HashPassword(Guid.NewGuid().ToString()); // Mật khẩu ngẫu nhiên
+                    user = new User
+                    {
+                        Email = email,
+                        FirstName = firstName,
+                        LastName = lastName,
+                        PasswordHash = passwordHash,
+                        IsVerified = true,
+                        IsActive = true,
+                        Img = "none.png"
+
+                    };
+
+                    _context.Users.Add(user);
+                    await _context.SaveChangesAsync();
+
+                    // Thiết lập vai trò và giỏ hàng
+                    await SetupUserRole(user.UserId);
+                    await CreateCart(user);
+                }
+
+                // Tự động đăng nhập
+                await SignInUser(user, true);
+                HttpContext.Session.SetString("UserEmail", email);
+
+                return RedirectToAction("Index", "Home");
+            }
+            catch (Exception ex)
+            {
+                // Log lỗi nếu cần thiết
+                // _logger.LogError(ex, "Lỗi trong quá trình xử lý Google login");
+                ViewData["ValidateMessage"] = "Đã xảy ra lỗi. Vui lòng thử lại.";
+                return View("Login");
+            }
+        }
         [HttpGet("Register")]
         [AllowAnonymous]
         public IActionResult Register()
@@ -318,7 +478,10 @@ namespace Tech_Store.Controllers
 
             if (user == null || !PasswordHelper.VerifyPassword(password, user.PasswordHash))
                 return (false, "Sai tài khoản hoặc mật khẩu.", null);
-
+            if((bool)!user.IsActive)
+            {
+                return (false, "Bạn đã bị chặn bởi cửa hàng", null);
+            }
             return (true, string.Empty, user);
         }
 

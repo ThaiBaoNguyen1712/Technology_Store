@@ -26,4 +26,6 @@ public partial class VarientProduct
     public virtual Product? Product { get; set; }
 
     public virtual ICollection<ProductHistoryDetail> ProductHistoryDetails { get; set; } = new List<ProductHistoryDetail>();
+
+    public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
 }

@@ -53,6 +53,8 @@ public partial class Product
 
     public virtual Category? Category { get; set; }
 
+    public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
+
     public virtual ICollection<Gallery> Galleries { get; set; } = new List<Gallery>();
 
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();

@@ -50,7 +50,7 @@
                                             <td>@order.OrderId</td>
                                             <td>@order.OrderDate</td>
                                             <td>
-                                                <p>@order.User.LastName @order.User.FirstName</p>
+                                                <p style="white-space:nowrap">@order.User.LastName @order.User.FirstName</p>
                                                 <p>@order.User.PhoneNumber</p>
                                             </td>
                                             <td>@(string.Join(", ", order.OrderItems.Select(item => item.Product?.Name ?? "Không có sản phẩm")))</td>
@@ -63,15 +63,18 @@
                                                 <span class="badge
                                                   @(order.OrderStatus == "Pending" ? "badge-primary" :
                                                     order.OrderStatus == "Confirmed" ? "badge-info" :
-                                                    order.OrderStatus == "Shipped" ? "badge-warning" :
+                                                    order.OrderStatus == "Shipping" ? "badge-warning" :
+                                                     order.OrderStatus == "Delivered" ? "badge-success" :
                                                     order.OrderStatus == "Completed" ? "badge-success" :
                                                     order.OrderStatus == "Cancelled" ? "badge-danger" :
                                                     "badge-secondary")">
                                                     @(order.OrderStatus == "Pending" ? "Đang chờ" :
                                                         order.OrderStatus == "Confirmed" ? "Đã xác nhận" :
-                                                        order.OrderStatus == "Shipped" ? "Đã giao hàng" :
+                                                        order.OrderStatus == "Shipping" ? "Đang giao hàng" :
+                                                        order.OrderStatus == "Delivered" ? "Đã giao hàng" :
                                                         order.OrderStatus == "Completed" ? "Hoàn thành" :
                                                         order.OrderStatus == "Cancelled" ? "Đã hủy" :
+                                                        order.OrderStatus == "Refunded" ? "Đã hoàn tiền" :
                                                         "Không xác định")
                                                 </span>
                                             </td>
@@ -79,9 +82,12 @@
                                                 <select class="form-control border selectpicker changeStatus" data-id="@order.OrderId" data-current-status="@order.OrderStatus" data-live-search="true">
                                                     <option value="Pending" @(order.OrderStatus == "Pending" ? "selected" : "")>Đang chờ</option>
                                                     <option value="Confirmed" @(order.OrderStatus == "Confirmed" ? "selected" : "")>Đã xác nhận</option>
-                                                    <option value="Shipped" @(order.OrderStatus == "Shipped" ? "selected" : "")>Đã giao hàng</option>
+                                                    <option value="Shipping" @(order.OrderStatus == "Shipping" ? "selected" : "")>Đang giao hàng</option>
+                                                    <option value="Delivered" @(order.OrderStatus == "Delivered" ? "selected" : "")>Đã giao hàng</option>
                                                     <option value="Completed" @(order.OrderStatus == "Completed" ? "selected" : "")>Hoàn thành</option>
                                                     <option value="Cancelled" @(order.OrderStatus == "Cancelled" ? "selected" : "")>Đã hủy</option>
+                                                    <option value="Refunded" @(order.OrderStatus == "Refunded" ? "selected" : "")>Đã hủy</option>
+
                                                 </select>
                                             </td>
 
@@ -143,7 +149,8 @@
         $(document).off('change', '.changeStatus');
 
         // Biến cờ riêng cho từng select
-        let processingFlags = {};
+        // Khai báo một đối tượng để theo dõi các ID đang được xử lý
+        var processingFlags = {};
 
         $(document).on('change', '.changeStatus', function (e) {
             e.stopPropagation(); // Ngăn chặn sự kiện lan rộng
@@ -159,71 +166,99 @@
             // Đánh dấu trạng thái đang xử lý
             processingFlags[id] = true;
 
-            // Hiển thị hộp thoại xác nhận
+            // Hiển thị hộp thoại xác nhận với SweetAlert2
             var confirmMessage = `Bạn có muốn đổi trạng thái từ "${currentStatus}" thành "${newStatus}" không?`;
 
-            if (!confirm(confirmMessage)) {
-                $select.val(currentStatus); // Khôi phục giá trị cũ nếu từ chối
-                processingFlags[id] = false; // Reset cờ
-                return;
-            }
-
-            $('.loading-container').show();
-
-            $.ajax({
-                method: 'POST',
-                url: '/admin/Orders/ChangeStatus',
-                data: {
-                    status: newStatus,
-                    id: id
-                },
-                success: function (response) {
-                    if (response.success) {
-                        alert(response.message);
-
-                        // Cập nhật trạng thái mới
-                        $select.data('current-status', newStatus);
-
-                        // Cập nhật badge và nội dung trạng thái
-                        var badge = $select.closest('tr').find('.badge'); // Tìm badge trong cùng dòng tr
-                        badge.removeClass('badge-primary badge-info badge-warning badge-success badge-danger badge-secondary');
-
-                        // Thêm class mới và thay đổi nội dung badge
-                        switch (newStatus) {
-                            case 'Pending':
-                                badge.addClass('badge-primary').text('Đang chờ');
-                                break;
-                            case 'Confirmed':
-                                badge.addClass('badge-info').text('Đã xác nhận');
-                                break;
-                            case 'Shipped':
-                                badge.addClass('badge-warning').text('Đã giao hàng');
-                                break;
-                            case 'Completed':
-                                badge.addClass('badge-success').text('Hoàn thành');
-                                break;
-                            case 'Cancelled':
-                                badge.addClass('badge-danger').text('Đã hủy');
-                                break;
-                            default:
-                                badge.addClass('badge-secondary').text('Không xác định');
-                                break;
-                        }
-
-                    } else {
-                        alert(response.message);
-                        $select.val(currentStatus); // Khôi phục trạng thái cũ nếu có lỗi
-                    }
-                },
-                error: function (response) {
-                    alert('Đã xảy ra lỗi: ' + response.message);
-                    $select.val(currentStatus); // Khôi phục trạng thái cũ nếu có lỗi
-                },
-                complete: function () {
-                    processingFlags[id] = false; // Reset cờ xử lý
-                    $('.loading-container').hide();
+            Swal.fire({
+                title: 'Xác nhận thay đổi trạng thái',
+                text: confirmMessage,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6', // Màu nút xác nhận
+                cancelButtonColor: '#d33', // Màu nút hủy
+                confirmButtonText: 'Đổi trạng thái',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (!result.isConfirmed) {
+                    $select.val(currentStatus); // Khôi phục giá trị cũ nếu từ chối
+                    processingFlags[id] = false; // Reset cờ
+                    return;
                 }
+
+                // Hiển thị biểu tượng loading
+                $('.loading-container').show();
+
+                $.ajax({
+                    method: 'POST',
+                    url: '/admin/Orders/ChangeStatus',
+                    data: {
+                        status: newStatus,
+                        id: id
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Thành công',
+                                text: response.message
+                            });
+
+                            // Cập nhật trạng thái mới
+                            $select.data('current-status', newStatus);
+
+                            // Cập nhật badge và nội dung trạng thái
+                            var badge = $select.closest('tr').find('.badge'); // Tìm badge trong cùng dòng tr
+                            badge.removeClass('badge-primary badge-info badge-warning badge-success badge-danger badge-secondary');
+
+                            // Thêm class mới và thay đổi nội dung badge
+                            switch (newStatus) {
+                                case 'Pending':
+                                    badge.addClass('badge-primary').text('Đang chờ');
+                                    break;
+                                case 'Confirmed':
+                                    badge.addClass('badge-info').text('Đã xác nhận');
+                                    break;
+                                case 'Shipping':
+                                    badge.addClass('badge-warning').text('Đang giao hàng');
+                                    break;
+                                case 'Delivered':
+                                    badge.addClass('badge-success').text('Đã giao hàng');
+                                    break;
+                                case 'Completed':
+                                    badge.addClass('badge-success').text('Hoàn thành');
+                                    break;
+                                case 'Cancelled':
+                                    badge.addClass('badge-danger').text('Đã hủy');
+                                    break;
+                                default:
+                                    badge.addClass('badge-secondary').text('Không xác định');
+                                    break;
+                            }
+
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Lỗi',
+                                text: response.message
+                            });
+                            $select.val(currentStatus); // Khôi phục trạng thái cũ nếu có lỗi
+                        }
+                    },
+                    error: function (response) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: 'Đã xảy ra lỗi: ' + response.message
+                        });
+                        $select.val(currentStatus); // Khôi phục trạng thái cũ nếu có lỗi
+                    },
+                    complete: function () {
+                        processingFlags[id] = false; // Reset cờ xử lý
+                        $('.loading-container').hide();
+                    }
+                });
             });
         });
+
     });
 </script>
