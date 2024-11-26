@@ -94,6 +94,62 @@
                 </div>
             </div>
         </div>
+    <div class="card card-round">
+        <div class="card-header">
+            <div class="card-head-row card-tools-still-right">
+                <div class="card-title">Thống kê đơn hàng</div>
+                <div class="card-tools">
+                    <div class="dropdown">
+                        <button class="btn btn-icon btn-clean me-0"
+                                type="button"
+                                id="dropdownMenuButton"
+                                data-bs-toggle="dropdown"
+                                aria-haspopup="true"
+                                aria-expanded="false">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </button>
+                        <div class="dropdown-menu"
+                             aria-labelledby="dropdownMenuButton">
+                            <a class="dropdown-item" href="/Admin/Orders/all">Xem thêm</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label for="monthFilter" class="form-label">Tháng</label>
+                    <select id="monthFilter" class="form-select">
+                        @for (int i = 1; i <= 12; i++)
+                        {
+                            <option value="@i" @(DateTime.Now.Month == i ? "selected" : "")>@i</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="yearFilter" class="form-label">Năm</label>
+                    <select id="yearFilter" class="form-select">
+                        @for (int year = DateTime.Now.Year - 5; year <= DateTime.Now.Year; year++)
+                        {
+                            <option value="@year" @(DateTime.Now.Year == year ? "selected" : "")>@year</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3 align-self-end">
+                    <button id="filterBtn" class="btn btn-primary w-100">Lọc</button>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12">
+                    <canvas id="orderChart" width="200" height="50"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
         <div class="row">
         <div class="col-md-8">
             <div class="card card-round">
@@ -212,21 +268,57 @@
                         <div class="mb-4 mt-2">
                         <h1>@ViewBag.Revenue.ToString("C0",new CultureInfo("vi-VN"))</h1>
                         </div>
-                        <div class="pull-in">
-                            <canvas id="dailySalesChart"></canvas>
+                    </div>
+                </div>
+            <div class="card card-round">
+                <div class="card-header">
+                    <div class="card-head-row">
+                        <div class="card-title">TOP Sản phẩm bán chạy</div>
+                        <div class="card-tools">
+                            <div class="dropdown">
+                                <button class="btn btn-icon btn-clean me-0"
+                                        type="button"
+                                        id="dropdownMenuButton"
+                                        data-bs-toggle="dropdown"
+                                        aria-haspopup="true"
+                                        aria-expanded="false">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                                <div class="dropdown-menu"
+                                     aria-labelledby="dropdownMenuButton">
+                                    <a class="dropdown-item" href="/Admin/Products/all">Xem thêm</a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="card card-round">
-                    <div class="card-body pb-0">
-                        <div class="h1 fw-bold float-end text-primary">+5%</div>
-                        <h2 class="mb-2">17</h2>
-                        <p class="text-muted">Users online</p>
-                        <div class="pull-in sparkline-fix">
-                            <div id="lineChart"></div>
-                        </div>
-                    </div>
+                <div class="card-body pb-0">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Ảnh</th>
+                                <th>Tên</th>
+                                <th>Sl bán</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in ViewBag.hotSaleProducts)
+                            {
+                                <tr>
+                                    <td><img src="~/Upload/Products/@item.Image" width="40" height="40" alt="@item.Name" class="img-fluid" /></td>
+                                    <td class="text-truncate" style="max-width:200px">
+                                        <a href="/Admin/Products/View/@item.ProductId">
+                                            @item.Name
+                                        </a>
+                                        </td>
+                                    <td>@item.OrderItems.Count</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
                 </div>
+            </div>
+
             </div>
         </div>
         <div class="row">
@@ -361,4 +453,75 @@
         </div>
     </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    $(document).ready(function () {
+        // Khởi tạo biểu đồ
+        var ctx = $('#orderChart');
+        var orderChart;
 
+        function renderChart(data) {
+            if (orderChart) {
+                orderChart.destroy(); // Xóa biểu đồ cũ trước khi vẽ biểu đồ mới
+            }
+
+            orderChart = new Chart(ctx, {
+                type: 'bar', // Loại biểu đồ
+                data: {
+                    labels: data.map(item => `Ngày ${item.day}`), // Dữ liệu trục X
+                    datasets: [
+                        {
+                            label: 'Số đơn hàng',
+                            data: data.map(item => item.orders), // Dữ liệu số đơn hàng
+                            backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1,
+                        },
+                        {
+                            label: 'Doanh thu (VNĐ)',
+                            data: data.map(item => item.revenue), // Dữ liệu doanh thu
+                            backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                        }
+                    }
+                }
+            });
+        }
+
+        function fetchData() {
+            var month = $('#monthFilter').val();
+            var year = $('#yearFilter').val();
+
+            $.ajax({
+                url: '/Admin/GetOrderStats',
+                method: 'GET',
+                data: { month: month, year: year },
+                success: function (data) {
+                    renderChart(data); // Vẽ biểu đồ
+                },
+                error: function () {
+                    alert('Không thể tải dữ liệu thống kê.');
+                }
+            });
+        }
+
+        // Lấy dữ liệu lần đầu khi load trang
+        fetchData();
+
+        // Lọc khi nhấn nút
+        $('#filterBtn').on('click', function () {
+            fetchData();
+        });
+    });
+
+</script>

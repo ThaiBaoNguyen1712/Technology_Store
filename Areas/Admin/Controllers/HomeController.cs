@@ -46,18 +46,45 @@ namespace Tech_Store.Areas.Admin.Controllers
             var revenue = _context.Payments
                 .Where(x => x.Status == "Paid" && x.PaymentDate >= oneMonthAgo && x.PaymentDate <= DateTime.Now)
                 .Sum(x => x.Amount);
-
+            
             var order_count = _context.Orders.Count();
 			var user_count = _context.Users.Count();
 			var products = _context.Products.Count();
-			ViewBag.Payments = payments;
+            var hotSaleProducts = _context.Products
+                .Include(p=>p.OrderItems)
+                 .Where(x => x.Visible == true)
+                 .OrderByDescending(x => x.OrderItems.Count)
+                 .Take(3)
+                 .ToList();
+
+            ViewBag.Payments = payments;
 			ViewBag.New_users = new_users;
             ViewBag.New_orders = orders;
 			ViewBag.Order_count = order_count;
 			ViewBag.User_count = user_count;
 			ViewBag.Product_count = products;
             ViewBag.Revenue = revenue;
+            ViewBag.hotSaleProducts = hotSaleProducts;
 			return View();
 		}
-	}
+
+        [HttpGet("GetOrderStats")]
+        public IActionResult GetOrderStats(int month, int year)
+        {
+            var stats = _context.Orders
+                .Where(o => o.OrderDate.Value.Month == month && o.OrderDate.Value.Year == year)
+                .GroupBy(o => o.OrderDate.Value.Day)
+                .Select(g => new
+                {
+                    Day = g.Key,
+                    Orders = g.Count(),
+                    Revenue = g.Sum(o => o.TotalAmount)
+                })
+                .OrderBy(x => x.Day)
+                .ToList();
+
+            return Json(stats);
+        }
+
+    }
 }

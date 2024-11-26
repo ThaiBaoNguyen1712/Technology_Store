@@ -69,14 +69,14 @@ namespace Tech_Store.Controllers
         }
 
 
-        [Route("View/{id}")]
-        public IActionResult View(int id)
+        [Route("View/{slug}")]
+        public IActionResult View(string slug)
         {
             var product = _context.Products
                 .Include(x => x.VarientProducts)
                 .Include(x => x.Galleries)
                 .Include(x => x.Reviews)
-                .FirstOrDefault(x => x.ProductId == id);
+                .FirstOrDefault(x => x.Slug.Contains(slug));
 
             if (product == null)
             {
@@ -85,7 +85,7 @@ namespace Tech_Store.Controllers
 
             var reviews = _context.Reviews
                 .Include(r => r.User)
-                .Where(r => r.ProductId == id)
+                .Where(r => r.Product.Slug.Contains(slug))
                 .AsNoTracking()
                 .ToList();
 
@@ -105,7 +105,7 @@ namespace Tech_Store.Controllers
             ViewBag.averageRating = averageRating;
 
             ViewBag.related_products = _context.Products
-                .Where(p => p.CategoryId == product.CategoryId && p.ProductId != id)
+                .Where(p => p.CategoryId == product.CategoryId && p.ProductId != product.ProductId)
                 .Take(10)
                 .AsNoTracking()
                 .ToList();

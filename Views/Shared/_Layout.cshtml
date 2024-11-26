@@ -168,6 +168,39 @@
     <!-- Bootstrap-select JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/js/bootstrap-select.min.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
+    <script type="text/javascript">
+        $(document).ready(function () {
+
+            // Bắt sự kiện click trên phần nội dung sản phẩm
+            $('.product-link').on('click', function (e) {
+                var slug = $(this).data('slug');
+                window.location.href = '/View/' + slug;
+            });
+
+            // Bắt sự kiện click trên nút yêu thích
+            $('.addToWishList').on('click', function (e) {
+                e.stopPropagation(); // Ngăn sự kiện click lan ra ngoài
+                var productId = $(this).data('id');
+
+                $.ajax({
+                    method: 'POST',
+                    url: '@Url.Action("AddToWishlist", "User")',
+                    data: { productId: productId },
+                    success: function (response) {
+                        if (response.success) {
+                            alert(response.message);
+                        } else {
+                            alert(response.message);
+                        }
+                    },
+                    error: function (response) {
+                        alert(response.responseJSON?.message || 'Có lỗi xảy ra, vui lòng thử lại.');
+                    }
+                });
+            });
+        });
+
+    </script>
 </body>
 
 </html>

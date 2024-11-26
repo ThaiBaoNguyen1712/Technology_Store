@@ -1,0 +1,99 @@
+﻿@{
+    ViewData["Title"] = "Yêu thích của tôi";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@model IEnumerable<Tech_Store.Models.ViewModel.WishlistVM>
+@using System.Globalization
+<div class="container py-4">
+    <h3 class="mb-4">Danh sách yêu thích</h3>
+
+    <div class="row justify-content-center">
+        <div class="col-12" style="max-width: 800px;">
+            @if (Model != null && Model.Any())
+            {
+                <div id="cartItemsContainer">
+                    @foreach (var item in Model)
+                    {
+                        <div class="card mb-3 shadow-sm border-0" data-item-id="@item.ProductId">
+                            <div class="card-body p-3">
+                                <!-- Đặt product-link bao toàn bộ nội dung chính -->
+                                <div class="product-link" data-slug="@item.Slug" style="cursor: pointer;">
+                                    <div class="row g-3 align-items-center">
+                                        <input type="hidden" name="ProductId" value="@item.ProductId" />
+
+                                        <!-- Hình ảnh sản phẩm -->
+                                        <div class="col-3 col-md-2">
+                                            <img src="/Upload/Products/@item.ImageUrl"
+                                                 class="img-fluid rounded"
+                                                 alt="@item.ProductName">
+                                        </div>
+
+                                        <!-- Thông tin sản phẩm -->
+                                        <div class="col-8 col-md-5">
+                                            <h5 class="h6 mb-2">@item.ProductName</h5>
+                                            <p class="text-muted mb-0 small">Đã thêm vào @item.CreatedAt.ToString("dd/MM/yyyy")</p>
+                                        </div>
+
+                                        <!-- Giá -->
+                                        <div class="col">
+                                            <span class="fw-bold">@item.Price</span>
+                                        </div>
+
+                                        <!-- Nút xóa - đặt ngoài product-link -->
+                                        <div class="col-auto">
+                                            <button class="btn btn-outline-danger btn-sm delete-item"
+                                                    data-id="@item.ProductId"
+                                                    onclick="event.stopPropagation();">
+                                                <i class="fa fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            else
+            {
+                <div class="alert alert-warning text-center">
+                    Bạn chưa có món đồ nào trong danh sách yêu thích
+                </div>
+            }
+        </div>
+    </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('.delete-item').on('click', function () {
+            var id = $(this).data('id');
+            // Hiển thị hộp thoại xác nhận
+            var confirmation = confirm('Bạn có chắc chắn muốn xóa sản phẩm này khỏi danh sách yêu thích?');
+
+            if (confirmation) {
+                $.ajax({
+                    method: 'POST',
+                    url: '@Url.Action("RemoveItemFromWishlist", "User")',
+                    data: { productId: id },
+                    success: function (response) {
+                        if (response.success) {
+                            alert(response.message); // Thông báo thành công
+                            location.reload();
+                        } else {
+                            alert(response.message); // Thông báo lỗi
+                        }
+                    },
+                    error: function (response) {
+                        alert('Có lỗi xảy ra, vui lòng thử lại.');
+                    }
+                });
+            } else {
+                // Nếu người dùng hủy bỏ
+                alert('Đã hủy bỏ hành động xóa sản phẩm.');
+            }
+        });
+    });
+
+</script>

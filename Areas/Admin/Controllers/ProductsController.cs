@@ -2,9 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 using QRCoder;
 using System.Diagnostics;
+using System.Globalization;
 using System.Net.NetworkInformation;
 using System.Security.Claims;
 using System.Text;
+using System.Text.RegularExpressions;
 using Tech_Store.Models;
 using Tech_Store.Models.DTO;
 using static System.Net.Mime.MediaTypeNames;
@@ -110,6 +112,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                     var product = new Product
                     {
                         Name = productDto.Name,
+                        Slug = GenerateSlug(productDto.Name),
                         Sku = productDto.Sku,
                         Description = productDto.Description,
                         CostPrice = productDto.CostPrice,
@@ -329,7 +332,7 @@ namespace Tech_Store.Areas.Admin.Controllers
             existingProduct.Visible = updatedProduct.Visible;
             existingProduct.Sku = updatedProduct.Sku;
             existingProduct.Color = updatedProduct.Color;
-
+            existingProduct.Slug = GenerateSlug(updatedProduct.Name);
             if (updatedProduct.DiscountAmount != null)
             {
                 existingProduct.DiscountAmount = updatedProduct.DiscountAmount;
@@ -691,6 +694,52 @@ namespace Tech_Store.Areas.Admin.Controllers
                 barcodeBitmap.Save(barcodeStream, System.Drawing.Imaging.ImageFormat.Png);
                 return "data:image/png;base64," + Convert.ToBase64String(barcodeStream.ToArray());
             }
+        }
+        public static string GenerateSlug(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return string.Empty;
+
+            // Chuyển đổi chữ thường và bỏ dấu
+            string slug = RemoveDiacritics(name.ToLower());
+
+            // Loại bỏ ký tự đặc biệt, chỉ giữ lại chữ cái, số và khoảng trắng
+            slug = Regex.Replace(slug, @"[^a-z0-9\s-]", "");
+
+            // Thay khoảng trắng và dấu gạch ngang liên tiếp thành một dấu gạch ngang
+            slug = Regex.Replace(slug, @"\s+", "-").Trim();
+
+            // Loại bỏ dấu gạch ngang dư thừa ở đầu và cuối
+            slug = slug.Trim('-');
+
+            // Tạo một số ngẫu nhiên (1000-9999)
+            var random = new Random();
+            int randomNumber = random.Next(1000, 9999);
+
+            // Thêm số ngẫu nhiên vào Slug để đảm bảo không trùng lặp
+            slug += "-" + randomNumber;
+
+            return slug;
+        }
+
+        private static string RemoveDiacritics(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return text;
+
+            var normalizedString = text.Normalize(NormalizationForm.FormD);
+            var stringBuilder = new StringBuilder();
+
+            foreach (var c in normalizedString)
+            {
+                var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
+                if (unicodeCategory != UnicodeCategory.NonSpacingMark)
+                {
+                    stringBuilder.Append(c);
+                }
+            }
+
+            return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
         }
 
 

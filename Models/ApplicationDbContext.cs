@@ -322,6 +322,9 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.BrandId).HasColumnName("brandId");
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
+            entity.Property(e => e.Slug)
+               .HasMaxLength(255)
+               .HasColumnName("slug");
             entity.Property(e => e.Color)
                 .HasMaxLength(155)
                 .HasColumnName("color");

@@ -12,6 +12,7 @@ public partial class Product
     public string? Description { get; set; }
 
     public string? Sku { get; set; }
+    public string? Slug { get; set; }
 
     public decimal? CostPrice { get; set; }
 

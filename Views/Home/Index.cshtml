@@ -124,23 +124,24 @@
                             <div class="position-absolute" style="top: 10px; right: 10px; z-index: 2;">
                                 <span class="badge bg-white text-primary border border-primary p-2">Trả góp 0%</span>
                             </div>
-
-                            <div class="image-container">
-                                <img src="/Upload/Products/@hot.Image" class="product-image" alt="@hot.Name">
-                            </div>
-
-                            <div class="card-body p-3">
-                                <h6 class="card-title mb-2 product-title">@hot.Name</h6>
-                                <div class="d-flex align-items-center gap-2 mb-2">
-                                    <span class="text-danger fw-bold" style="">@hot.SellPrice?.ToString("C0", new CultureInfo("vi-VN"))</span>
-                                    @if (hot.SellPrice != hot.OriginalPrice)
-                                    {
-                                        <span class="text-decoration-line-through text-muted" style="font-size:0.8rem">@hot.OriginalPrice?.ToString("C0", new CultureInfo("vi-VN"))</span>
-                                    }
+                            <div class="product-link" data-slug="@hot.Slug">
+                                <div class="image-container">
+                                    <img src="/Upload/Products/@hot.Image" class="product-image" alt="@hot.Name">
                                 </div>
-                                <button class="btn btn-outline-danger btn-sm w-100">
-                                    <i class="far fa-heart"></i> Yêu thích
-                                </button>
+
+                                <div class="card-body p-3">
+                                    <h6 class="card-title mb-2 product-title">@hot.Name</h6>
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <span class="text-danger fw-bold" style="">@hot.SellPrice?.ToString("C0", new CultureInfo("vi-VN"))</span>
+                                        @if (hot.SellPrice != hot.OriginalPrice)
+                                        {
+                                            <span class="text-decoration-line-through text-muted" style="font-size:0.8rem">@hot.OriginalPrice?.ToString("C0", new CultureInfo("vi-VN"))</span>
+                                        }
+                                    </div>
+                                    <button class="btn btn-outline-danger btn-sm w-100 addToWishList" data-id="@hot.ProductId">
+                                        <i class="far fa-heart"></i> Yêu thích
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     }
@@ -199,23 +200,24 @@
                                 <div class="position-absolute" style="top: 10px; right: 10px; z-index: 2;">
                                     <span class="badge bg-white text-primary border border-primary p-2">Trả góp 0%</span>
                                 </div>
-
-                                <div class="image-container">
-                                    <img src="/Upload/Products/@product.Image" class="product-image" alt="@product.Name">
-                                </div>
-
-                                <div class="card-body p-3">
-                                    <h6 class="card-title mb-2 product-title">@product.Name</h6>
-                                    <div class="d-flex align-items-center gap-2 mb-2">
-                                        <span class="text-danger fw-bold" style="">@product.SellPrice?.ToString("C0",new CultureInfo("vi-VN"))</span>
-                                        @if (product.SellPrice != product.OriginalPrice)
-                                        {
-                                            <span class="text-decoration-line-through text-muted" style="font-size:0.8rem">@product.OriginalPrice?.ToString("C0",new CultureInfo("vi-VN"))</span>
-                                        }
+                                <div class="product-link" data-slug="@product.Slug">
+                                    <div class="image-container">
+                                        <img src="/Upload/Products/@product.Image" class="product-image" alt="@product.Name">
                                     </div>
-                                    <button class="btn btn-outline-danger btn-sm w-100">
-                                        <i class="far fa-heart"></i> Yêu thích
-                                    </button>
+
+                                    <div class="card-body p-3">
+                                        <h6 class="card-title mb-2 product-title">@product.Name</h6>
+                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                            <span class="text-danger fw-bold" style="">@product.SellPrice?.ToString("C0",new CultureInfo("vi-VN"))</span>
+                                            @if (product.SellPrice != product.OriginalPrice)
+                                            {
+                                                <span class="text-decoration-line-through text-muted" style="font-size:0.8rem">@product.OriginalPrice?.ToString("C0",new CultureInfo("vi-VN"))</span>
+                                            }
+                                        </div>
+                                        <button class="btn btn-outline-danger btn-sm w-100 addToWishList" data-id="@product.ProductId">
+                                            <i class="far fa-heart"></i> Yêu thích
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                            
@@ -228,14 +230,3 @@
 }
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-    $(document).ready(function () {
-        // Bắt sự kiện click trên mỗi sản phẩm
-        $('.product-card').on('click', function () {
-            // Lấy id sản phẩm từ thuộc tính data-id
-            var productId = $(this).data('id');
-            // Chuyển hướng đến trang chi tiết sản phẩm
-            window.location.href = '/View/' + productId;
-        });
-    });
-</script>

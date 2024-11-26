@@ -92,47 +92,48 @@
             @foreach (var item in Model)
             {
                 <div class="col-md-3 product-card-ct" data-id="@item.ProductId">
-                    <div class="card">
-                        <!-- Sale Badge -->
-                        <div class="position-absolute d-flex gap-2" style="top: 10px; left: 10px; z-index: 2;">
-                            @if (item.SellPrice != item.OriginalPrice)
-                            {
-                                @if (item.DiscountPercentage != null)
-                                {
-                                    <span class="badge bg-danger p-2">Giảm @item.DiscountPercentage%</span>
-                                }
-                                @if (item.DiscountAmount != null)
-                                {
-
-                                    <span class="badge bg-danger p-2">Giảm @((item.OriginalPrice - item.SellPrice)?.ToString("C0", new CultureInfo("vi-VN")))</span>
-                                }
-
-                            }
-                        </div>
-                        <!-- Installment Badge -->
-                        <div class="position-absolute" style="top: 10px; right: 10px; z-index: 2;">
-                            <span class="badge bg-white text-primary border border-primary p-2">Trả góp 0%</span>
-                        </div>
-
-                        <div class="image-container">
-                            <img src="/Upload/Products/@item.Image" class="product-image" alt="@item.Name">
-                        </div>
-
-                        <div class="card-body p-3">
-                            <h6 class="card-title mb-2 product-title">@item.Name</h6>
-                            <div class="d-flex align-items-center gap-2 mb-2">
-                                <span class="text-danger fw-bold" style="">@item.SellPrice?.ToString("C0", new CultureInfo("vi-VN"))</span>
+                    <div class="product-link" data-slug="@item.Slug">
+                        <div class="card">
+                            <!-- Sale Badge -->
+                            <div class="position-absolute d-flex gap-2" style="top: 10px; left: 10px; z-index: 2;">
                                 @if (item.SellPrice != item.OriginalPrice)
                                 {
-                                    <span class="text-decoration-line-through text-muted" style="font-size:0.8rem">@item.OriginalPrice?.ToString("C0", new CultureInfo("vi-VN"))</span>
+                                    @if (item.DiscountPercentage != null)
+                                    {
+                                        <span class="badge bg-danger p-2">Giảm @item.DiscountPercentage%</span>
+                                    }
+                                    @if (item.DiscountAmount != null)
+                                    {
+                                        <span class="badge bg-danger p-2">Giảm @((item.OriginalPrice - item.SellPrice)?.ToString("C0", new CultureInfo("vi-VN")))</span>
+                                    }
                                 }
                             </div>
-                            <button class="btn btn-outline-danger btn-sm w-100">
-                                <i class="far fa-heart"></i> Yêu thích
-                            </button>
+                            <!-- Installment Badge -->
+                            <div class="position-absolute" style="top: 10px; right: 10px; z-index: 2;">
+                                <span class="badge bg-white text-primary border border-primary p-2">Trả góp 0%</span>
+                            </div>
+
+                            <div class="image-container">
+                                <img src="/Upload/Products/@item.Image" class="product-image" alt="@item.Name">
+                            </div>
+
+                            <div class="card-body p-3">
+                                <h6 class="card-title mb-2 product-title">@item.Name</h6>
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <span class="text-danger fw-bold" style="">@item.SellPrice?.ToString("C0", new CultureInfo("vi-VN"))</span>
+                                    @if (item.SellPrice != item.OriginalPrice)
+                                    {
+                                        <span class="text-decoration-line-through text-muted" style="font-size:0.8rem">@item.OriginalPrice?.ToString("C0", new CultureInfo("vi-VN"))</span>
+                                    }
+                                </div>
+                                <button class="btn btn-outline-danger btn-sm w-100 addToWishList" data-id="@item.ProductId">
+                                    <i class="far fa-heart"></i> Yêu thích
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
+
             }
 
         </div>
@@ -160,11 +161,7 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     $(document).ready(function () {
-        // Bắt sự kiện click trên mỗi sản phẩm
-        $('.product-card-ct').on('click', function () {
-            var productId = $(this).data('id');
-            window.location.href = '/View/' + productId;
-        });
+
 
         // Giá trị từ ViewBag
         var orderValue = "@ViewBag.Order";

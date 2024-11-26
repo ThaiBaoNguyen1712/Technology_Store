@@ -557,21 +557,41 @@ namespace Tech_Store.Controllers
         public async Task<JsonResult> AddtoWishlist(int productId)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if(userId == null) {
+
+            if (userId == null)
+            {
                 return Json(new { success = false, message = "Cần đăng nhập trước" });
             }
-            if(productId == 0) { return Json(new { success = false ,message ="Không nhận được mã sản phẩm"}); }
 
+            if (productId == 0)
+            {
+                return Json(new { success = false, message = "Không nhận được mã sản phẩm" });
+            }
+
+            // Kiểm tra xem sản phẩm đã có trong danh sách yêu thích của người dùng chưa
+            var existingWishlistItem = _context.Wishlists
+                .FirstOrDefault(x => x.UserId == int.Parse(userId) && x.ProductId == productId);
+
+            if (existingWishlistItem != null)
+            {
+                // Nếu sản phẩm đã tồn tại trong danh sách yêu thích
+                return Json(new { success = false, message = "Sản phẩm đã có trong danh sách yêu thích" });
+            }
+
+            // Nếu sản phẩm chưa có trong danh sách yêu thích, thêm mới
             var wishlist = new Wishlist
             {
                 UserId = int.Parse(userId),
                 ProductId = productId,
                 AddedDate = DateTime.Now
             };
+
             _context.Wishlists.Add(wishlist);
             await _context.SaveChangesAsync();
+
             return Json(new { success = true, message = "Đã thêm vào DS yêu thích" });
         }
+
         [HttpPost("RemoveItemFromWishlist")]
         public async Task<JsonResult> RemoveItemFromWishlist(int productId)
         {
@@ -589,10 +609,37 @@ namespace Tech_Store.Controllers
         [Route("Wishlist")]
         public IActionResult Wishlist()
         {
+            // Lấy UserId từ Claims
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var wishlist = _context.Wishlists.Where(x=>x.UserId == int.Parse(userId)).ToList();
-            return View(wishlist);
+
+            // Kiểm tra tính hợp lệ của userId
+            if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out int parsedUserId))
+            {
+                // Trả về thông báo lỗi hoặc điều hướng đến trang đăng nhập
+                return RedirectToAction("Login", "Account");
+            }
+
+            // Lấy danh sách yêu thích của người dùng
+            var wishlistItems = _context.Wishlists
+                .Where(x => x.UserId == parsedUserId)
+                .Distinct()
+                .Select(x => new WishlistVM
+                {
+                    ProductId = x.Product.ProductId,
+                    ProductName = x.Product.Name,
+                    ImageUrl = x.Product.Image,
+                    Slug = x.Product.Slug,
+                    Price = x.Product.SellPrice != null
+                        ? x.Product.SellPrice.Value.ToString("C0", new CultureInfo("vi-VN"))
+                        : "Liên hệ", // Giá trị mặc định nếu giá bán null
+                    CreatedAt = x.AddedDate ?? DateTime.MinValue // Giá trị mặc định nếu ngày null
+                })
+                .ToList();
+
+            // Trả về view với dữ liệu danh sách yêu thích
+            return View(wishlistItems);
         }
+
         #endregion
     }
 }

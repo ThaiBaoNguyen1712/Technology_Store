@@ -84,7 +84,7 @@
             <div class="row g-3 p-3 bg-white rounded-3 shadow-sm">
                 <!-- Nút Mua ngay -->
                 <div class="col-md-8">
-                    <button type="button" class="btn btn-buy-now text-white w-100 py-3 fw-semibold text-uppercase shadow">
+                    <button type="button" id="ToCheckOutBtn" data-id="@Model.ProductId" class="btn btn-buy-now text-white w-100 py-3 fw-semibold text-uppercase shadow">
                         <i class="fas fa-bolt me-2"></i>
                         Mua ngay
                     </button>
@@ -109,16 +109,20 @@
                 <div class="title-container">
                     <h4 class="text-center">Thông tin sản phẩm</h4>
                 </div>
-                <div class="row pt-3">
-                    <div class="col-12">
-                        <div class="video-container">
-                            <iframe src="https://www.youtube.com/embed/@extractVideoID(@Model.UrlYoutube)"
-                                    frameborder="0"
-                                    allowfullscreen>
-                            </iframe>
+                @if(!string.IsNullOrEmpty(Model.UrlYoutube))
+                {
+                    <div class="row pt-3">
+                        <div class="col-12">
+                            <div class="video-container">
+                                <iframe src="https://www.youtube.com/embed/@extractVideoID(@Model.UrlYoutube)"
+                                        frameborder="0"
+                                        allowfullscreen>
+                                </iframe>
+                            </div>
                         </div>
                     </div>
-                </div>
+                }
+             
                     <div class="description-content">
                         <p class="product-description">@Html.Raw(Model.Description)</p>
                     </div>
@@ -168,20 +172,23 @@
                                     <span class="badge bg-white text-primary border border-primary p-2">Trả góp 0%</span>
                                 </div>
 
-                                <div class="image-container">
-                                    <img src="/Upload/Products/@product.Image" class="product-image" alt="@product.Name">
-                                </div>
-
-                                <div class="card-body p-3">
-                                    <h6 class="card-title mb-2 product-title">@product.Name</h6>
-                                    <div class="d-flex align-items-center gap-2 mb-2">
-                                        <span class="text-danger fw-bold" style="">@product.SellPrice?.ToString("C0", new CultureInfo("vi-VN"))</span>
-                                        @if (product.SellPrice != product.OriginalPrice)
-                                        {
-                                            <span class="text-decoration-line-through text-muted" style="font-size:0.8rem">@product.OriginalPrice?.ToString("C0", new CultureInfo("vi-VN"))</span>
-                                        }
+                                <div class="product-link" data-slug="@product.Slug">
+                                    <div class="image-container">
+                                        <img src="/Upload/Products/@product.Image" class="product-image" alt="@product.Name">
                                     </div>
-                                    <button class="btn btn-outline-danger btn-sm w-100">
+                                    <div class="card-body p-3">
+                                        <h6 class="card-title mb-2 product-title">@product.Name</h6>
+                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                            <span class="text-danger fw-bold">@product.SellPrice?.ToString("C0", new CultureInfo("vi-VN"))</span>
+                                            @if (product.SellPrice != product.OriginalPrice)
+                                            {
+                                                <span class="text-decoration-line-through text-muted" style="font-size:0.8rem">@product.OriginalPrice?.ToString("C0", new CultureInfo("vi-VN"))</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body p-3 pt-0">
+                                    <button class="btn btn-outline-danger btn-sm w-100 addToWishlist" data-id="@product.ProductId">
                                         <i class="far fa-heart"></i> Yêu thích
                                     </button>
                                 </div>
@@ -522,17 +529,36 @@
                 }
             });
         });
-    });
-</script>
-<script>
-    $(document).ready(function () {
-        // Bắt sự kiện click trên mỗi sản phẩm
-        $('.product-card').on('click', function () {
-            // Lấy id sản phẩm từ thuộc tính data-id
-            var productId = $(this).data('id');
-            // Chuyển hướng đến trang chi tiết sản phẩm
-            window.location.href = '/View/' + productId;
-        });
+
+        $('#ToCheckOutBtn').on('click', function () {
+            if (!variantId) {
+                alert("Vui lòng chọn một biến thể trước khi thêm vào giỏ hàng.");
+                return;
+            }
+            var ProductId = $(this).data('id');
+            $.ajax({
+                method: 'POST',
+                url: '@Url.Action("ToCheckout", "User")',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    cartDTos: [
+                        {
+                            VarientProductId: variantId,
+                            ProductId: ProductId,
+                            Quantity: 1
+                        }
+                    ]
+                }),
+                success: function (response) {
+                    if (response.redirectUrl) {
+                        window.location.href = response.redirectUrl; // Điều hướng đến trang CheckoutView
+                    }
+                },
+                error: function (response) {
+                    alert(response.responseJSON?.message || 'Có lỗi xảy ra, vui lòng thử lại.');
+                }
+            });
+        })
     });
 </script>
 <script>
