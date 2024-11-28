@@ -58,16 +58,3 @@ Project/
 ├── Views/             # User interaction frontend pages
 └── wwwroot/           # Static assets (CSS, JS, images)
 ```
-
-## 🚀 Getting Started
-1. Clone the repository
-2. Install dependencies
-3. Configure database connection
-4. Set up payment and authentication API credentials
-5. Run the application
-
-## 🤝 Contributing
-Interested in contributing? Please read our contribution guidelines and submit pull requests.
-
-## 📄 License
-[Add your license information here]
