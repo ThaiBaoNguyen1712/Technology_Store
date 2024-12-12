@@ -4,13 +4,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Tech_Store.Models;
 
-public partial class ApplicationDbContext : DbContext
+public partial class ElectronicsShopContext : DbContext
 {
-    public ApplicationDbContext()
+    public ElectronicsShopContext()
     {
     }
 
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+    public ElectronicsShopContext(DbContextOptions<ElectronicsShopContext> options)
         : base(options)
     {
     }
@@ -28,6 +28,8 @@ public partial class ApplicationDbContext : DbContext
     public virtual DbSet<Comment> Comments { get; set; }
 
     public virtual DbSet<Gallery> Galleries { get; set; }
+
+    public virtual DbSet<Notification> Notifications { get; set; }
 
     public virtual DbSet<Order> Orders { get; set; }
 
@@ -48,6 +50,8 @@ public partial class ApplicationDbContext : DbContext
     public virtual DbSet<Setting> Settings { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
+
+    public virtual DbSet<UserNotification> UserNotifications { get; set; }
 
     public virtual DbSet<VarientProduct> VarientProducts { get; set; }
 
@@ -208,6 +212,21 @@ public partial class ApplicationDbContext : DbContext
                 .HasConstraintName("FK_image_Product");
         });
 
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasKey(e => e.NotificationId).HasName("PK__Notifica__20CF2E326CAE267F");
+
+            entity.Property(e => e.NotificationId).HasColumnName("notificationID");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("createdAt");
+            entity.Property(e => e.Message).HasColumnName("message");
+            entity.Property(e => e.Title)
+                .HasMaxLength(100)
+                .HasColumnName("title");
+        });
+
         modelBuilder.Entity<Order>(entity =>
         {
             entity.HasKey(e => e.OrderId).HasName("PK__Order__46596229037B3931");
@@ -221,6 +240,9 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.DiscountAmount)
                 .HasColumnType("decimal(10, 2)")
                 .HasColumnName("discount_amount");
+            entity.Property(e => e.IsReviewed)
+                .HasDefaultValue(false)
+                .HasColumnName("is_reviewed");
             entity.Property(e => e.Note).HasColumnName("note");
             entity.Property(e => e.OrderDate)
                 .HasDefaultValueSql("(getdate())")
@@ -241,13 +263,14 @@ public partial class ApplicationDbContext : DbContext
                 .HasColumnType("decimal(10, 2)")
                 .HasColumnName("total_amount");
             entity.Property(e => e.UserId).HasColumnName("user_id");
-            entity.Property(e => e.IsReviewed).HasColumnName("is_reviewed");
+
             entity.HasOne(d => d.ShippingAddress).WithMany(p => p.Orders)
                 .HasForeignKey(d => d.ShippingAddressId)
                 .HasConstraintName("FK__Order__shipping___5DCAEF64");
 
             entity.HasOne(d => d.User).WithMany(p => p.Orders)
                 .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Order__user_id__5CD6CB2B");
         });
 
@@ -322,9 +345,6 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.BrandId).HasColumnName("brandId");
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
-            entity.Property(e => e.Slug)
-               .HasMaxLength(255)
-               .HasColumnName("slug");
             entity.Property(e => e.Color)
                 .HasMaxLength(155)
                 .HasColumnName("color");
@@ -356,6 +376,9 @@ public partial class ApplicationDbContext : DbContext
                 .HasMaxLength(100)
                 .IsUnicode(false)
                 .HasColumnName("sku");
+            entity.Property(e => e.Slug)
+                .HasMaxLength(255)
+                .HasColumnName("slug");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
                 .HasColumnName("status");
@@ -489,15 +512,13 @@ public partial class ApplicationDbContext : DbContext
                 .HasMaxLength(50)
                 .HasColumnName("dataType");
             entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.Group)
+                .HasMaxLength(50)
+                .HasColumnName("group");
             entity.Property(e => e.Key)
                 .HasMaxLength(50)
                 .HasColumnName("key");
-            entity.Property(e => e.Group)
-               .HasMaxLength(50)
-               .HasColumnName("group");
-            entity.Property(e => e.Value)
-                .HasMaxLength(255)
-                .HasColumnName("value");
+            entity.Property(e => e.Value).HasColumnName("value");
         });
 
         modelBuilder.Entity<User>(entity =>
@@ -567,6 +588,29 @@ public partial class ApplicationDbContext : DbContext
                         j.IndexerProperty<int>("UserId").HasColumnName("user_id");
                         j.IndexerProperty<int>("RoleId").HasColumnName("role_id");
                     });
+        });
+
+        modelBuilder.Entity<UserNotification>(entity =>
+        {
+            entity.Property(e => e.UserNotificationId).HasColumnName("user_notificationID");
+            entity.Property(e => e.IsRead)
+                .HasDefaultValue(false)
+                .HasColumnName("isRead");
+            entity.Property(e => e.NotificationId).HasColumnName("notificationID");
+            entity.Property(e => e.ReadAt)
+                .HasColumnType("datetime")
+                .HasColumnName("readAt");
+            entity.Property(e => e.UserId).HasColumnName("userID");
+
+            entity.HasOne(d => d.Notification).WithMany(p => p.UserNotifications)
+                .HasForeignKey(d => d.NotificationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_UserNotifications_Notifications");
+
+            entity.HasOne(d => d.User).WithMany(p => p.UserNotifications)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_UserNotifications_User");
         });
 
         modelBuilder.Entity<VarientProduct>(entity =>

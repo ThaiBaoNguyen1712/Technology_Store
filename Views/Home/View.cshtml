@@ -4,6 +4,9 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 @using System.Globalization;
+@using Tech_Store.Helpers
+
+
 
 @functions {
     public string extractVideoID(string url)
@@ -200,7 +203,7 @@
             </div>
         </div>
     </section>
-    <div class="container">
+    <div class="container-md">
         <div class="reviews-section">
             <h3 class="text-center">Đánh giá sản phẩm</h3>
             <div class="rating-summary">
@@ -256,7 +259,9 @@
                                     <div class="review-rating">
                                        (@review.Rating <i class="fas fa-star stars"></i>)
                                     </div>
-                                    <small class="text-muted">@review.ReviewDate.ToString("dd/MM/yyyy")</small>
+                                    <small class="text-muted">
+                                        @((review.ReviewDate as DateTime?)?.TimeAgo() ?? "Không xác định")
+                                    </small>
                                 </div>
                                 <p class="review-text">@review.Comment</p>
                                @*  @if (review.Images?.Any() == true)
@@ -275,58 +280,167 @@
             </div>
         </div>
     </div>
-
-    <style>
-   
-    </style>
-    <div class="container">
-        <div class="comments-section">
-            <div class="title-container">
+    <div class="comments-product-container">
+        <div class="comments-product-section">
+            <div class="comments-product-title">
                 <h3 class="text-center">Bình luận</h3>
             </div>
 
-            <div class="new-comment">
-                @if(ViewBag.User !=null)
+            <div class="comments-product-new-comment">
+                @if (ViewBag.User != null)
                 {
-                    <img src="~/Upload/Avatar/@ViewBag.User.Img" class="rounded-circle" style="width: 50px; height: 50px;" alt="User Avatar">
-
+                    <img src="~/Upload/Avatar/@ViewBag.User.Img"
+                         class="comments-product-new-comment-avatar"
+                         alt="User Avatar">
                 }
                 else
                 {
-                    <img src="~/Upload/Avatar/none.png" class="rounded-circle" style="width: 50px; height: 50px;" alt="User Avatar">
-
+                    <img src="~/Upload/Avatar/none.png"
+                         class="comments-product-new-comment-avatar"
+                         alt="User Avatar">
                 }
-                <textarea class="comment-textarea" placeholder="Viết bình luận của bạn..." rows="1"></textarea>
-                <button class="comment-btn">
+                <input type="text"
+                       class="comments-product-comment-input"
+                       id="CmContent"
+                       placeholder="Viết bình luận của bạn..."
+                       rows="1" />
+                <button id="CreateCm"
+                        data-userId="@ViewBag.User.UserId"
+                        data-product-id="@Model.ProductId"
+                        class="comments-product-send-btn">
                     <i class="fas fa-paper-plane"></i>
                     <span>Gửi</span>
                 </button>
             </div>
 
-            <div class="media">
-                <div class="d-flex align-items-start">
-                    <img src="/api/placeholder/50/50" class="user-avatar" alt="User Avatar">
-                    <div class="media-body">
-                        <div class="comment-header">
-                            <h5>John Doe</h5>
-                            <small>2 days ago</small>
-                        </div>
-                        <p class="comment-content">Great product! Highly recommended.</p>
-                        <div class="reply-container">
-                            <span class="reply-link">
-                                <i class="fas fa-reply"></i>
-                                Trả lời
-                            </span>
-                            <div class="reply-form">
-                                <textarea class="reply-textarea" placeholder="Trả lời bình luận..." rows="1"></textarea>
-                                <button class="reply-btn">
-                                    <i class="fas fa-paper-plane"></i>
-                                    <span>Gửi</span>
-                                </button>
+            <div class="comments-product-list">
+                @if (ViewBag.comments != null)
+                {
+                    @foreach (var parentComment in ViewBag.comments)
+                    {
+                        <div class="comments-product-item">
+                            <img src="/Upload/Avatar/@parentComment.UserAvatar"
+                                 class="comments-product-item-avatar"
+                                 alt="User Avatar">
+
+                            <div class="comments-product-item-content">
+                                <div class="comments-product-item-header">
+                                    <div>
+                                        <h5 class="comments-product-item-username">@parentComment.UserName</h5>
+                                        <small class="comments-product-item-date">
+                                            @((parentComment.CreatedAt as DateTime?)?.TimeAgo() ?? "Không xác định")
+                                        </small>
+                                    </div>
+                                    @if(ViewBag.User.UserId == parentComment.UserId)
+                                    {
+                                        <div class="dropdown">
+                                            <a class="text-muted" href="#" role="button"
+                                               id="dropdownMenuLink-@parentComment.CommentId"
+                                               data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="fas fa-ellipsis-h"></i>
+                                            </a>
+                                            <ul class="dropdown-menu dropdown-menu-end"
+                                                aria-labelledby="dropdownMenuLink-@parentComment.CommentId">
+                                                <li>
+                                                    <button class="dropdown-item edit-comment"
+                                                       data-comment-id="@parentComment.CommentId">
+                                                        <i class="fas fa-edit"></i> Sửa
+                                                    </button>
+                                                </li>
+                                                <li>
+                                                    <button class="dropdown-item delete-comment"
+                                                       data-comment-id="@parentComment.CommentId">
+                                                        <i class="fas fa-trash"></i> Xóa
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    }
+                                </div>
+
+                                <p class="comments-product-item-text">
+                                    @parentComment.Content
+                                </p>
+
+                                <div class="comments-product-reply-container">
+                                    <span class="comments-product-reply-link">
+                                        <i class="fas fa-reply"></i> Trả lời
+                                    </span>
+                                    <div class="comments-product-reply-form">
+                                        <input type="text"
+                                               class="comments-product-reply-input reply-text"
+                                               data-parent-id="@parentComment.CommentId"
+                                               placeholder="Trả lời bình luận..." />
+                                        <button class="comments-product-reply-btn reply-btn"
+                                                data-product-id="@Model.ProductId"
+                                                data-comment-id="@parentComment.CommentId">
+                                            <i class="fas fa-paper-plane"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                @if (parentComment.Replies != null)
+                                {
+                                    <div class="comments-product-replies-container pt-3">
+                                        @foreach (var reply in parentComment.Replies)
+                                        {
+                                            <div class="comments-product-item comments-product-reply">
+                                                <img src="/Upload/Avatar/@reply.UserAvatar"
+                                                     class="comments-product-item-avatar"
+                                                     alt="User Avatar">
+                                                <div class="comments-product-item-content">
+                                                    <div class="comments-product-item-header">
+                                                        <div>
+                                                            <h6 class="comments-product-item-username">@reply.UserName</h6>
+                                                            <span class="text-muted" style="font-size: 0.75rem;">
+                                                                đã trả lời bình luận của
+                                                                <span class="text-primary">@parentComment.UserName</span>
+                                                            </span>
+                                                            <br />
+                                                            <small class="comments-product-item-date">
+                                                                @((reply.CreatedAt as DateTime?)?.TimeAgo() ?? "Không xác định")
+                                                            </small>
+                                                        </div>
+                                                        @if (ViewBag.User.UserId == reply.UserId)
+                                                        {
+                                                            <div class="dropdown">
+                                                                <a class="text-muted" href="#" role="button"
+                                                                   id="dropdownMenuLink-@reply.CommentId"
+                                                                   data-bs-toggle="dropdown" aria-expanded="false">
+                                                                    <i class="fas fa-ellipsis-h"></i>
+                                                                </a>
+                                                                <ul class="dropdown-menu dropdown-menu-end"
+                                                                    aria-labelledby="dropdownMenuLink-@reply.CommentId">
+                                                                    <li>
+                                                                        <button class="dropdown-item edit-comment"
+                                                                           data-comment-id="@reply.CommentId">
+                                                                            <i class="fas fa-edit"></i> Sửa bình luận
+                                                                        </button>
+                                                                    </li>
+                                                                    <li>
+                                                                        <button type="button" class="dropdown-item delete-comment"
+                                                                                data-comment-id="@reply.CommentId">
+                                                                            <i class="fas fa-trash"></i> Xóa bình luận
+                                                                        </button>
+                                                                    </li>
+                                                                </ul>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                    <p class="comments-product-item-text">@reply.Content</p>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
                             </div>
                         </div>
-                    </div>
-                </div>
+                    }
+                }
+                else
+                {
+                    <p class="text-center text-muted">Chưa có bình luận</p>
+                }
             </div>
         </div>
     </div>
@@ -459,13 +573,12 @@
     });
 
     // Toggle reply form
-    document.querySelectorAll('.reply-link').forEach(link => {
+    document.querySelectorAll('.comments-product-reply-link').forEach(link => {
         link.addEventListener('click', (e) => {
-            const replyForm = e.target.closest('.reply-container').querySelector('.reply-form');
+            const replyForm = e.target.closest('.comments-product-reply-container').querySelector('.comments-product-reply-form');
             replyForm.classList.toggle('active');
-
             if (replyForm.classList.contains('active')) {
-                const textarea = replyForm.querySelector('textarea');
+                const textarea = replyForm.querySelector('.comments-product-reply-input');
                 textarea.focus();
             }
         });
@@ -519,6 +632,9 @@
                 },
                 success: function (response) {
                     if (response.success) {
+                        let currentCartNumb = parseInt($('#Cart_numb').text()) || 0; // Nếu không có giá trị, gán mặc định là 0
+                        $('#Cart_numb').text(currentCartNumb + 1);
+
                         alert("Đã thêm vào giỏ hàng");
                     } else {
                         alert("Đã có lỗi " + response.message);
@@ -582,5 +698,182 @@
             const match = url.match(regExp);
             return (match && match[7].length == 11) ? match[7] : false;
         }
+    });
+</script>
+@*Phần comment*@
+<script>
+    $(document).ready(function () {
+        // Gửi bình luận mới
+        $('#CreateCm').on('click', function () {
+            var content = $('#CmContent').val();
+            var productId = $(this).data('product-id');
+
+            $.ajax({
+                method: 'POST',
+                url: '@Url.Action("CreateComment", "User")',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    Content: content,
+                    ProductId: productId,
+                    ParentCommentId: 0
+                }),
+                success: function (response) {
+                    if (response.success) {
+                       
+                        location.reload(); // Tải lại trang
+                    } else {
+                        alert(response.message);
+                    }
+                },
+                error: function () {
+                    alert('Có lỗi xảy ra!');
+                }
+            });
+        });
+
+        // Gửi trả lời bình luận
+        $('.reply-btn').on('click', function () {
+            var content = $(this).siblings('.reply-text').val();
+            var productId = $(this).data('product-id');
+            var parentCommentId = $(this).data('comment-id');
+
+            $.ajax({
+                method: 'POST',
+                url: '@Url.Action("CreateComment", "User")',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    Content: content,
+                    ProductId: productId,
+                    ParentCommentId: parentCommentId
+                }),
+                success: function (response) {
+                    if (response.success) {
+                      
+                        location.reload(); // Tải lại trang
+                    } else {
+                        alert(response.message);
+                    }
+                },
+                error: function () {
+                    alert('Có lỗi xảy ra!');
+                }
+            });
+        });
+
+        //Xóa bình luận
+        $('.delete-comment').on('click', function () {
+            var commentId = $(this).data('comment-id');
+
+            $.ajax({
+                method: 'POST',
+                url: '@Url.Action("DeleteComment","User")',
+                data: {
+                    id: commentId
+                },
+                success: function (response) {
+                    if (response.success) {
+                        location.reload();
+                    }
+                    else {
+                        alert(response.message);
+                    }
+                },
+                error: function () {
+                    alert('Có lỗi xảy ra');
+                }
+            });
+        })
+
+    });
+    $(document).ready(function () {
+        $('.edit-comment').on('click', function (e) {
+            e.preventDefault();
+
+            // Ẩn các form edit khác nếu đang mở
+            $('.comments-product-item-text').each(function () {
+                if ($(this).find('.edit-comment-form').length > 0) {
+                    $(this).html($(this).find('.original-comment-text').text());
+                }
+            });
+
+            // Lấy comment cụ thể
+            var commentId = $(this).data('comment-id');
+            var commentTextElement = $(this).closest('.comments-product-item-header')
+                .siblings('.comments-product-item-text');
+
+            var currentText = commentTextElement.text().trim();
+
+            // Thay thế nội dung comment bằng form edit
+            commentTextElement.html(`
+                <form class="edit-comment-form d-flex align-items-center">
+                    <input type="text"
+                           class="form-control edit-comment-input me-2"
+                           value="${currentText}"
+                           data-original-text="${currentText}"
+                           data-comment-id="${commentId}">
+                    <div class="btn-group">
+                        <button type="submit" class="btn btn-sm btn-success save-edit-comment">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-danger cancel-edit-comment">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </form>
+            `);
+
+            // Focus vào input
+            commentTextElement.find('.edit-comment-input').focus();
+        });
+
+        // Xử lý lưu comment
+        $(document).on('submit', '.edit-comment-form', function (e) {
+            e.preventDefault();
+            var form = $(this);
+            var inputElement = form.find('.edit-comment-input');
+            var commentId = inputElement.data('comment-id');
+            var newText = inputElement.val().trim();
+            var originalText = inputElement.data('original-text');
+
+            // Validate
+            if (newText === '') {
+                alert('Bình luận không thể để trống');
+                return;
+            }
+            $.ajax({
+                url: '@Url.Action("UpdateComment", "User")', // Điều chỉnh endpoint phù hợp
+                type: 'POST',
+                contentType: 'application/json', // Cập nhật contentType đúng
+                data: JSON.stringify({ // Cập nhật cú pháp của JSON.stringify
+                    Id: commentId,
+                    ProductId : @Model.ProductId,
+                    Content: newText
+                }),
+                success: function (response) {
+                    if (response.success) {
+                        // Cập nhật lại nội dung comment
+                        const commentItem = form.closest('.comments-product-item-content');
+                        commentItem.find('.comments-product-item-text').html(`<span class="original-comment-text">${newText}</span>`);
+                        commentItem.find('.edit-comment-container').remove();
+                    } else {
+                        alert('Không thể cập nhật bình luận. ' + (response.message || ''));
+                    }
+                },
+                error: function () {
+                    alert('Có lỗi xảy ra khi cập nhật bình luận');
+                }
+            });
+
+        });
+
+        // Hủy edit
+        $(document).on('click', '.cancel-edit-comment', function () {
+            var form = $(this).closest('.edit-comment-form');
+            var originalText = form.find('.edit-comment-input').data('original-text');
+
+            // Quay lại nội dung gốc
+            form.closest('.comments-product-item-text')
+                .html(`<span class="original-comment-text">${originalText}</span>`);
+        });
     });
 </script>

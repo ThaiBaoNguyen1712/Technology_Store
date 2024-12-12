@@ -4,6 +4,7 @@ using OfficeOpenXml.FormulaParsing.Excel.Functions.Math;
 using System.Diagnostics;
 using System.Drawing.Printing;
 using Tech_Store.Models;
+using Tech_Store.Models.ViewModel;
 using X.PagedList.Extensions;
 
 namespace Tech_Store.Controllers
@@ -89,6 +90,52 @@ namespace Tech_Store.Controllers
                 .AsNoTracking()
                 .ToList();
 
+
+            var comments = _context.Comments
+              .Include(r => r.User) // Bao gồm thông tin người dùng
+              .Where(r => r.ProductId == product.ProductId && r.Status == true) // Lọc sản phẩm và trạng thái
+              .AsNoTracking()
+              .ToList();
+
+            // Nhóm các bình luận cha và con
+            var commentTree = comments
+                .Where(c => c.ParentCommentId == null) // Lấy các bình luận cha
+                .Select(c => new CommentVM
+                {
+                    CommentId = c.CommentId,
+                    ProductId = c.ProductId,
+                    UserId = c.UserId,
+                    Content = c.Content,
+                    ParentCommentId = c.ParentCommentId,
+                    CreatedAt = c.CreatedAt,
+                    UpdatedAt = c.UpdatedAt,
+                    Status = c.Status,
+                    UserName = $"{c.User.LastName} {c.User.FirstName}", // Tên người dùng
+                    UserAvatar = c.User.Img, // Ảnh đại diện
+
+                    // Tìm và chuyển đổi các bình luận con
+                    Replies = comments
+                        .Where(r => r.ParentCommentId == c.CommentId) // Tìm các bình luận con
+                        .OrderBy(r => r.CreatedAt) // Sắp xếp bình luận con theo thời gian
+                        .Select(r => new CommentVM
+                        {
+                            CommentId = r.CommentId,
+                            ProductId = r.ProductId,
+                            UserId = r.UserId,
+                            Content = r.Content,
+                            ParentCommentId = r.ParentCommentId,
+                            CreatedAt = r.CreatedAt,
+                            UpdatedAt = r.UpdatedAt,
+                            Status = r.Status,
+                            UserName = $"{r.User.LastName} {r.User.FirstName}", // Tên người dùng
+                            UserAvatar = r.User.Img // Ảnh đại diện
+                        })
+                        .ToList()
+                })
+                .OrderByDescending(c => c.CreatedAt) // Sắp xếp cha theo thời gian giảm dần
+                .ToList();
+
+
             var review_count = reviews.Count();
             var ratingSummary = reviews
                 .GroupBy(r => r.Rating)
@@ -103,7 +150,7 @@ namespace Tech_Store.Controllers
             ViewBag.reviews = reviews;
             ViewBag.ratingSummary = ratingSummary;
             ViewBag.averageRating = averageRating;
-
+            ViewBag.comments = commentTree;
             ViewBag.related_products = _context.Products
                 .Where(p => p.CategoryId == product.CategoryId && p.ProductId != product.ProductId)
                 .Take(10)
@@ -133,7 +180,6 @@ namespace Tech_Store.Controllers
             ViewBag.Category = cate;
             return View(products);
         }
-
         [HttpGet("Category/FilterCategory")]
         public IActionResult FilterCategory(string eng_title, string? order, string? price, string? brand, int pageNumber = 1)
         {
@@ -210,6 +256,105 @@ namespace Tech_Store.Controllers
   
             // Trả về view
             return View("Category", products);
+        }
+
+        [Route("Search/{key}")]
+        public IActionResult Search(string key, int? page)
+        {
+            int pageSize = 20;
+            int pageNumber = page ?? 1;
+
+            var products = _context.Products.Where(x => x.Name.Contains(key)).OrderByDescending(x => x.ProductId).ToPagedList(pageNumber, pageSize); // Áp dụng phân trang;
+            var cate = _context.Categories.ToList();
+            var list_brand = _context.Brands.ToList();
+            ViewBag.list_brand = list_brand;
+            ViewBag.list_category = cate;
+            ViewBag.Key = key;
+            return View(products);
+        }
+
+        [HttpGet("Search/Filter")]
+        public IActionResult Filter(string key,string? category , string? order, string? price, string? brand, int pageNumber = 1)
+        {
+            int pageSize = 20;
+
+            // Truy vấn cơ bản
+            IQueryable<Models.Product> query = _context.Products
+                .Where(x => x.Name.Contains(key));
+
+            // Sắp xếp theo `order`
+            if (!string.IsNullOrEmpty(order))
+            {
+                switch (order.ToLower())
+                {
+                    case "alphabet":
+                        query = query.OrderBy(x => x.Name);
+                        break;
+                    case "alphabet_desc":
+                        query = query.OrderByDescending(x => x.Name);
+                        break;
+                    case "price":
+                        query = query.OrderBy(x => x.SellPrice);
+                        break;
+                    case "price_desc":
+                        query = query.OrderByDescending(x => x.SellPrice);
+                        break;
+                    case "care":
+                        query = query.OrderBy(x => x.Reviews);
+                        break;
+                    default:
+                        query = query.OrderByDescending(x => x.ProductId); // Sắp xếp mặc định
+                        break;
+                }
+            }
+
+            // Lọc theo `price`
+            if (!string.IsNullOrEmpty(price))
+            {
+                switch (price.ToLower())
+                {
+                    case "max5":
+                        query = query.Where(x => x.SellPrice.HasValue && x.SellPrice.Value > 0 && x.SellPrice.Value < 5000000);
+                        break;
+                    case "max10":
+                        query = query.Where(x => x.SellPrice.HasValue && x.SellPrice.Value >= 5000000 && x.SellPrice.Value < 10000000);
+                        break;
+                    case "max20":
+                        query = query.Where(x => x.SellPrice.HasValue && x.SellPrice.Value >= 10000000 && x.SellPrice.Value < 20000000);
+                        break;
+                    case "max50":
+                        query = query.Where(x => x.SellPrice.HasValue && x.SellPrice.Value >= 20000000 && x.SellPrice.Value < 50000000);
+                        break;
+                    case "more":
+                        query = query.Where(x => x.SellPrice.HasValue && x.SellPrice.Value >= 50000000);
+                        break;
+                }
+            }
+            if (!string.IsNullOrEmpty(category) && int.TryParse(category, out int categoryIdValue))
+            {
+                query = query.Where(x => x.CategoryId == categoryIdValue);
+            }
+            // Lọc theo `brandId`
+            if (!string.IsNullOrEmpty(brand) && int.TryParse(brand, out int brandIdValue))
+            {
+                query = query.Where(x => x.BrandId == brandIdValue);
+            }
+
+            // Phân trang
+            var products = query.ToPagedList(pageNumber, pageSize);
+            ViewBag.Order = order;
+            ViewBag.Price = price;
+            ViewBag.Brand = brand;
+            ViewBag.Category = category;
+            ViewBag.Key = key;
+
+            var cate = _context.Categories.ToList();
+            var list_brand = _context.Brands.ToList();
+            ViewBag.list_brand = list_brand;
+            ViewBag.list_category = cate;
+
+            // Trả về view
+            return View("Search", products);
         }
 
     }

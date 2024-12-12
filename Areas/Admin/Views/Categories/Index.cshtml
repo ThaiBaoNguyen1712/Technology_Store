@@ -190,37 +190,57 @@
             var id = $(this).data('id');
             var isVisible = $(this).is(':checked') ? 1 : 0; // 1 cho "Hiện", 0 cho "Ẩn"
 
-            // Hiển thị hộp thoại xác nhận
-            var confirmMessage = isVisible ? "Bạn có chắc chắn muốn hiển thị danh mục này không?" : "Bạn có chắc chắn muốn ẩn danh mục này không?";
-            var confirmed = confirm(confirmMessage);
+            // Hiển thị hộp thoại xác nhận với SweetAlert2
+            var confirmMessage = isVisible
+                ? "Bạn có chắc chắn muốn hiển thị danh mục này không?"
+                : "Bạn có chắc chắn muốn ẩn danh mục này không?";
 
-            if (confirmed) {
-                // Gửi AJAX request để thay đổi trạng thái hiển thị
-                $.ajax({
-                    method: 'POST', // Sử dụng POST hoặc PUT tùy theo cách bạn thiết lập API
-                    url: 'Categories/ChangeVisible', // Đường dẫn đến API
-                    data: { id: id }, // Gửi ID danh mục để thay đổi trạng thái
-                    success: function (response) {
-                        if (response.success) {
-                            // Có thể hiển thị thông báo thành công hoặc thực hiện hành động nào đó
-                            alert(response.message);
-                        } else {
-                            // Thông báo lỗi nếu không thành công
-                            alert(response.message);
+            Swal.fire({
+                title: 'Xác nhận',
+                text: confirmMessage,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Đồng ý',
+                cancelButtonText: 'Hủy',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Gửi AJAX request để thay đổi trạng thái hiển thị
+                    $.ajax({
+                        method: 'POST',
+                        url: '/Admin/Categories/ChangeVisible', // Đường dẫn đến API
+                        data: { id: id }, // Gửi ID và trạng thái
+                        success: function (response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    title: 'Thành công!',
+                                    text: response.message,
+                                    icon: 'success',
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Lỗi!',
+                                    text: response.message,
+                                    icon: 'error',
+                                });
+                            }
+                        },
+                        error: function (xhr, status, error) {
+                            // Xử lý lỗi nếu có
+                            Swal.fire({
+                                title: 'Đã xảy ra lỗi!',
+                                text: error,
+                                icon: 'error',
+                            });
                         }
-                    },
-                    error: function (xhr, status, error) {
-                        // Xử lý lỗi nếu có
-                        alert('Đã xảy ra lỗi: ' + error);
-                    }
-                });
-            } else {
-                // Nếu người dùng không xác nhận, khôi phục lại trạng thái của checkbox
-                $(this).prop('checked', !isVisible);
-            }
+                    });
+                } else {
+                    // Nếu người dùng không xác nhận, khôi phục lại trạng thái của checkbox
+                    $(this).prop('checked', !isVisible);
+                }
+            });
         });
-
-
 
         // Sự kiện khi modal bị ẩn
         $('#CategoryModal').on('hidden.bs.modal', function () {

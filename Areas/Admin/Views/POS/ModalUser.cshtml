@@ -2,6 +2,7 @@
 <div class="modal fade" id="UserModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" style="min-width:80vw;">
         <form id="addUserForm">
+            @Html.AntiForgeryToken()
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="exampleModalLabel">Thêm Khách hàng</h5>
@@ -20,7 +21,7 @@
                     </ul>
 
                     <!-- Checkbox: Bỏ qua thông tin địa chỉ -->
-                    <div class="form-check mb-3">
+                    <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" id="skipAddress" />
                         <label class="form-check-label" for="skipAddress">
                             Bỏ qua thông tin địa chỉ
@@ -65,7 +66,7 @@
                                 <label class="col-sm-4 col-form-label">Ảnh đại diện:</label>
                                 <div class="col-sm-8">
                                     <div class="preview-container">
-                                        <img src="~/Upload/Avatar/none.jpg" alt="Avatar Preview" id="avatarPreview" class="avatar-preview avatar-img rounded-circle" />
+                                        <img src="~/Upload/Avatar/none.png" alt="Avatar Preview" id="avatarPreview" class="avatar-preview avatar-img rounded-circle" />
                                     </div>
                                     <div class="form-group">
                                         <label for="avatarInput" class="form-label">Chọn ảnh đại diện</label>
@@ -86,44 +87,37 @@
                                 </div>
                             </div>
                             <div class="form-group row mb-3">
-                                <label class="col-sm-4 col-form-label">Tỉnh/Thành:</label>
+                                <label for="citySelect" class="col-sm-4 col-form-label">Tỉnh/Thành:</label>
                                 <div class="col-sm-8">
-                                    <select id="citySelect" class="form-control selectpicker" data-live-search="true" title="Chọn Thành phố" required>
-                                        <!-- Tùy chọn sẽ được thêm vào đây -->
+                                    <select id="citySelect" class="border selectpicker" style="transform: translate(0px, 43px)!important;" data-live-search="true" placeholder="Chọn Thành phố" required>
                                     </select>
                                 </div>
                             </div>
+
                             <div class="form-group row mb-3">
-                                <label class="col-sm-4 col-form-label">Quận/Huyện:</label>
+                                <label for="districtSelect" class="col-sm-4 col-form-label">Quận/Huyện:</label>
                                 <div class="col-sm-8">
-                                    <select id="districtSelect" class="form-control selectpicker" data-live-search="true" title="Chọn Quận/Huyện" required>
+                                    <select id="districtSelect" class="border selectpicker" style="transform: translate(0px, 43px)!important;" data-live-search="true" placeholder="Chọn Quận/Huyện" required>
                                         <!-- Tùy chọn sẽ được thêm vào đây -->
                                     </select>
                                 </div>
                             </div>
+
                             <div class="form-group row mb-3">
-                                <label class="col-sm-4 col-form-label">Phường/Xã:</label>
+                                <label for="wardSelect" class="col-sm-4 col-form-label">Phường/Xã:</label>
                                 <div class="col-sm-8">
-                                    <select id="wardSelect" class="form-control selectpicker" data-live-search="true" title="Chọn Phường/Xã" required>
+                                    <select id="wardSelect" class="border selectpicker" style="transform: translate(0px, 43px)!important;" data-live-search="true" placeholder="Chọn Phường/Xã" required>
                                         <!-- Tùy chọn sẽ được thêm vào đây -->
                                     </select>
                                 </div>
                             </div>
+
 
 
                         </div>
                     </div>
                 </div>
-
-                <div class="loading-container" style="display:none; text-align:center;">
-                    <div class="loadingio-spinner-double-ring-2by998twmg8">
-                        <div class="ldio-yzaezf3dcmj">
-                            <div></div>
-                            <div></div>
-                        </div>
-                    </div>
-                </div>
-
+                
                 <div class="modal-footer">
                     <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Hủy</button>
                     <button type="button" id="update" class="btn btn-success" style="display:none">Lưu thay đổi</button>
@@ -135,12 +129,9 @@
     </div>
 </div>
 
-<!-- jQuery Script -->
-@* jQuery Code *@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
 <script src="~/js/provincevn.js"></script>
-@* <script type="text/javascript">
+<script type="text/javascript">
     $('#avatarInput').on('change', function (e) {
         var reader = new FileReader();
         reader.onload = function (event) {
@@ -226,16 +217,17 @@
             var formData = new FormData(this); // Tạo FormData từ form
             updateAddressValues(formData);
 
-            // Lấy hình ảnh từ input file var imageFileInput = $("input[name='Image']")[0]; // Lấy phần tử input file
+            // Lấy hình ảnh từ input file
             var imageFileInput = document.getElementById('avatarInput');
             if (imageFileInput && imageFileInput.files.length > 0) { // Kiểm tra xem phần tử có tồn tại và có file
                 var imageFile = imageFileInput.files[0]; // Lấy file đầu tiên
                 formData.append('Image', imageFile); // Thêm hình ảnh vào FormData
             }
+
             // Gửi AJAX request
             $.ajax({
                 method: 'POST',
-                url: 'Admin/Users/Create',
+                url: '/Admin/Users/Create',
                 data: formData,
                 processData: false, // Ngăn jQuery tự động xử lý dữ liệu
                 contentType: false, // Ngăn jQuery tự động thiết lập Content-Type
@@ -243,17 +235,37 @@
                     "RequestVerificationToken": token // Thêm token vào header
                 },
                 success: function (response) {
+                    $('.loading-container').hide(); // Ẩn biểu tượng loading
                     $('#UserModal').modal('hide');
-                    $('.loading-container').hide();
-                    location.reload();
+
+                    // Sử dụng SweetAlert2 để hiển thị thông báo thành công
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Thành công',
+                        text: 'Người dùng đã được tạo thành công!',
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        location.reload(); // Reload trang sau khi người dùng bấm "OK"
+                    });
                 },
                 error: function (xhr, status, error) {
-                    $('.loading-container').hide();
-                    alert('Đã xảy ra lỗi: ' + xhr.responseText);
+                    $('.loading-container').hide(); // Ẩn biểu tượng loading
+
+                    // Sử dụng SweetAlert2 để hiển thị thông báo lỗi
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: 'Đã xảy ra lỗi: ' + xhr.responseText,
+                        confirmButtonText: 'OK'
+                    });
                     console.error('Error details:', error);
                 }
             });
         });
 
+    });
+
+
+
+
 </script>
- *@

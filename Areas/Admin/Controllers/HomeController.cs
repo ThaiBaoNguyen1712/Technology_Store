@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Tech_Store.Models;
+using Tech_Store.Services;
 
 namespace Tech_Store.Areas.Admin.Controllers
 {
@@ -10,8 +11,11 @@ namespace Tech_Store.Areas.Admin.Controllers
     [Authorize(Roles = "Admin")]
     public class HomeController : BaseAdminController
 	{
-        public HomeController(ApplicationDbContext context) : base(context)
+        private readonly SitemapService _sitemapService;
+
+        public HomeController(ApplicationDbContext context, SitemapService sitemapService) : base(context)
         {
+            _sitemapService = sitemapService;
         }
 
         [Route("")]
@@ -53,7 +57,7 @@ namespace Tech_Store.Areas.Admin.Controllers
             var hotSaleProducts = _context.Products
                 .Include(p=>p.OrderItems)
                  .Where(x => x.Visible == true)
-                 .OrderByDescending(x => x.OrderItems.Count)
+                 .OrderByDescending(x => x.OrderItems.Count())
                  .Take(3)
                  .ToList();
 
@@ -65,6 +69,8 @@ namespace Tech_Store.Areas.Admin.Controllers
 			ViewBag.Product_count = products;
             ViewBag.Revenue = revenue;
             ViewBag.hotSaleProducts = hotSaleProducts;
+
+            GenerateSitemap();
 			return View();
 		}
 
@@ -85,6 +91,11 @@ namespace Tech_Store.Areas.Admin.Controllers
 
             return Json(stats);
         }
-
+        //[HttpGet("generate-sitemap")]
+        private async Task GenerateSitemap()
+        {
+            _sitemapService.GenerateSitemap();
+            //return Ok("Sitemap has been generated successfully.");
+        }
     }
 }

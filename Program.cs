@@ -11,6 +11,7 @@ using Tech_Store.Models.DTO.Payment.Client.Momo;
 using Tech_Store.Services.MomoServices;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.Extensions.Options;
+using Tech_Store.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -81,8 +82,9 @@ builder.Services.AddAuthentication(option =>
     facebookOptions.AppSecret = builder.Configuration.GetSection("Facebook:AppSecret").Value;
     facebookOptions.AccessDeniedPath = "/AccessDeniedPathInfo";
 }); ;
-
-
+builder.Services.AddScoped<SitemapService>();
+//Thêm SignalR để xử lý Realtime
+builder.Services.AddSignalR();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -109,6 +111,7 @@ app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapHub<NotificationHub>("/notificationHub");
 // Configure routing
 app.MapControllerRoute(
     name: "default",

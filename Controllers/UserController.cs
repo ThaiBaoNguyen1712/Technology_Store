@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Client;
 using Newtonsoft.Json;
 using NuGet.Protocol;
 using System.Globalization;
@@ -423,7 +424,7 @@ namespace Tech_Store.Controllers
                 ImageUrl = o.OrderItems.FirstOrDefault()?.VarientProduct?.Product?.Image ?? "/default-image.jpg", // Kiểm tra null và thêm ảnh mặc định
                 variantIds = o.OrderItems.Select(x => x.VarientProductId).ToArray(),
                 OrderStatus = o.OrderStatus,
-                Is_Reviewed = (bool)o.Is_Reviewed,
+                Is_Reviewed = (bool)o.IsReviewed,
                 OrderDate = (DateTime)o.OrderDate, // Chỉ lấy ngày (DateOnly)
                 Amount = o.TotalAmount
             }).ToList();
@@ -487,7 +488,7 @@ namespace Tech_Store.Controllers
                 _context.Reviews.Add(review);
             }
             var order = await _context.Orders.FirstOrDefaultAsync(x => x.OrderId == orderId);
-            order.Is_Reviewed = true;
+            order.IsReviewed = true;
             // Lưu thay đổi vào cơ sở dữ liệu
             await _context.SaveChangesAsync();
 
@@ -596,8 +597,8 @@ namespace Tech_Store.Controllers
         public async Task<JsonResult> RemoveItemFromWishlist(int productId)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var wishlist = await _context.Wishlists.FirstOrDefaultAsync(x=>x.UserId == int.Parse(userId) && x.ProductId == productId);
-            if(wishlist == null)
+            var wishlist = await _context.Wishlists.FirstOrDefaultAsync(x => x.UserId == int.Parse(userId) && x.ProductId == productId);
+            if (wishlist == null)
             {
                 return Json(new { success = false, message = "Không tìm thấy sản phẩm trong ds yêu thích" });
             }
@@ -638,6 +639,98 @@ namespace Tech_Store.Controllers
 
             // Trả về view với dữ liệu danh sách yêu thích
             return View(wishlistItems);
+        }
+
+        #endregion
+
+        #region Comment
+        [HttpPost("CreateComment")]
+        public async Task<JsonResult> CreateComment([FromBody] CommentDTo commentDto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return Json(new { success = false, message = "Dữ liệu không hợp lệ" });
+            }
+
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var comment = new Comment
+                {
+                    UserId = int.Parse(userId),
+                    Content = commentDto.Content,
+                    ProductId = commentDto.ProductId,
+                    ParentCommentId = commentDto.ParentCommentId == 0 ? null : commentDto.ParentCommentId,
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now,
+                    Status = true
+                };
+
+                _context.Comments.Add(comment);
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, comment });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi: " + ex.Message });
+            }
+        }
+
+        [HttpPost("UpdateComment")]
+        public async Task<JsonResult> UpdateComment([FromBody] CommentDTo commentDto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return Json(new { success = false, message = "Không nhận được dữ liệu đầu vào" });
+            }
+            try
+            {
+                var comment = await _context.Comments.FirstOrDefaultAsync(x => x.CommentId.Equals(commentDto.Id));
+                if (comment == null)
+                {
+                    return Json(new { success = false, message = "Không tìm thấy bình luận" });
+                }
+                comment.Content = commentDto.Content;
+                comment.UpdatedAt = DateTime.Now;
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, comment });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.ToString() });
+            }
+        }
+
+        [HttpPost("DeleteComment")]
+        public async Task<JsonResult> DeleteComment(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // Lấy bình luận theo ID và kiểm tra quyền sở hữu
+            var comment = await _context.Comments.FirstOrDefaultAsync(x => x.CommentId == id && x.UserId == int.Parse(userId));
+            if (comment == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy bình luận" });
+            }
+
+            // Kiểm tra nếu là bình luận cha
+            if (comment.ParentCommentId == null || comment.ParentCommentId == 0)
+            {
+                // Lấy tất cả bình luận con liên quan
+                var childComments = await _context.Comments.Where(x => x.ParentCommentId == id).ToListAsync();
+
+                // Xóa bình luận con
+                if (childComments.Any())
+                {
+                    _context.Comments.RemoveRange(childComments);
+                }
+            }
+
+            // Xóa bình luận chính
+            _context.Comments.Remove(comment);
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, message = "Đã xóa bình luận thành công" });
         }
 
         #endregion

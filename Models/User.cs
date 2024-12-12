@@ -43,7 +43,14 @@ public partial class User
 
     public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
 
+    public virtual ICollection<UserNotification> UserNotifications { get; set; } = new List<UserNotification>();
+
     public virtual ICollection<Wishlist> Wishlists { get; set; } = new List<Wishlist>();
 
     public virtual ICollection<Role> Roles { get; set; } = new List<Role>();
+
+    internal static object FindFirstValue(string nameIdentifier)
+    {
+        throw new NotImplementedException();
+    }
 }

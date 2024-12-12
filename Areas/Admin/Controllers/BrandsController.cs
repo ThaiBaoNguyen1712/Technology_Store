@@ -65,19 +65,20 @@ namespace Tech_Store.Areas.Admin.Controllers
                 {
                     return NotFound();
                 }
-                // Kiểm tra và xóa ảnh cũ nếu có
-                if (!string.IsNullOrEmpty(brand.Image) && brand.Image != "none.jpg")
-                {
-                    var oldImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Logo", brand.Image);
-                    if (System.IO.File.Exists(oldImagePath))
-                    {
-                        System.IO.File.Delete(oldImagePath);
-                    }
-                }
+            
 
                 // Lưu hình ảnh mới nếu có
                 if (imageFile != null && imageFile.Length > 0)
                 {
+                    // Kiểm tra và xóa ảnh cũ nếu có
+                    if (!string.IsNullOrEmpty(brand.Image) && brand.Image != "none.jpg")
+                    {
+                        var oldImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Logo", brand.Image);
+                        if (System.IO.File.Exists(oldImagePath))
+                        {
+                            System.IO.File.Delete(oldImagePath);
+                        }
+                    }
                     var fileName = $"Brand_{Guid.NewGuid()}.png";
                     var newImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Logo", fileName);
                     Directory.CreateDirectory(Path.GetDirectoryName(newImagePath)!);

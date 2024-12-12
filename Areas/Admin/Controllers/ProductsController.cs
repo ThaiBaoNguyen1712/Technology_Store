@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Net.NetworkInformation;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Tech_Store.Models;
 using Tech_Store.Models.DTO;
@@ -204,6 +205,7 @@ namespace Tech_Store.Areas.Admin.Controllers
 
 
                     await transaction.CommitAsync();
+                    await GenerateProductsJson();
                     return RedirectToAction("Index");
                 }
                 catch (Exception ex)
@@ -265,6 +267,8 @@ namespace Tech_Store.Areas.Admin.Controllers
                 existingProduct.UpdatedAt = DateTime.Now;
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
+
+                await GenerateProductsJson();
                 return RedirectToAction("Index");
             }
             catch (Exception ex)
@@ -273,6 +277,25 @@ namespace Tech_Store.Areas.Admin.Controllers
                 // Consider logging the exception
                 return View("Error", new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
             }
+        }
+
+        [HttpPost("ChangeVisible")]
+        public async Task<JsonResult> ChangeVisible(int productId)
+        {
+            if(productId ==  0)
+            {
+                return Json(new { success = false, message = "Không nhận được mã sản phẩm" });
+            }
+            var product = await _context.Products.FirstOrDefaultAsync(x => x.ProductId.Equals(productId));
+            if(product == null)
+            {
+
+                return Json(new { success = false, message = "Không tìm thấy sản phẩm" });
+            }
+            // Đảo ngược giá trị Visible
+            product.Visible = product.Visible == false ? true : false;
+            await _context.SaveChangesAsync();
+            return Json(new { success = true, message = "Thay đổi thành công", visible = product.Visible });
         }
 
         private async Task UpdateProductImage(Product existingProduct, ProductDTo productDto)
@@ -329,7 +352,6 @@ namespace Tech_Store.Areas.Admin.Controllers
             existingProduct.Weight = updatedProduct.Weight;
             existingProduct.CategoryId = updatedProduct.CategoryId;
             existingProduct.UrlYoutube = updatedProduct.UrlYoutube;
-            existingProduct.Visible = updatedProduct.Visible;
             existingProduct.Sku = updatedProduct.Sku;
             existingProduct.Color = updatedProduct.Color;
             existingProduct.Slug = GenerateSlug(updatedProduct.Name);
@@ -512,6 +534,7 @@ namespace Tech_Store.Areas.Admin.Controllers
             try
             {
                 _context.Products.Remove(product);
+                await GenerateProductsJson();
                 await _context.SaveChangesAsync();
                 return NoContent();
             }
@@ -742,6 +765,30 @@ namespace Tech_Store.Areas.Admin.Controllers
             return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
         }
 
+        private async Task GenerateProductsJson()
+        {
+            var products_list = await _context.Products.Select(x => new
+            {
+                x.ProductId,
+                x.Name,
+                x.Slug,
+                x.Image,
+                x.SellPrice,
+                x.OriginalPrice
+            }).ToListAsync();
+            // Đường dẫn đến thư mục
+            var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "json");
+
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+
+            // Lưu dữ liệu ra file JSON
+            var filePath = Path.Combine(path, "products.json");
+
+            await System.IO.File.WriteAllTextAsync(filePath, JsonSerializer.Serialize(products_list));
+        }
 
     }
 }

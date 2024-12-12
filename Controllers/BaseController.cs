@@ -31,17 +31,13 @@ namespace Tech_Store.Controllers
             var watch_products = _context.Products.Where(x => x.CategoryId == 4).OrderByDescending(x => x.CreatedAt).Take(10).ToList();
             var accessory_products = _context.Products.Where(x => x.CategoryId == 5).OrderByDescending(x => x.CreatedAt).Take(10).ToList();
 
-            //var hot_smartphones = _context.Products.Where(_x => _x.CategoryId == 1).OrderBy(x => x.OrderItems).Take(10).ToList();
-            //var hot_laptop = _context.Products.Where(_x => _x.CategoryId == 2).OrderBy(x => x.OrderItems).Take(10).ToList();
-            //var hot_tablet = _context.Products.Where(_x => _x.CategoryId == 3).OrderBy(x => x.OrderItems).Take(10).ToList();
-            //var hot_watch = _context.Products.Where(_x => _x.CategoryId == 4).OrderBy(x => x.OrderItems).Take(10).ToList();
-            //var hot_accessory = _context.Products.Where(_x => _x.CategoryId == 5).OrderBy(x => x.OrderItems).Take(10).ToList();
-
-            //ViewBag.hot_phone = hot_smartphones;
-            //ViewBag.hot_laptop = hot_laptop;
-            //ViewBag.hot_tablet = hot_tablet;
-            //ViewBag.hot_watch = hot_watch;
-            //ViewBag.hot_accessory = hot_accessory;
+            var cart_items_count = 0;
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId != null)
+            {
+                cart_items_count = _context.CartItems.Where(x=>x.Cart.UserId == int.Parse(userId)).Count();
+            }
+  
 
             ViewBag.Categories = categories;
             ViewBag.phone = smartphone_products;
@@ -49,8 +45,9 @@ namespace Tech_Store.Controllers
             ViewBag.tablet = tablet_products;
             ViewBag.watch = watch_products;
             ViewBag.accessory = accessory_products;
+            ViewBag.cart_numb = cart_items_count;
         }
- 
+
         protected virtual void LoadUser()
         {
             if (!User.Identity.IsAuthenticated)
@@ -72,5 +69,25 @@ namespace Tech_Store.Controllers
 
             ViewBag.User = user;
         }
+        protected virtual void SiteInfor()
+        {
+            var settings = _context.Settings.ToList();
+
+            // Gán giá trị vào ViewBag
+            ViewBag.LogoUrl = settings.FirstOrDefault(s => s.Key == "LogoUrl")?.Value ?? "";
+            ViewBag.NameWebsite = settings.FirstOrDefault(s => s.Key == "NameWebsite")?.Value ?? "";
+            ViewBag.Slogan = settings.FirstOrDefault(s => s.Key == "Slogan")?.Value ?? "";
+            ViewBag.Description = settings.FirstOrDefault(s => s.Key == "Description")?.Value ?? "";
+            ViewBag.FacebookUrl = settings.FirstOrDefault(s => s.Key == "FacebookUrl")?.Value ?? "";
+            ViewBag.InstagramUrl = settings.FirstOrDefault(s => s.Key == "InstagramUrl")?.Value ?? "";
+            ViewBag.TwitterUrl = settings.FirstOrDefault(s => s.Key == "TwitterUrl")?.Value ?? "";
+            ViewBag.YoutubeUrl = settings.FirstOrDefault(s => s.Key == "YoutubeUrl")?.Value ?? "";
+            ViewBag.NameCompany = settings.FirstOrDefault(s => s.Key == "NameCompany")?.Value ?? "";
+            ViewBag.PhoneNumber = settings.FirstOrDefault(s => s.Key == "PhoneNumber")?.Value ?? "";
+            ViewBag.Email = settings.FirstOrDefault(s => s.Key == "Email")?.Value ?? "";
+            ViewBag.Address = settings.FirstOrDefault(s => s.Key == "Address")?.Value ?? "";
+            ViewBag.MoreInfo = settings.FirstOrDefault(s => s.Key == "MoreInfo")?.Value ?? "";
+        }
+
     }
 }

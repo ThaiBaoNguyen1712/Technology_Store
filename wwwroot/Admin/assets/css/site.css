@@ -326,3 +326,24 @@ Phần card Varients Product*/
     letter-spacing: 0.5px;
     margin-bottom: 5px;
 }
+
+#searchSuggestions {
+    position: fixed; /* Change from absolute to fixed */
+    z-index: 9999; /* Increase z-index to ensure it's on top */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+    #searchSuggestions::-webkit-scrollbar {
+        display: none; /* Hide scrollbar for Chrome, Safari and Opera */
+    }
+
+.search-suggestion-item:hover {
+    background-color: #f8f9fa;
+    cursor: pointer;
+}
+
+.search-input:focus {
+    box-shadow: 0 0 0 0.25rem rgba(255, 0, 0, 0.1);
+    border-color: rgba(255, 0, 0, 0.3);
+}

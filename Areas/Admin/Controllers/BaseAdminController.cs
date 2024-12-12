@@ -27,6 +27,7 @@ namespace Tech_Store.Areas.Admin.Controllers
             // Load common data for all actions
             LoadUser();
             LoadLayout();
+            SiteInfor();
         }
 
         protected virtual void LoadUser()
@@ -74,5 +75,25 @@ namespace Tech_Store.Areas.Admin.Controllers
 
 
         }
+        protected virtual void SiteInfor()
+        {
+            var settings = _context.Settings.ToList();
+
+            // Gán giá trị vào ViewBag
+            ViewBag.LogoUrl = settings.FirstOrDefault(s => s.Key == "LogoUrl")?.Value ?? "";
+            ViewBag.NameWebsite = settings.FirstOrDefault(s => s.Key == "NameWebsite")?.Value ?? "";
+            ViewBag.Slogan = settings.FirstOrDefault(s => s.Key == "Slogan")?.Value ?? "";
+            ViewBag.Description = settings.FirstOrDefault(s => s.Key == "Description")?.Value ?? "";
+            ViewBag.FacebookUrl = settings.FirstOrDefault(s => s.Key == "FacebookUrl")?.Value ?? "";
+            ViewBag.InstagramUrl = settings.FirstOrDefault(s => s.Key == "InstagramUrl")?.Value ?? "";
+            ViewBag.TwitterUrl = settings.FirstOrDefault(s => s.Key == "TwitterUrl")?.Value ?? "";
+            ViewBag.YoutubeUrl = settings.FirstOrDefault(s => s.Key == "YoutubeUrl")?.Value ?? "";
+            ViewBag.NameCompany = settings.FirstOrDefault(s => s.Key == "NameCompany")?.Value ?? "";
+            ViewBag.PhoneNumber = settings.FirstOrDefault(s => s.Key == "PhoneNumber")?.Value ?? "";
+            ViewBag.Email = settings.FirstOrDefault(s => s.Key == "Email")?.Value ?? "";
+            ViewBag.Address = settings.FirstOrDefault(s => s.Key == "Address")?.Value ?? "";
+            ViewBag.MoreInfo = settings.FirstOrDefault(s => s.Key == "MoreInfo")?.Value ?? "";
+        }
+
     }
 }

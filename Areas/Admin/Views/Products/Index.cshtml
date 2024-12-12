@@ -36,6 +36,7 @@
                                     <th>Danh Mục</th>
                                     <th>Giá</th>
                                     <th>Số lượng</th>
+                                    <th>Hiển thị</th>
                                     <th>Tình trạng</th>
                                     <th style="width:10%">Action</th>
                                 </tr>
@@ -50,6 +51,7 @@
                                     <th>Danh Mục</th>
                                     <th>Giá</th>
                                     <th>Số lượng</th>
+                                    <th>Hiển thị</th>
                                     <th>Tình trạng</th>
                                     <th>Action</th>
                                 </tr>
@@ -67,6 +69,11 @@
                                             <td>@product.Category?.Name</td>
                                             <td style="white-space:nowrap">@product.SellPrice?.ToString("C0", new CultureInfo("vi-VN"))</td>
                                             <td>@product.Stock</td>
+                                            <td>
+                                                <div class="form-check form-switch d-flex justify-content-center">
+                                                    <input class="form-check-input" type="checkbox" id="flexSwitchCheckChecked" @(product.Visible == true ? "checked" : "") data-id="@product.ProductId">
+                                                </div>
+                                            </td>
                                             <td>
                                                 <span class="badge @(product.Status == "available" ? "bg-success" :
                                                     product.Status == "outstock" ? "bg-danger" :
@@ -186,5 +193,63 @@
             }
         });
     }
+
+    //Thay đổi ẩn/hiện
+    $(document).on('change', '#flexSwitchCheckChecked', function () {
+        // Lấy ID danh mục từ thuộc tính data-id của checkbox
+        var id = $(this).data('id');
+        var isVisible = $(this).is(':checked') ? 1 : 0; // 1 cho "Hiện", 0 cho "Ẩn"
+
+        // Hiển thị hộp thoại xác nhận với SweetAlert2
+        var confirmMessage = isVisible
+            ? "Bạn có chắc chắn muốn hiển thị sản phẩm này không?"
+            : "Bạn có chắc chắn muốn ẩn sản phẩm này không?";
+
+        Swal.fire({
+            title: 'Xác nhận',
+            text: confirmMessage,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Đồng ý',
+            cancelButtonText: 'Hủy',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Gửi AJAX request để thay đổi trạng thái hiển thị
+                $.ajax({
+                    method: 'POST', 
+                    url: '/Admin/Products/ChangeVisible', 
+                    data: { productId: id }, 
+                    success: function (response) {
+                        if (response.success) {
+                            Swal.fire({
+                                title: 'Thành công!',
+                                text: response.message,
+                                icon: 'success',
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Lỗi!',
+                                text: response.message,
+                                icon: 'error',
+                            });
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        // Xử lý lỗi nếu có
+                        Swal.fire({
+                            title: 'Đã xảy ra lỗi!',
+                            text: error,
+                            icon: 'error',
+                        });
+                    }
+                });
+            } else {
+                // Nếu người dùng không xác nhận, khôi phục lại trạng thái của checkbox
+                $(this).prop('checked', !isVisible);
+            }
+        });
+    });
 
 </script>

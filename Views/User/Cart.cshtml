@@ -4,7 +4,11 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 @using System.Globalization
-<div class="container d-flex justify-content-center mt-5">
+<div class="container ms-3 mb-3 mt-3">
+    <h4>Giỏ hàng của tôi</h4>
+</div>
+<div class="container d-flex justify-content-center">
+ 
     <div class="w-100" style="max-width: 800px;">
         @if (Model != null && Model.CartItems != null && Model.CartItems.Any())
         {
@@ -186,6 +190,8 @@
                 data: { itemId: itemId },
                 success: function (response) {
                     if (response.success) {
+                        let currentCartNumb = parseInt($('#Cart_numb').text()) || 0; // Nếu không có giá trị, gán mặc định là 0
+                        $('#Cart_numb').text(currentCartNumb - 1);
                         cartItem.fadeOut(300, function () {
                             $(this).remove();
                             if ($('.cart-item').length === 0) {

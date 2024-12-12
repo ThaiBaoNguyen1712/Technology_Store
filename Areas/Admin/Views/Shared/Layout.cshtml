@@ -43,7 +43,7 @@
     @* Toast JS *@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
+        <script src="~/Admin/assets/js/core/jquery-3.7.1.min.js"></script>
 
     <!-- Bootstrap-select CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta2/dist/css/bootstrap-select.min.css">
@@ -60,7 +60,7 @@
             <div class="sidebar-logo">
                 <div class="logo-header" data-background-color="dark">
                     <a href="/admin" class="logo">
-                        <img src="~/Admin/assets/img/kai~/Admin/logo_light.svg" alt="navbar brand" class="navbar-brand" height="20" />
+                        <img src="@ViewBag.LogoUrl" alt="navbar brand" class="navbar-brand" height="50" />
                     </a>
                     <div class="nav-toggle">
                         <button class="btn btn-toggle toggle-sidebar">
@@ -270,11 +270,8 @@
                             <div class="collapse" id="settings">
                                 <ul class="nav nav-collapse">
                                     <li>
-                                        <a href="/Admin/Settings/General" class="nav-link">
+                                        <a href="/Admin/Settings/Index" class="nav-link">
                                             <span class="sub-item">Cài đặt chung</span>
-                                        </a>
-                                        <a href="/Admin/Settings/Theme" class="nav-link">
-                                            <span class="sub-item">Giao diện</span>
                                         </a>
                                     </li>
                                 </ul>
@@ -322,7 +319,7 @@
                                     </button>
                                 </div>
                                 <input type="text"
-                                       placeholder="Search ..."
+                                       placeholder="Tìm kiếm sản phẩm nhanh..."
                                        class="form-control" />
                             </div>
                         </nav>
@@ -600,12 +597,12 @@
                                     <li>
                                         <div class="dropdown-divider"></div>
 
-                                     <a class="dropdown-item" href="#"><i class="fas fa-user-cog pe-2"></i>Thiết lập tài khoản</a>
+                                     <a class="dropdown-item" href="/Admin/Account"><i class="fas fa-user-cog pe-2"></i>Thiết lập tài khoản</a>
                                     <div class="dropdown-divider"></div>
                                        <a class="dropdown-item" href="/"><i class="fa fa-angle-double-right pe-2" aria-hidden="true"></i>
                                             Đến trang bán hàng</a>
                                      <div class="dropdown-divider"></div>
-                                    <a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt pe-2"></i>Đăng xuất</a>
+                                        <a class="dropdown-item" href="@Url.Action("Logout", "Account",new{area ="Admin"})"><i class="fas fa-sign-out-alt pe-2"></i>Đăng xuất</a>
 
                                     </li>
                     </div>
@@ -710,48 +707,7 @@
     <script src="~/Admin/assets/js/kaiadmin.min.js"></script>
 
     
-    <script>
-        $(document).ready(function () {
-            // Get current URL path
-            var path = window.location.pathname.toLowerCase();
 
-            // Remove all active classes first
-            $('.nav-item').removeClass('active');
-            $('.nav-link').removeClass('active');
-            $('.collapse').removeClass('show');
-
-            // Add active class to nav items based on current path
-            $('.nav-link').each(function () {
-                var href = $(this).attr('href');
-                if (href && path.indexOf(href.toLowerCase()) !== -1) {
-                    // Add active class to current link
-                    $(this).addClass('active');
-
-                    // Add active class to parent nav-item
-                    $(this).closest('.nav-item').addClass('active');
-
-                    // Show parent collapse if exists
-                    var collapse = $(this).closest('.collapse');
-                    if (collapse.length) {
-                        collapse.addClass('show');
-                        collapse.closest('.nav-item').find('[data-bs-toggle="collapse"]').removeClass('collapsed');
-                    }
-                }
-            });
-
-            // Toggle sidebar
-            $('.toggle-sidebar').on('click', function () {
-                $('.sidebar').toggleClass('collapsed');
-            });
-
-            // Highlight parent menu when submenu is active
-            $('.nav-collapse .nav-link.active').each(function () {
-                $(this).closest('.collapse').addClass('show');
-                $(this).closest('.nav-item').addClass('active');
-            });
-        });
-
-    </script>
     <script>
         $("#lineChart").sparkline([102, 109, 120, 99, 110, 105, 115], {
             type: "line",

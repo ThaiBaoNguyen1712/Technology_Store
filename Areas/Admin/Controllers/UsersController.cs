@@ -143,8 +143,6 @@ namespace Tech_Store.Areas.Admin.Controllers
             }
         }
 
-
-
         [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(int id)
         {
