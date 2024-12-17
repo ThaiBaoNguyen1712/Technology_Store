@@ -27,6 +27,7 @@ namespace Tech_Store.Areas.Admin.Controllers
             // Load common data for all actions
             LoadUser();
             LoadLayout();
+            GetUserNotifications();
             SiteInfor();
         }
 
@@ -93,6 +94,29 @@ namespace Tech_Store.Areas.Admin.Controllers
             ViewBag.Email = settings.FirstOrDefault(s => s.Key == "Email")?.Value ?? "";
             ViewBag.Address = settings.FirstOrDefault(s => s.Key == "Address")?.Value ?? "";
             ViewBag.MoreInfo = settings.FirstOrDefault(s => s.Key == "MoreInfo")?.Value ?? "";
+        }
+        protected virtual void GetUserNotifications()
+        {
+            int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var notifications = _context.UserNotifications
+                .Where(un => un.UserId == userId)
+                .Include(un => un.Notification)
+                .OrderByDescending(un => un.Notification.CreatedAt)
+                .Select(un => new
+                {
+                    un.UserId,
+                    un.Notification.Title,
+                    un.Notification.Message,
+                    un.Notification.RedirectUrl,
+                    un.Notification.Type,
+                    un.Notification.CreatedAt,
+                    un.IsRead
+                })
+                .Take(20)
+                .ToList();
+
+            ViewBag.Notifications = notifications;
+            ViewBag.Notification_count = notifications.Where(x=>x.IsRead==false).Count();
         }
 
     }

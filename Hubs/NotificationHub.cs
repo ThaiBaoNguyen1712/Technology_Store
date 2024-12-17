@@ -4,9 +4,10 @@ namespace Tech_Store.Hubs
 {
     public class NotificationHub : Hub
     {
-        public async Task SendNotification(string user, string notification)
+        public async Task SendNotification(string userId, string message)
         {
-            await Clients.All.SendAsync("ReceiveNotification", user, notification);
+            await Clients.User(userId).SendAsync("ReceiveNotification", message);
         }
     }
+
 }

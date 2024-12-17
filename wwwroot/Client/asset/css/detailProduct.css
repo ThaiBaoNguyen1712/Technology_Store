@@ -423,6 +423,107 @@
     margin-top: 20px;
 }
 
+/* Responsive adjustments */
+@media (max-width: 576px) {
+    .comments-product-container {
+        padding: 0 10px;
+    }
+
+    .comments-product-section {
+        padding: 15px;
+    }
+
+    .comments-product-new-comment {
+        padding: 10px;
+        gap: 10px;
+    }
+
+    .comments-product-new-comment-avatar,
+    .comments-product-item-avatar {
+        width: 40px;
+        height: 40px;
+    }
+
+    .comments-product-comment-input {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+
+    .comments-product-send-btn {
+        padding: 8px 12px;
+        min-width: 60px;
+        font-size: 13px;
+    }
+
+    /* Điều chỉnh layout trên mobile */
+    .comments-product-item-header {
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .comments-product-item-header > div:first-child {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+
+    .comments-product-item-username {
+        margin-right: 10px;
+        font-size: 15px;
+    }
+
+    .comments-product-item-date {
+        font-size: 11px;
+    }
+
+    /* Để nút gửi nằm trong cùng khung input */
+    .comments-product-new-comment {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+    }
+
+    .comments-product-new-comment {
+        display: grid;
+        grid-template-columns: 40px 1fr 60px;
+        grid-gap: 10px;
+        align-items: center;
+    }
+
+    .comments-product-comment-input {
+        grid-column: 2;
+        width: 100%;
+    }
+
+    .comments-product-send-btn {
+        grid-column: 3;
+        padding: 8px;
+        justify-self: end;
+    }
+}
+
+/* Điều chỉnh để avatar nằm cạnh tên trên mobile */
+@media (max-width: 576px) {
+    .comments-product-item-header > div:first-child {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .comments-product-item-avatar {
+        display: inline-block;
+        margin-right: 10px;
+        width: 30px;
+        height: 30px;
+    }
+
+    .comments-product-item-header .dropdown {
+        margin-left: auto;
+    }
+}
+
 /* Media Queries */
 @media (max-width: 768px) {
     .gallery-wrapper {

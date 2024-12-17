@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Drawing.Printing;
 using Tech_Store.Models;
 using Tech_Store.Models.ViewModel;
+using Tech_Store.Services.NotificationServices;
 using X.PagedList.Extensions;
 
 namespace Tech_Store.Controllers
@@ -13,13 +14,15 @@ namespace Tech_Store.Controllers
     {
 		private readonly ILogger<HomeController> _logger;
 		private readonly IConfiguration _configuration;
+        private readonly NotificationService _notificationService;
 
-		// Khai báo chỉ cần ILogger và IConfiguration
-		public HomeController(ILogger<HomeController> logger, IConfiguration configuration, ApplicationDbContext context)
+        // Khai báo chỉ cần ILogger và IConfiguration
+        public HomeController(ILogger<HomeController> logger, NotificationService notificationService, IConfiguration configuration, ApplicationDbContext context)
 			: base(context) // Gọi constructor của BaseController
 		{
 			_logger = logger;
 			_configuration = configuration;
+            _notificationService = notificationService;
 		}
 
         public IActionResult Index()

@@ -305,7 +305,7 @@
                        placeholder="Viết bình luận của bạn..."
                        rows="1" />
                 <button id="CreateCm"
-                        data-userId="@ViewBag.User.UserId"
+                        data-userId="@(ViewBag.User != null ? ViewBag.User.UserId : "")"
                         data-product-id="@Model.ProductId"
                         class="comments-product-send-btn">
                     <i class="fas fa-paper-plane"></i>
@@ -331,7 +331,7 @@
                                             @((parentComment.CreatedAt as DateTime?)?.TimeAgo() ?? "Không xác định")
                                         </small>
                                     </div>
-                                    @if(ViewBag.User.UserId == parentComment.UserId)
+                                    @if (ViewBag.User != null && ViewBag.User.UserId == parentComment.UserId)
                                     {
                                         <div class="dropdown">
                                             <a class="text-muted" href="#" role="button"
@@ -372,6 +372,7 @@
                                                data-parent-id="@parentComment.CommentId"
                                                placeholder="Trả lời bình luận..." />
                                         <button class="comments-product-reply-btn reply-btn"
+                                                data-userId="@(ViewBag.User != null ? ViewBag.User.UserId : "")"
                                                 data-product-id="@Model.ProductId"
                                                 data-comment-id="@parentComment.CommentId">
                                             <i class="fas fa-paper-plane"></i>
@@ -401,7 +402,7 @@
                                                                 @((reply.CreatedAt as DateTime?)?.TimeAgo() ?? "Không xác định")
                                                             </small>
                                                         </div>
-                                                        @if (ViewBag.User.UserId == reply.UserId)
+                                                        @if (ViewBag.User != null && ViewBag.User.UserId == parentComment.UserId)
                                                         {
                                                             <div class="dropdown">
                                                                 <a class="text-muted" href="#" role="button"
@@ -708,6 +709,12 @@
             var content = $('#CmContent').val();
             var productId = $(this).data('product-id');
 
+            const userId = $(this).data('userid');
+            if (!userId) {
+                var loginModal = new bootstrap.Modal(document.getElementById('loginRequiredModal'));
+                loginModal.show();
+                return false;
+            }
             $.ajax({
                 method: 'POST',
                 url: '@Url.Action("CreateComment", "User")',
@@ -736,6 +743,13 @@
             var content = $(this).siblings('.reply-text').val();
             var productId = $(this).data('product-id');
             var parentCommentId = $(this).data('comment-id');
+
+            const userId = $(this).data('userid');
+            if (!userId) {
+                var loginModal = new bootstrap.Modal(document.getElementById('loginRequiredModal'));
+                loginModal.show();
+                return false;
+            }
 
             $.ajax({
                 method: 'POST',

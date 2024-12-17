@@ -12,6 +12,7 @@ using Tech_Store.Services.MomoServices;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.Extensions.Options;
 using Tech_Store.Hubs;
+using Tech_Store.Services.NotificationServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -83,6 +84,7 @@ builder.Services.AddAuthentication(option =>
     facebookOptions.AccessDeniedPath = "/AccessDeniedPathInfo";
 }); ;
 builder.Services.AddScoped<SitemapService>();
+builder.Services.AddScoped<NotificationService>();
 //Thêm SignalR để xử lý Realtime
 builder.Services.AddSignalR();
 var app = builder.Build();

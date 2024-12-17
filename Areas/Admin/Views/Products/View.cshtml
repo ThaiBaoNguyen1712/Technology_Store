@@ -41,7 +41,7 @@
                         
                         </h5>
                         <p> @ViewBag.Order_Count Đơn hàng | @ViewBag.Review_Count Đánh giá</p>
-                        <a href="@Url.Action("View", "Home", new { id = Model.ProductId })"
+                        <a href="/View/@Model.Slug"
                            type="button" class="btn btn-outline-primary rounded-pill">
                             <i class="fas fa-globe"></i>
                             Xem trực tiếp
@@ -58,11 +58,11 @@
                         <p>
                             Tổng số bán :
                         </p>
-                        <strong>0</strong>
+                        <strong>@ViewBag.Order_Count</strong>
                         <p>
                             Tổng số tiền bán :
                         </p>
-                        <strong> 0.00</strong>
+                        <strong> @ViewBag.Total_Sell.ToString("C0",new CultureInfo("vi-VN"))</strong>
                     </div>
                 </div>
                 <div class="col-3">

@@ -1,0 +1,73 @@
+﻿
+<style>
+    .custom-modal .modal-header {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .custom-modal .modal-body {
+        background-color: white;
+    }
+
+    .custom-modal .btn-login {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .custom-modal .btn-register {
+        background-color: white;
+        color: #dc3545;
+        border: 1px solid #dc3545;
+    }
+
+    /* Tùy chỉnh kích thước khi màn hình nhỏ hơn 576px (breakpoint của Bootstrap) */
+media (max-width: 576px) {
+    .custom-modal {
+        max-width: 80vw;
+        justify-content:center
+    }
+}
+</style>
+<div class="modal fade custom-modal" id="loginRequiredModal" tabindex="-1" aria-labelledby="loginRequiredModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="loginRequiredModalLabel">Thông Báo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="mb-4">Bạn cần đăng nhập để thực hiện chức năng này.</p>
+                <div class="d-flex justify-content-center gap-3">
+                    <button type="button" class="btn btn-login btn-danger" id="loginBtn">Đăng Nhập</button>
+                    <button type="button" class="btn btn-register" id="registerBtn">Đăng Ký</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        // Hàm hiển thị modal
+        function showLoginRequiredModal() {
+            var loginModal = new bootstrap.Modal(document.getElementById('loginRequiredModal'));
+            loginModal.show();
+        }
+
+        // Sự kiện khi nhấn nút đăng nhập
+        $('#loginBtn').on('click', function () {
+            // Thêm logic chuyển hướng đến trang đăng nhập
+            window.location.href = '/auth/Login'; // Thay đổi URL phù hợp
+        });
+
+        // Sự kiện khi nhấn nút đăng ký
+        $('#registerBtn').on('click', function () {
+            // Thêm logic chuyển hướng đến trang đăng ký
+            window.location.href = '/auth/register'; // Thay đổi URL phù hợp
+        });
+
+        // Ví dụ: Hiển thị modal khi cần thiết
+        // showLoginRequiredModal();
+    });
+</script>

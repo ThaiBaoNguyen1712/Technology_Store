@@ -11,6 +11,7 @@ using Tech_Store.Models;
 using Tech_Store.Models.DTO;
 using Tech_Store.Models.DTO.Authentication;
 using Tech_Store.Models.ViewModel;
+using Tech_Store.Services.NotificationServices;
 
 namespace Tech_Store.Controllers
 {
@@ -18,7 +19,10 @@ namespace Tech_Store.Controllers
     [Route("User")]
     public class UserController : BaseController
     {
-        public UserController(ApplicationDbContext context) : base(context) { }
+        private readonly NotificationService _notificationService;
+        public UserController(ApplicationDbContext context, NotificationService notificationService) : base(context) {
+        _notificationService = notificationService;
+        }
         public IActionResult Index()
         {
             return View();
@@ -668,6 +672,23 @@ namespace Tech_Store.Controllers
 
                 _context.Comments.Add(comment);
                 await _context.SaveChangesAsync();
+
+                // Tạo thông báo cho người dùng (ví dụ admin và người dùng liên quan)
+
+                var product_get = await _context.Products.Select(x => new {x.ProductId,x.Slug,x.Name}).FirstOrDefaultAsync(x=>x.ProductId == commentDto.ProductId);
+                var userIds = new List<string>
+                    {
+                        "1", // Admin có UserId = "1" (kiểu string)
+                        userId // ID của người dùng đang đăng nhập (lấy từ ClaimTypes.NameIdentifier)
+                    };
+
+                await _notificationService.CreateNotificationAsync(
+                    title:"Bình luận mới",
+                    message: $"Bình luận mới được thêm vào sản phẩm {product_get.Name}.",
+                    redirectUrl: $"/View/{product_get.Slug}", // Dẫn tới chi tiết sản phẩm
+                    type:"new comment",
+                    userIds: userIds
+                );
                 return Json(new { success = true, comment });
             }
             catch (Exception ex)

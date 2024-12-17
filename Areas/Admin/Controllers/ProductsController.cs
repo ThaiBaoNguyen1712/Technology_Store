@@ -63,7 +63,8 @@ namespace Tech_Store.Areas.Admin.Controllers
                 FirstOrDefaultAsync(x => x.ProductId == id);
             var review = await _context.Reviews.Where(x=>x.ProductId == id).ToListAsync();
             var order = await _context.OrderItems.Where(x => x.ProductId == id).ToListAsync();
-
+            var total_sell = order.Sum(x => x.Price);
+            ViewBag.Total_Sell = total_sell;
             ViewBag.Review_Count = review.Count();
             ViewBag.Order_Count = order.Count();
 

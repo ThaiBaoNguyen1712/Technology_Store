@@ -21,6 +21,7 @@ namespace Tech_Store.Controllers
             // Load common data for all actions
             LoadUser();
             LoadProductsAndCategories();
+            SiteInfor();
         }
         protected virtual void LoadProductsAndCategories()
         {
