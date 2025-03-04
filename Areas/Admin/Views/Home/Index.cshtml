@@ -1,6 +1,6 @@
 ﻿
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Trang chủ Admin";
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
 }
 @using System.Globalization;
@@ -503,7 +503,7 @@
             var year = $('#yearFilter').val();
 
             $.ajax({
-                url: '/Admin/GetOrderStats',
+                url: '/Admin/GetOrderStarts',
                 method: 'GET',
                 data: { month: month, year: year },
                 success: function (data) {

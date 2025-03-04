@@ -1,0 +1,77 @@
+﻿<style>
+    .custom-modal .modal-header {
+        background-color: #dc3545;
+        color: white;
+    }
+    .custom-modal .modal-body {
+        background-color: white;
+    }
+    .custom-modal .btn-accept {
+        background-color: #dc3545;
+        color: white;
+    }
+    .custom-modal .btn-later {
+        background-color: white;
+        color: #dc3545;
+        border: 1px solid #dc3545;
+    }
+    /* Tùy chỉnh kích thước khi màn hình nhỏ hơn 576px (breakpoint của Bootstrap) */
+    media (max-width: 576px) {
+        .custom-modal {
+            max-width: 80vw;
+            justify-content: center;
+        }
+    }
+  </style>
+<!-- Modal thông báo -->
+<div class="modal fade custom-modal" id="infoRequiredModal" tabindex="-1" aria-labelledby="infoRequiredModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="infoRequiredModalLabel">Yêu Cầu Bổ Sung Thông Tin</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="mb-4 text-danger">Tài khoản của bạn hiện thiếu một số thông tin quan trọng. Vui lòng cập nhật để đảm bảo dịch vụ không bị gián đoạn.</p>
+              
+                <div class="d-flex justify-content-center gap-3 mt-4">
+                    <button type="button" class="btn btn-later" id="laterBtn">Để Sau</button>
+                    <button type="button" class="btn btn-accept btn-danger" id="acceptBtn">Được Thôi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        // Kiểm tra xem modal đã hiển thị chưa
+        if (!sessionStorage.getItem('infoModalShown')) {
+            showInfoRequiredModal();
+            sessionStorage.setItem('infoModalShown', 'true'); // Đánh dấu đã hiển thị
+        }
+
+        // Hàm hiển thị modal
+        function showInfoRequiredModal() {
+            var infoModal = new bootstrap.Modal(document.getElementById('infoRequiredModal'));
+            infoModal.show();
+        }
+
+        // Sự kiện khi nhấn nút "Được Thôi"
+        $('#acceptBtn').on('click', function () {
+            window.location.href = '/user/Information'; // Thay đổi URL phù hợp
+        });
+
+        // Sự kiện khi nhấn nút "Để Sau"
+        $('#laterBtn').on('click', function () {
+            var infoModal = bootstrap.Modal.getInstance(document.getElementById('infoRequiredModal'));
+            infoModal.hide();
+        });
+
+        // Hiển thị modal khi nhấn nút demo
+        $('#showModalBtn').on('click', function () {
+            showInfoRequiredModal();
+        });
+    });
+</script>

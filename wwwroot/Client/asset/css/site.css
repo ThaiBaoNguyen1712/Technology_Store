@@ -132,10 +132,30 @@ body {
     position: absolute;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    width: 110%;
+    height: 110%;
     object-fit: contain; /* Giữ tỷ lệ ảnh */
-    padding: 1rem;
+   
+}
+
+.product-image-csl {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 110%;
+    height: 110%;
+    object-fit: contain; /* Giữ tỷ lệ ảnh */
+    padding:1rem
+}
+
+.product-image-csl-hotSale {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 90%;
+    height: 90%;
+    object-fit: contain; /* Giữ tỷ lệ ảnh */
+    padding: 1rem
 }
   
   .software-icon {
@@ -503,3 +523,144 @@ footer{
     box-shadow: 0 0 0 0.25rem rgba(255, 0, 0, 0.1);
     border-color: rgba(255, 0, 0, 0.3);
 }
+
+
+/*PHẦN THÔNG BÁO*/
+
+/* Badge thông báo */
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -8px;
+    background-color: #dc3545;
+    color: white;
+    border-radius: 50%;
+    padding: 0.25rem;
+    font-size: 0.6rem;
+    min-width: 16px;
+    min-height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Dropdown thông báo */
+.notification-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 320px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    display: none;
+    z-index: 1050;
+    max-height: 480px;
+    overflow: hidden;
+}
+
+/* Header dropdown */
+.notification-header {
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Body dropdown */
+.notification-body {
+    max-height: 360px;
+    overflow-y: auto;
+}
+
+/* Footer dropdown */
+.notification-footer {
+    padding: 0.75rem;
+    border-top: 1px solid #eee;
+    background: #f8f9fa;
+}
+
+    .notification-footer a {
+        color: #666;
+        text-decoration: none;
+        font-size: 0.875rem;
+    }
+
+/* Item thông báo */
+.notification-item {
+    display: block;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #eee;
+    text-decoration: none;
+    color: inherit;
+    transition: background-color 0.2s;
+}
+
+    .notification-item:hover {
+        background-color: #f8f9fa;
+        text-decoration: none;
+    }
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* Avatar */
+.notification-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+    .notification-avatar img,
+    .notification-avatar i {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px; /* Điều chỉnh kích thước icon nếu cần */
+    }
+
+/* Nội dung thông báo */
+.notification-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.notification-text {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #333;
+    line-height: 1.4;
+}
+
+.notification-time {
+    display: block;
+    font-size: 0.75rem;
+    color: #888;
+    margin-top: 0.25rem;
+}
+
+/* Scrollbar tùy chỉnh */
+.notification-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.notification-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.notification-body::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+
+    .notification-body::-webkit-scrollbar-thumb:hover {
+        background: #999;
+    }

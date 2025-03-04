@@ -384,17 +384,20 @@
                     PaymentMethod: paymentMethod
                     },
                     success: function (response) {
-                    if (response.vnPayUrl) {
-                        // Chuyển hướng người dùng đến URL VNPay
-                        window.location.href = response.vnPayUrl;
-                    }
-                    else if (response.momoPayUrl) {
-                        // Chuyển hướng người dùng đến URL MoMoPay
-                        window.location.href = response.momoPayUrl;
-                    } else {
-                        // Xử lý các phương thức thanh toán khác hoặc hiển thị thông báo thành công
-                        console.log('Thanh toán thành công', response);
-                    }
+                        if (response.vnPayUrl) {
+                            // Chuyển hướng người dùng đến URL VNPay
+                            window.location.href = response.vnPayUrl;
+                        }
+                        else if (response.momoPayUrl) {
+                            // Chuyển hướng người dùng đến URL MoMoPay
+                            window.location.href = response.momoPayUrl;
+                        } else if (response.success && response.redirectTo) {
+                            window.location.href = response.redirectTo;
+                        }
+
+                        else {
+                            alert("Đã có lỗi khi chuyển hướng")
+                        }
                     },
                     error: function (xhr, status, error) {
                         console.error('Có lỗi xảy ra:', error);

@@ -9,7 +9,7 @@ public partial class VarientProduct
 
     public int? ProductId { get; set; }
 
-    public string Attributes { get; set; } = null!;
+    public string? Attributes { get; set; }
 
     public string Sku { get; set; } = null!;
 
@@ -28,4 +28,6 @@ public partial class VarientProduct
     public virtual ICollection<ProductHistoryDetail> ProductHistoryDetails { get; set; } = new List<ProductHistoryDetail>();
 
     public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
+
+    public virtual ICollection<VariantAttribute> VariantAttributes { get; set; } = new List<VariantAttribute>();
 }

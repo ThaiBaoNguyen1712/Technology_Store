@@ -251,9 +251,16 @@
 </script>
 <script>
     $(document).ready(function () {
+        const notyf = new Notyf({
+            position: {
+                x: 'right', // Căn phải
+                y: 'top'    // Căn trên
+            }
+        });
+
         $('#PayBtn').on('click', function () {
             var cartItems = [];
-
+        
             $('#cartItemsContainer .cart-item').each(function () {
                 var item = $(this);
 
@@ -271,8 +278,12 @@
                         Quantity: quantity
                     });
                 }
-            });
 
+            });
+            if (cartItems.length === 0) {
+                notyf.error("Vui lòng chọn ít nhất 1 sản phẩm trước khi đến thanh toán");
+                return;
+            }
             $.ajax({
                 method: 'POST',
                 url: '@Url.Action("ToCheckout", "User")',
@@ -280,12 +291,20 @@
                 data: JSON.stringify({ cartDTos: cartItems }), // Chuyển đổi mảng thành chuỗi JSON
                 dataType: 'json',
                 success: function (response) {
-                    if (response.redirectUrl) {
-                        window.location.href = response.redirectUrl; // Điều hướng đến trang CheckoutView
+                    $('.loading-container').hide();
+
+                    if (response.success) {
+                        window.location.href = response.redirectUrl; // Chuyển hướng đến trang thanh toán
+                    } else {
+                        notyf.error(response.message); // Hiển thị lỗi từ server
+                        var additionalInfoUserModal = new bootstrap.Modal(document.getElementById('infoRequiredModal'));
+                        additionalInfoUserModal.show();
                     }
                 },
-                error: function (response) {
-                    alert(response.responseJSON?.message || 'Có lỗi xảy ra, vui lòng thử lại.');
+                error: function () {
+                    $('.loading-container').hide();
+                    var loginModal = new bootstrap.Modal(document.getElementById('loginRequiredModal'));
+                    loginModal.show();
                 }
             });
         });

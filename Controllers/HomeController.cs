@@ -77,10 +77,14 @@ namespace Tech_Store.Controllers
         public IActionResult View(string slug)
         {
             var product = _context.Products
-                .Include(x => x.VarientProducts)
-                .Include(x => x.Galleries)
-                .Include(x => x.Reviews)
-                .FirstOrDefault(x => x.Slug.Contains(slug));
+             .Include(x => x.VarientProducts)  
+                 .ThenInclude(vp => vp.VariantAttributes) 
+                     .ThenInclude(a => a.AttributeValue)  
+             .Include(x => x.Galleries) 
+             .Include(x => x.Reviews)  
+             .Include(x => x.Category)  
+             .FirstOrDefault(x => x.Slug.Contains(slug)); 
+
 
             if (product == null)
             {
@@ -147,8 +151,6 @@ namespace Tech_Store.Controllers
 
             var averageRating = reviews.Any() ? reviews.Average(r => r.Rating) : 0;
 
-         
-
             ViewBag.review_count = review_count;
             ViewBag.reviews = reviews;
             ViewBag.ratingSummary = ratingSummary;
@@ -163,6 +165,26 @@ namespace Tech_Store.Controllers
             return View(product);
         }
 
+        //[HttpGet("GetVariants/{productId}")]
+        //public IActionResult GetVariants(int productId)
+        //{
+        //    var variants = (from vp in _context.VarientProducts
+        //                    join va in _context.VariantAttributes on vp.VarientId equals va.ProductVariantId
+        //                    join av in _context.AttributeValues on va.AttributeValueId equals av.AttributeValueId
+        //                    join a in _context.Attributes on av.AttributeId equals a.AttributeId
+        //                    where vp.ProductId == productId
+        //                    select new
+        //                    {
+        //                        AttributeName = a.Name,
+        //                        Value = av.Value,
+        //                        VariantId = vp.VarientId
+        //                    }).ToList();
+
+        //    var groupedVariants = variants.GroupBy(v => v.AttributeName)
+        //                                  .ToDictionary(g => g.Key, g => g.Select(v => new { v.Value, v.VariantId }).Distinct());
+
+        //    return Ok(groupedVariants);
+        //}
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
@@ -178,7 +200,7 @@ namespace Tech_Store.Controllers
 
             var products = _context.Products.Where(x => x.Category.EngTitle.Contains(eng_title)).OrderByDescending(x=>x.ProductId).ToPagedList(pageNumber, pageSize); // Áp dụng phân trang;
             var cate = _context.Categories.FirstOrDefault(x => x.EngTitle.Contains(eng_title));
-            var list_brand = _context.Brands.ToList();
+            var list_brand = _context.Brands.Where(s=>s.CategoryId == cate.CategoryId || s.CategoryId == null).ToList();
             ViewBag.list_brand = list_brand;
             ViewBag.Category = cate;
             return View(products);
@@ -261,13 +283,17 @@ namespace Tech_Store.Controllers
             return View("Category", products);
         }
 
-        [Route("Search/{key}")]
+        [Route("Search/{key?}")]
         public IActionResult Search(string key, int? page)
         {
             int pageSize = 20;
             int pageNumber = page ?? 1;
 
-            var products = _context.Products.Where(x => x.Name.Contains(key)).OrderByDescending(x => x.ProductId).ToPagedList(pageNumber, pageSize); // Áp dụng phân trang;
+            var products = _context.Products
+              .Where(x => string.IsNullOrEmpty(key) || x.Name.Contains(key))  // Kiểm tra nếu key trống thì không lọc
+              .OrderByDescending(x => x.ProductId)
+              .ToPagedList(pageNumber, pageSize); // Áp dụng phân trang
+
             var cate = _context.Categories.ToList();
             var list_brand = _context.Brands.ToList();
             ViewBag.list_brand = list_brand;
@@ -283,7 +309,7 @@ namespace Tech_Store.Controllers
 
             // Truy vấn cơ bản
             IQueryable<Models.Product> query = _context.Products
-                .Where(x => x.Name.Contains(key));
+                .Where(x => string.IsNullOrEmpty(key) || x.Name.Contains(key));  // Kiểm tra nếu key trống thì không lọc;
 
             // Sắp xếp theo `order`
             if (!string.IsNullOrEmpty(order))

@@ -84,7 +84,12 @@ namespace Tech_Store.Areas.Admin.Controllers
                 // Cập nhật từng giá trị cài đặt nếu tồn tại
                 if (settings != null && settings.Any())
                 {
-                    settings.FirstOrDefault(s => s.Key == "LogoUrl")!.Value = setting.LogoUrl ?? "";
+                    var logoSetting = settings.FirstOrDefault(s => s.Key == "LogoUrl");
+                    if (!string.IsNullOrEmpty(setting.LogoUrl))
+                    {
+                        logoSetting!.Value = setting.LogoUrl;
+                    }
+
                     settings.FirstOrDefault(s => s.Key == "NameWebsite")!.Value = setting.NameWebsite ?? "";
                     settings.FirstOrDefault(s => s.Key == "Slogan")!.Value = setting.Slogan ?? "";
                     settings.FirstOrDefault(s => s.Key == "Description")!.Value = setting.Description ?? "";

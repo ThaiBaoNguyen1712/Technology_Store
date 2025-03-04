@@ -67,6 +67,13 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script type="text/javascript">
     $(document).ready(function () {
+        const notyf = new Notyf({
+            position: {
+                x: 'right', // Căn phải
+                y: 'top'    // Căn trên
+            }
+        });
+
         $('.delete-item').on('click', function () {
             var id = $(this).data('id');
             // Hiển thị hộp thoại xác nhận
@@ -79,19 +86,19 @@
                     data: { productId: id },
                     success: function (response) {
                         if (response.success) {
-                            alert(response.message); // Thông báo thành công
+                            notyf.success(response.message); // Thông báo thành công
                             location.reload();
                         } else {
-                            alert(response.message); // Thông báo lỗi
+                            notyf.error(response.message); // Thông báo lỗi
                         }
                     },
                     error: function (response) {
-                        alert('Có lỗi xảy ra, vui lòng thử lại.');
+                        notyf.error('Có lỗi xảy ra, vui lòng thử lại.');
                     }
                 });
             } else {
                 // Nếu người dùng hủy bỏ
-                alert('Đã hủy bỏ hành động xóa sản phẩm.');
+                notyf.error('Đã hủy bỏ hành động xóa sản phẩm.');
             }
         });
     });

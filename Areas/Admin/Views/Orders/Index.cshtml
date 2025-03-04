@@ -4,7 +4,7 @@
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
 }
 @using System.Globalization;
-<div class="Container">
+<div class="Container-fluid">
     <div class="pt-3"></div>
     <div class="tableProduct">
         <div class="col-md-12">
@@ -12,6 +12,81 @@
                 <div class="card-header">
                     <div class="d-flex align-items-center">
                         <h4 class="card-title">DANH SÁCH ĐƠN HÀNG</h4>
+                    </div>
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <!-- Hàng 1: Thông tin cơ bản -->
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold">Mã đơn hàng</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" placeholder="Nhập mã đơn hàng" id="filterOrderId">
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label fw-semibold">Tên khách hàng</label>
+                                    <input type="text" class="form-control" placeholder="Nhập tên khách hàng cần tìm" id="filterCustomerName">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">Trạng thái đơn hàng</label>
+                                    <select class="form-control border selectpicker" data-live-search="true" id="filterOrderStatus">
+                                        <option value="">Tất cả trạng thái</option>
+                                        <option value="Pending">Đang chờ</option>
+                                        <option value="Confirmed">Đã xác nhận</option>
+                                        <option value="Shipping">Đang giao hàng</option>
+                                        <option value="Delivered">Đã giao hàng</option>
+                                        <option value="Completed">Hoàn thành</option>
+                                        <option value="Cancelled">Đã hủy</option>
+                                        <option value="Refunded">Đã hoàn tiền</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">Thanh toán</label>
+                                    <select class="form-control border selectpicker" data-live-search="true" id="filterPaymentStatus">
+                                        <option value="">Tất cả trạng thái</option>
+                                        <option value="Paid">Đã thanh toán</option>
+                                        <option value="Unpaid">Chưa thanh toán</option>
+                                    </select>
+                                </div>
+
+                                <!-- Hàng 2: Thời gian và khoảng giá -->
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">Từ ngày</label>
+                                    <input type="date" class="form-control" id="filterDateFrom">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">Đến ngày</label>
+                                    <input type="date" class="form-control" id="filterDateTo">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">Khoảng giá trị đơn hàng</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" placeholder="Từ" id="filterAmountFrom">
+                                        <span class="input-group-text">-</span>
+                                        <input type="number" class="form-control" placeholder="Đến" id="filterAmountTo">
+                                    </div>
+                                </div>
+
+                                <!-- Hàng 3: Số điện thoại -->
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">Số điện thoại</label>
+                                    <input type="text" class="form-control" placeholder="Nhập số điện thoại khách hàng" id="filterPhone">
+                                </div>
+
+                                <!-- Nút tìm kiếm và reset -->
+                                <div class="col-12 mt-4">
+                                    <div class="d-flex gap-2 justify-content-end">
+                                        <button type="button" class="btn btn-light px-4" id="btnReset">
+                                            <i class="fas fa-redo me-1"></i> Đặt lại
+                                        </button>
+                                        <button type="button" class="btn btn-primary px-4" id="btnSearch">
+                                            <i class="fas fa-search me-1"></i> Tìm kiếm
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body">
@@ -24,6 +99,7 @@
                                     <th>Thông Tin Khách Hàng</th>
                                     <th>Sản Phẩm</th>
                                     <th>Tổng Số Tiền</th>
+                                    <th>Thanh toán</th>
                                     <th>Trạng Thái Đơn Hàng</th>
                                     <th>Chuyển TT Đơn Hàng</th>
                                     <th style="width:10%">Hành động</th>
@@ -36,12 +112,13 @@
                                     <th>Thông Tin Khách Hàng</th>
                                     <th>Sản Phẩm</th>
                                     <th>Tổng Số Tiền</th>
+                                    <th>Thanh toán</th>
                                     <th>Trạng Thái Đơn Hàng</th>
                                     <th>Chuyển TT Đơn Hàng</th>
                                     <th style="width:10%">Hành động</th>
                                 </tr>
                             </tfoot>
-                            <tbody>
+                            <tbody id="orderList">
                                 @if (Model != null)
                                 {
                                     @foreach (var order in Model)
@@ -58,6 +135,17 @@
 
                                             <td>
                                                 <p style="white-space:nowrap">@order.TotalAmount.ToString("C0", new CultureInfo("vi-VN"))</p>
+                                            </td>
+                                            <td>
+                                                @{
+                                                    var paymentStatus = string.Join(", ", order.Payments.Select(s => s.Status));
+                                                    var statusText = paymentStatus == "Unpaid" ? "Chưa thanh toán" : "Đã thanh toán";
+                                                    var statusClass = paymentStatus == "Unpaid" ? "badge-danger" : "badge-success";
+                                                }
+
+                                                <span class="badge @statusClass">@statusText</span>
+
+
                                             </td>
                                             <td class="text-center">
                                                 <span class="badge
@@ -86,7 +174,7 @@
                                                     <option value="Delivered" @(order.OrderStatus == "Delivered" ? "selected" : "")>Đã giao hàng</option>
                                                     <option value="Completed" @(order.OrderStatus == "Completed" ? "selected" : "")>Hoàn thành</option>
                                                     <option value="Cancelled" @(order.OrderStatus == "Cancelled" ? "selected" : "")>Đã hủy</option>
-                                                    <option value="Refunded" @(order.OrderStatus == "Refunded" ? "selected" : "")>Đã hủy</option>
+                                                    <option value="Refunded" @(order.OrderStatus == "Refunded" ? "selected" : "")>Đã Hoàn tiền</option>
 
                                                 </select>
                                             </td>
@@ -131,6 +219,120 @@
 <script src="~/Admin/assets/js/core/jquery-3.7.1.min.js"></script>
 <script>
     $(document).ready(function () {
+
+        $('#btnSearch').on('click', function () {
+            var filterData = {
+                orderId: $('#filterOrderId').val(),
+                nameCustomer: $('#filterCustomerName').val(),
+                status: $('#filterOrderStatus').val(),
+                dateFrom: $('#filterDateFrom').val(),
+                dateTo: $('#filterDateTo').val(),
+                phoneNumber: $('#filterPhone').val(),
+                paymentStatus: $('#filterPaymentStatus').val(),
+                amountFrom: $('#filterAmountFrom').val(),
+                amountTo: $('#filterAmountTo').val()
+            };
+
+            $.ajax({
+                url: '/Admin/Orders/Filter',
+                type: 'POST',
+                data: filterData,
+                success: function (response) {
+
+                    var tbody = $("#orderList");
+                    tbody.empty(); // Xóa dữ liệu cũ
+
+                    if (!response || response.length === 0) {
+                        tbody.append(`<tr><td class="text-center" colspan="9"><span>Không có đơn hàng phù hợp</span></td></tr>`);
+                        return;
+                    }
+
+                    var orderStatusMap = {
+                        "Pending": { class: "badge-primary", text: "Đang chờ" },
+                        "Confirmed": { class: "badge-info", text: "Đã xác nhận" },
+                        "Shipping": { class: "badge-warning", text: "Đang giao hàng" },
+                        "Delivered": { class: "badge-success", text: "Đã giao hàng" },
+                        "Completed": { class: "badge-success", text: "Hoàn thành" },
+                        "Cancelled": { class: "badge-danger", text: "Đã hủy" },
+                        "Refunded": { class: "badge-secondary", text: "Đã hoàn tiền" }
+                    };
+
+                    response.forEach(order => {
+                        var status = orderStatusMap[order.orderStatus] || { class: "badge-dark", text: "Không xác định" };
+
+                        var selectOptions = Object.keys(orderStatusMap).map(statusKey => {
+                            var selected = order.status === statusKey ? "selected" : "";
+                            return `<option value="${statusKey}" ${selected}>${orderStatusMap[statusKey].text}</option>`;
+                        }).join("");
+
+                        var row = `
+                        <tr>
+                            <td>${order.orderId}</td>
+                            <td>${order.orderDate}</td>
+                            <td>
+                                <p style="white-space:nowrap">${order.nameCustomer}</p>
+                                <p>${order.phoneNumber}</p>
+                            </td>
+                            <td>${order.listProducts}</td>
+                            <td><p style="white-space:nowrap">${order.totalAmount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</p></td>
+                                <td>
+                                    <span class="badge ${order.paymentStatus === 'Paid' ? 'badge-success' : 'badge-danger'}">
+                                        ${order.paymentStatus === 'Paid' ? 'Đã thanh toán' : 'Chưa thanh toán'}
+                                    </span>
+                                </td>
+
+                            <td class="text-center">
+                                <span class="badge ${status.class}">${status.text}</span>
+                            </td>
+                             <td>
+                                <select class="form-control border selectpicker changeStatus" data-id="${order.orderId}" data-current-status="${order.orderStatus}" data-live-search="true">
+                                        <option value="Pending" ${order.orderStatus === "Pending" ? "selected" : ""}>Đang chờ</option>
+                                        <option value="Confirmed" ${order.orderStatus === "Confirmed" ? "selected" : ""}>Đã xác nhận</option>
+                                        <option value="Shipping" ${order.orderStatus === "Shipping" ? "selected" : ""}>Đang giao hàng</option>
+                                        <option value="Delivered" ${order.orderStatus === "Delivered" ? "selected" : ""}>Đã giao hàng</option>
+                                        <option value="Completed" ${order.orderStatus === "Completed" ? "selected" : ""}>Hoàn thành</option>
+                                        <option value="Cancelled" ${order.orderStatus === "Cancelled" ? "selected" : ""}>Đã hủy</option>
+                                        <option value="Refunded" ${order.orderStatus === "Refunded" ? "selected" : ""}>Đã Hoàn tiền</option>
+                                </select>
+                            </td>
+                            <td>
+                                <div class="form-button-action">
+                                    <a data-bs-toggle="tooltip" href="/Admin/Orders/View/${order.orderId}" class="btn btn-link btn-primary btn-lg" title="Chi Tiết Hóa Đơn">
+                                        <i class="fa fa-eye"></i>
+                                    </a>
+                                    <button type="button" data-bs-toggle="tooltip" title="Xuất Hóa Đơn PDF" class="btn btn-link btn-success print-pdf" data-id="${order.orderId}">
+                                        <i class="fa fa-download"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+
+                        tbody.append(row);
+                    });
+
+                    // Làm mới selectpicker để Bootstrap cập nhật giao diện dropdown
+                    $(".selectpicker").selectpicker("refresh");
+                },
+                error: function (error) {
+                    console.error("Lỗi khi tải dữ liệu", error);
+                }
+            });
+        });
+       
+        // Đặt lại các bộ lọc khi nhấn nút "Đặt lại"
+        $('#btnReset').on('click', function () {
+            $('#filterOrderId').val('');
+            $('#filterCustomerName').val('');
+            $('#filterOrderStatus').val('');
+            $('#filterDateFrom').val('');
+            $('#filterDateTo').val('');
+            $('#filterPhone').val('');
+            $('#filterPaymentStatus').val('');
+            $('#filterAmountFrom').val('');
+            $('#filterAmountTo').val('');
+        });
+
         // Hiển thị tooltip khi di chuột qua nút
         $('[data-bs-toggle="tooltip"]').tooltip();
 

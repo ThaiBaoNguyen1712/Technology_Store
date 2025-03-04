@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "Create Products";
+    ViewData["Title"] = "Tạo sản phẩm";
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
 }
 @model Tech_Store.Models.Product
@@ -27,7 +27,8 @@
                 </div>
                 <div class="mb-3">  
                     <label name="Description" class="form-label">Mô tả</label>
-                    <textarea name="Description" class="form-control" id="description"></textarea>
+                    <textarea name="Description" id="description" class="form-control"></textarea>
+
                 </div>
             </div>
         </div>
@@ -96,7 +97,7 @@
                         <input name="CostPrice" type="number" class="form-control" />
                     </div>
                     <div class="col-md-3 mb-3">
-                        <label name="Price" class="form-label">Đơn Giá Gốc (đ)</label>
+                        <label name="Price" class="form-label">Giá Niêm Yết (đ)</label>
                         <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Đặt giá bán cho mỗi đơn vị của sản phẩm này. Phần đơn giá này sẽ không áp dụng nếu bạn đặt biến giá thay đổi">
                             <i class="fas fa-info-circle text-info"></i>
                         </span>
@@ -153,7 +154,7 @@
                         <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Giá bán sẽ được tự động tính toán. Chỉ thay đổi nếu có sai số để tránh việc sai số sau này">
                             <i class="fas fa-info-circle text-info"></i>
                         </span>
-                        <input name="sellPrice" type="number" class="form-control" id="sellPrice" />
+                        <input name="sellPrice" step="0.001" min="0" type="number" class="form-control" id="sellPrice" />
                     </div>
                 </div>
 
@@ -162,136 +163,108 @@
 
         <div class="card mb-4">
             <div class="card-header">
+                <div class="form-group d-flex align-items-center">
+                    <input class="form-check-input me-2 mb-2" name="IsUseVariant" id="useVariant" type="checkbox" value="true" />
+
+                    <input type="hidden" name="IsUseVariant" value="false" />
+
+                    <label class="form-label mb-0" for="useVariant">Sử dụng biến thể cho sản phẩm</label>
+                </div>
                 <h5>
                     <i class="fas fa-layer-group text-info pe-2"></i>
-                    Biển thể sản phẩm
+                    Biến thể sản phẩm
                 </h5>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">Chọn màu sắc</label>
-                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Chọn màu sắc cho sản phẩm này">
-                             <i class="fas fa-info-circle text-info"></i>
-                        </span>
-                        <select name="Color" id="divColor" class="form-control border selectpicker" multiple="multiple" data-live-search="true">
-                            <option value="Silver">Silver</option>
-                            <option value="Black">Black</option>
-                            <option value="Red">Red</option>
-                            <option value="Pink">Pink</option>
-                            <option value="Blue">Blue</option>
-                            <option value="Green">Green</option>
-                            <option value="Yellow">Yellow</option>
-                            <option value="Purple">Purple</option>
-                            <option value="White">White</option>
-                            <option value="Gray">Gray</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Thêm thuộc tính</label>
+                        <label class="form-label">Chọn thuộc tính</label>
                         <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Sử dụng các biến thể khác để phân biệt sản phẩm">
-                             <i class="fas fa-info-circle text-info"></i>
+                            <i class="fas fa-info-circle text-info"></i>
                         </span>
-                        <select name="VarientSelect" id="variantSelect" class="form-control border selectpicker" multiple="multiple" data-live-search="true">
-                            <option value="rom">Bộ nhớ</option>
-                            <option value="material">Chất liệu</option>
-                            <option value="size">Kích thước</option>
-                        </select>
+                        <div class="d-flex">
+                            <select name="VarientSelect" id="variantSelect" class="form-control border selectpicker" multiple="multiple" data-live-search="true" disabled>
+                                @foreach (var item in ViewBag.Attributes)
+                                {
+                                    <option value="@item.Code">@item.Name</option>
+                                }
+                            </select>
+                            <button type="button" class="btn btn-primary ms-2" data-bs-toggle="modal" data-bs-target="#attributeModal">
+                                <i class="fa fa-plus-circle"></i>
+                            </button>
+                        </div>
+                        
                     </div>
-                    <div class="col-md-6 mb-3" id="divrom" style="display:none">
-                        <label class="form-label">Bộ nhớ</label>
-                        <select name="rom" id="romSelect" class="form-control border selectpicker" multiple="multiple" data-live-search="true">
-                            <option value="32GB">32 GB</option>
-                            <option value="64GB">64 GB</option>
-                            <option value="128GB">128 GB</option>
-                            <option value="256GB">256 GB</option>
-                            <option value="512GB">512 GB</option>
-                            <option value="1TB">1 TB</option>
-                            <option value="2TB">2 TB</option>
-                        </select>
+
+                    @foreach (var item in ViewBag.Attributes)
+                    {
+                        <div class="col-md-6 mb-3" id="@item.Code" style="display:none">
+                            <label class="form-label">@item.Name</label>
+                            <select name="AttributeValueIds" id="@($"{item.Code}Select")" class="form-control border selectpicker" multiple="multiple" data-live-search="true">
+                                @foreach (var value in item.AttributeValues)
+                                {
+                                    <option value="@value.Value" data-id="@value.AttributeValueId">@value.Value</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    <div class="table-responsive table-Varient mt-4" style="display:none">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Biến thể thuộc tính</th>
+                                    <th>Giá theo biến thể (đ)</th>
+                                    <th>SKU</th>
+                                    <th>Hàng tồn kho theo biến thể</th>
+                                    <th>Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody id="variantTableBody"></tbody>
+                        </table>
                     </div>
-                    <div class="col-md-6 mb-3" id="divMaterial" style="display:none">
-                        <label class="form-label">Chất liệu</label>
-                        <input name="material" id="materialInput" class="form-control border" />
-                    </div>
-                    <div class="col-md-6 mb-3" id="divSize" style="display:none">
-                        <label class="form-label">Kích thước</label>
-                        <select name="size" id="sizeSelect" class="form-control border selectpicker" multiple="multiple" data-live-search="true">
-                            <option value="S">S</option>
-                            <option value="M">M</option>
-                            <option value="L">L</option>
-                            <option value="XL">XL</option>
-                            <option value="XXL">XXL</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="table-responsive table-Varient mt-4" style="display:none">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>STT</th>
-                                <th>Biến thể thuộc tính</th>
-                                <th>Giá theo biến thể (đ)</th>
-                                <th>SKU
-                                    <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Nếu chưa có mã SKU đầy đủ hãy copy SKU sản phẩm phía trên để bổ sung">
-                                        <i class="fas fa-info-circle text-info"></i>
-                                    </span>
-                                </th>
-                                <th>Hàng tồn kho theo biến thể</th>
-                                <th>Trạng thái</th>
-                            </tr>
-                        </thead>
-                        <tbody id="variantTableBody">
-                        </tbody>
-                    </table>
-                </div>
+
             </div>
         </div>
-        <div class="row mb-4">
-            <!-- Thẻ Hình Đại Diện -->
-            <div class="col-md-3">
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">Hình Ảnh Thu Nhỏ Sản Phẩm</label>
-                           
-                            <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Thêm hình đại diện của sản phẩm trong JPG, PNG or JPEG định dạng trong 2MB">
-                                <i class="fas fa-info-circle text-info"></i>
-                            </span>
-                            <span class="badge badge-info">Ratio 1:1 (500 x 500 px)</span>
-                            <div id="thumbnailPreview" class="mt-2"></div>
-                            <div id="thumbnailDropzone" class="dropzone">
-                                <input type="file" name="image" accept="image/*" style="display: none;">
-                                <i class="fas fa-cloud-upload-alt text-info"></i>
-                                <p class="text-info">Tải ảnh lên</p>
+            <style>
+             
+            </style>
+
+            <div class="row mb-4">
+                <!-- Thẻ Hình Đại Diện -->
+                <div class="col-md-3">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">Hình Ảnh Thu Nhỏ Sản Phẩm</label>
+                                <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip"
+                                      title="Thêm hình đại diện của sản phẩm trong JPG, PNG hoặc JPEG định dạng dưới 2MB">
+                                    <i class="fas fa-info-circle text-info"></i>
+                                </span>
+                                <span class="badge badge-info">Ratio 1:1 (500 x 500 px)</span>
+                                <input type="file" name="Image" id="thumbnailInput" class="filepond" accept="image/*" />
+                                <small class="text-muted text-warning">1 ảnh, kích thước tối đa: 2MB</small>
                             </div>
-                            <small class="text-muted text-warning">1 ảnh, kích thước tối đa: 2MB</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Thẻ Hình Ảnh Bổ Sung -->
+                <div class="col-md-9">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">Tải Lên Hình Ảnh Bổ Sung</label>
+                                <span class="badge badge-info">Ratio 1:1 (500 x 500 px)</span>
+                                <input type="file" name="Galleries" id="additionalInput" class="filepond filepond-multiple" multiple accept="image/*" />
+                                <small class="text-muted text-warning">Tối đa 8 hình ảnh, mỗi hình tối đa 2MB</small>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Thẻ Hình Ảnh Bổ Sung -->
-            <div class="col-md-9">
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">Tải Lên Hình Ảnh Bổ Sung</label>
-                            <span class="badge badge-info">Ratio 1:1 (500 x 500 px)</span>
 
-                            <div id="additionalPreview" class="mt-2"></div>
-                            <div id="additionalDropzone" class="dropzone">
-                                <input type="file" name="Galleries" accept="image/*" multiple style="display: none;">
-                                <i class="fas fa-cloud-upload-alt text-info"></i>
-                                <p class="text-info">Tải ảnh lên</p>
-                            </div>
-                          
-                            <small class="text-muted text-warning">Tối đa 8 hình ảnh, mỗi hình tối đa 2MB</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <div class="card mb-4">
             <div class="card-header">
@@ -317,11 +290,17 @@
         </div>
         </div>
 </form>
+<!--Modal Attribute-->
+@* Cho nằm ngoài form lớn để tránh xung đột *@
+@Html.Partial("AttributeModal")
+
 
 <script src="~/Admin/assets/js/core/jquery-3.7.1.min.js"></script>
 @*
-Ckeditor *@
+Ckeditor CDN*@
 <script src="~/admin/ckeditor/ckeditor.js"></script>
+
+@* Generate SKU and Table Variant *@
 <script>
     // Tạo mã SKU
     function generateSku() {
@@ -338,78 +317,89 @@ Ckeditor *@
         $('.selectpicker').selectpicker();
 
         function updateVariantTable() {
-            var colors = $('#divColor').val() || [];
-            var rom = $('#romSelect').val() || [];
-            var material = $('#materialInput').val().charAt(0).toUpperCase() || '';
-            var sizes = $('#sizeSelect').val() || [];
+            // Get all selected attributes and their values
+            var selectedAttributes = $('#variantSelect').val() || [];
+            var variants = [{}];  // Start with an empty variant
 
-            if (colors.length === 0) return;
+            // For each selected attribute, get its values and create combinations
+            selectedAttributes.forEach(function (attributeCode) {
+                var selectedValues = $(`#${attributeCode}Select`).val() || [];
+                if (selectedValues.length === 0) return;
 
-            var variants = [];
-            colors.forEach(function (color) {
-                var baseVariant = { color: color };
-                if (rom.length > 0) {
-                    rom.forEach(function (r) {
-                        var romVariant = { ...baseVariant, rom: r };
-                        if (sizes.length > 0) {
-                            sizes.forEach(function (size) {
-                                variants.push({ ...romVariant, size: size, material: material });
-                            });
-                        } else {
-                            variants.push({ ...romVariant, material: material });
-                        }
+                // Create new variants array by combining existing variants with new values
+                var newVariants = [];
+                variants.forEach(function (existingVariant) {
+                    selectedValues.forEach(function (value) {
+                        var newVariant = { ...existingVariant };
+                        newVariant[attributeCode] = value;
+                        newVariants.push(newVariant);
                     });
-                } else if (sizes.length > 0) {
-                    sizes.forEach(function (size) {
-                        variants.push({ ...baseVariant, size: size, material: material });
-                    });
-                } else {
-                    variants.push({ ...baseVariant, material: material });
-                }
+                });
+                variants = newVariants;
             });
+
+            // If no valid combinations were created, return
+            if (variants.length === 0 || Object.keys(variants[0]).length === 0) return;
 
             var tableBody = $('#variantTableBody');
             tableBody.empty();
 
             variants.forEach(function (variant, index) {
                 var variantString = Object.entries(variant)
-                    .filter(([key, value]) => value !== '')
                     .map(([key, value]) => `${key}: ${value}`)
                     .join(', ');
+
                 var skuProduct = $('#SkuCode').val() || '';
-                var sku = skuProduct + '-' + Object.values(variant).filter(v => v !== '').join('-');
+                var sku = skuProduct + '-' + Object.values(variant).join('-');
                 var price = $('#sellPrice').val();
+
                 var row = $('<tr>');
                 row.append($('<td>').text(index + 1));
-                row.append($('<td style="display:none">').html('<input type="hidden" name="VarientProducts[' + index + '].Attributes" value="' + variantString + '"/>'));
+                row.append($('<td style="display:none">').html(
+                    '<input type="hidden" name="VarientProducts[' + index + '].Attributes" value="' + variantString + '"/>'
+                ));
                 row.append($('<td>').text(variantString));
-                row.append($('<td>').html('<input type="number" class="form-control" name="VarientProducts[' + index + '].Price" value="'+price+'"/>'));
-                row.append($('<td>').html('<input type="text" class="form-control" name="VarientProducts[' + index + '].Sku" value="' + sku + '"/>'));
-                row.append($('<td>').html('<input type="number" class="form-control" name="VarientProducts[' + index + '].Stock" value="1" required/>'));
-                row.append($('<td style="width:10%">').html('<i class="fas fa-trash delete-btn text-center text-danger" title="Xóa"></i>'));
+                row.append($('<td>').html(
+                    '<input type="number" class="form-control" name="VarientProducts[' + index + '].Price" value="' + price + '"/>'
+                ));
+                row.append($('<td>').html(
+                    '<input type="text" class="form-control" name="VarientProducts[' + index + '].Sku" value="' + sku + '"/>'
+                ));
+                row.append($('<td>').html(
+                    '<input type="number" class="form-control" name="VarientProducts[' + index + '].Stock" value="1" required/>'
+                ));
+     
+                row.append($('<td style="width:10%">').html(
+                    '<i class="fas fa-trash delete-btn text-center text-danger" title="Xóa"></i>'
+                ));
 
                 tableBody.append(row);
+                console.log(variantString)
             });
 
             $('.table-Varient').show();
+  
             updateRowNumbers();
         }
 
-
-        $('#divColor, #romSelect, #materialInput, #sizeSelect').on('change', updateVariantTable);
-
-        $('#variantSelect').on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
+        // Handle attribute selection changes
+        $('#variantSelect').on('changed.bs.select', function () {
             var selectedOptions = $(this).val() || [];
-            $('#divrom, #divMaterial, #divSize').hide();
-            if (selectedOptions.includes('rom')) {
-                $('#divrom').show();
-            }
-            if (selectedOptions.includes('material')) {
-                $('#divMaterial').show();
-            }
-            if (selectedOptions.includes('size')) {
-                $('#divSize').show();
-            }
+
+            // Hide all attribute selection divs first
+            // Changed selector to only target attribute containers
+            $('.col-md-6[id]').not('#variantSelect').hide();
+
+            // Show only the selected ones
+            selectedOptions.forEach(function (attributeCode) {
+                $(`#${attributeCode}`).show();
+            });
+
+            updateVariantTable();
+        });
+
+        // Handle attribute value changes
+        $(document).on('change', '.selectpicker', function () {
             updateVariantTable();
         });
 
@@ -435,11 +425,13 @@ Ckeditor *@
             });
         });
     }
+
     $(document).on('click', '.delete-btn', function () {
         $(this).closest('tr').remove();
         updateRowNumbers();
     });
 </script>
+@* Handle URL youtube *@
 <script>
     $(document).ready(function () {
         // Xử lý URL video YouTube
@@ -463,79 +455,51 @@ Ckeditor *@
 
 
 </script>
+@* Drag & drop Image *@
 <script>
-    function setupDropzone(dropzoneId, inputName, previewId, isSingle = false) {
-        const dropzone = document.getElementById(dropzoneId);
-        const input = dropzone.querySelector('input[type="file"]');
-        const preview = document.getElementById(previewId);
+    // Đăng ký thêm plugin để xử lý file
+    FilePond.registerPlugin(
+        FilePondPluginImagePreview
+    );
 
-        dropzone.addEventListener('click', () => input.click());
-        dropzone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropzone.classList.add('dragover');
-        });
-        dropzone.addEventListener('dragleave', () => {
-            dropzone.classList.remove('dragover');
-        });
-        dropzone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropzone.classList.remove('dragover');
-            handleFiles(e.dataTransfer.files);
-        });
-
-        input.addEventListener('change', () => handleFiles(input.files));
-
-        function handleFiles(files) {
-            if (isSingle) {
-                preview.innerHTML = '';
-                files = [files[0]];
-            }
-            Array.from(files).forEach(file => {
-                if (file.type.startsWith('image/') && file.size <= 2 * 1024 * 1024) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const div = document.createElement('div');
-                        div.className = 'preview-image';
-                        div.innerHTML = `
-                                    <img src="${e.target.result}" alt="Preview">
-                                    <button class="remove-btn">&times;</button>
-                                `;
-                        div.querySelector('.remove-btn').addEventListener('click', () => {
-                            div.remove();
-                            updateInputFiles();
-                        });
-                        preview.appendChild(div);
-                        updateInputFiles();
-                    };
-                    reader.readAsDataURL(file);
-                } else {
-                    alert(`File ${file.name} không hợp lệ. Chỉ chấp nhận hình ảnh dưới 2MB.`);
-                }
-            });
-        }
-
-        function updateInputFiles() {
-            const dataTransfer = new DataTransfer();
-            preview.querySelectorAll('img').forEach(img => {
-                fetch(img.src)
-                    .then(res => res.blob())
-                    .then(blob => {
-                        const file = new File([blob], "image.jpg", { type: "image/jpeg" });
-                        dataTransfer.items.add(file);
-                        input.files = dataTransfer.files;
-                    });
-            });
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        setupDropzone('thumbnailDropzone', 'Image', 'thumbnailPreview', true);
-        setupDropzone('additionalDropzone', 'Galleries', 'additionalPreview');
+    // Thumbnail configuration
+    const thumbnailPond = FilePond.create(thumbnailInput, {
+        allowMultiple: false,
+        maxFileSize: "2MB",
+        acceptedFileTypes: ["image/*"],
+        labelIdle: "Kéo thả hoặc nhấn để chọn ảnh thu nhỏ",
+        imagePreviewHeight: 150,
+        instantUpload: false,
+        // Quan trọng: đặt name trùng với tên property trong DTO
+        name: 'Image',
+        // Không encode file
+        storeAsFile: true
     });
+
+    // Additional images configuration
+    const additionalPond = FilePond.create(additionalInput, {
+        allowMultiple: true,
+        maxFiles: 8,
+        maxFileSize: "2MB",
+        acceptedFileTypes: ["image/*"],
+        labelIdle: "Kéo thả hoặc nhấn để chọn hình ảnh bổ sung",
+        imagePreviewHeight: 150,
+        instantUpload: false,
+        // Quan trọng: đặt name trùng với tên property trong DTO
+        name: 'Galleries',
+        // Không encode file
+        storeAsFile: true
+    });
+
 </script>
+@* CKEditor *@
 <script type="text/javascript">
+    // Khởi tạo CKEditor
     CKEDITOR.replace('description');
+
 </script>
+
+@* Calculate sell price and AJAX Create Product *@
 <script type="text/javascript">
     $(document).ready(function () {
         // Ẩn các trường nhập liệu ban đầu
@@ -588,6 +552,7 @@ Ckeditor *@
         $('#ProductForm').on('submit', function (e) {
             e.preventDefault(); // Ngăn chặn submit form thông thường
 
+            CKEDITOR.instances.description.updateElement(); // Cập nhật lại CKEditor
             $('.loading-container').show(); // Hiển thị loading
 
             var formData = new FormData(this); // Thu thập dữ liệu từ form
@@ -602,7 +567,16 @@ Ckeditor *@
                 },
                 success: function (res) {
                     $('.loading-container').hide(); // Ẩn loading
-                    alert('Thành công!'); // Thông báo thành công
+                    // Hiển thị alert SweetAlert
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Thành công!',
+                        text: 'Sản phẩm đã được thêm thành công.',
+                        confirmButtonText: 'OK'
+                    }).then(function () {
+                        // Sau khi người dùng nhấn OK, chuyển hướng đến trang /Admin/Products
+                        window.location.href = '/Admin/Products';
+                    });
                 },
                 error: function (xhr, error, status) {
                     $('.loading-container').hide(); // Ẩn loading
@@ -612,9 +586,28 @@ Ckeditor *@
             });
         });
 
+
         $(function () {
             $('[data-toggle="tooltip"]').tooltip();
         });
+    });
+</script>
+@* Show & hide I Select Variant *@
+<script>
+    $(document).ready(function () {
+        // Xử lý sự kiện khi click vào checkbox
+        $('#useVariant').on('change', function () {
+            // Kiểm tra trạng thái của checkbox
+            if ($(this).is(':checked')) {
+                // Nếu checkbox được check thì enable select box
+                $('#variantSelect').prop('disabled', false);
+            } else {
+                // Nếu checkbox không được check thì disable select box
+                $('#variantSelect').prop('disabled', true);
+            }
 
+            // Refresh selectpicker để cập nhật giao diện (nếu bạn đang sử dụng bootstrap-select)
+            $('#variantSelect').selectpicker('refresh');
+        });
     });
 </script>

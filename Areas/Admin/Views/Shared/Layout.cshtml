@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <title>Kaiadmin - Bootstrap 5 Admin Dashboard</title>
+    <title>@ViewData["Title"]</title>
     <meta content="width=device-width, initial-scale=1.0, shrink-to-fit=no"
           name="viewport" />
     <link rel="icon"
-          href="~/Admin/assets/img/kai~/Admin/favicon.ico"
+          href="@ViewBag.LogoUrl"
           type="image/x-icon"  asp-append-version="true"/>
 
     <!-- Fonts and icons -->
@@ -38,12 +38,31 @@
     <link rel="stylesheet" href="@Url.Content("~/Admin/assets/css/plugins.min.css")" asp-append-version="true" />
     <link rel="stylesheet" href="@Url.Content("~/Admin/assets/css/kaiadmin.min.css")" asp-append-version="true" />
     <link href="@Url.Content("~/Admin/assets/css/site.css")" rel="stylesheet" asp-append-version="true" />
-    <!-- CSS Just for demo purpose, don't include it in your project -->
-    <link rel="stylesheet" href="@Url.Content("~/Admin/assets/css/demo.css")" asp-append-version="true" />
     @* Toast JS *@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- FilePond CSS -->
+    <link href="https://unpkg.com/filepond/dist/filepond.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css" rel="stylesheet">
+  
+    <!-- FilePond JS -->
+    <script src="https://unpkg.com/filepond/dist/filepond.min.js"></script>
+    <script src="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.js"></script>
+    <script src="https://unpkg.com/filepond-plugin-file-validate-type/dist/filepond-plugin-file-validate-type.js"></script>
+    <script src="https://unpkg.com/filepond-plugin-image-exif-orientation/dist/filepond-plugin-image-exif-orientation.js"></script>
         <script src="~/Admin/assets/js/core/jquery-3.7.1.min.js"></script>
+
+
+    @{
+        var tagifyCss = "https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css";
+        var tagifyJs = "https://cdn.jsdelivr.net/npm/@yaireo/tagify";
+    }
+    <!-- Tagify CSS -->
+    <link rel="stylesheet" href="@tagifyCss">
+    <!-- Tagify JS -->
+    <script src="@tagifyJs"></script>
+
 
     <!-- Bootstrap-select CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta2/dist/css/bootstrap-select.min.css">
@@ -56,9 +75,7 @@
 
     <div class="wrapper">
         <!-- Sidebar -->
-    <style>
-           
-    </style>
+
         <div class="sidebar" data-background-color="dark">
             <div class="sidebar-logo">
                 <div class="logo-header" data-background-color="dark">
@@ -98,7 +115,26 @@
                                 <p>POS - Bán hàng</p>
                             </a>
                         </li>
-
+                        <!-- NOTIFICATION -->
+                       @*  <li class="nav-item">
+                            <a data-bs-toggle="collapse" href="#notification" class="nav-link">
+                                <i class="fas fa-bell"></i>
+                                <p>Thông báo</p>
+                                <span class="caret"></span>
+                            </a>
+                            <div class="collapse" id="notification">
+                                <ul class="nav nav-collapse">
+                                    <li>
+                                        <a href="/Admin/Categories" class="nav-link">
+                                            <span class="sub-item">Tạo thông báo</span>
+                                        </a>
+                                         <a href="/Admin/Categories" class="nav-link">
+                                            <span class="sub-item">Thông báo của tôi</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li> *@
                         <!-- SECTION: Quản lý sản phẩm -->
                         <li class="nav-section">
                             <span class="sidebar-mini-icon">
@@ -328,10 +364,16 @@
                                         <i class="fa fa-search search-icon"></i>
                                     </button>
                                 </div>
-                                <input type="text"
-                                       placeholder="Tìm kiếm sản phẩm nhanh..."
-                                       class="form-control" />
+                                <input type="text" id="searchInput" class="form-control" placeholder="Tìm kiếm sản phẩm nhanh...">
+
+                               
                             </div>
+
+                            <ul class="list-group position-absolute w-100 mt-1 shadow-sm d-none"
+                                id="searchSuggestions"
+                                style="max-height: 300px; overflow-y: auto; scrollbar-width: none;  top: 100%;">
+                                <!-- Suggestions will be dynamically added here -->
+                            </ul>
                         </nav>
 
                         <ul class="navbar-nav topbar-nav ms-md-auto align-items-center">
@@ -356,80 +398,14 @@
                             </li>
                             <li class="nav-item topbar-icon dropdown hidden-caret">
                                 <a class="nav-link dropdown-toggle"
-                                   href="#"
+                                   href="https://dashboard.tawk.to/#/dashboard"
                                    id="messageDropdown"
-                                   role="button"
-                                   data-bs-toggle="dropdown"
                                    aria-haspopup="true"
-                                   aria-expanded="false">
+                                   aria-expanded="false"
+                                   target="_blank">
                                     <i class="fa fa-envelope"></i>
                                 </a>
-                                <ul class="dropdown-menu messages-notif-box animated fadeIn"
-                                    aria-labelledby="messageDropdown">
-                                    <li>
-                                        <div class="dropdown-title d-flex justify-content-between align-items-center">
-                                            Messages
-                                            <a href="#" class="small">Mark all as read</a>
-                                        </div>
-                                    </li>
-                                    <li>
-                                        <div class="message-notif-scroll scrollbar-outer">
-                                            <div class="notif-center">
-                                                <a href="#">
-                                                    <div class="notif-img">
-                                                        <img src="assets/img/jm_denis.jpg"
-                                                             alt="Img Profile" />
-                                                    </div>
-                                                    <div class="notif-content">
-                                                        <span class="subject">Jimmy Denis</span>
-                                                        <span class="block"> How are you ? </span>
-                                                        <span class="time">5 minutes ago</span>
-                                                    </div>
-                                                </a>
-                                                <a href="#">
-                                                    <div class="notif-img">
-                                                        <img src="assets/img/chadengle.jpg"
-                                                             alt="Img Profile" />
-                                                    </div>
-                                                    <div class="notif-content">
-                                                        <span class="subject">Chad</span>
-                                                        <span class="block"> Ok, Thanks ! </span>
-                                                        <span class="time">12 minutes ago</span>
-                                                    </div>
-                                                </a>
-                                                <a href="#">
-                                                    <div class="notif-img">
-                                                        <img src="assets/img/mlane.jpg"
-                                                             alt="Img Profile" />
-                                                    </div>
-                                                    <div class="notif-content">
-                                                        <span class="subject">Jhon Doe</span>
-                                                        <span class="block">
-                                                            Ready for the meeting today...
-                                                        </span>
-                                                        <span class="time">12 minutes ago</span>
-                                                    </div>
-                                                </a>
-                                                <a href="#">
-                                                    <div class="notif-img">
-                                                        <img src="assets/img/talha.jpg"
-                                                             alt="Img Profile" />
-                                                    </div>
-                                                    <div class="notif-content">
-                                                        <span class="subject">Talha</span>
-                                                        <span class="block"> Hi, Apa Kabar ? </span>
-                                                        <span class="time">17 minutes ago</span>
-                                                    </div>
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <li>
-                                        <a class="see-all" href="javascript:void(0);">
-                                            See all messages<i class="fa fa-angle-right"></i>
-                                        </a>
-                                    </li>
-                                </ul>
+                     
                             </li>
                             <li class="nav-item topbar-icon dropdown hidden-caret">
                                 <a class="nav-link dropdown-toggle"
@@ -443,14 +419,14 @@
                                     <span class="notification">@ViewBag.Notification_count</span>
                                 </a>
                                 <ul class="dropdown-menu notif-box animated fadeIn"
-                                    aria-labelledby="notifDropdown">
+                                    aria-labelledby="notifDropdown" style="width:450px">
                                     <li>
                                         <div class="dropdown-title">
                                             Thông báo
                                         </div>
                                         @if (ViewBag.Notifications.Count > 0)
                                         {
-                                            <button class="d-flex text-end btn btn-sm" id="markAllAsRead">Đánh dấu tất cả là đã đọc</button>
+                                            <button class="d-flex text-end btn btn-sm" type="button" id="markAllAsRead">Đánh dấu tất cả là đã đọc</button>
 
                                         }
                                     </li>
@@ -461,7 +437,7 @@
                                                 {
                                                     foreach(var noti in ViewBag.Notifications)
                                                     {
-                                                        <a href="@noti.RedirectUrl">
+                                                        <a href="@noti.RedirectUrl" class="@(noti.IsRead == false ? "bg-light mark-as-read" : "bg-white") " data-id="@noti.UserNotificationId">
                                                             @if (noti.Type == "new register")
                                                             {
                                                                 <div class="notif-icon notif-primary">
@@ -472,17 +448,16 @@
                                                             {
                                                                 <div class="notif-icon notif-success">
                                                                     <i class="fa fa-check-circle"></i>
-                                                                  
                                                                 </div>
                                                             }
-                                                            else if (noti.Type == "low stock")
+                                                            else if (noti.Type == "low stock" || noti.Type =="warning")
                                                             {
                                                                 <div class="notif-icon notif-warning">
                                                                     <i class="fa fa-exclamation-triangle"></i>
                                                                    
                                                                 </div>
                                                             }
-                                                            else if (noti.Type == "error")
+                                                            else if (noti.Type == "error" || noti.Type =="danger")
                                                             {
                                                                 <div class="notif-icon notif-danger">
                                                                     <i class="fa fa-times-circle"></i>
@@ -491,7 +466,7 @@
                                                             }
                                                             else if (noti.Type == "new comment")
                                                             {
-                                                                <div class="notif-icon notif-success">
+                                                                <div class="notif-icon notif-success d-flex align-items-center justify-content-center">
                                                                     <i class="fa fa-comment"></i>
                                                                    
                                                                 </div>
@@ -503,14 +478,14 @@
                                                                     
                                                                 </div>
                                                             }
-                                                            else if (noti.Type == "payment received")
+                                                            else if (noti.Type == "payment received" || noti.Type == "success" )
                                                             {
                                                                 <div class="notif-icon notif-success">
                                                                     <i class="fa fa-credit-card"></i>
                                                                    
                                                                 </div>
                                                             }
-                                                            else if (noti.Type == "product added")
+                                                            else if (noti.Type == "product added" || noti.Type =="info")
                                                             {
                                                                 <div class="notif-icon notif-info">
                                                                     <i class="fa fa-plus"></i>
@@ -521,34 +496,38 @@
                                                             {
                                                                 <div class="notif-icon notif-warning">
                                                                     <i class="fa fa-truck"></i>
-                                                                    <span>Đã gửi lô hàng!</span>
+                                                                 
                                                                 </div>
                                                             }
                                                             else if (noti.Type == "account updated")
                                                             {
                                                                 <div class="notif-icon notif-secondary">
                                                                     <i class="fa fa-user-edit"></i>
-                                                                    <span>Tài khoản được cập nhật!</span>
+                                                                   
                                                                 </div>
                                                             }
                                                             else if (noti.Type == "system update")
                                                             {
                                                                 <div class="notif-icon notif-secondary">
                                                                     <i class="fa fa-wrench"></i>
-                                                                    <span>Hệ thống đã được cập nhật!</span>
+                                                                  
                                                                 </div>
                                                             }
                                                             else
                                                             {
                                                                 <div class="notif-icon notif-secondary">
                                                                     <i class="fa fa-info-circle"></i>
-                                                                    <span>Thông báo khác.</span>
+                                                                   
                                                                 </div>
                                                             }
                                                             <div class="notif-content">
+                                                                <span class="">
+                                                                    <strong>@noti.Title</strong>
+                                                                </span>
+
                                                                  <span class="block">
-                                                                    <small class="text-truncated" style="max-width:200px" title="@noti.Message">
-                                                                        @(noti.Message.Length > 30 ? noti.Message.Substring(0, 30) + "..." : noti.Message)
+                                                                    <small class="text-truncated" style="max-width:400px" title="@noti.Message">
+                                                                        @(noti.Message.Length > 30 ? noti.Message.Substring(0, Math.Min(50, noti.Message.Length)) + "..." : noti.Message)
                                                                     </small>
 
                                                                 </span>
@@ -567,14 +546,14 @@
                                             </div>
                                         </div>
                                     </li>
-                                    @if (ViewBag.Notifications.Count > 0)
+                                 @*    @if (ViewBag.Notifications.Count > 0)
                                         {
                                             <li>
                                                 <a class="see-all" href="javascript:void(0);">
                                                     Xem thêm<i class="fa fa-angle-right"></i>
                                                 </a>
                                             </li>
-                                        }
+                                        } *@
                                 </ul>
                             </li>
                             <li class="nav-item topbar-icon dropdown hidden-caret">
@@ -673,7 +652,7 @@
                                             <div class="u-text">
                                                 <h4>@ViewBag.User.LastName @ViewBag.User.FirstName</h4>
                                                 <p class="text-muted">@ViewBag.User.Email</p>
-                                                <a href="profile.html"
+                                                <a href="/Admin/Account"
                                                    class="btn btn-xs btn-secondary btn-sm">Xem thông tin</a>
                                             </div>
                                         </div>
@@ -702,8 +681,6 @@
                 @Html.Partial("ToastLive")
         </div>
  
-
-        @* <div class="loading-container d-flex justify-content-center align-items-center position-fixed top-0 start-0 w-100 h-100 d-none" style=" background-color: rgba(255, 255, 255, 0.8); "> *@
         <div class="loading-container">
             <span class="loader"></span>
         </div>
@@ -720,38 +697,51 @@
                     <div class="d-flex justify-content-center justify-content-lg-end">
                         <!-- List Dot -->
                         <ul class="list-inline list-footer-icon justify-content-center justify-content-lg-start mb-0">
-                            <li class="list-inline-item pe-2">
-                                <a class="fw-bold" href="https://santhuongmai.citgroup.vn/admin/business-settings/web-config">
+                            <li class="list-inline-item pe-2 d-none d-lg-inline-block">
+                                <a class="fw-bold" href="/Admin/Settings">
                                     <i class="fas fa-cog"></i>
                                     Thiết lập website
                                 </a>
                             </li>
 
-                            <li class="list-inline-item pe-2">
-                                <a class="fw-bold" href="https://santhuongmai.citgroup.vn/admin/profile/update/1">
+                            <li class="list-inline-item pe-2 d-none d-lg-inline-block">
+                                <a class="fw-bold" href="/admin/Account">
                                     <i class="fas fa-user"></i>
                                     Hồ sơ
                                 </a>
                             </li>
 
-                            <li class="list-inline-item pe-2">
-                                <a class="fw-bold" href="https://santhuongmai.citgroup.vn/admin/dashboard">
+                            <li class="list-inline-item pe-2 d-none d-lg-inline-block">
+                                <a class="fw-bold" href="/Admin">
                                     <i class="fas fa-home"></i>
                                     Trang chủ
                                 </a>
                             </li>
 
-                            <li class="list-inline-item">
+                            <li class="list-inline-item d-none d-md-inline-block">
                                 <label class="badge badge-soft-version text-capitalize">
                                     Version 1.0
                                 </label>
                             </li>
                         </ul>
                         <!-- End List Dot -->
+                        <!-- On mobile: show a dropdown menu -->
+                        <div class="d-lg-none">
+                            <button class="btn btn-light dropdown-toggle" type="button" id="footerMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-bars"></i>
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="footerMenu">
+                                <li><a class="dropdown-item" href="https://santhuongmai.citgroup.vn/admin/business-settings/web-config"><i class="fas fa-cog"></i> Thiết lập website</a></li>
+                                <li><a class="dropdown-item" href="https://santhuongmai.citgroup.vn/admin/profile/update/1"><i class="fas fa-user"></i> Hồ sơ</a></li>
+                                <li><a class="dropdown-item" href="https://santhuongmai.citgroup.vn/admin/dashboard"><i class="fas fa-home"></i> Trang chủ</a></li>
+                                <li><a class="dropdown-item" href="#">Version 1.0</a></li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+
 
     </div>
 
@@ -822,15 +812,208 @@
         });
     </script>
     <script type="text/javascript">
-        $('.loading-container').hide()
 
-        $("#add-row").DataTable();
+        $(document).ready(function () {
+            $('.loading-container').hide()
+
+            $(document).ajaxStart(function () {
+                $('.loading-container').show();
+            });
+
+            $(document).ajaxStop(function () {
+                $('.loading-container').hide();
+            });
+
+
+            var table = $('#add-row').DataTable({
+                "order": [], // Tắt sắp xếp tự động
+                "drawCallback": function (settings) {
+                    // Khôi phục lại các elements sau khi bảng được vẽ lại
+                    $('[data-bs-toggle="tooltip"]').tooltip();
+                    initializeStatusSelects(); // Hàm mới để khởi tạo các select
+                }
+            });
+
+            // Hàm khởi tạo các select box
+            function initializeStatusSelects() {
+                $('.changeStatus').each(function () {
+                    var $select = $(this);
+                    if (!$select.hasClass('initialized')) {
+                        $select.addClass('initialized');
+                        // Khởi tạo selectpicker nếu bạn đang sử dụng bootstrap-select
+                        if ($.fn.selectpicker) {
+                            $select.selectpicker();
+                        }
+                    }
+                });
+            }
+        });
+
+
           $("#add-row-child").DataTable();
 
         $(function () {
             $('[data-toggle="tooltip"]').tooltip()
         })
     </script>
-  
+
+    @* Đánh dấu là đã đọc thông báo *@
+    <script>
+        $(document).ready(function () {
+            $(".mark-as-read").on('click', function (e) {
+                e.preventDefault(); // Ngăn hành vi mặc định của thẻ a (chuyển hướng)
+
+                var $this = $(this); // Lưu đối tượng được click
+                var id = $this.data("id");
+                $('.loading-container').show()
+                $.ajax({
+                    method: 'POST',
+                    url: '/admin/notifications/mark-as-read',
+                    data: { id: id },
+                    success: function (response) {
+                        if (response && response.success) {
+                            // Thay đổi giao diện: xóa lớp bg-light
+                            $this.removeClass("bg-light");
+                            $this.addClass("bg-white");
+                            // Giảm số lượng thông báo chưa đọc
+                            var $notificationBadge = $('.notification'); // Chọn phần tử hiển thị số thông báo
+                            var currentCount = parseInt($notificationBadge.text(), 10); // Lấy số lượng hiện tại
+                            if (!isNaN(currentCount) && currentCount > 0) {
+                                $notificationBadge.text(currentCount - 1); // Giảm số lượng đi 1
+                            }
+                            $('.loading-container').hide()
+
+                            // Nếu bạn muốn cho phép chuyển hướng sau khi xử lý thành công
+                            window.location.href = $this.attr("href");
+                        }
+                    },
+                    error: function () {
+                        alert("Không thể đánh dấu thông báo. Vui lòng thử lại.");
+                    }
+                });
+            });
+
+            $("#markAllAsRead").on('click', function (e) {
+                e.preventDefault(); // Ngăn hành vi mặc định của thẻ a (chuyển hướng)
+
+                var $this = $(this); // Lưu đối tượng được click
+
+                $('.loading-container').show()
+                $.ajax({
+                    method: 'POST',
+                    url: '/admin/notifications/mark-all-as-read',
+                    success: function (response) {
+                        if (response && response.success) {
+                            // Xóa lớp bg-light và thêm bg-white
+                            $(".notification-item").removeClass("bg-light").addClass("bg-white");
+
+                            $(".notification").text("0");
+                            $('.loading-container').hide()
+                        }
+                    },
+                    error: function () {
+                        $('.loading-container').hide()
+
+                        alert("Không thể đánh dấu thông báo. Vui lòng thử lại.");
+                    }
+                });
+            });
+        })
+    </script>
+    <script>
+        $(document).ready(function () {
+            // Phần tìm kiếm
+            const searchInput = $("#searchInput");
+            const suggestionsBox = $("#searchSuggestions");
+
+            // Load suggestions from JSON file
+            let productSuggestions = [];
+            $.getJSON("/json/products.json", function (data) {
+                productSuggestions = data;
+            });
+
+            // Event listener for input change
+            searchInput.on("input", function () {
+                const query = $(this).val().trim().toLowerCase();
+                if (query) {
+                    const filteredSuggestions = productSuggestions.filter(item =>
+                        item.Name && item.Name.toLowerCase().includes(query)
+                    );
+                    updateSuggestions(filteredSuggestions);
+                } else {
+                    suggestionsBox.addClass("d-none");
+                }
+            });
+
+            // Function to update suggestions in the list
+            function updateSuggestions(suggestions) {
+                suggestionsBox.empty(); // Xóa các gợi ý cũ
+
+                if (suggestions && suggestions.length > 0) {
+                    suggestions.forEach(item => {
+                        // Kiểm tra từng thuộc tính
+                        const name = item.Name || "Sản phẩm không tên";
+                        const image = item.Image ? `/Upload/Products/${item.Image}` : '/Upload/Products/none.png';
+                        const originalPrice = item.OriginalPrice ? item.OriginalPrice.toLocaleString() : "";
+                        const sellPrice = item.SellPrice ? item.SellPrice.toLocaleString() : "Liên hệ";
+
+                        // Thêm item vào danh sách gợi ý
+                        suggestionsBox.append(
+                            `<a href="/Admin/Products/View/${item.ProductId}" class="text-decoration-none text-dark">
+                                        <li class="list-group-item search-suggestion-item d-flex align-items-center p-2 hover-bg-light">
+                                            <img src="${image}" alt="${name}" class="me-3 rounded-2" style="width: 60px; height: 60px; object-fit: cover;">
+                                            <div class="flex-grow-1">
+                                                <div class="fw-bold mb-1">${name}</div>
+                                                <div class="d-flex align-items-center">
+                                                    <span class="text-muted text-decoration-line-through me-2 small">
+                                                        ${originalPrice ? originalPrice + "đ" : ""}
+                                                    </span>
+                                                    <span class="text-danger fw-bold">
+                                                        ${sellPrice + "đ"}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <i class="fa fa-chevron-right text-muted ms-2"></i>
+                                        </li>
+                                    </a>
+                                        `
+                        );
+                    });
+
+                    // Hiển thị gợi ý
+                    suggestionsBox.removeClass("d-none");
+                } else {
+                    // Ẩn gợi ý nếu không có kết quả
+                    suggestionsBox.addClass("d-none");
+                }
+            }
+
+            // Hide suggestions on clicking outside
+            $(document).on("click", function (e) {
+                if (!$(e.target).closest(".search-form").length) {
+                    suggestionsBox.addClass("d-none");
+                }
+            });
+
+            // Suggestion click event
+            suggestionsBox.on("click", ".search-suggestion-item", function () {
+                const selectedName = $(this).find(".fw-bold").text();
+                searchInput.val(selectedName);
+                suggestionsBox.addClass("d-none");
+            });
+
+        });
+    </script>
+  @*   JS Tagify *@
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll(".tags-input").forEach(function (input) {
+                let tagify = new Tagify(input, {
+                    originalInputValueFormat: valuesArr => valuesArr.map(item => item.value).join(",")
+                });
+            });
+        });
+    </script>
+
 </body>
 </html>

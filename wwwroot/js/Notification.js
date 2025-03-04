@@ -1,11 +1,12 @@
 ﻿function loadNotifications() {
-    $.getJSON(`/admin/notifications`, function (data) {
+    $.getJSON(`/admin/notifications/GetUserNotifications`, function (data) {
         const notificationList = $(".notif-center"); // Trỏ tới danh sách thông báo
         const notificationCount = $(".notification"); // Badge thông báo
         notificationList.empty(); // Xóa hết các thông báo hiện tại trong danh sách
 
         // Cập nhật badge số lượng thông báo chưa đọc
-        const unreadCount = data.filter(n => !n.isRead).length;
+        const unreadCount = data.filter(n => n.isRead === false || n.isRead === "false").length;
+
         notificationCount.text(unreadCount > 0 ? unreadCount : ""); // Hiển thị số lượng thông báo chưa đọc
 
         // Thêm thông báo vào danh sách
@@ -19,8 +20,8 @@
                         </div>
                         <div class="notif-content">
                             <span class="block">
-                                <small class="text-truncated" style="max-width:200px" title="${n.message}">
-                                    ${n.message.length > 30 ? n.message.substring(0, 30) + "..." : n.message}
+                                <small class="text-truncated" style="max-width:400px" title="${n.message}">
+                                    ${n.message.length > 30 ? n.message.substring(0, 50) + "..." : n.message}
                                 </small>
                             </span>
                             <span class="time">${timeAgo(n.createdAt)}</span>
@@ -70,6 +71,35 @@ function getNotificationIcon(type) {
     }
 }
 
+function getNotificationTitle(type) {
+    switch (type) {
+        case "new register":
+            return "Có người đăng ký mới";
+        case "order completed":
+            return "Đơn hàng hoàn tất";
+        case "low stock":
+            return "Số lượng tồn kho thấp";
+        case "error":
+            return "Lỗi hệ thống";
+        case "new comment":
+            return "Bình luận mới";
+        case "new order":
+            return "Đơn hàng mới";
+        case "payment received":
+            return "Đã nhận thanh toán";
+        case "product added":
+            return "Sản phẩm mới được thêm";
+        case "shipment sent":
+            return "Giao hàng đã được gửi";
+        case "account updated":
+            return "Tài khoản đã được cập nhật";
+        case "system update":
+            return "Cập nhật hệ thống";
+        default:
+            return "Thông báo";
+    }
+}
+
 
 // Hàm hỗ trợ chuyển đổi thời gian thành "Vừa xong", "1 phút trước", ...
 function timeAgo(dateString) {
@@ -93,13 +123,29 @@ function showToast(title, message,redirectUrl) {
     const toast = new bootstrap.Toast(document.getElementById("liveToast"));
     toast.show();
 }
-
-$("#markAllAsRead").click(function () {
-    $.post(`/admin/notifications/mark-all-as-read/${userId}`, function () {
-        loadNotifications();
+function playNotificationSound() {
+    var audio = new Audio('/sounds/notification.mp3');
+    audio.play().catch(() => {
+        console.log("Không thể phát âm thanh mp3, thử phát file dự phòng.");
+        var fallbackAudio = new Audio('/sounds/notification.ogg');
+        fallbackAudio.play().catch(() => {
+            console.log("Không thể phát âm thanh.");
+        });
     });
-});
+}
 
+
+//$("#markAllAsRead").click(function () {
+//    $.post(`/admin/notifications/mark-all-as-read/${userId}`, function () {
+//        loadNotifications();
+//    });
+//});
+
+//$("#markAllAsReadClient").click(function () {
+//    $.post(`/notifications/mark-all-as-read/${userId}`, function () {
+//        loadNotifications();
+//    });
+//});
 // Kết nối SignalR
 const connection = new signalR.HubConnectionBuilder()
     .withUrl("/notificationHub")
@@ -109,8 +155,25 @@ connection.on("ReceiveNotification", function (notification) {
     // Hiển thị thông báo mới trong danh sách
     loadNotifications();
 
+    // Phát âm thanh thông báo
+    playNotificationSound();
+
     // Hiển thị thông báo trong Toast
-    showToast("Thông báo mới", notification.message, notification.redirectUrl);
+    const title = getNotificationTitle(notification.type) || "Thông báo mới";
+    showToast(title, notification.message, notification.redirectUrl);
+
+    // Thay đổi tiêu đề của tab
+    const originalTitle = document.title; // Lưu tiêu đề gốc
+    document.title = `${title} - ${notification.message}`; // Đặt tiêu đề mới
+
+    // Khôi phục tiêu đề ban đầu sau khi người dùng tương tác
+    window.addEventListener('focus', function () {
+        document.title = originalTitle;
+    }, { once: true }); // Chỉ lắng nghe một lần
 });
 
+// Quay lại tiêu đề ban đầu khi người dùng tương tác
+var originalTitle = document.title;
+
 connection.start().then(() => console.log("SignalR Connected"));
+

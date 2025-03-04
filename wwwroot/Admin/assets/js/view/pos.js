@@ -43,19 +43,32 @@ $(document).ready(function () {
                             if (res.product.varientProducts && res.product.varientProducts.length > 0) {
                                 let allAvailable = true; // Biến để kiểm tra xem có tất cả sản phẩm có hàng và có giá
 
-                                res.product.varientProducts.forEach(function (variant) {
-                                var variantCard = `
-                                   <div class="variant-card ${variant.stock > 0 && variant.price != null ? '' : 'out-of-stock'}" data-id="${variant.varientId}">
-                                        <h6>${variant.sku}</h6>
-                                        <p>${variant.price != null ? variant.price.toLocaleString('vi-VN') + ' đ' : 'Giá chưa có'}</p>
-                                        ${variant.stock > 0 ? `
-                                            <p class="text-success">Còn hàng</p>
-                                        ` : '<span class="text-danger">Hết hàng</span>'}
-                                    </div>
-
-                                `;
+                                res.product.varientProducts.sort(function (a, b) {
+                                    // Nếu a có giá và b có giá, so sánh giá
+                                    if (a.price && b.price) {
+                                        return a.price - b.price;  // Tăng dần
+                                    }
+                                    // Nếu một trong hai không có giá, giữ nguyên thứ tự
+                                    return 0;
+                                }).forEach(function (variant, index) {
+                                    var variantCard = `
+                                        <div class="variant-card ${variant.stock > 0 && variant.price != null ? '' : 'out-of-stock'}" data-id="${variant.varientId}">
+                                            <h6>${variant.sku}</h6>
+                                            <p>${variant.price != null ? variant.price.toLocaleString('vi-VN') + ' đ' : 'Giá chưa có'}</p>
+                                            ${variant.stock > 0 ? `
+                                                <p class="text-success">Còn hàng</p>
+                                            ` : '<span class="text-danger">Hết hàng</span>'}
+                                        </div>
+                                      `;
 
                                     variantContainer.append(variantCard);
+
+                                    // Chọn thẻ đầu tiên
+                                    if (index === 0) {
+                                        variantContainer.find('.variant-card').first().addClass('selected');
+                                    }
+                             
+
 
                                     // Kiểm tra điều kiện hàng hóa và giá
                                     if (res.product.stock <= 0) {
@@ -324,7 +337,7 @@ $(document).ready(function () {
 
                         ProductId.push({
                             VarientProductId: id_variant,
-                            Quantity: quantity
+                            Quantity: parseInt(quantity) // Ép kiểu về số nguyên
                         });//thêm vào mảng
 
                         // Append dòng mới vào tbody của bảng
@@ -405,23 +418,24 @@ $(document).ready(function () {
 
     // Sự kiện xóa cho nút "Xóa" sử dụng event delegation
     $('#shopping-cart').on('click', '.btn-delete', function () {
-        // Xác nhận trước khi xóa
-        if (confirm('Bạn có chắc muốn xóa sản phẩm này ra khỏi giỏ hàng không?')) {
-            // Lấy id_variant từ hàng sản phẩm cần xóa
-            var id_variant = $(this).closest('tr').data('varient-id'); // Giả sử bạn đã gán data-id cho dòng sản phẩm
-            // Xóa sản phẩm khỏi mảng
-            var index = ProductId.indexOf(id_variant);
-            if (index > -1 && Quantity[index] > 0) {
-                ProductId.splice(index, 1); // Xóa id_variant khỏi mảng
-                Quantity.splice(index, 1); // Đồng thời xóa quantity tương ứng
-            }
+        var id_variant = $(this).closest('tr').data('varient-id');
 
-            // Xóa hàng hiện tại
-            $(this).closest('tr').remove();
-            updateTotalPrice(); // Cập nhật tổng giá
-            updateTotalPayment(); // Cập nhật tổng thanh toán
+        // Tìm index của object có `VarientProductId` khớp với `id_variant`
+        var index = ProductId.findIndex(item => item.VarientProductId === id_variant);
+
+        if (index > -1) {
+            ProductId.splice(index, 1); // Xóa object khỏi mảng
         }
+
+        // Xóa dòng sản phẩm khỏi bảng
+        $(this).closest('tr').remove();
+
+        console.log("Danh sách ProductId sau khi xóa:", ProductId);
+
+        updateTotalPrice(); // Cập nhật tổng giá
+        updateTotalPayment(); // Cập nhật tổng thanh toán
     });
+
 
     //Nhập giá tiền trừ trực tiếp
     $('.btn-deduct').on('click', function () {

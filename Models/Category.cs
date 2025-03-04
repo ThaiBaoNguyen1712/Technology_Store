@@ -17,5 +17,7 @@ public partial class Category
 
     public int? Visible { get; set; }
 
+    public virtual ICollection<Brand> Brands { get; set; } = new List<Brand>();
+
     public virtual ICollection<Product> Products { get; set; } = new List<Product>();
 }

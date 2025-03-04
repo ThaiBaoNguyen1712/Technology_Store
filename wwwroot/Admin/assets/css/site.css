@@ -1,5 +1,24 @@
 ﻿body {
 }
+
+/* Dành riêng cho multiple (filepond-multiple) */
+.filepond-multiple .filepond--item {
+    width: calc(33% - 10px); /* Mỗi ảnh chiếm 1/3 chiều rộng */
+    margin-right: 10px; /* Khoảng cách ngang giữa các ảnh */
+    margin-bottom: 10px; /* Khoảng cách dọc giữa các hàng */
+}
+
+    /* Xóa khoảng cách dư thừa ở hàng cuối */
+    .filepond-multiple .filepond--item:nth-child(3n) {
+        margin-right: 0;
+    }
+
+/* Để single upload vẫn hiển thị bình thường */
+.filepond:not(.filepond-multiple) .filepond--item {
+    width: 100%; /* Mặc định chiếm toàn bộ chiều rộng */
+    margin: 0; /* Không có khoảng cách */
+}
+
 .preview-container {
     display: flex;
     justify-content: center;
@@ -107,60 +126,6 @@
     display: none;
 }
 
-/* Switch button */
-/*.form-check-input {
-    width: 50px;
-    height: 25px;
-    background-color: #ddd;
-    border-radius: 25px;*/ /* Giữ nguyên để làm tròn phần khung */
-    /*position: relative;
-    appearance: none;
-    border: none;*/ /* Loại bỏ viền */
-    /*outline: none;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    padding: 0;*/ /* Loại bỏ padding mặc định */
-    /*margin: 0;*/ /* Loại bỏ margin mặc định */
-/*}*/
-
-/* Nút bên trong của switch */
-/*.form-check-input:before {
-    content: '';
-    position: absolute;
-    width: 21px;*/ /* Tăng kích thước nút để trông cân đối hơn */
-    /*height: 21px;
-    background-color: white;
-    border-radius: 50%;
-    top: 2px;
-    left: 2px;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);*/ /* Thêm bóng để tạo độ nổi */
-/*}*/
-
-/* Khi bật switch */
-/*.form-check-input:checked {
-    background-color: #2196F3;*/ /* Màu xanh dương nhạt hơn */
-/*}*/
-
-/* Di chuyển nút sang phải khi bật */
-/*.form-check-input:checked:before {
-    transform: translateX(25px);
-}*/
-
-/* Hiệu ứng hover */
-/*.form-check-input:hover {
-    opacity: 0.85;
-}*/
-
-/* Hiệu ứng khi focus */
-/*.form-check-input:focus {
-    box-shadow: none;*/ /* Loại bỏ focus outline mặc định */
-/*}*/
-
-/* Thêm đổ bóng khi hover */
-/*.form-check-input:hover:before {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-}*/
 .form-check {
     position: relative;
 }

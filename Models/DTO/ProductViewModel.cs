@@ -10,6 +10,7 @@
         public string CategoryName { get; set; }
         public decimal? SellPrice { get; set; }
         public int Stock { get; set; }
+        public bool Visible { get; set; }
         public string Status { get; set; }
     }
 }

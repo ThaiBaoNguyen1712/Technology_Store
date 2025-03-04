@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.SignalR;
-using System;
+﻿using MediatR;
+using Microsoft.EntityFrameworkCore;
+using Tech_Store.Events;
 using Tech_Store.Hubs;
 using Tech_Store.Models;
 
@@ -8,51 +9,57 @@ namespace Tech_Store.Services.NotificationServices
     public class NotificationService
     {
         private readonly ApplicationDbContext _context;
-        private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly IMediator _mediator;
 
-        public NotificationService(ApplicationDbContext context, IHubContext<NotificationHub> hubContext)
+        public NotificationService(ApplicationDbContext context, IMediator mediator)
         {
             _context = context;
-            _hubContext = hubContext;
+            _mediator = mediator;
         }
 
-        // Tạo thông báo và gửi đến danh sách người dùng
-        public async Task CreateNotificationAsync(string title,string message,string type ,string redirectUrl, List<string> userIds)
+        // Phương thức chung để gửi thông báo
+        public async Task NotifyAsync(NotificationTarget target, string title, string message, string type, string redirectUrl, List<int>? userIds = null)
         {
-            // Tạo thông báo mới
-            var notification = new Notification
+            List<int> targetUserIds = await GetTargetUserIdsAsync(target, userIds);
+
+            if (targetUserIds.Any())
             {
-                Title = title,
-                Message = message,
-                Type = type,
-                RedirectUrl = redirectUrl
-            };
-
-            _context.Notifications.Add(notification);
-            await _context.SaveChangesAsync();
-
-            // Tạo UserNotification
-            var userNotifications = userIds.Select(userId => new UserNotification
-            {
-                NotificationId = notification.NotificationId,
-                UserId = int.Parse(userId)
-            }).ToList();
-
-            _context.UserNotifications.AddRange(userNotifications);
-            await _context.SaveChangesAsync();
-
-            // Gửi qua SignalR
-            foreach (var userId in userIds)
-            {
-                await _hubContext.Clients.User(userId).SendAsync("ReceiveNotification", new
-                {
-                    notification.Title,
-                    notification.Message,
-                    notification.RedirectUrl,
-                    notification.Type,
-                    notification.CreatedAt
-                });
+                await _mediator.Publish(new NotificationEvent(title, message, type, redirectUrl, target, targetUserIds));
             }
+        }
+
+        // Phương thức lấy danh sách UserId theo từng loại nhóm
+        public async Task<List<int>> GetTargetUserIdsAsync(NotificationTarget target, List<int>? userIds = null)
+        {
+            return target switch
+            {
+                NotificationTarget.Admins => await GetAdminUserIdsAsync(),
+                NotificationTarget.AllUsers => await GetAllUserIdsAsync(),
+                NotificationTarget.OnlineUsers => GetOnlineUserIds(),
+                NotificationTarget.SpecificUsers => userIds ?? new List<int>(),
+                NotificationTarget.CurrentUser => userIds ?? new List<int>(),
+                _ => new List<int>()
+            };
+        }
+
+        private async Task<List<int>> GetAdminUserIdsAsync()
+        {
+            return await _context.Users
+                .Where(u => u.Roles.Any(r => r.RoleName == "Admin"))
+                .Select(u => u.UserId)
+                .ToListAsync();
+        }
+
+        private async Task<List<int>> GetAllUserIdsAsync()
+        {
+            return await _context.Users
+                .Select(u => u.UserId)
+                .ToListAsync();
+        }
+
+        private List<int> GetOnlineUserIds()
+        {
+            return OnlineUserTracker.GetOnlineUserIds();
         }
     }
 }

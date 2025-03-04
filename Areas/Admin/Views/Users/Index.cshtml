@@ -1,12 +1,11 @@
 ﻿@model IEnumerable<Tech_Store.Models.ViewModel.UserVM>
 @{
-    ViewData["Title"] = "User";
+    ViewData["Title"] = "Thông tin người dùng";
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
 }
 
 <div class="Container">
     @Html.AntiForgeryToken()
-
     <div class="pt-3"></div>
     <div class="tableProduct">
         <div class="col-md-12">
@@ -20,6 +19,64 @@
                             <i class="fa fa-plus"></i>
                             Thêm
                         </button>
+                    </div>
+
+                    <!-- Filter Section -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <!-- Hàng 1: Thông tin cơ bản -->
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">Tên khách hàng</label>
+                                    <input type="text" class="form-control" placeholder="Nhập tên khách hàng cần tìm" id="filterCustomerName">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">Tài khoản kích hoạt</label>
+                                    <select class="form-control border selectpicker" data-live-search="true" id="filterCustomerStatus">
+                                        <option value="">Tất cả</option>
+                                        <option value="true">Được kích hoạt</option>
+                                        <option value="false">Đã chặn</option>
+                                    </select>
+                                </div>
+                                <!-- Hàng 2: Thông tin liên hệ -->
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">Số điện thoại</label>
+                                    <input type="text" class="form-control" placeholder="Nhập số điện thoại khách hàng" id="filterPhone">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">Email</label>
+                                    <input type="email" class="form-control" placeholder="Nhập email khách hàng" id="filterEmail">
+                                </div>
+                                <!-- Hàng 3: Thời gian và doanh số -->
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">Ngày tạo từ</label>
+                                    <input type="date" class="form-control" id="filterDateFrom">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">Đến ngày</label>
+                                    <input type="date" class="form-control" id="filterDateTo">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">Khoảng doanh số</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" placeholder="Từ" id="filterRevenueFrom">
+                                        <span class="input-group-text">-</span>
+                                        <input type="number" class="form-control" placeholder="Đến" id="filterRevenueTo">
+                                    </div>
+                                </div>
+                                <!-- Nút tìm kiếm và reset -->
+                                <div class="col-12 mt-4">
+                                    <div class="d-flex gap-2 justify-content-end">
+                                        <button type="button" class="btn btn-light px-4" id="btnReset">
+                                            <i class="fas fa-redo me-1"></i> Đặt lại
+                                        </button>
+                                        <button type="button" class="btn btn-primary px-4" id="btnSearch">
+                                            <i class="fas fa-search me-1"></i> Tìm kiếm
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body">
@@ -52,7 +109,7 @@
                                     <th>Hành động</th>
                                 </tr>
                             </tfoot>
-                            <tbody>
+                            <tbody id="userList">
 
                                 @if (Model != null)
                                 {
@@ -75,9 +132,9 @@
 
                                             </td>
                                             <td>@us.LastName</td>
-                                            <td>@us.FirstName</td>
-                                            <td>@us.PhoneNumber</td>
-                                            <td>@us.Email</td>
+                                            <td>@(us.FirstName ?? "Chưa cung cấp")</td>
+                                            <td>@(us.PhoneNumber ?? "Chưa cung cấp")</td>
+                                            <td>@(us.Email ?? "Chưa cung cấp")</td>
                                             <td style="white-space:nowrap">@us.OrderCount đơn hàng</td>
                                             <td>
 
@@ -95,14 +152,28 @@
                                                             data-original-title="Edit Task">
                                                         <i class="fa fa-edit"></i>
                                                     </button>
-                                                    <button type="button"
-                                                            data-bs-toggle="tooltip" data-id="@us.UserId"
-                                                            id="banUs"
-                                                            class="btn btn-link btn-danger btn-lg"
-                                                            data-original-title="Chặn người dùng">
-                                                        <i class="fa fa-ban"></i> <!-- Thêm icon "Ban" -->
-                                                    </button>
 
+                                                    @if (us.IsActive == false)
+                                                    {
+                                                        <button type="button"
+                                                                data-bs-toggle="tooltip" data-id="@us.UserId"
+                                                                id="UnbanUs"
+                                                                class="btn btn-link btn-success btn-lg"
+                                                                data-original-title="Chặn người dùng">
+                                                            <i class="fas fa-user-check"></i>
+                                                            <!-- Thêm icon "Unban" -->
+                                                        </button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button type="button"
+                                                                data-bs-toggle="tooltip" data-id="@us.UserId"
+                                                                id="banUs"
+                                                                class="btn btn-link btn-danger btn-lg"
+                                                                data-original-title="Chặn người dùng">
+                                                            <i class="fa fa-ban"></i> <!-- Thêm icon "Ban" -->
+                                                        </button>
+                                                    }
                                                     <button type="button"
                                                             data-bs-toggle="tooltip"
                                                             title=""
@@ -129,6 +200,104 @@
 
 <script type="text/javascript">
     $(document).ready(function () {
+        $('#btnSearch').on('click', function () {
+            var filterData = {
+                nameCustomer: $('#filterCustomerName').val(),
+                status: $('#filterCustomerStatus').val(),
+                email: $('#filterEmail').val(),
+                revenueFrom: $('#filterRevenueFrom').val(),
+                revenueTo: $('#filterRevenueTo').val(),
+                CreatedDateFrom: $('#filterDateFrom').val(),
+                CreatedDateTo: $('#filterDateTo').val(),
+                phoneNumber: $('#filterPhone').val()
+            };
+
+            var table = $("#add-row").DataTable();
+
+            $.ajax({
+                url: '/Admin/Users/Filter',
+                type: 'POST',
+                data: filterData,
+                success: function (response) {
+                    $('#userList').empty();
+                    table.clear();
+
+                    response.forEach(function (user) {
+                      
+                        table.row.add([
+                            `<div class="avatar">
+                                <img src="/Upload/Avatar/${user.imageUrl ? user.imageUrl : 'none.png'}"
+                                     alt="..." class="avatar-img rounded-circle">
+                            </div>
+                            `,
+                            user.lastName,
+                            user.firstName,
+                            user.phoneNumber || 'Chưa cung cấp',
+                            user.email || 'Chưa cung cấp',
+                            user.orderCount + " đơn hàng",
+                            `<p class="badge badge-pill ${user.isActive ? 'badge-success' : 'badge-danger'} text-center">
+                                ${user.isActive}
+                            </p>
+                            `,
+                            `<div class="form-button-action">
+                            <button type="button"
+                                data-bs-toggle="tooltip" data-id="${user.userId}"
+                                id="editUs"
+                                class="btn btn-link btn-primary btn-lg"
+                                data-original-title="Edit Task">
+                                <i class="fa fa-edit"></i>
+                            </button>
+
+                            ${user.isActive
+                                ? `<button type="button"
+                                    data-bs-toggle="tooltip" data-id="${user.userId}"
+                                    id="banUs"
+                                    class="btn btn-link btn-danger btn-lg"
+                                    data-original-title="Chặn người dùng">
+                                    <i class="fa fa-ban"></i>
+                                </button>`
+                                : `<button type="button"
+                                    data-bs-toggle="tooltip" data-id="${user.userId}"
+                                    id="UnbanUs"
+                                    class="btn btn-link btn-success btn-lg"
+                                    data-original-title="Bỏ chặn người dùng">
+                                    <i class="fas fa-user-check"></i>
+                                </button>`
+                            }
+
+                            <button type="button"
+                                data-bs-toggle="tooltip"
+                                class="btn btn-link btn-danger"
+                                data-id="${user.userId}"
+                                id="removeUs"
+                                data-original-title="Xóa người dùng">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </div>`
+                        ]);
+                    });
+
+                    table.draw();
+                },
+                error: function (error) {
+                    console.error("Lỗi khi lấy dữ liệu", error);
+                }
+            });
+        });
+       
+        // Đặt lại các bộ lọc khi nhấn nút "Đặt lại"
+        $('#btnReset').on('click', function () {
+            $('#filterCustomerName').val('');
+            $('#filterCustomerStatus').val('');
+            $('#filterEmail').val('');
+            $('#filterRevenueFrom').val('');
+            $('#filterRevenueTo').val('');
+            $('#filterDateFrom').val('');
+            $('#filterDateTo').val('');
+            $('#filterPhone').val('');
+          
+        });
+
         var token = $('input[name="__RequestVerificationToken"]').val();
         //Xử lý sự kiện click nút chặn
         $(document).on('click', '#banUs', function () {
@@ -188,6 +357,67 @@
                     });
                 } else {
                     console.log('Hành động xóa đã bị hủy');
+                }
+            });
+        });
+
+
+        //Xử lý sự kiện click nút gỡ chặn
+        $(document).on('click', '#UnbanUs', function () {
+            var id_us = $(this).data('id'); // Lấy ID từ thuộc tính data-id
+
+            // Hiển thị hộp thoại xác nhận với SweetAlert
+            Swal.fire({
+                title: 'Bạn có chắc muốn bỏ chặn người dùng này không?',
+                text: "Người dùng này sẽ được phép mua sắm ở cửa hàng bạn",
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: 'Bỏ chặn',
+                cancelButtonText: 'Hủy',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Hiển thị biểu tượng loading
+                    $('.loading-container').show();
+
+                    // Gửi yêu cầu AJAX để xóa người dùng
+                    $.ajax({
+                        method: 'POST',
+                        url: '/Admin/Users/UnBanUser',
+                        data: { id: id_us },
+                        headers: {
+                            "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() // Thêm token xác thực vào header
+                        },
+                        success: function (response) {
+                            $('.loading-container').hide(); // Ẩn biểu tượng loading
+
+                            // Kiểm tra phản hồi từ server
+                            if (response.success) {
+                                Swal.fire(
+                                    'Đã gỡ chặn người dùng!',
+                                    response.message,
+                                    'success'
+                                ).then(() => {
+                                    location.reload(); // Làm mới trang sau khi xóa thành công
+                                });
+                            } else {
+                                Swal.fire(
+                                    'Không thể gỡ chặn!',
+                                    response.message,
+                                    'error'
+                                );
+                            }
+                        },
+                        error: function (xhr, status, error) {
+                            $('.loading-container').hide(); // Ẩn biểu tượng loading
+                            Swal.fire(
+                                'Lỗi!',
+                                'Đã xảy ra lỗi khi gỡ chặn người dùng. Vui lòng thử lại.',
+                                'error'
+                            );
+                            console.error('Error details:', error);
+                        }
+                    });
                 }
             });
         });

@@ -17,6 +17,10 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<Address> Addresses { get; set; }
 
+    public virtual DbSet<Attribute> Attributes { get; set; }
+
+    public virtual DbSet<AttributeValue> AttributeValues { get; set; }
+
     public virtual DbSet<Brand> Brands { get; set; }
 
     public virtual DbSet<Cart> Carts { get; set; }
@@ -52,6 +56,8 @@ public partial class ApplicationDbContext : DbContext
     public virtual DbSet<User> Users { get; set; }
 
     public virtual DbSet<UserNotification> UserNotifications { get; set; }
+
+    public virtual DbSet<VariantAttribute> VariantAttributes { get; set; }
 
     public virtual DbSet<VarientProduct> VarientProducts { get; set; }
 
@@ -95,10 +101,42 @@ public partial class ApplicationDbContext : DbContext
                 .HasConstraintName("FK_Address_User");
         });
 
+        modelBuilder.Entity<Attribute>(entity =>
+        {
+            entity.ToTable("Attribute");
+
+            entity.Property(e => e.AttributeId).HasColumnName("attributeId");
+            entity.Property(e => e.Code)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("code");
+            entity.Property(e => e.IsActive).HasColumnName("isActive");
+            entity.Property(e => e.Name)
+                .HasMaxLength(50)
+                .HasColumnName("name");
+            entity.Property(e => e.SortOrder).HasColumnName("sortOrder");
+        });
+
+        modelBuilder.Entity<AttributeValue>(entity =>
+        {
+            entity.ToTable("AttributeValue");
+
+            entity.Property(e => e.AttributeId).HasColumnName("attributeId");
+            entity.Property(e => e.Value)
+                .HasMaxLength(250)
+                .HasColumnName("value");
+
+            entity.HasOne(d => d.Attribute).WithMany(p => p.AttributeValues)
+                .HasForeignKey(d => d.AttributeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_AttributeValue_Attribute");
+        });
+
         modelBuilder.Entity<Brand>(entity =>
         {
             entity.ToTable("Brand");
 
+            entity.Property(e => e.CategoryId).HasColumnName("category_id");
             entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.Image)
                 .HasMaxLength(255)
@@ -106,6 +144,10 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.Name)
                 .HasMaxLength(155)
                 .HasColumnName("name");
+
+            entity.HasOne(d => d.Category).WithMany(p => p.Brands)
+                .HasForeignKey(d => d.CategoryId)
+                .HasConstraintName("FK_Brand_Category");
         });
 
         modelBuilder.Entity<Cart>(entity =>
@@ -217,16 +259,18 @@ public partial class ApplicationDbContext : DbContext
             entity.HasKey(e => e.NotificationId).HasName("PK__Notifica__20CF2E326CAE267F");
 
             entity.Property(e => e.NotificationId).HasColumnName("notificationID");
-            entity.Property(e => e.RedirectUrl).HasColumnName("redirectUrl");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("createdAt");
             entity.Property(e => e.Message).HasColumnName("message");
-            entity.Property(e=>e.Type).HasColumnName("type");
+            entity.Property(e => e.RedirectUrl).HasColumnName("redirectUrl");
             entity.Property(e => e.Title)
                 .HasMaxLength(100)
                 .HasColumnName("title");
+            entity.Property(e => e.Type)
+                .HasMaxLength(50)
+                .HasColumnName("type");
         });
 
         modelBuilder.Entity<Order>(entity =>
@@ -613,6 +657,25 @@ public partial class ApplicationDbContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_UserNotifications_User");
+        });
+
+        modelBuilder.Entity<VariantAttribute>(entity =>
+        {
+            entity.ToTable("VariantAttribute");
+
+            entity.Property(e => e.VariantAttributeId).HasColumnName("variantAttributeId");
+            entity.Property(e => e.AttributeValueId).HasColumnName("attribute_ValueId");
+            entity.Property(e => e.ProductVariantId).HasColumnName("product_VariantId");
+
+            entity.HasOne(d => d.AttributeValue).WithMany(p => p.VariantAttributes)
+                .HasForeignKey(d => d.AttributeValueId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_VariantAttribute_AttributeValue");
+
+            entity.HasOne(d => d.ProductVariant).WithMany(p => p.VariantAttributes)
+                .HasForeignKey(d => d.ProductVariantId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_VariantAttribute_VarientProduct");
         });
 
         modelBuilder.Entity<VarientProduct>(entity =>

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System.Security.Claims;
+using Tech_Store.Events;
 using Tech_Store.Extensions;
 using Tech_Store.Models;
 using Tech_Store.Models.DTO;
@@ -11,6 +12,7 @@ using Tech_Store.Models.DTO.Payment.Client;
 using Tech_Store.Models.DTO.Payment.Client.Momo;
 using Tech_Store.Models.DTO.Payment.Client.VnPay;
 using Tech_Store.Services.MomoServices;
+using Tech_Store.Services.NotificationServices;
 using Tech_Store.Services.VNPayServices;
 
 namespace Tech_Store.Controllers
@@ -21,16 +23,19 @@ namespace Tech_Store.Controllers
     {
         private readonly IVnPayService _vnPayService;
         private readonly IMomoService _momoService;
-
-        public PaymentController(ApplicationDbContext _context, IVnPayService vnPayService,IMomoService momoService):base(_context) {
+        private readonly NotificationService _notificationService;
+        public PaymentController(ApplicationDbContext _context, IVnPayService vnPayService,IMomoService momoService, NotificationService notificationService) : base(_context)
+        {
             _vnPayService = vnPayService;
             _momoService = momoService;
+            _notificationService = notificationService;
         }
 
 
         [Route("Checkout")]
         public async Task<IActionResult> Checkout()
         {
+            
             // Sử dụng GetString để lấy giá trị từ Session
             var cartItemsJson = HttpContext.Session.GetString("CartItems");
 
@@ -87,14 +92,16 @@ namespace Tech_Store.Controllers
             {
                 return NotFound("Đã có lỗi khi nhận thông tin, hãy thông báo với Admin");
             }
-            if(paymentMethod=="momo")
-            {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-                if (userId == null)
-                {
-                    return Unauthorized("User không hợp lệ");
-                }
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (userId == null)
+            {
+                return Unauthorized("User không hợp lệ");
+            }
+
+            if (paymentMethod=="momo")
+            { 
                 var userInfo = await _context.Users.FirstOrDefaultAsync(x => x.UserId == int.Parse(userId));
                 var totalAmount = GetTotalPrice(model);
                 var momoPayModel = new MomoPaymentResquestModel
@@ -113,12 +120,6 @@ namespace Tech_Store.Controllers
             }
             if (paymentMethod == "vnpay")
             {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                
-                if (userId == null)
-                {
-                    return Unauthorized("User không hợp lệ");
-                }
                 var userInfo = await _context.Users.FirstOrDefaultAsync(x=>x.UserId == int.Parse(userId));
                 var totalAmount = GetTotalPrice(model);
                 var vnPayModel = new VnPaymentResquestModel
@@ -137,12 +138,6 @@ namespace Tech_Store.Controllers
             }
             if (paymentMethod == "cod")
             {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (userId == null)
-                {
-                    return Unauthorized("User không hợp lệ");
-                }
-
                 var user = await _context.Users.FindAsync(int.Parse(userId));
                 if (user == null)
                 {
@@ -240,7 +235,30 @@ namespace Tech_Store.Controllers
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
 
-                    return RedirectToAction("PaymentSuccess");
+                    //Tạo thông báo cho ADMIN và Client
+
+                    try
+                    {
+                        await _notificationService.NotifyAsync(NotificationTarget.Admins, "Xác nhận đơn hàng",
+                            $"Có đơn hàng mới từ người dùng {user.Email} !", "new order", $"/admin/orders/view/{order.OrderId}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Lỗi khi gửi thông báo cho Admin: {ex.Message}");
+                    }
+
+                    try
+                    {
+                        await _notificationService.NotifyAsync(NotificationTarget.SpecificUsers, "Xác nhận đơn hàng",
+                            "Đơn hàng của bạn đang được xử lý.", "success", $"/user/MyOrders/OrderDetail/{order.OrderId}",
+                            new List<int> { user?.UserId ?? 0 });  // Dùng null-coalescing để tránh lỗi null
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Lỗi khi gửi thông báo cho User: {ex.Message}");
+                    }
+
+                    return Json(new { success = true, redirectTo = Url.Action("OrderSuccess") });
                 }
                 catch (Exception ex)
                 {
@@ -467,6 +485,11 @@ namespace Tech_Store.Controllers
                 // Xóa thông tin thanh toán khỏi session
                 HttpContext.Session.Remove("PaymentInfo");
 
+                await _notificationService.NotifyAsync(NotificationTarget.Admins, "Thanh toán thành công", $"Đơn hàng {order.OrderId} đã được thanh toán thành công !", "payment received", $"/admin/transactions");
+
+                await _notificationService.NotifyAsync(NotificationTarget.SpecificUsers, "Thanh toán thành công", $"Đơn hàng {order.OrderId} đã được thanh toán thành công !", "success", $"/user/MyOrders/OrderDetail/{order.OrderId}", new List<int> { user.UserId });
+
+
                 TempData["Message"] = "Thanh toán VNPay thành công";
                 return RedirectToAction("PaymentSuccess");
             }
@@ -601,6 +624,11 @@ namespace Tech_Store.Controllers
                 HttpContext.Session.Remove("PaymentInfo");
 
                 TempData["Message"] = "Thanh toán VNPay thành công";
+
+                await _notificationService.NotifyAsync(NotificationTarget.Admins, "Thanh toán thành công", $"Đơn hàng {order.OrderId} đã được thanh toán thành công !", "payment received", $"/admin/transactions");
+
+                await _notificationService.NotifyAsync(NotificationTarget.SpecificUsers, "Thanh toán thành công", $"Đơn hàng {order.OrderId} đã được thanh toán thành công !", "success", $"/user/MyOrders/OrderDetail/{order.OrderId}", new List<int> { user.UserId });
+
                 return RedirectToAction("PaymentSuccess");
             }
             catch (Exception ex)
@@ -615,7 +643,8 @@ namespace Tech_Store.Controllers
 
         [Route("PaymentFail")]
         public IActionResult PaymentFail() { return View(); }
-
+        [Route("OrderSuccess")]
+        public IActionResult OrderSuccess() { return View(); } 
         //phương thức để lấy chi tiết sản phẩm
         private async Task<List<CheckoutDTo>> GetProductDetailsAsync(List<CartDTo> cartItems)
         {

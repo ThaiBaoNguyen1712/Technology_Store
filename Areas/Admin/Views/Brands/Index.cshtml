@@ -30,6 +30,7 @@
                                 <tr>
                                     <th>Tên</th>
                                     <th>Hình ảnh</th>
+                                    <th>Cho danh mục</th>
                                     <th>Mô tả</th>
                                     <th style="width:10%">Hành động</th>
                                 </tr>
@@ -38,6 +39,7 @@
                                 <tr>
                                     <th>Tên</th>
                                     <th>Hình ảnh</th>
+                                    <th>Cho danh mục</th>
                                     <th>Mô tả</th>
                                     <th>Hành động</th>
                                 </tr>
@@ -50,8 +52,9 @@
                                     <tr>
                                             <td>@brand.Name</td>
                                             <td class="text-center">
-                                                <img src="/Upload/Logo/@(brand.Image ?? "none.jpg")" width="90px" height="90px" class="rounded circle" />
+                                                <img src="/Upload/Logo/@(brand.Image ?? "none.jpg")"  height="90px" class="rounded circle" />
                                             </td>
+                                            <td>@(brand.Category != null ? brand.Category.Name : "Tất cả danh mục")</td>
                                             <td>@brand.Description</td>
                                         <td>
                                             <div class="form-button-action">
@@ -135,7 +138,10 @@
                     // Đặt giá trị của các input và select
                     $('input[name="name"]').val(response.name); // Đặt giá trị cho input name
                     $('input[name="description"]').val(response.description); // Đặt giá trị cho input description
-                    $('input[name="brand_id"]').val(response.brandId)
+                    $('input[name="brand_id"]').val(response.brandId);
+                    $('select[name="categoryId"]').val(response.categoryId).selectpicker('refresh');
+
+                    console.log(response.categoryId)
                     $('#ImageUrl').attr('src', '/Upload/Logo/' + response.image);
                     // Hiển thị nút Lưu thay đổi và ẩn nút Thêm mới
                     $('#update').show();

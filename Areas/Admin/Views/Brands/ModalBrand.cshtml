@@ -1,7 +1,7 @@
 ﻿
 <!-- Modal -->
 <div class="modal fade" id="BrandModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" style="min-width:70vw;">
+    <div class="modal-dialog modal-lg">
         <form id="addBrandForm">
             <div class="modal-content">
                 <div class="modal-header">
@@ -24,6 +24,19 @@
                                 </div>
 
                             </div>
+
+                            <div class="form-group row mb-3">
+                                <label class="col-sm-4 col-form-label">Cho danh mục : </label>
+                                <div class="col-sm-8">
+                                    <select class="form-control border selectpicker" name="categoryId" data-live-search="true" id="filterCategory">
+                                        <option value="">Tất cả danh mục</option>
+                                        @foreach (var item in ViewBag.cate)
+                                        {
+                                            <option value="@item.CategoryId">@item.Name</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
                             <!-- Mô tả -->
                             <div class="form-group row mb-3">
                                 <label class="col-sm-4 col-form-label">Mô tả :</label>
@@ -34,10 +47,13 @@
                             <div class="form-group row mb-3">
                                 <label class="col-sm-4 col-form-label">Hình ảnh :</label>
                                 <div class="col-sm-8">
-                                    <img src="/Upload/Logo/none.jpg" id="ImageUrl" width="90" height="90" class="rounded border" alt="Image Preview" />
-                                    <input type="file" class="form-control" name="imageFile" accept="image/*" required />
+                                    <img src="/Upload/Logo/none.jpg" id="ImageUrl" width="90" height="90"
+                                         class="rounded border" alt="Image Preview" />
+                                    <input type="file" class="form-control mt-2" name="imageFile"
+                                           accept="image/*" required id="imageInput" />
                                 </div>
                             </div>
+
                         </div>
                     </div>
 
@@ -113,7 +129,7 @@
                     var formData = new FormData();
                     formData.append('Name', $("input[name='name']").val());
                     formData.append('Description', $("input[name='description']").val());
-
+                    formData.append('CategoryId', $("select[name='categoryId']").val());
                     var imageFile = $("input[name='imageFile']").prop('files')[0];
                     if (imageFile) {
                         formData.append('imageFile', imageFile);
@@ -149,6 +165,20 @@
                 }
             });
         });
+
+        $(document).ready(function () {
+            $('#imageInput').on('change', function (event) {
+                var file = event.target.files[0]; // Lấy file ảnh
+                if (file) {
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        $('#ImageUrl').attr('src', e.target.result); // Cập nhật ảnh preview
+                    };
+                    reader.readAsDataURL(file); // Đọc file dưới dạng URL
+                }
+            });
+        });
+
 
 
 

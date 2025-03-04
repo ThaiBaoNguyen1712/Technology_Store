@@ -13,8 +13,13 @@ using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.Extensions.Options;
 using Tech_Store.Hubs;
 using Tech_Store.Services.NotificationServices;
+using MediatR;
+using System.Reflection;
+
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
 
 // Add services to the container.
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -24,6 +29,7 @@ builder.Services.AddControllersWithViews().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
 });
+
 // VNPay and Momo Payment Services
 builder.Services.AddSingleton<IVnPayService, VnPayService>();
 builder.Services.AddSingleton<IMomoService, MomoService>();
@@ -41,10 +47,11 @@ builder.Services.Configure<FormOptions>(options =>
 // reCAPTCHA Configuration
 builder.Services.AddRecaptcha(options =>
 {
-    options.SiteKey = builder.Configuration["ReCaptcha:SiteKey"];
-    options.SecretKey = builder.Configuration["ReCaptcha:SecretKey"];
+    options.SiteKey = builder.Configuration["reCAPTCHA:SiteKey"];
+    options.SecretKey = builder.Configuration["reCAPTCHA:SecretKey"];
 });
 
+// Authorization
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
@@ -54,39 +61,40 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromMinutes(30); // Session timeout duration
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
 
-//Config Login Google account & Authentication and Authorization
+// Authentication (Google, Facebook, Cookie)
 builder.Services.AddAuthentication(option =>
 {
-    // Đặt mặc định là Cookie
     option.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     option.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     option.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 })
 .AddCookie(options =>
 {
-    options.LoginPath = "/Auth/Login"; // Đường dẫn khi chưa đăng nhập
-    options.ExpireTimeSpan = TimeSpan.FromDays(1); // Thời gian hết hạn cookie
+    options.LoginPath = "/Auth/Login";
+    options.ExpireTimeSpan = TimeSpan.FromDays(1);
 })
 .AddGoogle(GoogleDefaults.AuthenticationScheme, option =>
 {
-    option.ClientId = builder.Configuration.GetSection("GoogleKeys:ClientId").Value;
-    option.ClientSecret = builder.Configuration.GetSection("GoogleKeys:ClientSecret").Value;
+    option.ClientId = builder.Configuration["GoogleKeys:ClientId"];
+    option.ClientSecret = builder.Configuration["GoogleKeys:ClientSecret"];
 })
 .AddFacebook(facebookOptions =>
 {
-    facebookOptions.AppId = builder.Configuration.GetSection("Facebook:AppId").Value;
-    facebookOptions.AppSecret = builder.Configuration.GetSection("Facebook:AppSecret").Value;
+    facebookOptions.AppId = builder.Configuration["Facebook:AppId"];
+    facebookOptions.AppSecret = builder.Configuration["Facebook:AppSecret"];
     facebookOptions.AccessDeniedPath = "/AccessDeniedPathInfo";
-}); ;
+});
+
+// SignalR for Realtime Notifications
 builder.Services.AddScoped<SitemapService>();
 builder.Services.AddScoped<NotificationService>();
-//Thêm SignalR để xử lý Realtime
 builder.Services.AddSignalR();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -97,23 +105,33 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// 🟢 Serve static files before routing
 app.UseStaticFiles();
 
 app.UseRouting();
 
-// Set max request body size in middleware
+// 🟢 Set max request body size safely
 app.Use(async (context, next) =>
 {
-    context.Features.Get<IHttpMaxRequestBodySizeFeature>().MaxRequestBodySize = 50 * (1024 * 1024); // 50 MB
+    var feature = context.Features.Get<IHttpMaxRequestBodySizeFeature>();
+    if (feature != null)
+    {
+        feature.MaxRequestBodySize = 50 * 1024 * 1024; // 50 MB
+    }
     await next();
 });
 
-// Enable Session and Authentication
+// 🟢 Enable session first
 app.UseSession();
+
+// 🟢 Authentication & Authorization should be placed after session
 app.UseAuthentication();
 app.UseAuthorization();
 
+// SignalR route
 app.MapHub<NotificationHub>("/notificationHub");
+
 // Configure routing
 app.MapControllerRoute(
     name: "default",

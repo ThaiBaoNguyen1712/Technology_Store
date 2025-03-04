@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using OfficeOpenXml.FormulaParsing.Excel.Functions.Math;
 using QRCoder;
 using System.Diagnostics;
 using System.Globalization;
@@ -10,7 +12,10 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Tech_Store.Models;
 using Tech_Store.Models.DTO;
+using Tech_Store.Models.ViewModel;
+using Tech_Store.Services.NotificationServices;
 using static System.Net.Mime.MediaTypeNames;
+using Product = Tech_Store.Models.Product;
 
 namespace Tech_Store.Areas.Admin.Controllers
 {
@@ -20,10 +25,13 @@ namespace Tech_Store.Areas.Admin.Controllers
     public class ProductsController : BaseAdminController
     {
         private readonly IConfiguration _configuration;
-
-        public ProductsController(ApplicationDbContext context, IConfiguration configuration) : base(context)
+        private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly NotificationService _notificationService;
+        public ProductsController(ApplicationDbContext context, IConfiguration configuration, IWebHostEnvironment webHostEnvironment, NotificationService notificationService) : base(context)
         {
             _configuration = configuration;
+            _webHostEnvironment = webHostEnvironment;
+            _notificationService = notificationService;
         }
 
 
@@ -53,13 +61,26 @@ namespace Tech_Store.Areas.Admin.Controllers
 
             return brands;
         }
+        private List<Models.Attribute> GetListAttribute()
+        {
+            var attributes = _context.Attributes.Include(p => p.AttributeValues)
+                .Select(x => new Models.Attribute
+            {
+                AttributeId = x.AttributeId,
+                Name = x.Name,
+                Code = x.Code,
+                AttributeValues = x.AttributeValues,
+                SortOrder = x.SortOrder
+            }).OrderBy(x=>x.SortOrder).ToList();
 
+            return attributes;
+        }
         [Route("View/{id}")]
         public async Task<IActionResult> View(int id)
         {
-            
-            var detail = await _context.Products.Include(x=> x.Category).Include(x=> x.Brand)
-                .Include(x=>x.Galleries).Include(x=>x.Reviews).Include(x=>x.VarientProducts).
+
+            var detail = await _context.Products.Include(x => x.Category).Include(x => x.Brand)
+                .Include(x => x.Galleries).Include(x => x.Reviews).Include(x => x.VarientProducts).
                 FirstOrDefaultAsync(x => x.ProductId == id);
             var review = await _context.Reviews.Where(x=>x.ProductId == id).ToListAsync();
             var order = await _context.OrderItems.Where(x => x.ProductId == id).ToListAsync();
@@ -76,7 +97,7 @@ namespace Tech_Store.Areas.Admin.Controllers
         public async Task<IActionResult> Index(string? status)
         {
             // Khai báo danh sách sản phẩm
-            IQueryable<Product> query = _context.Products
+            IQueryable<Models.Product> query = _context.Products
                 .Include(p => p.Brand)
                 .Include(p => p.Category)
                 .OrderByDescending(p => p.ProductId);
@@ -86,19 +107,66 @@ namespace Tech_Store.Areas.Admin.Controllers
             {
                 query = query.Where(p => p.Status == status);
             }
-
+            var list_cate = _context.Categories.ToList();
+            ViewBag.cate = list_cate;
+            var list_brand = _context.Brands.ToList();
+            ViewBag.brand = list_brand;
             // Lấy danh sách sản phẩm từ cơ sở dữ liệu
             var list_products = await query.ToListAsync();
 
             return View(list_products);
         }
+        [HttpPost]
+        [Route("Filter")]
+        public IActionResult Filter(string sku, string name, string status, int? categoryId, int? brandId, int? stockFrom, int? stockTo)
+        {
+            var products = _context.Products
+                .Include(p => p.Brand)
+                .Include(p => p.Category)
+                .AsQueryable();
 
+            // Áp dụng các tiêu chí lọc
+            if (!string.IsNullOrEmpty(sku))
+                products = products.Where(p => p.Sku.Contains(sku.Trim()));
+            if (!string.IsNullOrEmpty(name))
+                products = products.Where(p => p.Name.Contains(name.Trim()));
+            if (!string.IsNullOrEmpty(status))
+                products = products.Where(p => p.Status == status);
+            if (categoryId.HasValue)
+                products = products.Where(p => p.CategoryId == categoryId.Value);
+            if (brandId.HasValue)
+                products = products.Where(p => p.BrandId == brandId.Value);
+            if (stockFrom.HasValue)
+                products = products.Where(p => p.Stock >= stockFrom.Value);
+            if (stockTo.HasValue)
+                products = products.Where(p => p.Stock <= stockTo.Value);
+
+            // Chuyển đổi sang view model để trả về JSON
+            var result = products.OrderByDescending(p => p.ProductId)
+                .Take(100)
+                .Select(p => new ProductViewModel
+                {
+                    ProductId = p.ProductId,
+                    Image = p.Image,
+                    Name = p.Name,
+                    Sku = p.Sku,
+                    BrandName = p.Brand.Name,
+                    CategoryName = p.Category.Name,
+                    SellPrice = p.SellPrice,
+                    Stock = p.Stock,
+                    Visible = (bool)p.Visible,
+                    Status = p.Status
+                })
+                .ToList();
+
+            return Json(result);
+        }
         [Route("Create")]
         public async Task<IActionResult> Create()
         {
             ViewBag.Categories = GetListCategories();
             ViewBag.Brands = GetListBrand();
-
+            ViewBag.Attributes = GetListAttribute();
             return View();
         }
         [HttpPost]
@@ -111,7 +179,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                 using var transaction = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    var product = new Product
+                    var product = new Models.Product
                     {
                         Name = productDto.Name,
                         Slug = GenerateSlug(productDto.Name),
@@ -171,8 +239,59 @@ namespace Tech_Store.Areas.Admin.Controllers
                                 Price = variantDto.Price ?? product.SellPrice
                             };
                             _context.VarientProducts.Add(variant);
+                            await _context.SaveChangesAsync();
+
+                            // Liên kết biến thể và thuộc tính
+                            if ((bool)productDto.IsUseVariant)
+                            {
+                                // Chuỗi sẽ có dạng rom:16GB,ram:64GB
+                                var attributePairs = variantDto.Attributes.Split(',');
+
+                                foreach (var attributePair in attributePairs)
+                                {
+                                    // Cắt lấy "rom" và "16GB"
+                                    var attrParts = attributePair.Split(':');
+                                    if (attrParts.Length != 2) continue; // Bỏ qua nếu không đúng định dạng
+
+                                    var attr = attrParts[0].Trim(); // Lấy thuộc tính (e.g., "rom")
+                                    var attrValue = attrParts[1].Trim(); // Lấy giá trị (e.g., "16GB")
+
+                                    // Truy vấn bảng Attributes
+                                    var attrQuery = await _context.Attributes.FirstOrDefaultAsync(x => x.Code == attr);
+                                    if (attrQuery == null) continue; // Bỏ qua nếu không tìm thấy
+
+                                    // Truy vấn bảng AttributeValues
+                                    var attrValueQuery = await _context.AttributeValues.FirstOrDefaultAsync(x =>
+                                        x.Value == attrValue && x.AttributeId == attrQuery.AttributeId);
+                                    if (attrValueQuery == null) continue; // Bỏ qua nếu không tìm thấy
+
+                                    // Tạo dòng mới trong bảng VariantAttribute
+                                    var productAttribute = new VariantAttribute
+                                    {
+                                        ProductVariantId = variant.VarientId,
+                                        AttributeValueId = attrValueQuery.AttributeValueId,
+                                    };
+
+                                    _context.VariantAttributes.Add(productAttribute);
+                                }
+                            }
                         }
                         await _context.SaveChangesAsync();
+                    }
+
+                    //Nếu người dùng không muốn sử dụng đa biến thể SP
+                    else
+                    {
+                        var defaultVariant = new VarientProduct
+                        {
+                            ProductId = product.ProductId,
+                            Sku = product.Sku,
+                            Attributes = "",
+                            Stock = product.Stock,
+                            Price = product.SellPrice
+                        };
+
+                        _context.VarientProducts.Add(defaultVariant);
                     }
 
                     // Thêm danh sách hình ảnh vào bảng Gallery
@@ -207,6 +326,10 @@ namespace Tech_Store.Areas.Admin.Controllers
 
                     await transaction.CommitAsync();
                     await GenerateProductsJson();
+
+                    //Thông báo 
+                    await _notificationService.NotifyAsync(Events.NotificationTarget.Admins, "Sản phẩm mới", $"Sản phẩm {product.Name} được thêm vào danh sách", "product added", $"/admin/products/views/{product.ProductId}");
+
                     return RedirectToAction("Index");
                 }
                 catch (Exception ex)
@@ -218,7 +341,7 @@ namespace Tech_Store.Areas.Admin.Controllers
             }
             return BadRequest("Invalid");
         }
-
+        #region Update Project
         [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(int id)
         {
@@ -229,43 +352,48 @@ namespace Tech_Store.Areas.Admin.Controllers
             {
                 return NotFound("Không tìm thấy sản phẩm");
             }
+
+            //lấy variant_id
+            var variant_id = await _context.VarientProducts
+           .Where(x => x.ProductId == _product.ProductId)
+           .Select(x => x.VarientId) // Sửa chỗ này: chọn VarientId thay vì ProductId
+           .ToListAsync(); // Sửa chỗ này: thêm Async()
+
+            // Lấy danh sách Attribute ID
+            var productAttributes = await _context.VariantAttributes
+                .Where(pa => variant_id.Contains(pa.ProductVariantId)) // Sửa chỗ này: dùng .Contains()
+                .Include(pa => pa.AttributeValue)
+                .Select(pa => pa.AttributeValue.AttributeId)
+                .Distinct()
+                .ToListAsync();
+
+
+            ViewBag.Attributes_checked = productAttributes;
             ViewBag.Categories = GetListCategories();
             ViewBag.Brands = GetListBrand();
+            ViewBag.Attributes = GetListAttribute();
             return View(_product);
         }
-        [HttpPost]
-        [Route("Update")]
+
+        [HttpPost("Update")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Update(ProductDTo productDto, List<IFormFile> gallery)
+        public async Task<IActionResult> Update(ProductDTo productDto)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest("Invalid model state");
-            }
+            if (!ModelState.IsValid) return BadRequest("Invalid model state");
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var existingProduct = await _context.Products.FindAsync(productDto.ProductId);
-                if (existingProduct == null)
-                {
-                    return NotFound();
-                }
+                var product = await _context.Products.FindAsync(productDto.ProductId);
+                if (product == null) return NotFound();
 
-                if (productDto.Image != null)
-                {
-                    await UpdateProductImage(existingProduct, productDto);
-                }
+                if (productDto.Image != null) await UpdateMainImage(product, productDto.Image);
 
-                UpdateProductDetails(existingProduct, productDto);
-                await UpdateProductVariants(productDto);
-                if(productDto.Galleries != null)
-                {
-                    await UpdateProductGallery(existingProduct, (List<IFormFile>)productDto.Galleries);
+                UpdateProductCoreFields(product, productDto);
+                await ProcessVariants(productDto);
+                if (productDto.Galleries != null) await AddGalleryImages(product, productDto.Galleries);
 
-                }
-
-                existingProduct.UpdatedAt = DateTime.Now;
+                product.UpdatedAt = DateTime.Now;
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
@@ -275,20 +403,192 @@ namespace Tech_Store.Areas.Admin.Controllers
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                // Consider logging the exception
-                return View("Error", new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+                // Log exception here
+                return StatusCode(500, "Có lỗi xảy ra khi cập nhật");
             }
         }
 
+        private async Task UpdateMainImage(Product product, IFormFile newImage)
+        {
+            var fileName = $"SP_{product.Sku}_{Guid.NewGuid()}.webp";
+            var imagePath = Path.Combine("wwwroot/Upload/Products", fileName);
+
+            // Delete old image if exists
+            if (!string.IsNullOrEmpty(product.Image))
+            {
+                var oldPath = Path.Combine("wwwroot/Upload/Products", product.Image);
+                if (System.IO.File.Exists(oldPath)) System.IO.File.Delete(oldPath);
+            }
+
+            using var stream = new FileStream(imagePath, FileMode.Create);
+            await newImage.CopyToAsync(stream);
+            product.Image = fileName;
+        }
+
+        private void UpdateProductCoreFields(Product product, ProductDTo dto)
+        {
+            product.Name = dto.Name;
+            product.Slug = GenerateSlug(dto.Name);
+            product.Description = dto.Description;
+            product.OriginalPrice = dto.OriginalPrice;
+            product.CostPrice = dto.CostPrice;
+            product.SellPrice = dto.SellPrice;
+            product.WarrantyPeriod = dto.WarrantyPeriod;
+            product.Status = dto.Status;
+            product.BrandId = dto.BrandId;
+            product.Stock = dto.Stock;
+            product.Weight = dto.Weight;
+            product.CategoryId = dto.CategoryId;
+            product.UrlYoutube = dto.UrlYoutube;
+            product.Sku = dto.Sku;
+            product.Color = dto.Color;
+
+            // Handle discounts
+            product.DiscountAmount = dto.DiscountAmount;
+            product.DiscountPercentage = dto.DiscountAmount.HasValue ? null : dto.DiscountPercentage;
+        }
+
+        private async Task ProcessVariants(ProductDTo dto)
+        {
+            if (dto.VarientProducts == null) return;
+
+            var existingVariants = await _context.VarientProducts
+                .Where(v => v.ProductId == dto.ProductId)
+                .ToListAsync();
+
+            var variantSkus = dto.VarientProducts.Select(v => v.Sku).ToHashSet(); // Dùng HashSet để tối ưu tìm kiếm
+            var removedVariants = existingVariants.Where(ev => !variantSkus.Contains(ev.Sku)).ToList();
+
+            // Kiểm tra và xóa các VariantAttribute trước khi xóa VariantProduct
+            var removedVariantIds = removedVariants.Select(v => v.VarientId).ToList();
+            var variantAttributesToRemove = await _context.VariantAttributes
+                .Where(va => removedVariantIds.Contains(va.ProductVariantId))
+                .ToListAsync();
+
+            // Xóa các VariantAttributes tham chiếu đến các variant bị xóa
+            _context.VariantAttributes.RemoveRange(variantAttributesToRemove);
+
+            // Kiểm tra xem có OrderItem nào tham chiếu đến VariantProduct không
+            var referencedVariantIds = await _context.OrderItems
+                .Where(oi => removedVariantIds.Contains(oi.VarientProductId))
+                .Select(oi => oi.VarientProductId)
+                .ToListAsync();
+
+            // Chỉ xóa những VariantProduct không có tham chiếu
+            var safeToDelete = removedVariants.Where(v => !referencedVariantIds.Contains(v.VarientId)).ToList();
+            _context.VarientProducts.RemoveRange(safeToDelete);
+
+            // Update/Add variants
+            foreach (var variantDto in dto.VarientProducts)
+            {
+                var existing = existingVariants.FirstOrDefault(v => v.Sku == variantDto.Sku);
+                if (existing != null)
+                {
+                    existing.Attributes = variantDto.Attributes;
+                    existing.Stock = variantDto.Stock ?? 0;
+                    existing.Price = variantDto.Price ?? dto.SellPrice ?? 0;
+                }
+                else
+                {
+                    _context.VarientProducts.Add(new VarientProduct
+                    {
+                        ProductId = dto.ProductId,
+                        Sku = variantDto.Sku,
+                        Attributes = variantDto.Attributes,
+                        Stock = variantDto.Stock ?? 0,
+                        Price = variantDto.Price ?? dto.SellPrice ?? 0
+                    });
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            await ProcessVariantAttributes(dto);
+        }
+
+
+        private async Task ProcessVariantAttributes(ProductDTo dto)
+        {
+            if ((bool)!dto.IsUseVariant) return;
+
+            var variants = await _context.VarientProducts
+                .Where(v => v.ProductId == dto.ProductId)
+                .ToListAsync();
+
+            // Xóa các VariantAttributes cũ trước khi thêm mới
+            var existingAttributes = await _context.VariantAttributes
+                .Where(va => va.ProductVariantId == dto.ProductId)
+                .ToListAsync();
+            _context.VariantAttributes.RemoveRange(existingAttributes);
+
+            foreach (var variant in variants)
+            {
+                var attributes = variant.Attributes?.Split(',') ?? Array.Empty<string>();
+
+                foreach (var attrPair in attributes)
+                {
+                    var parts = attrPair.Split(':');
+                    if (parts.Length != 2) continue;
+
+                    var attribute = await _context.Attributes
+                        .FirstOrDefaultAsync(a => a.Code == parts[0].Trim());
+
+                    var value = await _context.AttributeValues
+                        .FirstOrDefaultAsync(av => av.AttributeId == attribute.AttributeId
+                            && av.Value == parts[1].Trim());
+
+                    if (attribute == null || value == null) continue;
+
+                    // Kiểm tra xem VariantAttribute đã tồn tại chưa để tránh trùng lặp
+                    var existingVariantAttribute = await _context.VariantAttributes
+                        .FirstOrDefaultAsync(va => va.ProductVariantId == variant.VarientId
+                                                   && va.AttributeValueId == value.AttributeValueId);
+
+                    // Nếu không tồn tại thì thêm mới
+                    if (existingVariantAttribute == null)
+                    {
+                        _context.VariantAttributes.Add(new VariantAttribute
+                        {
+                            ProductVariantId = variant.VarientId,
+                            AttributeValueId = value.AttributeValueId
+                        });
+                    }
+                }
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+
+        private async Task AddGalleryImages(Product product, IEnumerable<IFormFile> images)
+        {
+            foreach (var image in images)
+            {
+                if (image.Length == 0) continue;
+
+                var fileName = $"GSP_{product.Sku}_{Guid.NewGuid()}.webp";
+                var path = Path.Combine("wwwroot/Upload/Products", fileName);
+
+                using var stream = new FileStream(path, FileMode.Create);
+                await image.CopyToAsync(stream);
+
+                _context.Galleries.Add(new Gallery
+                {
+                    ProductId = product.ProductId,
+                    Path = fileName
+                });
+            }
+        }
+        #endregion
+        //Cho phép hiển thị sản phẩm phía CLIENT hay ko
         [HttpPost("ChangeVisible")]
         public async Task<JsonResult> ChangeVisible(int productId)
         {
-            if(productId ==  0)
+            if (productId == 0)
             {
                 return Json(new { success = false, message = "Không nhận được mã sản phẩm" });
             }
             var product = await _context.Products.FirstOrDefaultAsync(x => x.ProductId.Equals(productId));
-            if(product == null)
+            if (product == null)
             {
 
                 return Json(new { success = false, message = "Không tìm thấy sản phẩm" });
@@ -298,182 +598,6 @@ namespace Tech_Store.Areas.Admin.Controllers
             await _context.SaveChangesAsync();
             return Json(new { success = true, message = "Thay đổi thành công", visible = product.Visible });
         }
-
-        private async Task UpdateProductImage(Product existingProduct, ProductDTo productDto)
-        {
-            // Kiểm tra nếu có hình ảnh mới
-            if (productDto.Image != null && productDto.Image.Length > 0)
-            {
-                // Xóa hình ảnh cũ nếu có
-                if (!string.IsNullOrEmpty(existingProduct.Image))
-                {
-                    var oldImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Products", existingProduct.Image);
-                    if (System.IO.File.Exists(oldImagePath)) // Sử dụng System.IO.File
-                    {
-                        try
-                        {
-                            System.IO.File.Delete(oldImagePath); // Xóa hình ảnh cũ
-                        }
-                        catch (Exception ex)
-                        {
-                            // Xử lý lỗi nếu cần (ghi log hoặc thông báo cho người dùng)
-                            Console.WriteLine($"Không thể xóa hình ảnh cũ: {ex.Message}");
-                        }
-                    }
-                }
-
-                // Tạo tên file mới và lưu hình ảnh mới
-                var fileName = $"SP_{productDto.Sku}.webp";
-                var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Products", fileName);
-                Directory.CreateDirectory(Path.GetDirectoryName(imagePath));
-
-                // Lưu hình ảnh mới vào ổ đĩa
-                using (var stream = new FileStream(imagePath, FileMode.Create))
-                {
-                    await productDto.Image.CopyToAsync(stream);
-                }
-
-                existingProduct.Image = fileName; // Cập nhật hình ảnh mới
-            }
-        }
-
-
-
-        private void UpdateProductDetails(Product existingProduct, ProductDTo updatedProduct)
-        {
-            existingProduct.Name = updatedProduct.Name;
-            existingProduct.Description = updatedProduct.Description;
-            existingProduct.OriginalPrice = updatedProduct.OriginalPrice;
-            existingProduct.CostPrice = updatedProduct.CostPrice;
-            existingProduct.SellPrice = updatedProduct.SellPrice;
-            existingProduct.WarrantyPeriod = updatedProduct.WarrantyPeriod;
-            existingProduct.Status = updatedProduct.Status;
-            existingProduct.BrandId = updatedProduct.BrandId;
-            existingProduct.Stock = updatedProduct.Stock;
-            existingProduct.Weight = updatedProduct.Weight;
-            existingProduct.CategoryId = updatedProduct.CategoryId;
-            existingProduct.UrlYoutube = updatedProduct.UrlYoutube;
-            existingProduct.Sku = updatedProduct.Sku;
-            existingProduct.Color = updatedProduct.Color;
-            existingProduct.Slug = GenerateSlug(updatedProduct.Name);
-            if (updatedProduct.DiscountAmount != null)
-            {
-                existingProduct.DiscountAmount = updatedProduct.DiscountAmount;
-                existingProduct.DiscountPercentage = null;
-            }
-            else if(updatedProduct.DiscountAmount != null)
-            {
-                existingProduct.DiscountPercentage = updatedProduct.DiscountPercentage;
-                existingProduct.DiscountAmount = null;
-            }
-        }
-
-        private async Task UpdateProductVariants(ProductDTo productDto)
-        {
-            if (productDto.VarientProducts == null || !productDto.VarientProducts.Any())
-            {
-                return;
-            }
-
-            var existingVariants = await _context.VarientProducts
-                .Where(v => v.ProductId == productDto.ProductId)
-                .ToListAsync();
-
-            foreach (var item in productDto.VarientProducts)
-            {
-                var existingVariant = existingVariants.FirstOrDefault(v => v.Sku == item.Sku);
-                if (existingVariant != null)
-                {
-                    UpdateExistingVariant(existingVariant, item, productDto.SellPrice ?? 0);
-                }
-                else
-                {
-                    AddNewVariant(item, productDto);
-                }
-            }
-
-            RemoveDeletedVariants(existingVariants, productDto.VarientProducts.ToList());
-        }
-
-        private void UpdateExistingVariant(VarientProduct existingVariant, VarientProduct updatedVariant, decimal productSellPrice)
-        {
-            existingVariant.Attributes = updatedVariant.Attributes;
-            existingVariant.Stock = updatedVariant.Stock ?? 0;
-            existingVariant.Price = updatedVariant.Price ?? productSellPrice;
-        }
-
-        private void AddNewVariant(VarientProduct newVariant, ProductDTo productDto)
-        {
-            newVariant.Stock = newVariant.Stock ?? 0;
-            newVariant.ProductId = productDto.ProductId;
-            newVariant.Price = newVariant.Price ?? productDto.SellPrice ?? 0;
-            _context.VarientProducts.Add(newVariant);
-        }
-
-        private void RemoveDeletedVariants(List<VarientProduct> existingVariants, List<VarientProduct> updatedVariants)
-        {
-            var removedVariants = existingVariants
-                .Where(v => !updatedVariants.Any(p => p.Sku == v.Sku))
-                .ToList();
-            _context.VarientProducts.RemoveRange(removedVariants);
-        }
-
-        private async Task UpdateProductGallery(Product product, List<IFormFile> gallery)
-        {
-            if (gallery == null || gallery.Count == 0)
-            {
-                return;
-            }
-
-            var existingGallery = await _context.Galleries
-                .Where(g => g.ProductId == product.ProductId)
-                .ToListAsync();
-
-            RemoveDeletedGalleryImages(existingGallery, gallery);
-            await AddNewGalleryImages(product, gallery, existingGallery);
-        }
-
-        private void RemoveDeletedGalleryImages(List<Gallery> existingGallery, List<IFormFile> updatedGallery)
-        {
-            var removedGallery = existingGallery
-                .Where(g => !updatedGallery.Any(newImg => newImg.FileName == g.Path))
-                .ToList();
-
-            foreach (var removed in removedGallery)
-            {
-                var galleryImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Products", removed.Path);
-                if (System.IO.File.Exists(galleryImagePath))
-                {
-                    System.IO.File.Delete(galleryImagePath);
-                }
-                _context.Galleries.Remove(removed);
-            }
-        }
-
-        private async Task AddNewGalleryImages(Product product, List<IFormFile> gallery, List<Gallery> existingGallery)
-        {
-            foreach (var item in gallery)
-            {
-                if (item.Length > 0 && !existingGallery.Any(g => g.Path == item.FileName))
-                {
-                    var galleryFileName = $"GSP_{product.Sku}_{Guid.NewGuid()}.webp";
-                    var galleryImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Products", galleryFileName);
-                    Directory.CreateDirectory(Path.GetDirectoryName(galleryImagePath));
-
-                    using (var stream = new FileStream(galleryImagePath, FileMode.Create))
-                    {
-                        await item.CopyToAsync(stream);
-                    }
-
-                    _context.Galleries.Add(new Gallery
-                    {
-                        ProductId = product.ProductId,
-                        Path = galleryFileName
-                    });
-                }
-            }
-        }
-
 
         [HttpPost("Delete/{id}")]
         public async Task<IActionResult> Delete(int id)
@@ -485,18 +609,6 @@ namespace Tech_Store.Areas.Admin.Controllers
                 return BadRequest("Không tìm thấy sản phẩm");
             }
 
-            if(product.Image  != null)
-            {
-                // Lưu đường dẫn hình ảnh của sản phẩm trước khi xóa
-                var productImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Products", product.Image);
-                // Gỡ bỏ tệp hình ảnh sản phẩm
-                if (System.IO.File.Exists(productImagePath))
-                {
-                    System.IO.File.Delete(productImagePath); // Xóa file ảnh sản phẩm khỏi thư mục
-                }
-            }
-          
-
             // Lấy tất cả các bản ghi liên quan
             var variantProducts = await _context.VarientProducts.Where(x => x.ProductId == id).ToListAsync();
             var galleries = await _context.Galleries.Where(x => x.ProductId == id).ToListAsync();
@@ -504,108 +616,161 @@ namespace Tech_Store.Areas.Admin.Controllers
             var reviews = await _context.Reviews.Where(x => x.ProductId == id).ToListAsync();
             var wishlists = await _context.Wishlists.Where(x => x.ProductId == id).ToListAsync();
             var orderItems = await _context.OrderItems.Where(x => x.ProductId == id).ToListAsync();
+            var variantProductAttrs = await _context.VariantAttributes
+                                        .Where(x => x.ProductVariantId == id).ToListAsync();
 
-            // Nếu sản phẩm đã được mua thì chỉ khóa lại
+            // Nếu sản phẩm đã được mua, chỉ ẩn và khóa lại
             if (orderItems.Any())
             {
-                product.Status = "4"; // Khóa sản phẩm
+                product.Status = "discontinued"; // Khóa sản phẩm
+                product.Visible = false;
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, message = "Sản phẩm đã được giao dịch, chỉ có thể Khóa/Ẩn" });
             }
-            else
+
+            // Dùng TransactionScope để đảm bảo tính toàn vẹn
+            using (var transaction = await _context.Database.BeginTransactionAsync())
             {
-                // Xóa tất cả các liên kết nếu sản phẩm chưa được mua
-                _context.VarientProducts.RemoveRange(variantProducts);
-                _context.Galleries.RemoveRange(galleries);
-                _context.CartItems.RemoveRange(cartItems);
-                _context.Reviews.RemoveRange(reviews);
-                _context.Wishlists.RemoveRange(wishlists);
-
-               
-
-                // Gỡ bỏ tất cả các tệp hình ảnh trong galleries
-                foreach (var gallery in galleries)
+                try
                 {
-                    var galleryImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Products", gallery.Path);
-                    if (System.IO.File.Exists(galleryImagePath))
+                    // Xóa tất cả các thuộc tính của biến thể trước
+                    if (variantProductAttrs.Any())
                     {
-                        System.IO.File.Delete(galleryImagePath); // Xóa từng file ảnh trong thư viện
+                        _context.VariantAttributes.RemoveRange(variantProductAttrs);
+                        await _context.SaveChangesAsync();
                     }
+
+                    // Xóa dữ liệu liên quan khác
+                    if (galleries.Any()) _context.Galleries.RemoveRange(galleries);
+                    if (cartItems.Any()) _context.CartItems.RemoveRange(cartItems);
+                    if (reviews.Any()) _context.Reviews.RemoveRange(reviews);
+                    if (wishlists.Any()) _context.Wishlists.RemoveRange(wishlists);
+
+                    await _context.SaveChangesAsync();
+
+                    // Xóa biến thể sản phẩm
+                    if (variantProducts.Any())
+                    {
+                        _context.VarientProducts.RemoveRange(variantProducts);
+                        await _context.SaveChangesAsync();
+                    }
+
+                    // Xóa sản phẩm cuối cùng
+                    _context.Products.Remove(product);
+                    await _context.SaveChangesAsync();
+
+                    // Xóa JSON cache
+                    await GenerateProductsJson();
+
+                    // Commit transaction sau khi mọi thứ thành công
+                    await transaction.CommitAsync();
+
+                    // Xóa hình ảnh sau khi xóa thành công trong DB
+                    if (product.Image != null)
+                    {
+                        var productImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Products", product.Image);
+                        if (System.IO.File.Exists(productImagePath))
+                        {
+                            System.IO.File.Delete(productImagePath);
+                        }
+                    }
+
+                    // Xóa hình ảnh của Galleries sau khi xóa DB
+                    foreach (var gallery in galleries)
+                    {
+                        var galleryImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Products", gallery.Path);
+                        if (System.IO.File.Exists(galleryImagePath))
+                        {
+                            System.IO.File.Delete(galleryImagePath);
+                        }
+                    }
+
+                    return Json(new { success = true, message = "Sản phẩm đã được xóa thành công khỏi danh sách." });
+                }
+                catch (Exception ex)
+                {
+                    // Rollback transaction nếu có lỗi
+                    await transaction.RollbackAsync();
+                    return BadRequest(new { success = false, message = "Lỗi khi xóa sản phẩm: " + ex.Message });
                 }
             }
+        }
 
+
+        // Hàm dùng để xóa ảnh thumbnail của sản phẩm
+        // Đang sử dụng Kết hợp với FilePond
+        [HttpPost("DeleteFileImage")]
+        public async Task<IActionResult> DeleteFileImage([FromBody] DeleteFileViewModel model)
+        {
             try
             {
-                _context.Products.Remove(product);
-                await GenerateProductsJson();
-                await _context.SaveChangesAsync();
-                return NoContent();
+                if (string.IsNullOrEmpty(model.FilePath))
+                    return Json(new { success = false, message = "Đường dẫn file không hợp lệ" });
+
+                // Xử lý xóa ảnh thumbnail
+                var product = await _context.Products.FirstOrDefaultAsync(x => x.ProductId == model.ProductId);
+                if (product.Image !=null)
+                {
+                    // Xóa file vật lý
+                    string fullPath = Path.Combine(_webHostEnvironment.WebRootPath, "Upload/Products", product.Image);
+                    if (System.IO.File.Exists(fullPath))
+                    {
+                        System.IO.File.Delete(fullPath);
+                    }
+
+                    // Xóa ảnh trong DB
+                    product.Image = null;
+                    await _context.SaveChangesAsync();
+
+                    return Json(new { success = true });
+                }
+
+                return Json(new { success = false, message = "Ảnh không tồn tại" });
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return Json(new { success = false, message = "Đã có lỗi xảy ra" });
             }
         }
 
-
-        [HttpPost("DeleteImage/{id}")]
-        public async Task<IActionResult> DeleteImage(int id) 
+        // Hàm dùng để xóa ảnh thư viện của sản phẩm
+        // Đang sử dụng Kết hợp với FilePond
+        [HttpPost("DeleteFileImageFromGalleries")]
+        public async Task<IActionResult> DeleteFileImageFromGalleries([FromBody] DeleteFileViewModel model)
         {
-            if (id <= 0)
+            try
             {
-                return BadRequest("Tham số không hợp lệ");
-            }
+                if (string.IsNullOrEmpty(model.FilePath))
+                    return Json(new { success = false, message = "Đường dẫn file không hợp lệ" });
 
-            var product = await _context.Products.FirstOrDefaultAsync(x => x.ProductId == id);
-            if (product == null)
+                var img = await _context.Galleries.FirstOrDefaultAsync(x => x.ProductId == model.ProductId && x.Path.Contains(model.FilePath));
+                if (img == null)
+                {
+                    return NotFound("Không tìm thấy ảnh thư viện");
+                }
+
+                if (img !=null)
+                {
+                    // Xóa file vật lý
+                    string fullPath = Path.Combine(_webHostEnvironment.WebRootPath, "Upload/Products", model.FilePath);
+                    if (System.IO.File.Exists(fullPath))
+                    {
+                        System.IO.File.Delete(fullPath);
+                    }
+
+                    // Xóa ảnh trong DB
+                    _context.Galleries.Remove(img);
+                    await _context.SaveChangesAsync();
+                    return Json(new { success = true });
+                }
+
+                return Json(new { success = false, message = "Ảnh không tồn tại" });
+            }
+            catch (Exception ex)
             {
-                return NotFound("Không tìm thấy sản phẩm");
+                return Json(new { success = false, message = "Đã có lỗi xảy ra" });
             }
-
-            // Lưu đường dẫn ảnh trước khi xóa
-            var galleryImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Products", product.Image);
-
-            // Xóa ảnh trong DB
-            product.Image = null;
-            await _context.SaveChangesAsync();
-
-            // Gỡ ảnh trong folder
-            if (System.IO.File.Exists(galleryImagePath))
-            {
-                System.IO.File.Delete(galleryImagePath); 
-            }
-
-            return NoContent();
         }
-
-        [HttpPost("DeleteImageFromGalleries/{id}")]
-        public async Task<IActionResult> DeleteImageFromGalleries(int id) 
-        {
-            if (id <= 0)
-            {
-                return BadRequest("Tham số không hợp lệ");
-            }
-
-            var img = await _context.Galleries.FirstOrDefaultAsync(x => x.ImageId == id);
-            if (img == null)
-            {
-                return NotFound("Không tìm thấy hình ảnh");
-            }
-
-            // Lưu đường dẫn ảnh trước khi xóa
-            var galleryImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Products", img.Path);
-
-            // Xóa ảnh trong DB
-            _context.Galleries.Remove(img);
-            await _context.SaveChangesAsync();
-
-            // Gỡ ảnh trong folder
-            if (System.IO.File.Exists(galleryImagePath))
-            {
-                System.IO.File.Delete(galleryImagePath);
-            }
-
-            return NoContent();
-        }
-
 
         //Tạo Code
         [HttpGet("GenerateCode/{id}/{content?}/{codeType?}")]
@@ -637,6 +802,7 @@ namespace Tech_Store.Areas.Admin.Controllers
 
             return View(product);
         }
+
         //In Code
         [HttpGet]
         [Route("PrintCode")]

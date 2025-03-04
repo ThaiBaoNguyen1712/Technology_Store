@@ -46,8 +46,12 @@ public class ProductDTo
     public DateTime? CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
-
+    
     public virtual ICollection<IFormFile>? Galleries { get; set; } = new List<IFormFile>();
 
+    //Product Variant
+    public bool? IsUseVariant { get; set; }
+
     public virtual ICollection<VarientProduct>? VarientProducts { get; set; } = new List<VarientProduct>();
+
 }

@@ -16,7 +16,9 @@ namespace Tech_Store.Areas.Admin.Controllers
         [HttpGet]
         public IActionResult Index()
         {
-            var list_brands = _context.Brands.ToList();
+            var list_cate = _context.Categories.ToList();
+            ViewBag.cate = list_cate;
+            var list_brands = _context.Brands.Include(p=>p.Category).ToList();
             return View(list_brands);
         }
 
@@ -93,6 +95,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                 }
                 brand.Name = _brand.Name;
                 brand.Description = _brand.Description;
+                brand.CategoryId = _brand.CategoryId;
                 await _context.SaveChangesAsync();
                 return Ok();
             }

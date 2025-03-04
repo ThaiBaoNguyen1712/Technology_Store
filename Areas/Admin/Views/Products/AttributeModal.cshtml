@@ -1,0 +1,276 @@
+﻿<!-- Modal -->
+<div class="modal fade" id="attributeModal" tabindex="-1" aria-labelledby="attributeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" style="min-width:70vw">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="attributeModalLabel">Quản lý thuộc tính</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Form thêm thuộc tính -->
+                <form id="attributeForm" class="mb-4">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <input type="hidden" id="attributeID" />
+                            <div class="mb-3">
+                                <label for="attributeName" class="form-label">Tên thuộc tính</label>
+                                <i class="fa fa-info-circle text-primary" data-bs-toggle="tooltip" title="Tên thuộc tính, vd : 'Màu sắc' , 'Chất liệu'"></i>
+                                <input type="text" class="form-control" name="attributeName" id="attributeName" placeholder="Nhập tên thuộc tính">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="attributeName" class="form-label">Mã thuộc tính</label>
+                                <i class="fa fa-info-circle text-primary" data-bs-toggle="tooltip" title="Mã thuộc tính (Nên là từ tiếng Anh của tên thuộc tính), vd : 'color' , 'material'"></i>
+                                <input type="text" class="form-control" name="attributeCode" id="attributeCode" placeholder="Nhập mã thuộc tính">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="attributeValue" class="form-label">Giá trị</label>
+                                <i class="fa fa-info-circle text-primary" data-bs-toggle="tooltip" title="Giá trị thuộc tính, vd : 'Xanh' , 'Nhựa' ... 
+                                    Nếu có nhiều giá trị vui lòng ngăn cách bằng dấu phẩy ','"></i>
+                                <input type="text" class="form-control tags-input" name="attributeValue" id="attributeValue" placeholder="Nhập giá trị">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="attributeOrder" class="form-label">Thứ tự</label>
+                                <i class="fa fa-info-circle text-primary" data-bs-toggle="tooltip" title="Thứ tự xuất hiện của thuộc tính"></i>
+                                <input type="number" class="form-control" min="1" name="attributeOrder" id="attributeOrder" placeholder="Nhập thứ tự">
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" id="btnAddAttribute" class="btn btn-primary w-50 mx-auto d-flex align-items-center justify-content-center">
+                        Thêm thuộc tính
+                    </button>
+
+                </form>
+
+                <hr>
+
+                <!-- Danh sách thuộc tính -->
+                <div class="attribute-list">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Tên thuộc tính</th>
+                                <th>Mã thuộc tính</th>
+                                <th>Giá trị</th>
+                                <th>Thứ tự</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attributeTableBody">
+                            <!-- Dữ liệu sẽ được thêm vào đây bằng jQuery -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+           
+        </div>
+    </div>
+</div>
+
+<script src="~/Admin/assets/js/core/jquery-3.7.1.min.js"></script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        const apiUrl = '@Url.Action("Attributes", "Admin")';
+
+        // Hiển thị loading
+        function showLoading() {
+            $('.loading-container').show();
+        }
+
+        // Ẩn loading
+        function hideLoading() {
+            $('.loading-container').hide();
+        }
+
+        // Load danh sách thuộc tính
+        function loadAttributes() {
+            showLoading();
+            $.get(`${apiUrl}/GetAll`, function (response) {
+                hideLoading();
+                const tableBody = $('#attributeTableBody');
+                tableBody.empty();
+                if (response.success) {
+                    response.data.forEach((attr, index) => {
+                        tableBody.append(`
+                                <tr data-id="${attr.attributeId}">
+                                    <td>${index + 1}</td>
+                                    <td>${attr.name}</td>
+                                    <td>${attr.code}</td>
+                                    <td>${attr.value}</td>
+                                    <td>${attr.sortOrder}</td>
+                                    <td>
+                                        <button class="btn btn-warning btn-edit">Sửa</button>
+                                        <button class="btn btn-danger btn-delete">Xóa</button>
+                                    </td>
+                                </tr>
+                            `);
+                    });
+                } else {
+                    tableBody.append('<tr><td colspan="5">Không có dữ liệu</td></tr>');
+                }
+            });
+        }
+
+        // Thêm thuộc tính
+        $('#btnAddAttribute').on('click', function () {
+            const name = $('#attributeName').val();
+            const code = $('#attributeCode').val();
+            const value = $('#attributeValue').val();
+            const sortOrder = $('#attributeOrder').val();
+
+            showLoading();
+            $.post(`${apiUrl}/Create`, {
+                name: name,
+                code: code,
+                value: value,
+                sortOrder: sortOrder
+            }).done(function (response) {
+                hideLoading();
+                if (response.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Thành công!',
+                        text: response.message
+                    });
+                    loadAttributes();
+                    // Reset các input
+                    $('#attributeName').val('');
+                    $('#attributeCode').val('');
+                    $('#attributeValue').val('');
+                    $('#attributeOrder').val('');
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi!',
+                        text: response.message
+                    });
+                }
+            }).fail(function () {
+                hideLoading();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: 'Lỗi khi thêm thuộc tính.'
+                });
+            });
+        });
+
+        // Sửa thuộc tính
+        $('#attributeTableBody').on('click', '.btn-edit', function () {
+            const row = $(this).closest('tr');
+            const id = row.data('id');
+            const name = row.find('td:nth-child(2)').text();
+            const code = row.find('td:nth-child(3)').text();
+            const value = row.find('td:nth-child(4)').text();
+            const sortOrder = row.find('td:nth-child(5)').text();
+
+            // Điền dữ liệu vào form
+            $('#attributeID').val(id);
+            $('#attributeName').val(name);
+            $('#attributeCode').val(code);
+            $('#attributeValue').val(value);
+            $('#attributeOrder').val(sortOrder);
+
+            // Đổi sự kiện nút thêm sang cập nhật
+            $('#btnAddAttribute').off('click').text('Cập nhật thuộc tính').on('click', function () {
+                showLoading();
+                $.ajax({
+                    method: 'PUT',
+                    url: `${apiUrl}/Update`,
+                    data: {
+                        attributeId: id,
+                        name: $('#attributeName').val(),
+                        code: $('#attributeCode').val(),
+                        value: $('#attributeValue').val(),
+                        sortOrder: $('#attributeOrder').val()
+                    }
+                }).done(function (response) {
+                    hideLoading();
+                    if (response.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Cập nhật thành công!',
+                            text: response.message
+                        });
+                        loadAttributes();
+                        // Reset các input và đổi lại nút
+                        $('#attributeName').val('');
+                        $('#attributeCode').val('');
+                        $('#attributeValue').val('');
+                        $('#attributeOrder').val('');
+                        $('#btnAddAttribute').text('Thêm thuộc tính').off('click').on('click', addAttributeHandler);
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi!',
+                            text: response.message
+                        });
+                    }
+                }).fail(function () {
+                    hideLoading();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi!',
+                        text: 'Lỗi khi cập nhật thuộc tính.'
+                    });
+                });
+            });
+        });
+
+        // Xóa thuộc tính
+        $('#attributeTableBody').on('click', '.btn-delete', function () {
+            const row = $(this).closest('tr');
+            const id = row.data('id');
+
+            Swal.fire({
+                title: 'Bạn có chắc chắn?',
+                text: 'Bạn sẽ không thể khôi phục lại dữ liệu này!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Có, xóa!',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    showLoading();
+                    $.ajax({
+                        method: 'POST',
+                        url: `${apiUrl}/Delete`,
+                        data: { attributeId: id },
+                    }).done(function (response) {
+                        hideLoading();
+                        if (response.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Xóa thành công!',
+                                text: response.message
+                            });
+                            loadAttributes();
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Lỗi!',
+                                text: response.message
+                            });
+                        }
+                    }).fail(function () {
+                        hideLoading();
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi!',
+                            text: 'Lỗi khi xóa thuộc tính.'
+                        });
+                    });
+                }
+            });
+        });
+
+        // Gọi loadAttributes khi trang được tải
+        loadAttributes();
+    });
+</script>

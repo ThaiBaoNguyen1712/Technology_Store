@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using NuGet.Protocol;
 using System.Globalization;
 using System.Security.Claims;
+using Tech_Store.Events;
 using Tech_Store.Helper;
 using Tech_Store.Models;
 using Tech_Store.Models.DTO;
@@ -192,6 +193,9 @@ namespace Tech_Store.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+
+                await _notificationService.NotifyAsync(NotificationTarget.SpecificUsers, "Thay đổi TT tài khoản", "Thay đổi thông tin tài khoản thành công", "success", "#", new List<int> { parsedUserId });
+
                 return Json(new { success = true, message = "Thay đổi địa chỉ thành công" });
             }
             catch (Exception ex)
@@ -219,6 +223,9 @@ namespace Tech_Store.Controllers
                 user.Email = Email;
                 user.PhoneNumber = PhoneNumber;
                 await _context.SaveChangesAsync();
+
+                await _notificationService.NotifyAsync(NotificationTarget.SpecificUsers, "Thay đổi TT tài khoản", "Thay đổi thông tin tài khoản thành công", "success", "#", new List<int> { parsedUserId });
+
                 return Json(new { success = true, message = "Thay đổi thông tin thành công" });
             }
             catch (Exception ex)
@@ -231,22 +238,28 @@ namespace Tech_Store.Controllers
         [HttpPost("ToCheckout")]
         public IActionResult ToCheckout([FromBody] ListItemCartDTo listItemCartDTo)
         {
+            if (!CheckUserInfoRequire())
+            {
+                return Json(new { success = false, message = "Cần phải cung cấp thông tin trước khi đến phần thanh toán." });
+            }
             if (listItemCartDTo == null || listItemCartDTo.cartDTos == null || !listItemCartDTo.cartDTos.Any())
             {
-                return NotFound("Không có sản phẩm nào trong giỏ hàng.");
+                return Json(new { success = false, message = "Không có sản phẩm nào trong giỏ hàng." });
             }
 
             // Lưu vào Session dưới dạng chuỗi JSON
             HttpContext.Session.SetString("CartItems", JsonConvert.SerializeObject(listItemCartDTo));
-            return Ok(new { redirectUrl = Url.Action("Checkout", "Payment") });
+
+            return Json(new { success = true, redirectUrl = Url.Action("Checkout", "Payment") });
         }
+
         #region Cart 
         [HttpPost("AddToCart")]
         public async Task<JsonResult> AddToCart(int itemId, int quantity)
         {
             if (!User.Identity.IsAuthenticated)
             {
-                return Json(new { success = false, message = "Cần đăng nhập" });
+                return Json(new { success = false, message = "Cần đăng nhập trước khi thêm sản phẩm vào giỏ hàng" });
             }
 
             // Kiểm tra tính hợp lệ của quantity
@@ -428,8 +441,9 @@ namespace Tech_Store.Controllers
                 ImageUrl = o.OrderItems.FirstOrDefault()?.VarientProduct?.Product?.Image ?? "/default-image.jpg", // Kiểm tra null và thêm ảnh mặc định
                 variantIds = o.OrderItems.Select(x => x.VarientProductId).ToArray(),
                 OrderStatus = o.OrderStatus,
-                Is_Reviewed = (bool)o.IsReviewed,
-                OrderDate = (DateTime)o.OrderDate, // Chỉ lấy ngày (DateOnly)
+                Is_Reviewed = o.IsReviewed ?? false, // Nếu null, đặt mặc định là false
+                OrderDate = o.OrderDate ?? DateTime.MinValue, // Nếu null, đặt mặc định là ngày nhỏ nhất
+
                 Amount = o.TotalAmount
             }).ToList();
 
@@ -456,6 +470,12 @@ namespace Tech_Store.Controllers
             order.Note = reason;
             order.OrderStatus = "Cancelled";
             await _context.SaveChangesAsync();
+
+            //Gửi thông báo đến admin và client
+            await _notificationService.NotifyAsync(NotificationTarget.SpecificUsers, "Hủy đơn hàng", $"Đơn hàng {order.OrderId} đã được hủy", "info", $"/user/MyOrders/OrderDetail/{order.OrderId}", new List<int> { order.UserId});
+
+            await _notificationService.NotifyAsync(NotificationTarget.Admins, "Đơn hàng bị hủy", $"Đơn hàng {order.OrderId} đã bị hủy bởi khách hàng","danger", $"Admin/Orders/View/{order.OrderId}");
+
             return Json(new { success = true, message = "Đơn hàng đã hủy" });
         }
 
@@ -495,6 +515,9 @@ namespace Tech_Store.Controllers
             order.IsReviewed = true;
             // Lưu thay đổi vào cơ sở dữ liệu
             await _context.SaveChangesAsync();
+
+            //Gửi thông báo cho admin
+            await _notificationService.NotifyAsync(NotificationTarget.Admins, "Đánh giá mới", $"Đánh giá của đơn hàng {order.OrderId}", "info" ,"/Admin/Orders/completed");
 
             return Json(new { success = true, message = "Gửi đánh giá thành công" });
         }
@@ -681,14 +704,8 @@ namespace Tech_Store.Controllers
                         "1", // Admin có UserId = "1" (kiểu string)
                         userId // ID của người dùng đang đăng nhập (lấy từ ClaimTypes.NameIdentifier)
                     };
+                await _notificationService.NotifyAsync(NotificationTarget.Admins, "Bình luận mới", $"Bình luận mới được thêm vào sản phẩm {product_get.Name}.", "new comment", $"/View/{product_get.Slug}");
 
-                await _notificationService.CreateNotificationAsync(
-                    title:"Bình luận mới",
-                    message: $"Bình luận mới được thêm vào sản phẩm {product_get.Name}.",
-                    redirectUrl: $"/View/{product_get.Slug}", // Dẫn tới chi tiết sản phẩm
-                    type:"new comment",
-                    userIds: userIds
-                );
                 return Json(new { success = true, comment });
             }
             catch (Exception ex)

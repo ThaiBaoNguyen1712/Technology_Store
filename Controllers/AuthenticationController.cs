@@ -7,11 +7,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using reCAPTCHA.AspNetCore;
 using System.Security.Claims;
+using Tech_Store.Events;
 using Tech_Store.Helper;
 using Tech_Store.Helpers;
 using Tech_Store.Models;
 using Tech_Store.Models.DTO.Authentication;
 using Tech_Store.Services;
+using Tech_Store.Services.NotificationServices;
 
 namespace Tech_Store.Controllers
 {
@@ -21,16 +23,19 @@ namespace Tech_Store.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IEmailService _emailService;
         private readonly IRecaptchaService _recaptchaService;
+        private readonly NotificationService _notificationService;
         private const int OTP_EXPIRATION_MINUTES = 3;
 
         public AuthenticationController(
             ApplicationDbContext context,
             IEmailService emailService,
-            IRecaptchaService recaptchaService)
+            IRecaptchaService recaptchaService,
+            NotificationService notificationService)
         {
             _context = context;
             _emailService = emailService;
             _recaptchaService = recaptchaService;
+            _notificationService = notificationService;
         }
 
         #region Public Actions
@@ -39,6 +44,7 @@ namespace Tech_Store.Controllers
         {
             if (User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Home");
+
             return View();
         }
 
@@ -67,6 +73,7 @@ namespace Tech_Store.Controllers
                 }
 
                 await SignInUser(user, loginDto.Remember);
+             
                 return RedirectToUserDashboard(user);
             }
             catch (Exception)
@@ -138,6 +145,8 @@ namespace Tech_Store.Controllers
                     // Thiết lập vai trò và giỏ hàng
                     await SetupUserRole(user.UserId);
                     await CreateCart(user);
+                    await _notificationService.NotifyAsync(NotificationTarget.Admins, "Người dùng mới", $"Người dùng{user.Email} vừa tạo tài khoản !", "new register", $"/admin/users/{user.UserId}");
+
                 }
 
                 // Tự động đăng nhập
@@ -218,6 +227,9 @@ namespace Tech_Store.Controllers
                     // Thiết lập vai trò và giỏ hàng
                     await SetupUserRole(user.UserId);
                     await CreateCart(user);
+
+                    await _notificationService.NotifyAsync(NotificationTarget.Admins, "Người dùng mới", $"Người dùng{user.Email} vừa tạo tài khoản !", "new register", $"/admin/users/{user.UserId}");
+
                 }
 
                 // Tự động đăng nhập
@@ -276,6 +288,8 @@ namespace Tech_Store.Controllers
                     // Auto login after registration
                     await SignInUser(user, true);
                     HttpContext.Session.SetString("UserEmail", registerDto.Email);
+
+                    await _notificationService.NotifyAsync(NotificationTarget.Admins, "Người dùng mới", $"Người dùng{user.Email} vừa tạo tài khoản !", "new register", $"/admin/users/{user.UserId}");
 
                     return Json(new
                     {
@@ -417,6 +431,8 @@ namespace Tech_Store.Controllers
                 // Auto login after password change
                 await SignInUser(user, true);
 
+                await _notificationService.NotifyAsync(NotificationTarget.SpecificUsers, "Thay đổi mật khẩu", $"Bạn đã thay đổi mật khẩu lúc {DateTime.Now}", "info", "#", new List<int> { user.UserId });
+
                 return Json(new { success = true, message = "Thay đổi mật khẩu thành công" });
             }
             catch (Exception)
@@ -456,6 +472,9 @@ namespace Tech_Store.Controllers
             var newPassword = PasswordHelper.HashPassword(changePasswordDTo.Password);
             user_get.PasswordHash = newPassword;
             await _context.SaveChangesAsync();
+
+            await _notificationService.NotifyAsync(NotificationTarget.SpecificUsers, "Thay đổi mật khẩu", $"Bạn đã thay đổi mật khẩu lúc {DateTime.Now}", "info", "#", new List<int> { user_get.UserId });
+
 
             return Json(new { success = true, message = "Thay đổi mật khẩu thành công" });
         }

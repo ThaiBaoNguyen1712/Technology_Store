@@ -104,6 +104,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                 .OrderByDescending(un => un.Notification.CreatedAt)
                 .Select(un => new
                 {
+                    un.UserNotificationId,
                     un.UserId,
                     un.Notification.Title,
                     un.Notification.Message,

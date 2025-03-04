@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualBasic;
+using OfficeOpenXml.FormulaParsing.Excel.Functions.Math;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Net;
@@ -38,6 +39,62 @@ namespace Tech_Store.Areas.Admin.Controllers
                 .ToListAsync();
 
             return View(list_Users);
+        }
+
+        [HttpPost]
+        [Route("Filter")]
+        public IActionResult Filter(string? nameCustomer, string? status, string? email, decimal? revenueFrom, decimal? revenueTo,
+                 DateTime? CreatedDateFrom, DateTime? CreatedDateTo, string? phoneNumber)
+        {
+            var users = _context.Users
+                .Include(p => p.Orders).ThenInclude(t => t.Payments)
+                .AsQueryable();
+
+            // Áp dụng các tiêu chí lọc
+            if (!string.IsNullOrEmpty(nameCustomer))
+                users = users.Where(p => p.FirstName.Contains(nameCustomer) || p.LastName.Contains(nameCustomer));
+
+            if (!string.IsNullOrEmpty(status) && bool.TryParse(status,out bool isActive))
+                users = users.Where(p => p.IsActive == isActive);
+
+            if (revenueFrom.HasValue || revenueTo.HasValue)
+            {
+                users = users.Where(p =>
+                    (!revenueFrom.HasValue || p.Orders.Sum(s => s.TotalAmount) >= revenueFrom.Value) &&
+                    (!revenueTo.HasValue || p.Orders.Sum(s => s.TotalAmount) <= revenueTo.Value)
+                );
+            }
+
+            if (!string.IsNullOrEmpty(email))
+                users = users.Where(p => p.Email.Contains(email));
+
+
+            if (CreatedDateFrom.HasValue || CreatedDateTo.HasValue)
+                users = users.Where(p =>
+                    (!CreatedDateFrom.HasValue || p.CreatedAt >= CreatedDateFrom.Value) &&
+                    (!CreatedDateTo.HasValue || p.CreatedAt <= CreatedDateTo.Value)
+                );
+
+            if (!string.IsNullOrEmpty(phoneNumber))
+                users = users.Where(p => p.PhoneNumber.Contains(phoneNumber));
+
+            // Chuyển đổi sang view model để trả về JSON
+            var result = users.OrderByDescending(p => p.UserId)
+                .Take(100)
+                .Select(p => new UserVM
+                {
+                   UserId = p.UserId,
+                   FirstName = p.FirstName,
+                   LastName = p.LastName,
+                   ImageUrl = p.Img,
+                   Email = p.Email,
+                   IsActive = (bool)p.IsActive,
+                   OrderCount = p.Orders.Count(),
+                   PhoneNumber = p.PhoneNumber
+                })
+                .ToList();
+
+            return Json(result);
         }
 
 
@@ -356,6 +413,19 @@ namespace Tech_Store.Areas.Admin.Controllers
             user.IsActive = false;
             await _context.SaveChangesAsync();
             return Json(new { success = true, message = "Đã chặn người dùng" });
+        }
+
+        [HttpPost("UnBanUser")]
+        public async Task<JsonResult> UnBanUser(int id)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == id);
+            if (user == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy người dùng" });
+            }
+            user.IsActive = true;
+            await _context.SaveChangesAsync();
+            return Json(new { success = true, message = "Đã bỏ chặn người dùng" });
         }
 
         private bool CheckPhoneNumberExist(string phoneNumber)

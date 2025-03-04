@@ -22,6 +22,11 @@ namespace Tech_Store.Controllers
             LoadUser();
             LoadProductsAndCategories();
             SiteInfor();
+            if (User.Identity.IsAuthenticated)
+            {
+                GetUserNotifications();
+                ViewBag.UserInfoRequire = CheckUserInfoRequire();
+            }
         }
         protected virtual void LoadProductsAndCategories()
         {
@@ -32,14 +37,15 @@ namespace Tech_Store.Controllers
             var watch_products = _context.Products.Where(x => x.CategoryId == 4).OrderByDescending(x => x.CreatedAt).Take(10).ToList();
             var accessory_products = _context.Products.Where(x => x.CategoryId == 5).OrderByDescending(x => x.CreatedAt).Take(10).ToList();
 
+            //Cart_item count
             var cart_items_count = 0;
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId != null)
             {
                 cart_items_count = _context.CartItems.Where(x=>x.Cart.UserId == int.Parse(userId)).Count();
             }
-  
 
+        
             ViewBag.Categories = categories;
             ViewBag.phone = smartphone_products;
             ViewBag.laptop = laptop_products;
@@ -47,6 +53,7 @@ namespace Tech_Store.Controllers
             ViewBag.watch = watch_products;
             ViewBag.accessory = accessory_products;
             ViewBag.cart_numb = cart_items_count;
+      
         }
 
         protected virtual void LoadUser()
@@ -90,5 +97,44 @@ namespace Tech_Store.Controllers
             ViewBag.MoreInfo = settings.FirstOrDefault(s => s.Key == "MoreInfo")?.Value ?? "";
         }
 
+        protected virtual void GetUserNotifications()
+        {
+            int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var notifications = _context.UserNotifications
+                .Where(un => un.UserId == userId)
+                .Include(un => un.Notification)
+                .OrderByDescending(un => un.Notification.CreatedAt)
+                .Select(un => new
+                {
+                    un.UserNotificationId,
+                    un.UserId,
+                    un.Notification.Title,
+                    un.Notification.Message,
+                    un.Notification.RedirectUrl,
+                    un.Notification.Type,
+                    un.Notification.CreatedAt,
+                    un.IsRead
+                })
+                .Take(20)
+                .ToList();
+
+            ViewBag.Notifications = notifications;
+            ViewBag.Notification_count = notifications.Where(x => x.IsRead == false).Count();
+        }
+
+        protected bool CheckUserInfoRequire()
+        {
+            int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var user = _context.Users.FirstOrDefault(x=>x.UserId == userId);  
+            if(user == null)
+            {
+                return false;
+            }
+            if(string.IsNullOrEmpty(user.FirstName) || string.IsNullOrEmpty(user.LastName) || string.IsNullOrEmpty(user.PhoneNumber) || user.Addresses.Any() == null)
+            {
+                return false;
+            }
+            return true;
+        }
     }
 }

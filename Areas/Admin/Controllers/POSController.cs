@@ -9,6 +9,7 @@ using System.Text;
 using Tech_Store.Models;
 using Tech_Store.Models.DTO;
 using Tech_Store.Models.DTO.Payment.Admin;
+using Tech_Store.Services.NotificationServices;
 using ZXing.QrCode.Internal;
 using static Tech_Store.Models.DTO.Province;
 
@@ -18,14 +19,22 @@ namespace Tech_Store.Areas.Admin.Controllers
     [Route("admin/[controller]")]
     public class POSController : BaseAdminController
     {
-        public POSController(ApplicationDbContext context) : base(context) { }
+        private readonly NotificationService _notificationService;
+        public POSController(ApplicationDbContext context, NotificationService notificationService) : base(context) {
+            _notificationService = notificationService;
+        }
     
         [Route("")]
         [Route("Index")]
         public IActionResult Index()
         {
             var categories = _context.Categories.ToList();
-            var products = _context.Products.OrderByDescending(x => x.ProductId).ToList();
+            var products = _context.Products
+                 .Include(x => x.VarientProducts)
+                 .ThenInclude(vp => vp.VariantAttributes)
+                     .ThenInclude(a => a.AttributeValue)
+                .OrderByDescending(x => x.ProductId).ToList();
+
             var users = _context.Users.Where(x=>x.FirstName!=null&& x.LastName!=null).OrderByDescending(x => x.UserId).ToList();
 
             ViewBag.category = categories;
@@ -448,6 +457,9 @@ namespace Tech_Store.Areas.Admin.Controllers
 
                     // Commit the transaction
                     await transaction.CommitAsync();
+
+                    await _notificationService.NotifyAsync(Events.NotificationTarget.Admins, "Đơn hàng hoàn tất", $"Đơn hàng {order.OrderId} đã được thanh toán hoàn tất ", "success", $"/Admin/Orders/View/{order.OrderId}");
+                    await _notificationService.NotifyAsync(Events.NotificationTarget.SpecificUsers, "Đơn hàng hoàn tất", $"Đơn hàng {order.OrderId} đã được thanh toán hoàn tất ", "success", $"/Admin/Orders/View/{order.OrderId}",new List<int> { invoice.UserId});
 
                     return Json(new { success = true, message = "Đặt hàng Thành công",id = order.OrderId });
                 }

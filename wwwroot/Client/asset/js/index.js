@@ -66,7 +66,22 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 });
+// Script để hiển thị/ẩn nút
+window.onscroll = function () {
+    if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+        document.getElementById("back-to-top").style.display = "block";
+    } else {
+        document.getElementById("back-to-top").style.display = "none";
+    }
+};
 
+// Xử lý sự kiện click
+document.getElementById('back-to-top').addEventListener('click', function () {
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+});
   //Phần Danh Mục
   $(document).ready(function() {
     // Add hover effect for dropdown items

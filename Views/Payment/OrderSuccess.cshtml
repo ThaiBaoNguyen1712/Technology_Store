@@ -1,0 +1,61 @@
+﻿@{
+    ViewData["Title"] = "Đặt hàng thành công";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="container min-vh-75 d-flex align-items-center justify-content-center py-5">
+    <div class="card shadow-lg" style="max-width: 500px;">
+        <div class="card-body text-center p-5">
+            <!-- Success Icon -->
+            <div class="mb-4">
+                <div class="rounded-circle bg-success bg-opacity-10 mx-auto d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                    <i class="fas fa-check-circle text-success" style="font-size: 2.5rem;"></i>
+                </div>
+            </div>
+            <!-- Title -->
+            <h1 class="card-title h3 mb-3">Đặt hàng thành công!</h1>
+            <!-- Success Message -->
+            <div class="alert alert-success mb-4">
+                @TempData["Message"]
+            </div>
+            <!-- Order Information -->
+            <div class="text-muted mb-4">
+                <ul class="list-group list-group-flush text-start">
+                    <li class="list-group-item bg-transparent">
+                        <i class="fas fa-receipt me-2 text-success"></i>
+                        Đơn hàng của bạn đã được ghi nhận
+                    </li>
+                    <li class="list-group-item bg-transparent">
+                        <i class="fas fa-envelope me-2 text-success"></i>
+                        Email xác nhận đơn hàng sẽ được gửi đến bạn
+                    </li>
+                    <li class="list-group-item bg-transparent">
+                        <i class="fas fa-truck me-2 text-success"></i>
+                        Thông tin vận chuyển sẽ được cập nhật sau
+                    </li>
+                </ul>
+            </div>
+            <!-- Action Buttons -->
+            <div class="d-grid gap-2 d-md-flex justify-content-center mb-4">
+                <a href="@Url.Action("Index", "Order")" class="btn btn-success px-4">
+                    <i class="fas fa-file-alt me-2"></i>Xem đơn hàng
+                </a>
+                <a href="@Url.Action("Index", "Home")" class="btn btn-outline-secondary px-4">
+                    <i class="fas fa-home me-2"></i>Về trang chủ
+                </a>
+            </div>
+            <!-- Customer Support -->
+            <div class="text-muted small">
+                <p class="mb-2">Bạn cần hỗ trợ thêm?</p>
+                <p class="mb-0">
+                    <a href="tel:1900xxxx" class="text-decoration-none me-2">
+                        <i class="fas fa-phone me-1"></i>1900 xxxx
+                    </a>
+                    <span class="text-muted mx-1">|</span>
+                    <a href="mailto:support@example.com" class="text-decoration-none">
+                        <i class="fas fa-envelope me-1"></i>support@example.com
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

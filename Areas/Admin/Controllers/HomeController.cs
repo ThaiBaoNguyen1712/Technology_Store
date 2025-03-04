@@ -74,22 +74,26 @@ namespace Tech_Store.Areas.Admin.Controllers
 			return View();
 		}
 
-        [HttpGet("GetOrderStats")]
+        [HttpGet("GetOrderStarts")]
         public IActionResult GetOrderStats(int month, int year)
         {
-            var stats = _context.Orders
-                .Where(o => o.OrderDate.Value.Month == month && o.OrderDate.Value.Year == year)
-                .GroupBy(o => o.OrderDate.Value.Day)
-                .Select(g => new
-                {
-                    Day = g.Key,
-                    Orders = g.Count(),
-                    Revenue = g.Sum(o => o.TotalAmount)
-                })
-                .OrderBy(x => x.Day)
-                .ToList();
+            var starts = _context.Orders
+                 .Include(o => o.Payments)
+                 .Where(o => o.OrderDate.Value.Month == month &&
+                             o.OrderDate.Value.Year == year &&
+                             o.Payments.Any(p => p.Status == "paid")) // Chỉ lấy đơn hàng có thanh toán "paid"
+                 .GroupBy(o => o.OrderDate.Value.Day)
+                 .Select(g => new
+                 {
+                     Day = g.Key,
+                     Orders = g.Count(),
+                     Revenue = g.Sum(o => o.TotalAmount) // Tổng doanh thu từ các đơn hợp lệ
+                 })
+                 .OrderBy(x => x.Day)
+                 .ToList();
 
-            return Json(stats);
+
+            return Json(starts);
         }
         //[HttpGet("generate-sitemap")]
         private async Task GenerateSitemap()

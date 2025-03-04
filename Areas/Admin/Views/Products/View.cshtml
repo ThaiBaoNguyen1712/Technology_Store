@@ -67,23 +67,25 @@
                 </div>
                 <div class="col-3">
                     <strong>Thông tin chung</strong>
-                    <p>Thương hiệu : @Model.Brand?.Name</p>
-                    <p>Danh mục : @Model.Category?.Name</p>
-                    <p>Tồn kho : @Model.Stock</p>
-                    <p>SKU : @Model.Sku</p>
-                    <p>Trọng lượng : @Model.Weight</p>
+                    <p>Thương hiệu : <strong> @Model.Brand?.Name</strong></p>
+                    <p>Danh mục : <strong>@Model.Category?.Name</strong></p>
+                    <p>Tồn kho : <strong>@Model.Stock</strong> </p>
+                    <p>SKU : <strong>@Model.Sku</strong> </p>
+                    <p>Trọng lượng : <strong> @Model.Weight</strong></p>
                 </div>
                 <div class="col-3">
                     <strong>Thông tin giá</strong>
-                   <p> Giá nhập: @Model.CostPrice?.ToString("C0", new CultureInfo("vi-VN"))</p>
-                    <p>Giá bán gốc: @Model.OriginalPrice?.ToString("C0", new CultureInfo("vi-VN"))</p>
-                    <p>Giá đang bán:  @Model.SellPrice?.ToString("C0", new CultureInfo("vi-VN"))</p>
+                    <p> Giá nhập: <strong>@Model.CostPrice?.ToString("C0", new CultureInfo("vi-VN"))</strong> </p>
+                    <p>Giá bán gốc: <strong>@Model.OriginalPrice?.ToString("C0", new CultureInfo("vi-VN"))</strong> </p>
+                    <p>Giá đang bán:  <strong>@Model.SellPrice?.ToString("C0", new CultureInfo("vi-VN"))</strong> </p>
 
                     <p>
                         Giảm giá:
+                        <strong>
                         @(Model.DiscountAmount.HasValue
                             ? Model.DiscountAmount?.ToString("C0", new CultureInfo("vi-VN"))
                             : (Model.DiscountPercentage.HasValue ? Model.DiscountPercentage.Value + "%" : "0"))
+                        </strong>
                     </p>
 
                 </div>
@@ -103,8 +105,6 @@
                             }
                             @foreach (var varient in Model.VarientProducts)
                             {
-                               
-
                                 <tr>
                                     <td>@(i + 1) </td>
                                     <td>@varient.Attributes </td>

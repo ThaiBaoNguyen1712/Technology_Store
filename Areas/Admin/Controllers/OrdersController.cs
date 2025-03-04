@@ -1,8 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using NuGet.Protocol;
 using Tech_Store.Models;
 using Tech_Store.Models.DTO;
+using Tech_Store.Models.ViewModel;
+using Tech_Store.Services.NotificationServices;
 
 namespace Tech_Store.Areas.Admin.Controllers
 {
@@ -10,8 +13,10 @@ namespace Tech_Store.Areas.Admin.Controllers
     [Route("admin/[controller]")]
     public class OrdersController : BaseAdminController
     {
-      
-        public OrdersController(ApplicationDbContext context) :base(context) { }
+        private readonly NotificationService _notificationService;
+        public OrdersController(ApplicationDbContext context, NotificationService notificationService) : base(context) {
+            _notificationService = notificationService;
+        }
 
         [Route("{status}")]
         [Route("Index/{status}")]
@@ -32,9 +37,72 @@ namespace Tech_Store.Areas.Admin.Controllers
                 query = query.Where(x => x.OrderStatus == status);
             }
 
+            var list_cate = _context.Categories.ToList();
+            ViewBag.cate = list_cate;
+            var list_brand = _context.Brands.ToList();
+            ViewBag.brand = list_brand;
             var orders = await query.ToListAsync();
             return View(orders);
         }
+
+        [HttpPost]
+        [Route("Filter")]
+        public IActionResult Filter(int? orderId, string? nameCustomer, string? paymentStatus ,string? status,
+             DateTime? dateFrom, DateTime? dateTo, string? phoneNumber,decimal? amountFrom, decimal? amountTo)
+        {
+            var orders = _context.Orders
+                .Include(p => p.User)
+                .Include(p => p.OrderItems)
+                .ThenInclude(t => t.Product)
+                .Include(p => p.Payments)
+                .AsQueryable();
+
+            // Áp dụng các tiêu chí lọc
+            if (orderId.HasValue && orderId.Value != 0)
+                orders = orders.Where(p => p.OrderId == orderId.Value);
+
+            if (!string.IsNullOrEmpty(nameCustomer))
+                orders = orders.Where(p => p.User.FirstName.Contains(nameCustomer) || p.User.LastName.Contains(nameCustomer));
+
+            if (!string.IsNullOrEmpty(status))
+                orders = orders.Where(p => p.OrderStatus == status);
+
+   
+            if (dateFrom.HasValue || dateTo.HasValue)
+                orders = orders.Where(p =>
+                    (!dateFrom.HasValue || p.OrderDate >= dateFrom.Value) &&
+                    (!dateTo.HasValue || p.OrderDate <= dateTo.Value)
+                );
+            if (amountFrom.HasValue || amountTo.HasValue)
+                orders = orders.Where(p =>
+                    (!amountFrom.HasValue || p.TotalAmount >= amountFrom.Value) &&
+                    (!amountTo.HasValue || p.TotalAmount <= amountTo.Value)
+                );
+            if (!string.IsNullOrEmpty(phoneNumber))
+                orders = orders.Where(p => p.User.PhoneNumber.Contains(phoneNumber));
+
+            if (!string.IsNullOrEmpty(paymentStatus))
+                orders = orders.Where(p => p.Payments.Select(s=>s.Status).Contains(paymentStatus));
+
+            // Chuyển đổi sang view model để trả về JSON
+            var result = orders.OrderByDescending(p => p.OrderId)
+                .Take(100)
+                .Select(p => new OrderViewModel
+                {
+                    OrderId = p.OrderId,
+                    NameCustomer = p.User.LastName + " " + p.User.FirstName,
+                    PhoneNumber = p.User.PhoneNumber,
+                    OrderStatus = p.OrderStatus,
+                    TotalAmount = p.TotalAmount,
+                    ListProducts = string.Join(", ", p.OrderItems.Select(s => s.Product.Name)),
+                    PaymentStatus = string.Join(",", p.Payments.Select(s=>s.Status)),
+                    OrderDate = p.OrderDate.Value // Đảm bảo OrderDate không null
+                })
+                .ToList();
+
+            return Json(result);
+        }
+
         [Route("View/{id}")]
         [HttpGet]
         public async  Task<IActionResult> View(int id)
@@ -87,6 +155,11 @@ namespace Tech_Store.Areas.Admin.Controllers
             }
             order.OrderStatus = status;
             await _context.SaveChangesAsync();
+
+            //Gửi thông báo cho người dùng
+            await _notificationService.NotifyAsync(Events.NotificationTarget.SpecificUsers, "Trạng thái đơn hàng", $"Đơn hàng {order.OrderId} của bạn đã đổi trạng thái thành {order.OrderStatus}","info"
+                , $"/user/myOrders/OrderDetail/{order.OrderId}", new List<int> { order.UserId });
+
             return Json(new { success = true, message = "Thay đổi thành công" });
         }
     }

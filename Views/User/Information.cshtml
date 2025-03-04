@@ -1,4 +1,7 @@
-﻿
+﻿@{
+    ViewData["Title"] = "Thông tin người dùng";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
 <style>
     .profile-nav .nav-link {
         color: #495057;
@@ -190,7 +193,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="~/js/provincevn.js"></script>
-<script>
+@* <script>
     $(document).ready(function () {
         // Form submission handling
         $('#personalInfoForm, #addressForm, #passwordForm').on('submit', function (e) {
@@ -210,11 +213,12 @@
             }, 1000);
         });
     });
-</script>
+</script> *@
 <script>
     $(document).ready(function () {
         $('#passwordForm').on('submit', function (event) {
             event.preventDefault();
+            $('.loading-container').show();
 
             // Tạo FormData từ form
             var formData = new FormData(this);
@@ -235,9 +239,13 @@
                     } else {
                         $('#resultChangePassword').removeClass('text-success').addClass('text-danger').text(response.message);
                     }
+                    $('.loading-container').hide();
+
                 },
                 error: function () {
                     $('#resultChangePassword').removeClass('text-success').addClass('text-danger').text('Có lỗi xảy ra. Vui lòng thử lại.');
+                    $('.loading-container').hide();
+
                 }
             });
         });
@@ -249,6 +257,8 @@
 
         $('#addressForm').on('submit', function (event) {
             event.preventDefault();
+
+            $('.loading-container').show();
             var addressLine = $('input[name="AddressLine"]').val();
             var ward = $('select[name="Ward"]').val();
             var district = $('select[name="District"]').val();
@@ -274,15 +284,22 @@
                     } else {
                         $('#resultChangeAddress').removeClass('text-success').addClass('text-danger').text(response.message);
                     }
+                    $('.loading-container').hide();
+
                 },
                 error: function () {
+
                     $('#resultChangeAddress').removeClass('text-success').addClass('text-danger').text('Có lỗi xảy ra. Vui lòng thử lại.');
+                    $('.loading-container').hide();
+
                 }
             })
         });
 
         $('#personalInfoForm').on('submit', function (event) { 
             event.preventDefault();
+            $('.loading-container').show();
+
             var lastName = $('input[name="LastName"]').val();
             var firstName = $('input[name="FirstName"]').val();
             var email = $('input[name="Email"]').val();
@@ -308,9 +325,14 @@
                     } else {
                         $('#resultChangePersonalInfo').removeClass('text-success').addClass('text-danger').text(response.message);
                     }
+                    $('.loading-container').hide();
+
                 },
                 error: function () {
+
                     $('#resultChangePersonalInfo').removeClass('text-success').addClass('text-danger').text('Có lỗi xảy ra. Vui lòng thử lại.');
+                    $('.loading-container').hide();
+
                 }
             })
         })

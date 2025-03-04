@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using MediatR;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using Tech_Store.Models;
@@ -11,7 +12,7 @@ namespace Tech_Store.Areas.Admin.Controllers
     {
         public NotificationsController(ApplicationDbContext context) : base(context) { }
 
-        [HttpGet("")]
+        [HttpGet("GetUserNotifications")]
         public async Task<IActionResult> GetUserNotifications()
         {
             int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
@@ -22,6 +23,8 @@ namespace Tech_Store.Areas.Admin.Controllers
                 .Select(un => new
                 {
                     un.UserId,
+                    un.UserNotificationId,
+                    un.Notification.Title,
                     un.Notification.Message,
                     un.Notification.RedirectUrl,
                     un.Notification.Type,
@@ -34,10 +37,10 @@ namespace Tech_Store.Areas.Admin.Controllers
         }
 
 
-        [HttpPost("mark-all-as-read/{userId}")]
-        public async Task<IActionResult> MarkAllAsRead(string userId)
+        [HttpPost("mark-all-as-read")]
+        public async Task<IActionResult> MarkAllAsRead()
         {
-            int id_user = int.Parse(userId);
+            int id_user = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
             var userNotifications = await _context.UserNotifications
                 .Where(un => un.UserId == id_user && (un.IsRead == null || un.IsRead == false))
                 .ToListAsync();
@@ -49,7 +52,35 @@ namespace Tech_Store.Areas.Admin.Controllers
             }
 
             await _context.SaveChangesAsync();
-            return Ok();
+            return Json(new { success = true});
         }
+        [HttpPost("mark-as-read")]
+        public async Task<IActionResult> MarkAsRead(int id)
+        {
+            try
+            {
+                int id_user = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+                //Đánh dấu đã đọc chỉ cho những thông báo chưa được đọc
+                var notification = await _context.UserNotifications.FirstOrDefaultAsync(un => un.UserNotificationId == id
+                && (un.IsRead == null || un.IsRead == false));
+
+                if (notification == null)
+                {
+                    return Json(new { success = false, message = "Thông báo không tồn tại hoặc đã được đọc." });
+                }
+
+                notification.IsRead = true;
+                notification.ReadAt = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, isRead = notification.IsRead });
+            }
+            catch (Exception ex)
+            {
+                // Ghi log lỗi tại đây
+                return Json(new { success = false, message = "Đã xảy ra lỗi khi đánh dấu thông báo.", error = ex.Message });
+            }
+        }
+
     }
 }
