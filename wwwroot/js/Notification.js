@@ -1,5 +1,8 @@
-﻿function loadNotifications() {
-    $.getJSON(`/admin/notifications/GetUserNotifications`, function (data) {
+﻿
+function loadNotifications() {
+    window.isLoadingNotifications = true; // Đánh dấu đang load thông báo
+    $.getJSON(`/admin/notifications/GetUserNotifications`, { global: false }, function (data) {
+     
         const notificationList = $(".notif-center"); // Trỏ tới danh sách thông báo
         const notificationCount = $(".notification"); // Badge thông báo
         notificationList.empty(); // Xóa hết các thông báo hiện tại trong danh sách
@@ -38,6 +41,7 @@
                 </div>`;
             notificationList.append(noNotif); // Thêm thông báo không có nội dung vào danh sách
         }
+        window.isLoadingNotifications = false; // Reset lại khi load xong
     });
 }
 
@@ -134,18 +138,6 @@ function playNotificationSound() {
     });
 }
 
-
-//$("#markAllAsRead").click(function () {
-//    $.post(`/admin/notifications/mark-all-as-read/${userId}`, function () {
-//        loadNotifications();
-//    });
-//});
-
-//$("#markAllAsReadClient").click(function () {
-//    $.post(`/notifications/mark-all-as-read/${userId}`, function () {
-//        loadNotifications();
-//    });
-//});
 // Kết nối SignalR
 const connection = new signalR.HubConnectionBuilder()
     .withUrl("/notificationHub")

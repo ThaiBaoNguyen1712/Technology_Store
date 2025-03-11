@@ -42,8 +42,10 @@ body {
   /* Custom styles for categories menu */
 .categories-menu {
     border: none;
+    z-index: 1;
     box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
-  }
+    position: relative;
+}
   
   .category-item {
     border-left: 3px solid transparent;
@@ -664,3 +666,46 @@ footer{
     .notification-body::-webkit-scrollbar-thumb:hover {
         background: #999;
     }
+
+/*Nút lên đầu trang*/
+#back-to-top {
+    position: fixed;
+    bottom: 130px;
+    right: 25px;
+    background-color: #ff0000;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    display: none; /* Ẩn nút ban đầu */
+    z-index: 99;
+    border: none;
+    font-size: 16px;
+}
+
+    #back-to-top:hover {
+        background-color: #cc0000;
+    }
+
+/* Responsive */
+@media (max-width: 768px) {
+    #back-to-top
+{
+    bottom: 120px; /* Đưa nút lên cao hơn */
+    right: 25px; /* Giảm khoảng cách so với lề phải */
+    padding: 10px 14px; /* Giảm padding */
+    font-size: 14px; /* Giảm kích thước chữ */
+}
+
+}
+
+@media (max-width: 480px) {
+    #back-to-top
+
+{
+    bottom: 100px; /* Đưa nút lên cao hơn */
+    right: 20px; /* Giảm khoảng cách hơn nữa */
+    padding: 10px 14px; /* Giảm padding */
+    font-size: 12px; /* Giảm kích thước chữ */
+}
+}

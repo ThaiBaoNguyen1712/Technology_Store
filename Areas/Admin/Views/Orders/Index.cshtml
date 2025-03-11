@@ -148,7 +148,7 @@
 
                                             </td>
                                             <td class="text-center">
-                                                <span class="badge
+                                                <span class="badge badge-statusOrder
                                                   @(order.OrderStatus == "Pending" ? "badge-primary" :
                                                     order.OrderStatus == "Confirmed" ? "badge-info" :
                                                     order.OrderStatus == "Shipping" ? "badge-warning" :
@@ -281,9 +281,7 @@
                                     </span>
                                 </td>
 
-                            <td class="text-center">
-                                <span class="badge ${status.class}">${status.text}</span>
-                            </td>
+                           
                              <td>
                                 <select class="form-control border selectpicker changeStatus" data-id="${order.orderId}" data-current-status="${order.orderStatus}" data-live-search="true">
                                         <option value="Pending" ${order.orderStatus === "Pending" ? "selected" : ""}>Đang chờ</option>
@@ -409,7 +407,7 @@
                             $select.data('current-status', newStatus);
 
                             // Cập nhật badge và nội dung trạng thái
-                            var badge = $select.closest('tr').find('.badge'); // Tìm badge trong cùng dòng tr
+                            var badge = $select.closest('tr').find('.badge-statusOrder'); // Tìm badge trong cùng dòng tr
                             badge.removeClass('badge-primary badge-info badge-warning badge-success badge-danger badge-secondary');
 
                             // Thêm class mới và thay đổi nội dung badge

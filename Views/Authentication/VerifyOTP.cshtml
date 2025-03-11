@@ -10,6 +10,9 @@
     <title>Xác nhận OTP</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
     <style>
         body {
             background-color: #f8f9fa;
@@ -21,7 +24,7 @@
 
         .login-container {
             max-width: 400px;
-            width: 90%;
+            width: 100%;
             margin: auto;
         }
 
@@ -36,13 +39,15 @@
         }
 
         .logo {
-            color: #0d6efd;
+            color: #ff0000;
             font-size: 2.5rem;
             font-weight: bold;
             text-align: center;
             margin-bottom: 1.5rem;
         }
-
+        a{
+            color: #ff0000;
+        }
         .otp-field {
             display: flex;
             gap: 12px;
@@ -83,14 +88,14 @@
                 -moz-appearance: textfield;
             }
 
-        .btn-primary {
+        .btn-danger {
             padding: 0.8rem 2rem;
             font-weight: 500;
             border-radius: 8px;
             transition: all 0.3s ease;
         }
 
-            .btn-primary:disabled {
+            .btn-danger:disabled {
                 opacity: 0.7;
                 cursor: not-allowed;
             }
@@ -100,10 +105,18 @@
         }
 
             .resend a {
-                color: #0d6efd;
+                color: #ff0000;
                 text-decoration: none;
                 font-weight: 500;
+                cursor: pointer;
             }
+
+                .resend a.disabled {
+                    color: gray;
+                    pointer-events: none; /* Ngăn không cho bấm */
+                    opacity: 0.6;
+                }
+
 
         .timer {
             color: #6c757d;
@@ -121,9 +134,9 @@
 <body>
     <div class="container">
         <div class="login-container">
-            <div class="card">
-                <div class="card-body">
-                    <div class="logo">Shop</div>
+            <div class="card d-flex" style="padding:15px">
+                <div class="mx-auto" style="width:90%">
+                    <div class="logo">Tech Store</div>
                     <div class="text-center">
                         <h4 class="mb-3">Xác thực OTP</h4>
                         <p class="text-muted">Mã xác thực đã được gửi đến email của bạn</p>
@@ -149,7 +162,7 @@
 
                         </div>
                         <div class="text-center">
-                            <button type="submit" class="btn btn-primary justify-content-center align-items-center" disabled>
+                            <button type="submit" class="btn btn-danger justify-content-center align-items-center" disabled>
                                 Xác Thực
                                 <div class="spinner-border text-light ms-2" role="status" style="width: 1rem; height: 1rem;display: none; ">
                                     <span class="visually-hidden">Loading...</span>
@@ -158,7 +171,7 @@
 
 
                             <div class="timer" id="timer">
-                                Mã sẽ hết hạn sau: <span>03:00</span>
+                                Mã sẽ hết hạn sau: <span> </span>
                             </div>
 
                             <div class="resend">
@@ -187,45 +200,58 @@
             const timerDisplay = document.querySelector("#timer span");
             const errorMessageContainer = document.getElementById('ErrorMessage');
 
-            // Timer functionality
-            let timeLeft = 180; // Thời gian là 3 phút
             let timer;
+            const OTP_EXPIRY_KEY = "otp_expiry_time"; // Khóa lưu thời gian hết hạn OTP
+            const RESEND_INTERVAL = 120; // 2 phút để bật lại nút resend
+            const OTP_DURATION = 180; // 3 phút
 
-            const startTimer = () => {
+            function getRemainingTime() {
+                const expiryTime = localStorage.getItem(OTP_EXPIRY_KEY);
+                if (expiryTime) {
+                    const now = Math.floor(Date.now() / 1000);
+                    return Math.max(0, expiryTime - now);
+                }
+                return OTP_DURATION;
+            }
+
+            function startTimer() {
+                let timeLeft = getRemainingTime();
+
+                // Lưu thời gian hết hạn nếu chưa có
+                if (!localStorage.getItem(OTP_EXPIRY_KEY)) {
+                    localStorage.setItem(OTP_EXPIRY_KEY, Math.floor(Date.now() / 1000) + OTP_DURATION);
+                }
+
                 timer = setInterval(() => {
-                    timeLeft--;
-                    const minutes = Math.floor(timeLeft / 60);
-                    const seconds = timeLeft % 60;
-                    timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-
-                    // Enable resend button every 10 seconds
-                    if (timeLeft % 10 === 0 && timeLeft > 0) {
-                        resendBtn.classList.remove('disabled');
-                    }
-
                     if (timeLeft <= 0) {
                         clearInterval(timer);
+                        localStorage.removeItem(OTP_EXPIRY_KEY);
                         resendBtn.classList.remove('disabled');
                         timerDisplay.parentElement.textContent = 'Mã OTP đã hết hạn';
+                    } else {
+                        const minutes = Math.floor(timeLeft / 60);
+                        const seconds = timeLeft % 60;
+                        timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                        if (timeLeft % RESEND_INTERVAL === 0) {
+                            resendBtn.classList.remove('disabled');
+                        }
+                        timeLeft--;
                     }
                 }, 1000);
-            };
+            }
 
-            startTimer(); // Bắt đầu timer
+            startTimer(); // Bắt đầu đếm ngược
 
-            // Handle input focus and values
             inputs.forEach((input, index) => {
                 input.addEventListener('input', (e) => {
                     if (e.target.value.length > 1) {
                         e.target.value = e.target.value[0];
                     }
-
                     const next = input.nextElementSibling;
                     if (next && e.target.value !== '') {
                         next.removeAttribute('disabled');
                         next.focus();
                     }
-
                     checkComplete();
                 });
 
@@ -239,7 +265,6 @@
                     }
                 });
 
-                // Handle paste event
                 if (index === 0) {
                     input.addEventListener('paste', (e) => {
                         e.preventDefault();
@@ -281,79 +306,82 @@
                 }
             }
 
-            // Form submission with AJAX
-            $('#otpForm').on('submit', function (event) {
-                event.preventDefault(); // Ngăn chặn hành động mặc định của form
+            const notyf = new Notyf({
+                position: {
+                    x: 'right', // Căn phải
+                    y: 'top'    // Căn trên
+                }
+            });
 
-                // Lấy giá trị từ các trường input
+            $('#otpForm').on('submit', function (event) {
+                event.preventDefault();
+
                 var action = $('input[name="Action"]').val();
-                var otpToken = completeOtpInput.value; // Sử dụng giá trị OTP đã hoàn thành
+                var otpToken = completeOtpInput.value;
                 $('.loading').show();
-                // Gửi AJAX request
+
                 $.ajax({
                     method: 'POST',
-                    url: '@Url.Action("VerifyOTP", "Authentication")', // Đường dẫn đến action VerifyOTP
+                    url: '@Url.Action("VerifyOTP", "Authentication")',
                     headers: {
-                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() // Bổ sung token xác thực nếu cần
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
                     },
                     data: {
                         Action: action,
-                        OtpToken: otpToken // Dữ liệu gửi đi
+                        OtpToken: otpToken
                     },
                     success: function (response) {
-                        console.log("Phản hồi nhận được:", response); // Log phản hồi
+                        console.log("Phản hồi nhận được:", response);
                         if (response.success) {
-                            // Xử lý khi thành công
+                            $('.loading').hide();
+                            localStorage.removeItem(OTP_EXPIRY_KEY); // Xóa thời gian khi OTP hợp lệ
                             if (response.action === "Register") {
-                                // Nếu action là Register, chuyển hướng đến trang Index
-                                $('.loading').hide();
                                 window.location.href = '@Url.Action("Index", "Home")';
                             } else if (response.action === "ForgotPassword") {
-                                $('.loading').hide();
                                 window.location.href = '@Url.Action("ChangePassword", "Authentication")';
                                 $('#ErrorMessage').text(response.message);
                             }
                         } else {
                             $('.loading').hide();
-                            // Xử lý khi không thành công
                             errorMessageContainer.textContent = response.message || 'Có lỗi xảy ra';
                         }
                     },
                     error: function (xhr) {
-                        // Xử lý lỗi nếu có
                         $('.loading').hide();
-                        console.error("Lỗi:", xhr); // Log lỗi để dễ dàng kiểm tra
+                        notyf.error("Lỗi:", xhr);
                         errorMessageContainer.textContent = xhr.responseJSON?.message || 'Có lỗi xảy ra';
                     }
                 });
             });
 
-            // Resend OTP handler
             resendBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 if (!resendBtn.classList.contains('disabled')) {
-                    // Reset timer
-                    clearInterval(timer); // Dừng timer hiện tại
-                    timeLeft = 180; // Đặt lại thời gian còn lại về 3 phút
-                    startTimer(); // Bắt đầu lại timer
+                    clearInterval(timer);
+                    localStorage.setItem(OTP_EXPIRY_KEY, Math.floor(Date.now() / 1000) + OTP_DURATION);
+                    startTimer();
+                    resendBtn.classList.add('disabled');
 
-                    resendBtn.classList.add('disabled'); // Khóa nút gửi lại
-
-                    // Gửi yêu cầu gửi lại mã OTP
                     $.ajax({
                         method: 'POST',
                         url: '@Url.Action("ResendOTP", "Authentication")',
                         headers: {
-                            'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() // Bổ sung token xác thực nếu cần
+                            'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
                         },
                         data: {
-                            Email: $('input[name="Email"]').val() // Gửi email cho yêu cầu gửi lại mã
+                            Email: $('input[name="Email"]').val()
                         },
                         success: function (response) {
-                            console.log("Mã OTP đã được gửi lại:", response);
+                            if (response.success) {
+                                notyfsuccess(response.message)
+                            }
+                            else {
+                                notyf.error(response.message); // Hiển thị lỗi từ server
+                            }
+                         
                         },
                         error: function (xhr) {
-                            console.error("Lỗi gửi lại mã OTP:", xhr);
+                            notyf.error("Lỗi gửi lại mã OTP:", xhr);
                             errorMessageContainer.textContent = xhr.responseJSON?.message || 'Có lỗi xảy ra';
                         }
                     });
@@ -361,6 +389,7 @@
             });
         });
     </script>
+
 
 
 </body>

@@ -16,7 +16,7 @@
         }
 
         .profile-nav .nav-link.active {
-            background-color: #0d6efd;
+            background-color: #ff0000;
             color: white;
         }
 
@@ -102,8 +102,21 @@
                                         <input type="tel" class="form-control" name="PhoneNumber" value="@Model.PhoneNumber">
                                     </div>
                                 </div>
+                                <div class="form-group row mb-2">
+                                    <label class="col-sm-4 col-form-label">Ảnh đại diện:</label>
+                                    <div class="col-sm-9">
+                                        <div class="preview-container">
+                                            <img src="~/Upload/Avatar/@Model.ImageUrl" alt="Avatar Preview" id="avatarPreview"  style="height:80px" class="avatar-preview avatar-img rounded-circle" />
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="avatarInput" class="form-label">Chọn ảnh đại diện</label>
+                                            <input type="file" class="form-control" id="avatarInput" name="ImageAvatar" accept="image/*" />
+                                            <p>Vui lòng chọn ảnh có định dạng(.jpg .png .jpeg)</p>
+                                        </div>
+                                    </div>
+                                </div>
                                 <p class="text-success" id="resultChangePersonalInfo"></p>
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="btn btn-danger">
                                     <i class="fas fa-save me-2"></i>Lưu thông tin
                                 </button>
                             </form>
@@ -116,14 +129,14 @@
                     <div class="card">
                         <div class="card-body">
                             <h5 class="card-title mb-4">Địa chỉ</h5>
-                            @if(ViewBag.Address !=null)
+                            @if (ViewBag.Address_User != null)
                             {
                                 <div id="addressLoad">
-                                    <p>@ViewBag.Address</p>
+                                    <p>@ViewBag.Address_User</p>
                                     <a id="showAddressForm" href="javascript:void(0)">Tôi muốn thay đổi địa chỉ</a>
                                 </div>
                             }
-                            <form id="addressForm" style="@(ViewBag.Address != null ? "display: none;" : "")">
+                            <form id="addressForm" style="@(ViewBag.Address_User != null ? "display: none;" : "")">
                                 @Html.AntiForgeryToken()
                                 <div class="mb-3">
                                     <label class="form-label">Số nhà, Đường</label>
@@ -150,7 +163,7 @@
                                     </div>
                                 </div>
                                 <p class="text-success" id="resultChangeAddress"></p>
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="btn btn-danger">
                                     <i class="fas fa-save me-2"></i>Lưu địa chỉ
                                 </button>
                             </form>
@@ -179,7 +192,7 @@
                                     <input type="password" name="ConfirmPassword" placeholder="Nhập lại mật khẩu mới" class="form-control" required minlength="8">
                                 </div>
                                 <p class="text-success" id="resultChangePassword"></p>
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="btn btn-danger">
                                     <i class="fas fa-key me-2"></i>Đổi mật khẩu
                                 </button>
                             </form>
@@ -193,29 +206,39 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="~/js/provincevn.js"></script>
-@* <script>
-    $(document).ready(function () {
-        // Form submission handling
-        $('#personalInfoForm, #addressForm, #passwordForm').on('submit', function (e) {
-            e.preventDefault();
-            // Add loading state
-            const submitBtn = $(this).find('button[type="submit"]');
-            submitBtn.prop('disabled', true).html(
-                '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Đang lưu...'
-            );
-
-            // Simulate form submission
-            setTimeout(() => {
-                // Reset button text after 2 seconds
-                setTimeout(() => {
-                    submitBtn.html('<i class="fas fa-save me-2"></i>Lưu thông tin');
-                }, 2000);
-            }, 1000);
-        });
-    });
-</script> *@
 <script>
     $(document).ready(function () {
+        $('#avatarInput').on('change', function (e) {
+            var reader = new FileReader();
+            reader.onload = function (event) {
+                $('#avatarPreview').attr('src', event.target.result); // Cập nhật ảnh xem trước
+            }
+            reader.readAsDataURL(e.target.files[0]); // Đọc file ảnh
+        });
+
+        // Sự kiện để phóng to ảnh khi bấm vào
+        $('#avatarPreview').on('click', function () {
+            var modal = $('<div class="image-modal"><span class="close">&times;</span><img class="modal-image" id="img01" /></div>');
+            $('body').append(modal); // Thêm modal vào body
+            $('#img01').attr('src', $(this).attr('src')); // Đặt ảnh phóng to
+            modal.fadeIn(); // Hiện modal
+
+            // Xóa modal khi bấm vào nút đóng
+            $('.close').on('click', function () {
+                modal.fadeOut(function () {
+                    $(this).remove(); // Xóa modal khỏi DOM
+                });
+            });
+
+            // Đóng modal khi bấm ra ngoài
+            modal.on('click', function () {
+                $(this).fadeOut(function () {
+                    $(this).remove(); // Xóa modal khỏi DOM
+                });
+            });
+        });
+
+
         $('#passwordForm').on('submit', function (event) {
             event.preventDefault();
             $('.loading-container').show();
@@ -298,26 +321,17 @@
 
         $('#personalInfoForm').on('submit', function (event) { 
             event.preventDefault();
-            $('.loading-container').show();
 
-            var lastName = $('input[name="LastName"]').val();
-            var firstName = $('input[name="FirstName"]').val();
-            var email = $('input[name="Email"]').val();
-            var phoneNumber = $('input[name="PhoneNumber"]').val();
-
-           
+            var formData = new FormData(this);
             $.ajax({
                 method:'POST',
                 url:'@Url.Action("ChangePersonalInfo","User")',
                 headers: {
                     'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() // Thêm token vào header
                 },
-                data: {
-                    LastName : lastName,
-                    FirstName: firstName,
-                    Email : email,
-                    PhoneNumber: phoneNumber
-                },
+                data: formData,
+                contentType: false,  // Quan trọng: Không đặt contentType
+                processData: false,  // Quan trọng: Không xử lý dữ liệu
                 success: function (response) {
                     if (response.success) {
                         $('#resultChangePersonalInfo').removeClass('text-danger').addClass('text-success').text(response.message);

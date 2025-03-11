@@ -67,7 +67,7 @@ public partial class ApplicationDbContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=.;Database=Electronics_Shop;Trusted_Connection=True;TrustServerCertificate=True;");
+        => optionsBuilder.UseSqlServer("Data Source=tcp:svtechstore.database.windows.net,1433;Initial Catalog=techstore;User Id=techstore@svtechstore;Password=");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -508,7 +508,6 @@ public partial class ApplicationDbContext : DbContext
 
             entity.Property(e => e.ReviewId).HasColumnName("review_id");
             entity.Property(e => e.Comment)
-                .HasColumnType("text")
                 .HasColumnName("comment");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.Rating).HasColumnName("rating");

@@ -72,6 +72,7 @@ namespace Tech_Store.Controllers
             }
 
             var user = _context.Users
+                .Include(r => r.Roles)
                 .Include(u => u.Addresses)
                 .FirstOrDefault(u => u.UserId == int.Parse(userId));
 
@@ -93,7 +94,7 @@ namespace Tech_Store.Controllers
             ViewBag.NameCompany = settings.FirstOrDefault(s => s.Key == "NameCompany")?.Value ?? "";
             ViewBag.PhoneNumber = settings.FirstOrDefault(s => s.Key == "PhoneNumber")?.Value ?? "";
             ViewBag.Email = settings.FirstOrDefault(s => s.Key == "Email")?.Value ?? "";
-            ViewBag.Address = settings.FirstOrDefault(s => s.Key == "Address")?.Value ?? "";
+            ViewBag.AddressCompany = settings.FirstOrDefault(s => s.Key == "Address")?.Value ?? "";
             ViewBag.MoreInfo = settings.FirstOrDefault(s => s.Key == "MoreInfo")?.Value ?? "";
         }
 

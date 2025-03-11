@@ -44,7 +44,8 @@ namespace Tech_Store.Services
         private XElement CreateUrlElement(string url, double priority, string changeFrequency, DateTime? lastMod = null)
         {
             var urlElement = new XElement("url",
-                new XElement("loc", "https://yourwebsite.com" + url),
+                //Thay URL
+                new XElement("loc", "https://techshop-c4cafccbh0dmcwdp.eastasia-01.azurewebsites.net/" + url),
                 new XElement("priority", priority),
                 new XElement("changefreq", changeFrequency));
 

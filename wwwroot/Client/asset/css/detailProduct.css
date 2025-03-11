@@ -221,8 +221,8 @@
     align-items: center;
     justify-content: center;
     padding: 10px 15px;
-    background-color: #4299e1;
-    color: #ffffff;
+    background-color: #ff0000; /* Màu đỏ */
+    color: #ffffff; /* Chữ trắng */
     border: none;
     border-radius: 6px;
     cursor: pointer;
@@ -231,8 +231,9 @@
 }
 
     .comments-product-send-btn:hover {
-        background-color: #3182ce;
+        background-color: #cc0000; /* Màu đỏ đậm hơn khi hover */
     }
+
 
 .comments-product-list {
     background-color: #f8fafc;

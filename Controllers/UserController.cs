@@ -131,7 +131,7 @@ namespace Tech_Store.Controllers
                 var district = province?.Districts?.FirstOrDefault(d => d.Code == int.Parse(address.District));
                 var ward = district?.Wards?.FirstOrDefault(w => w.Code == int.Parse(address.Ward));
                 // Assign to ViewBag
-                ViewBag.Address = $"{address.AddressLine},{ward?.Name}, {district?.Name}, {province?.Name}";
+                ViewBag.Address_User = $"{address.AddressLine},{ward?.Name}, {district?.Name}, {province?.Name}";
             }
             var usDto = new UserDTo
             {
@@ -206,7 +206,7 @@ namespace Tech_Store.Controllers
         }
         [HttpPost("ChangePersonalInfo")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ChangePersonalInfo(string LastName, string FirstName, string Email, string PhoneNumber)
+        public async Task<IActionResult> ChangePersonalInfo(string LastName, string FirstName, string Email, string PhoneNumber, IFormFile ImageAvatar)
         {
             try
             {
@@ -222,6 +222,32 @@ namespace Tech_Store.Controllers
                 user.FirstName = FirstName;
                 user.Email = Email;
                 user.PhoneNumber = PhoneNumber;
+
+                if (ImageAvatar != null)
+                {
+                    // Kiểm tra và xóa ảnh cũ
+                    if (!string.IsNullOrEmpty(user.Img) && user.Img != "none.png") // Kiểm tra nếu có ảnh cũ
+                    {
+                        var oldImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Avatar", user.Img);
+                        if (System.IO.File.Exists(oldImagePath)) // Nếu tệp tồn tại
+                        {
+                            System.IO.File.Delete(oldImagePath); // Xóa ảnh cũ
+                        }
+                    }
+
+                    // Lưu hình ảnh mới
+                    var fileName = $"KH_{Guid.NewGuid()}.png";
+                    var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Avatar", fileName);
+                    Directory.CreateDirectory(Path.GetDirectoryName(imagePath));
+
+                    using (var stream = new FileStream(imagePath, FileMode.Create))
+                    {
+                        await ImageAvatar.CopyToAsync(stream);
+                    }
+
+                    user.Img = fileName; // Cập nhật đường dẫn ảnh mới
+                }
+
                 await _context.SaveChangesAsync();
 
                 await _notificationService.NotifyAsync(NotificationTarget.SpecificUsers, "Thay đổi TT tài khoản", "Thay đổi thông tin tài khoản thành công", "success", "#", new List<int> { parsedUserId });
@@ -570,7 +596,8 @@ namespace Tech_Store.Controllers
                     ImageUrl = item.Product.Image,
                     Quantity = item.Quantity,
                     NameProduct = item.Product.Name,
-                    Attributes = item.VarientProduct.Attributes
+                    Attributes = item.VarientProduct.Attributes,
+                    Slug = item.Product.Slug
                 }).ToList()
             };
 
@@ -697,14 +724,30 @@ namespace Tech_Store.Controllers
                 await _context.SaveChangesAsync();
 
                 // Tạo thông báo cho người dùng (ví dụ admin và người dùng liên quan)
-
                 var product_get = await _context.Products.Select(x => new {x.ProductId,x.Slug,x.Name}).FirstOrDefaultAsync(x=>x.ProductId == commentDto.ProductId);
-                var userIds = new List<string>
+
+                if (commentDto.ParentCommentId != 0 || commentDto.ParentCommentId.HasValue)
+                {
+                    var cmt_parent = await _context.Comments.FirstOrDefaultAsync(s=>s.CommentId == commentDto.ParentCommentId);
+                    var user_name = await _context.Users.Where(x => x.UserId == int.Parse(userId)).Select(u => new { u.LastName, u.FirstName }).FirstOrDefaultAsync();
+                    //Nếu comment là parent và không phải là tự trả lời
+                    if (cmt_parent != null && cmt_parent.UserId != int.Parse(userId))
+                    {
+                        await _notificationService.NotifyAsync(NotificationTarget.SpecificUsers, "Trả lời bình luận của bạn", $"Bình luận sản phẩm {product_get.Name} " +
+                            $"đã được trả lời bởi {user_name.LastName + " " + user_name.FirstName}.", "new comment", $"/View/{product_get.Slug}", new List<int> { cmt_parent.UserId });
+                    }
+                }
+                //Nếu như cmt của admin thì ko cần thông báo tới admin nữa
+                if(int.Parse(userId) != 1)
+                {
+                    var userIds = new List<string>
                     {
                         "1", // Admin có UserId = "1" (kiểu string)
                         userId // ID của người dùng đang đăng nhập (lấy từ ClaimTypes.NameIdentifier)
                     };
-                await _notificationService.NotifyAsync(NotificationTarget.Admins, "Bình luận mới", $"Bình luận mới được thêm vào sản phẩm {product_get.Name}.", "new comment", $"/View/{product_get.Slug}");
+                    await _notificationService.NotifyAsync(NotificationTarget.Admins, "Bình luận mới", $"Bình luận mới được thêm vào sản phẩm {product_get.Name}.", "new comment", $"/View/{product_get.Slug}");
+                }
+               
 
                 return Json(new { success = true, comment });
             }

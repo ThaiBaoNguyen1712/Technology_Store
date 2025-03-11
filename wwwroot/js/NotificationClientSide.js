@@ -1,4 +1,6 @@
-﻿function loadNotifications() {
+﻿
+function loadNotifications() {
+    window.isLoadingNotifications = true; 
     $.getJSON(`/notifications/GetUserNotifications`, function (data) {
         const notificationList = $(".notification-list"); // Trỏ tới danh sách thông báo
         notificationList.empty(); // Xóa hết thông báo cũ
@@ -44,6 +46,7 @@
                 </div>`;
             notificationList.append(noNotif);
         }
+        window.isLoadingNotifications = false; // Reset lại khi load xong
     });
 }
 

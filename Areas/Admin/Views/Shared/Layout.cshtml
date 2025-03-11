@@ -817,12 +817,15 @@
             $('.loading-container').hide()
 
             $(document).ajaxStart(function () {
-                $('.loading-container').show();
+                if (!window.isLoadingNotifications) {
+                    $('.loading-container').show();
+                }
             });
 
             $(document).ajaxStop(function () {
                 $('.loading-container').hide();
             });
+
 
 
             var table = $('#add-row').DataTable({

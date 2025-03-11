@@ -111,7 +111,7 @@ namespace Tech_Store.Areas.Admin.Controllers
         }
         [HttpPost("ChangePersonalInfo")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ChangePersonalInfo(string LastName, string FirstName, string Email, string PhoneNumber)
+        public async Task<IActionResult> ChangePersonalInfo(string LastName, string FirstName, string Email, string PhoneNumber,IFormFile ImageAvatar)
         {
             try
             {
@@ -127,6 +127,32 @@ namespace Tech_Store.Areas.Admin.Controllers
                 user.FirstName = FirstName;
                 user.Email = Email;
                 user.PhoneNumber = PhoneNumber;
+
+                if(ImageAvatar != null)
+                {
+                    // Kiểm tra và xóa ảnh cũ
+                    if (!string.IsNullOrEmpty(user.Img) && user.Img != "none.png") // Kiểm tra nếu có ảnh cũ
+                    {
+                        var oldImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Avatar", user.Img);
+                        if (System.IO.File.Exists(oldImagePath)) // Nếu tệp tồn tại
+                        {
+                            System.IO.File.Delete(oldImagePath); // Xóa ảnh cũ
+                        }
+                    }
+
+                    // Lưu hình ảnh mới
+                    var fileName = $"KH_{Guid.NewGuid()}.png";
+                    var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Avatar", fileName);
+                    Directory.CreateDirectory(Path.GetDirectoryName(imagePath));
+
+                    using (var stream = new FileStream(imagePath, FileMode.Create))
+                    {
+                        await ImageAvatar.CopyToAsync(stream);
+                    }
+
+                    user.Img = fileName; // Cập nhật đường dẫn ảnh mới
+                }
+
                 await _context.SaveChangesAsync();
                 return Json(new { success = true, message = "Thay đổi thông tin thành công" });
             }

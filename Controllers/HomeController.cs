@@ -29,6 +29,7 @@ namespace Tech_Store.Controllers
         {
             // Lấy danh sách danh mục có trạng thái hiển thị
             var list_cate = _context.Categories
+                .Include(p => p.Products)
                 .Where(x => x.Visible == 1)
                 .ToList();
 

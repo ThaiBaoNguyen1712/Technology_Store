@@ -902,13 +902,6 @@ namespace Tech_Store.Areas.Admin.Controllers
             // Loại bỏ dấu gạch ngang dư thừa ở đầu và cuối
             slug = slug.Trim('-');
 
-            // Tạo một số ngẫu nhiên (1000-9999)
-            var random = new Random();
-            int randomNumber = random.Next(1000, 9999);
-
-            // Thêm số ngẫu nhiên vào Slug để đảm bảo không trùng lặp
-            slug += "-" + randomNumber;
-
             return slug;
         }
 

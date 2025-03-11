@@ -114,7 +114,7 @@ namespace Tech_Store.Controllers
                 var email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
                 var firstName = claims.FirstOrDefault(c => c.Type == ClaimTypes.GivenName)?.Value ?? "Unknown";
                 var lastName = claims.FirstOrDefault(c => c.Type == ClaimTypes.Surname)?.Value ?? "Unknown";
-  
+                
                 if (string.IsNullOrEmpty(email))
                 {
                     ViewData["ValidateMessage"] = "Không tìm thấy email từ Google.";
@@ -122,7 +122,7 @@ namespace Tech_Store.Controllers
                 }
 
                 // Kiểm tra người dùng tồn tại
-                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+                var user = await _context.Users.Include(p=>p.Roles).FirstOrDefaultAsync(u => u.Email == email);
 
                 if (user == null)
                 {
@@ -145,7 +145,7 @@ namespace Tech_Store.Controllers
                     // Thiết lập vai trò và giỏ hàng
                     await SetupUserRole(user.UserId);
                     await CreateCart(user);
-                    await _notificationService.NotifyAsync(NotificationTarget.Admins, "Người dùng mới", $"Người dùng{user.Email} vừa tạo tài khoản !", "new register", $"/admin/users/{user.UserId}");
+                    await _notificationService.NotifyAsync(NotificationTarget.Admins, "Người dùng mới ", $"Người dùng {user.Email} vừa tạo tài khoản !", "new register", $"/admin/users/{user.UserId}");
 
                 }
 
@@ -153,7 +153,7 @@ namespace Tech_Store.Controllers
                 await SignInUser(user, true);
                 HttpContext.Session.SetString("UserEmail", email);
 
-                return RedirectToAction("Index", "Home");
+                return RedirectToUserDashboard(user);
             }
             catch (Exception ex)
             {
@@ -203,7 +203,7 @@ namespace Tech_Store.Controllers
                 }
 
                 // Kiểm tra người dùng tồn tại
-                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+                var user = await _context.Users.Include(p=>p.Roles).FirstOrDefaultAsync(u => u.Email == email);
 
                 if (user == null)
                 {
@@ -236,7 +236,7 @@ namespace Tech_Store.Controllers
                 await SignInUser(user, true);
                 HttpContext.Session.SetString("UserEmail", email);
 
-                return RedirectToAction("Index", "Home");
+                 return RedirectToUserDashboard(user);
             }
             catch (Exception ex)
             {
@@ -353,12 +353,13 @@ namespace Tech_Store.Controllers
 
         [HttpPost("ResendOTP")]
         [ValidateAntiForgeryToken]
-        public async Task<JsonResult> ResendOTP(string email)
+        public async Task<JsonResult> ResendOTP()
         {
             try
             {
+                var email = HttpContext.Session.GetString("UserEmail");
                 if (string.IsNullOrEmpty(email))
-                    return Json(new { success = false, message = "Email không hợp lệ." });
+                    return Json(new { success = false, message = "Phiên làm việc đã hết hạn." });
 
                 var user = await _context.Users.FirstOrDefaultAsync(x => x.Email == email);
                 if (user == null)
@@ -482,10 +483,18 @@ namespace Tech_Store.Controllers
         [Route("logout")]
         public async Task<IActionResult> Logout()
         {
+            // Xóa toàn bộ thông tin xác thực
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+            // Xóa Session
             HttpContext.Session.Clear();
+
+            // Xóa Claims của User (dành cho Claims-based Authentication)
+            HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity());
+
             return RedirectToAction("Index", "Home");
         }
+
         #endregion
 
         #region Private Helper Methods

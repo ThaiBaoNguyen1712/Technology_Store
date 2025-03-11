@@ -30,6 +30,7 @@ namespace Tech_Store.Models.ViewModel
         public int Quantity { get; set; }
         public string NameProduct { get; set; }
         public string Attributes { get; set; }
+        public string Slug { get; set; }
     }
     public class Generate_User
     {

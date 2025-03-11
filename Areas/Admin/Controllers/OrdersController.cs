@@ -2,7 +2,9 @@
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using NuGet.Protocol;
+using Tech_Store.Helpers;
 using Tech_Store.Models;
+using Tech_Store.Services;
 using Tech_Store.Models.DTO;
 using Tech_Store.Models.ViewModel;
 using Tech_Store.Services.NotificationServices;
@@ -14,8 +16,12 @@ namespace Tech_Store.Areas.Admin.Controllers
     public class OrdersController : BaseAdminController
     {
         private readonly NotificationService _notificationService;
-        public OrdersController(ApplicationDbContext context, NotificationService notificationService) : base(context) {
+        private readonly IEmailService _emailService;
+
+        public OrdersController(ApplicationDbContext context, NotificationService notificationService, IEmailService emailService) : base(context)
+        {
             _notificationService = notificationService;
+            _emailService = emailService;
         }
 
         [Route("{status}")]
@@ -147,7 +153,10 @@ namespace Tech_Store.Areas.Admin.Controllers
                 return Json(new { success = false, message = "Đã có lỗi khi truyền dữ liệu" });
             }
 
-            var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == id);
+            var order = await _context.Orders
+                .Include(p=>p.User)
+                .Include(p=>p.OrderItems)
+                .FirstOrDefaultAsync(o => o.OrderId == id);
             if(order == null)
             {
                 return Json(new { success = false, message = "Không tìm thấy đơn hàng" });
@@ -156,11 +165,91 @@ namespace Tech_Store.Areas.Admin.Controllers
             order.OrderStatus = status;
             await _context.SaveChangesAsync();
 
+
             //Gửi thông báo cho người dùng
             await _notificationService.NotifyAsync(Events.NotificationTarget.SpecificUsers, "Trạng thái đơn hàng", $"Đơn hàng {order.OrderId} của bạn đã đổi trạng thái thành {order.OrderStatus}","info"
                 , $"/user/myOrders/OrderDetail/{order.OrderId}", new List<int> { order.UserId });
 
+            if(status == "Completed" || status =="completed")
+            {
+                try
+                {
+                    //using task thread to send email
+                    await SendEmailToCusOrderCompleted(order);
+                    return Json(new { success = true, message = "Đơn hàng đã được hoàn tất và chúng tôi đã gửi Email hóa đơn cho khách hàng" });
+                }
+                catch (Exception ex)
+                {
+                    return Json(new { success = true, message = "Đơn hàng đã được hoàn tất nhưng chúng tôi chưa thể gửi được Email hóa đơn cho khách hàng" });
+                }
+               
+            }
             return Json(new { success = true, message = "Thay đổi thành công" });
         }
+        //Gửi email tới khách hàng khi hoàn tất và đã thanh toán đơn hàng
+        private async Task SendEmailToCusOrderCompleted(Order order)
+        {
+         
+            var address = await _context.Addresses.FirstOrDefaultAsync(x => x.UserId == order.UserId);
+            if (!string.IsNullOrEmpty(address.AddressLine) &&
+                !string.IsNullOrEmpty(address.Province) &&
+                !string.IsNullOrEmpty(address.Ward) &&
+                !string.IsNullOrEmpty(address.District))
+            {
+                // Read the JSON file
+                var jsonString = await System.IO.File.ReadAllTextAsync("wwwroot/Province_VN.json");
+                var provinces = JsonConvert.DeserializeObject<List<Province>>(jsonString);
+
+                // Find the province, district, and ward by ID
+                var province = provinces?.FirstOrDefault(p => p.Code == int.Parse(address.Province));
+                var district = province?.Districts?.FirstOrDefault(d => d.Code == int.Parse(address.District));
+                var ward = district?.Wards?.FirstOrDefault(w => w.Code == int.Parse(address.Ward));
+                // Assign to ViewBag
+                ViewBag.Address = $"{address.AddressLine},{ward?.Name}, {district?.Name}, {province?.Name}";
+            }
+            
+            var payment = await _context.Payments.FirstOrDefaultAsync(s=>s.OrderId == order.OrderId);
+            var company_infomation = await _context.Settings.ToListAsync();
+            List<ProductItem> ListProducts = new();
+
+            foreach (var orderitem in order.OrderItems)
+            {
+                ListProducts.Add(new ProductItem
+                {
+                    Name = orderitem.Product.Name,
+                    Quantity = orderitem.Quantity,
+                    Price = orderitem.Price
+                });
+            }
+            //Lấy URL gốc
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            //Lấy Logo 
+            var logoUrl = company_infomation.Where(w => w.Key == "LogoUrl").Select(s => s.Value).FirstOrDefault();
+            var invoiceEmail = new InvoiceEmail
+            {
+                ToEmail = order.User.Email,
+                CustomerName = order.User.LastName + " " + order.User.FirstName,
+                CustomerAddress = address.ToString(),
+                CustomerPhone = order.User.PhoneNumber,
+                InvoiceNumber = order.OrderId.ToString(),
+                Products = ListProducts,
+                ShippingFee = 30000,
+                PaymentMethod = payment.PaymentMethod,
+                IsPaid = true,
+                CompanyName = company_infomation.Where(w => w.Key == "NameCompany").Select(s=>s.Value).FirstOrDefault(),
+                CompanyAddress = company_infomation.Where(w => w.Key == "Address").Select(s => s.Value).FirstOrDefault(),
+                CompanyEmail = company_infomation.Where(w => w.Key == "Email").Select(s => s.Value).FirstOrDefault(),
+                CompanyPhone = company_infomation.Where(w => w.Key == "PhoneNumber").Select(s => s.Value).FirstOrDefault(),
+                CompanyWebsite = "techshop-c4cafccbh0dmcwdp.eastasia-01.azurewebsites.net",
+                SupportEmail = company_infomation.Where(w => w.Key == "Email").Select(s => s.Value).FirstOrDefault(),
+                SupportPhone = company_infomation.Where(w => w.Key == "PhoneNumber").Select(s => s.Value).FirstOrDefault(),
+                InvoicePdfUrl = "https://abc.com/invoices/INV-2025-001.pdf",
+                LogoPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload","Logo", logoUrl),
+                Subject = $"Cảm ơn quý khách - Hóa đơn #{order.OrderId}"
+            };
+
+            await _emailService.SendEmailOrderCompleted(invoiceEmail);
+        }
+
     }
 }

@@ -24,7 +24,7 @@
 
         .login-container {
             max-width: 400px;
-            width: 90%;
+            width: 100%;
             margin: auto;
         }
 
@@ -39,7 +39,7 @@
         }
 
         .logo {
-            color: #0d6efd;
+            color: #ff0000;
             font-size: 2rem;
             font-weight: bold;
             text-align: center;
@@ -51,7 +51,7 @@
             color: #212529;
         }
 
-        .btn-primary {
+        .btn-danger {
             padding: 0.8rem;
             font-weight: 500;
         }
@@ -60,6 +60,28 @@
             background-color: #f8f9fa;
             border-radius: 6px;
             padding: 10px;
+            display: flex;
+            justify-content: center; /* Căn giữa theo chiều ngang */
+            align-items: center; /* Căn giữa theo chiều dọc nếu cần */
+            max-width: 100%; /* Đảm bảo không tràn màn hình */
+            overflow: hidden; /* Ngăn tràn nội dung */
+        }
+
+        media (max-width: 400px) {
+            .g-recaptcha
+
+        {
+            transform: scale(0.85); /* Thu nhỏ reCAPTCHA */
+            transform-origin: center; /* Giữ vị trí trung tâm */
+            width: 100%; /* Đảm bảo không bị tràn */
+        }
+
+        .captcha-container {
+            padding: 10px 5px; /* Giảm padding để tránh bị che */
+            width: auto; /* Đảm bảo container co theo nội dung */
+            overflow-x: auto; /* Cho phép cuộn ngang nếu cần */
+        }
+
         }
 
         .text-danger {
@@ -70,9 +92,9 @@
 <body>
     <div class="container">
         <div class="login-container">
-            <div class="card">
-                <div class="card-body">
-                    <div class="logo">Shop</div>
+            <div class="card d-flex" style="padding:15px">
+                <div class="mx-auto" style="width:90%">
+                    <div class="logo">Tech Store</div>
                     <h4 class="text-center mb-1">Đăng Ký</h4>
            
                     <form method="POST" id="register">
@@ -121,7 +143,7 @@
                                 <div class="g-recaptcha mb-4" data-sitekey="@Configuration["reCAPTCHA:SiteKey"]"></div>
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100 d-flex justify-content-center align-items-center">
+                        <button type="submit" class="btn btn-danger w-100 d-flex justify-content-center align-items-center">
                             Đăng Ký
                             <div class="spinner-border text-light ms-2 loading" role="status" style="width: 1rem; height: 1rem; display: none;">
                                 <span class="visually-hidden">Loading...</span>

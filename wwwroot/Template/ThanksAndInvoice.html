@@ -1,0 +1,160 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cảm ơn quý khách đã mua hàng</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .logo {
+            max-width: 150px;
+            height: auto;
+        }
+
+        .content {
+            padding: 20px 0;
+        }
+
+        .invoice {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .invoice-header {
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .invoice-items {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+            .invoice-items th, .invoice-items td {
+                border: 1px solid #ddd;
+                padding: 8px;
+                text-align: left;
+            }
+
+            .invoice-items th {
+                background-color: #f2f2f2;
+            }
+
+        .invoice-total {
+            text-align: right;
+            font-weight: bold;
+        }
+
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+            border-top: 1px solid #f0f0f0;
+            padding-top: 20px;
+        }
+
+        .button {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="{logoUrl}" alt="Logo Công Ty" class="logo">
+        <h1>Cảm ơn quý khách đã mua hàng!</h1>
+    </div>
+
+    <div class="content">
+        <p>Kính gửi <strong>{Tên khách hàng}</strong>,</p>
+
+        <p>Cảm ơn quý khách đã tin tưởng và lựa chọn sản phẩm/dịch vụ của chúng tôi. Đơn hàng của quý khách đã được xử lý thành công.</p>
+
+        <p>Dưới đây là thông tin chi tiết về đơn hàng và hóa đơn của quý khách:</p>
+
+        <div class="invoice">
+            <div class="invoice-header">
+                <div>
+                    <h2>Hóa Đơn</h2>
+                    <p>Số hóa đơn: <strong>{Số hóa đơn}</strong></p>
+                    <p>Ngày: <strong>{Ngày lập hóa đơn}</strong></p>
+                </div>
+                <div>
+                    <p><strong>Thông tin khách hàng:</strong></p>
+                    <p>{Tên khách hàng}</p>
+                    <p>{Địa chỉ}</p>
+                    <p>{Email}</p>
+                    <p>{Số điện thoại}</p>
+                </div>
+            </div>
+
+            <table class="invoice-items">
+                <thead>
+                    <tr>
+                        <th>STT</th>
+                        <th>Sản phẩm/Dịch vụ</th>
+                        <th>Số lượng</th>
+                        <th>Đơn giá</th>
+                        <th>Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {ProductRows}
+                </tbody>
+            </table>
+
+            <div class="invoice-total">
+                <p>Tổng tiền hàng: {Tổng tiền hàng}</p>
+                <p>Thuế VAT (10%): {Tiền thuế}</p>
+                <p>Phí vận chuyển: {Phí vận chuyển}</p>
+                <p>Tổng thanh toán: <strong>{Tổng thanh toán}</strong></p>
+            </div>
+
+            <p>Phương thức thanh toán: <strong>{Phương thức thanh toán}</strong></p>
+            <p>Trạng thái thanh toán: <strong>{Đã thanh toán/Chưa thanh toán}</strong></p>
+        </div>
+
+        <!--<p>Quý khách có thể tải xuống bản PDF của hóa đơn này bằng cách nhấp vào nút bên dưới:</p>
+        <a href="#" class="button">Tải hóa đơn PDF</a>-->
+
+        <p>Nếu quý khách có bất kỳ câu hỏi nào về đơn hàng hoặc cần hỗ trợ thêm, vui lòng liên hệ với chúng tôi qua email <strong>{email hỗ trợ}</strong> hoặc số điện thoại <strong>{số điện thoại hỗ trợ}</strong>.</p>
+
+        <p>Một lần nữa, cảm ơn quý khách đã chọn sản phẩm/dịch vụ của chúng tôi. Chúng tôi rất mong được phục vụ quý khách trong tương lai!</p>
+
+        <p>Trân trọng,</p>
+        <p><strong>{Tên công ty}</strong></p>
+    </div>
+
+    <div class="footer">
+        <p>&copy; {Năm hiện tại} {Tên công ty}. Tất cả các quyền được bảo lưu.</p>
+        <p>{Địa chỉ công ty} | {Email công ty} | {Số điện thoại công ty}</p>
+        <p>{Website công ty}</p>
+    </div>
+</body>
+</html>

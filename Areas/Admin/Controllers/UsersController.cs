@@ -266,7 +266,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                 if (updateDto.Image != null && updateDto.Image.Length > 0)
                 {
                     // Kiểm tra và xóa ảnh cũ
-                    if (!string.IsNullOrEmpty(user.Img)) // Kiểm tra nếu có ảnh cũ
+                    if (!string.IsNullOrEmpty(user.Img) && user.Img != "none.png") // Kiểm tra nếu có ảnh cũ
                     {
                         var oldImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Avatar", user.Img);
                         if (System.IO.File.Exists(oldImagePath)) // Nếu tệp tồn tại

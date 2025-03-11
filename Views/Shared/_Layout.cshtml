@@ -6,10 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@ViewData["Title"]</title>
     <link rel="icon" type="image/png" href="@ViewBag.LogoUrl">
-    <link href="~/css/site.css" rel="stylesheet" />
-    <link href="~/Client/asset/css/site.css" rel="stylesheet">
-    <link href="~/client/asset/css/detailproduct.css" rel="stylesheet" />
-    <link href="~/client/asset/css/categoryview.css" rel="stylesheet" />
+    <link rel="stylesheet" href="@Url.Content("~/css/site.css")" asp-append-version="true" />
+    <link rel="stylesheet" href="@Url.Content("~/Client/asset/css/site.css")" asp-append-version="true" />
+    <link rel="stylesheet" href="@Url.Content("~/client/asset/css/detailproduct.css")" asp-append-version="true" />
+    <link rel="stylesheet" href="@Url.Content("~/client/asset/css/categoryview.css")" asp-append-version="true" />
+
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Roboto:wght@400&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -32,11 +33,13 @@
             </a>
 
             <!-- Toggle Button -->
-            <button class="navbar-toggler custom-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarTogglerDemo01">
+            <!-- Thử với nút mặc định -->
+            <button class="navbar-toggler" type="button" style="z-index:20" data-bs-toggle="collapse" data-bs-target="#navbarTogglerDemo01" aria-controls="navbarTogglerDemo01" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
+          
 
-            <div class="collapse navbar-collapse" id="navbarTogglerDemo01">
+            <div class="collapse navbar-collapse" id="navbarTogglerDemo01" style="z-index:3">
                 <!-- Category Dropdown -->
                 <div class="dropdown category-dropdown mx-3">
                     <button class="btn btn-outline-light category-btn dropdown-toggle" type="button" id="categoryMenu" data-bs-toggle="dropdown">
@@ -76,14 +79,58 @@
                         <!-- Suggestions will be dynamically added here -->
                     </ul>
                 </form>
-
-                <style>
-                  
-                </style>
-                <!-- Right Navigation -->
                 <ul class="navbar-nav ms-auto nav-right">
-                    <!--notification-->
-                    <!-- Nút notification -->
+            <style>
+        /* Đảm bảo navbar-nav luôn nằm ngang */
+        .nav-right {
+            display: flex;
+            flex-direction: row; /* Giữ các li trên một dòng */
+            flex-wrap: nowrap; /* Ngăn xuống dòng */
+            align-items: center;
+            justify-content: flex-end; /* Căn phải như ms-auto */
+            gap: 10px; /* Khoảng cách giữa các li */
+        }
+
+        /* Tối ưu kích thước trên mobile */
+        media (max-width: 991px) {
+            .nav-right {
+                padding: 0; /* Loại bỏ padding thừa */
+            }
+            .nav-right .nav-item {
+                margin: 0; /* Loại bỏ margin mặc định */
+                padding: 0 5px; /* Giảm padding để vừa màn hình */
+            }
+            .nav-right .nav-link {
+                padding: 5px; /* Giảm padding */
+                font-size: 0.9rem; /* Thu nhỏ chữ nếu cần */
+            }
+            .nav-right .badge {
+                font-size: 0.5rem; /* Thu nhỏ badge */
+                min-width: 14px;
+                min-height: 14px;
+            }
+            .nav-right .account-btn img {
+                width: 24px; /* Thu nhỏ avatar */
+                height: 24px;
+            }
+            .nav-right .account-btn span {
+                max-width: 80px; /* Giới hạn chiều rộng email */
+                font-size: 0.8rem; /* Thu nhỏ chữ */
+            }
+        }
+
+        /* Đảm bảo dropdown không bị ảnh hưởng */
+                        .notification-dropdown {
+                            position: absolute;
+                            top: 100%; /* Vẫn nằm dưới nút thông báo */
+                            left: 50%; /* Đưa điểm bắt đầu về giữa màn hình */
+                            transform: translateX(-50%); /* Dịch ngược lại 50% chiều rộng để căn giữa */
+                            width: 300px; /* Giữ kích thước cố định */
+                            margin-left: 0; /* Xóa margin-left cũ */
+                        }
+    </style>
+
+                    <!-- Notification -->
                     <li class="nav-item dropdown position-relative px-md-2">
                         <a class="nav-link text-white d-flex align-items-center" href="#" id="notificationToggle">
                             <div class="position-relative">
@@ -97,15 +144,12 @@
 
                         <!-- Dropdown thông báo -->
                         <div id="notificationDropdown" class="notification-dropdown">
-                          
-                                <div class="notification-header">
-
-                                    <h6 class="mb-0">Thông báo</h6>
-                                    <button class="btn btn-link text-muted p-0" id="markAllAsRead">
-                                        <small>Đánh dấu tất cả đã đọc</small>
-                                    </button>
-                                </div>
-                            
+                            <div class="notification-header">
+                                <h6 class="mb-0">Thông báo</h6>
+                                <button class="btn btn-link text-muted p-0" id="markAllAsRead">
+                                    <small>Đánh dấu tất cả đã đọc</small>
+                                </button>
+                            </div>
                             <div class="notification-body">
                                 <div class="notification-list">
                                     @if(ViewBag.Notifications != null)
@@ -125,77 +169,66 @@
                                                         {
                                                             <div class="notification-avatar text-success">
                                                                 <i class="fa fa-check-circle"></i>
-
                                                             </div>
                                                         }
                                                         else if (noti.Type == "low stock" || noti.Type == "warning")
                                                         {
                                                             <div class="notif-icon text-warning">
                                                                 <i class="fa fa-exclamation-triangle"></i>
-
                                                             </div>
                                                         }
                                                         else if (noti.Type == "error" || noti.Type == "danger")
                                                         {
                                                             <div class="notif-icon text-danger">
                                                                 <i class="fa fa-times-circle"></i>
-
                                                             </div>
                                                         }
                                                         else if (noti.Type == "new comment")
                                                         {
                                                             <div class="notif-icon text-success">
                                                                 <i class="fa fa-comment"></i>
-
                                                             </div>
                                                         }
                                                         else if (noti.Type == "new order")
                                                         {
                                                             <div class="notif-icon text-primary">
                                                                 <i class="fa fa-shopping-cart"></i>
-
                                                             </div>
                                                         }
                                                         else if (noti.Type == "payment received" || noti.Type == "success")
                                                         {
                                                             <div class="notif-icon text-success">
                                                                 <i class="fa fa-credit-card"></i>
-
                                                             </div>
                                                         }
                                                         else if (noti.Type == "product added" || noti.Type == "info")
                                                         {
                                                             <div class="notif-icon text-info">
                                                                 <i class="fa fa-plus"></i>
-
                                                             </div>
                                                         }
                                                         else if (noti.Type == "shipment sent")
                                                         {
                                                             <div class="notif-icon text-warning">
                                                                 <i class="fa fa-truck"></i>
-                                                              
                                                             </div>
                                                         }
                                                         else if (noti.Type == "account updated")
                                                         {
                                                             <div class="notif-icon text-secondary">
                                                                 <i class="fa fa-user-edit"></i>
-                                                             
                                                             </div>
                                                         }
                                                         else if (noti.Type == "system update")
                                                         {
                                                             <div class="notif-icon text-secondary">
                                                                 <i class="fa fa-wrench"></i>
-                                                               
                                                             </div>
                                                         }
                                                         else
                                                         {
                                                             <div class="notif-icon text-secondary">
                                                                 <i class="fa fa-info-circle"></i>
-                                                             
                                                             </div>
                                                         }
                                                     </div>
@@ -205,32 +238,25 @@
                                                             <small class="text-truncated" style="max-width:400px" title="@noti.Message">
                                                                 @(noti.Message.Length > 30 ? noti.Message.Substring(0, Math.Min(50, noti.Message.Length)) + "..." : noti.Message)
                                                             </small>
-
                                                         </span>
                                                         <span class="notification-time">@((noti.CreatedAt as DateTime?)?.TimeAgo() ?? "Không xác định")</span>
                                                     </div>
                                                 </div>
                                             </a>
                                         }
-
                                     }
                                     else
                                     {
                                         <span class="text-center text-muted">Hiện chưa có thông báo.</span>
                                     }
-
-                             
                                 </div>
                             </div>
-
-                            <div class="notification-footer">
-                              
-                            </div>
+                            <div class="notification-footer"></div>
                         </div>
                     </li>
 
                     <!-- Cart -->
-                    <li class="nav-item position-relative  pe-md-2">
+                    <li class="nav-item position-relative pe-md-2">
                         <a class="nav-link text-white d-flex align-items-center" href="~/User/Cart">
                             <div class="position-relative">
                                 <i class="fa fa-shopping-cart" aria-hidden="true"></i>
@@ -250,9 +276,20 @@
                                 <img class="rounded-circle me-2" width="30" height="30" src="~/Upload/Avatar/@ViewBag.User.Img" />
                                 <span class="d-inline-block text-truncate align-middle" style="max-width: 120px;">@ViewBag.User.Email</span>
                             </button>
-
                             <ul class="dropdown-menu dropdown-menu-dark animate slideIn" aria-labelledby="accountDropdown">
-                                <li><a class="dropdown-item" href="/user/Information"><i class="fas fa-user me-2"></i>Tài Khoản</a></li>
+                                @{
+                                    var userRoles = ViewBag.User?.Roles as IEnumerable<dynamic>;
+                                }
+
+                                @if (userRoles != null && userRoles.Any(r => r.RoleName == "Admin"))
+                                {
+                                    <li><a class="dropdown-item" href="/admin"><i class="fa fa-angle-double-right pe-2" aria-hidden="true"></i>Trang quản lý</a></li>
+                                }
+                                else
+                                {
+                                    <li><a class="dropdown-item" href="/user/Information"><i class="fas fa-user me-2"></i>Tài Khoản</a></li>
+                                }
+
                                 <li><a class="dropdown-item" href="/user/MyOrders"><i class="fas fa-shopping-cart me-2" ></i>Đơn Hàng</a></li>
                                 <li>
                                     <a class="dropdown-item" href="/user/Wishlist">
@@ -264,8 +301,6 @@
                                         <i class="fas fa-sign-out-alt me-2"></i>Đăng Xuất
                                     </a>
                                 </li>
-
-
                             </ul>
                         </li>
                     }
@@ -309,25 +344,8 @@
         <button id="back-to-top" class="btn" title="Lên đầu trang">
             <i class="fas fa-arrow-up"></i>
         </button>
-        <style>
-            #back-to-top {
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                background-color: #ff0000;
-                color: white;
-                padding: 10px 15px;
-                border-radius: 5px;
-                cursor: pointer;
-                display: none; /* Ẩn nút ban đầu */
-                z-index: 99;
-                border: none;
-            }
+      
 
-                #back-to-top:hover {
-                    background-color: #cc0000;
-                }
-        </style>
     </div>
 
     <!-- Footer -->
@@ -401,7 +419,7 @@
                     <!-- Contact Information -->
                     <div class="col-12 col-md-4 col-lg-3 col-xl-3 mx-auto mb-3">
                         <h6 class="text-uppercase fw-bold mb-3">Liên hệ</h6>
-                        <p class="mb-1"><i class="fas fa-home me-2"></i> @ViewBag.Address</p>
+                        <p class="mb-1"><i class="fas fa-home me-2"></i> @ViewBag.AddressCompany</p>
                         <p class="mb-1"><i class="fas fa-envelope me-2"></i> @ViewBag.Email</p>
                         <p class="mb-1"><i class="fas fa-phone me-2"></i> @ViewBag.PhoneNumber</p>
                         <p class="mb-1"><i class="fas fa-print me-2"></i> @ViewBag.MoreInfo</p>
@@ -416,7 +434,7 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="~/Client/asset/js/index.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Bootstrap-select JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/js/bootstrap-select.min.js"></script>
 
@@ -425,6 +443,7 @@
     <script src="~/js/notificationclientside.js"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
+
     <script type="text/javascript">
         $(document).ready(function () {
             const notyf = new Notyf({
@@ -438,9 +457,10 @@
             $('.loading-container').hide();
 
 
-            //Cấu hình Loading cho tất cả rq AJAX
             $(document).ajaxStart(function () {
-                $('.loading-container').show();
+                if (!window.isLoadingNotifications) {
+                    $('.loading-container').show();
+                }
             });
 
             $(document).ajaxStop(function () {
@@ -448,6 +468,9 @@
             });
 
 
+            $('.modal').on('hidden.bs.modal', function () {
+                $('.loading-container').hide();
+            });
             // Phần tìm kiếm
             const searchInput = $("#searchInput");
             const suggestionsBox = $("#searchSuggestions");
@@ -456,7 +479,7 @@
             let productSuggestions = [];
             $.getJSON("/json/products.json", function (data) {
                 productSuggestions = data;
-                console.log(data); // Kiểm tra dữ liệu JSON được tải
+             
             });
 
             // Event listener for input change
