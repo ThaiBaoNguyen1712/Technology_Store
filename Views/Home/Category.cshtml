@@ -80,6 +80,15 @@
             </div>
         </form>
     </div>
+    <div class="d-flex flex-wrap align-items-center gap-3 pb-3">
+        @foreach (var brand in ViewBag.list_brand)
+        {
+            <a class="d-flex align-items-center justify-content-center border rounded p-2 shadow-sm" style="width: 80px; height: 80px;">
+                <img src="/Upload/Logo/@brand.Image" class="img-fluid" style="max-height: 55px; object-fit: contain;" />
+            </a>
+        }
+    </div>
+
 </div>
 <div class="container">
     @if (!Model.Any())

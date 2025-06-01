@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Tech_Store.Models;
+using Tech_Store.Services.Admin.CategoryServices;
+using Tech_Store.Services.Admin.Interfaces;
 
 namespace Tech_Store.Areas.Admin.Controllers
 {
@@ -10,13 +12,16 @@ namespace Tech_Store.Areas.Admin.Controllers
     [Route("admin/[controller]")]
     public class CategoriesController : BaseAdminController
     {
-   
-        public CategoriesController(ApplicationDbContext context) : base(context) { }
-      
+    
+        private readonly ICategoryService _categoryService;
+        public CategoriesController(ApplicationDbContext context, ICategoryService categoryService) : base(context) {
+            _categoryService = categoryService;
+        }
+
         [HttpGet]
         public IActionResult Index()
         {
-            var list_cate = _context.Categories.ToList();
+            var list_cate = _context.Categories.OrderByDescending(x=>x.CategoryId).ToList();
             return View(list_cate);
         }
 
@@ -24,131 +29,51 @@ namespace Tech_Store.Areas.Admin.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromForm]Category cate,IFormFile? imageFile)
         {
-            // Lưu hình ảnh vào file
-            if (imageFile.Length > 0 && imageFile != null)
+            if (cate == null)
             {
-                var fileName = $"Cate_{Guid.NewGuid()}.png";
-                var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Logo", fileName);
-                Directory.CreateDirectory(Path.GetDirectoryName(imagePath));
-
-                using (var stream = new FileStream(imagePath, FileMode.Create))
-                {
-                    await imageFile.CopyToAsync(stream);
-                }
-
-                cate.Image = fileName;
+                return BadRequest("Dữ liệu danh mục không được trống");
             }
-            else
-            {
-                cate.Image = "none.jpg";
-            }
-            _context.Categories.Add(cate);
-            await _context.SaveChangesAsync();
+            await _categoryService.CreateCategoryAsync(cate, imageFile);
             return Ok();
         }
         [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(int id)
         {
-            var cate = _context.Categories.FirstOrDefault(x=>x.CategoryId==id);
-            if(cate ==null)
-            {
-                return NotFound();
-            }
+            var cate = await _categoryService.GetCategoryByIdAsync(id);
             return Json(cate);
         }
         [HttpPut("Update/{id}")]
         public async Task<IActionResult> Update(int id, [FromForm] Category cate, IFormFile? imageFile)
         {
-            try
+            var result = await _categoryService.UpdateCategoryAsync(id, cate, imageFile);
+            if (!result)
             {
-                var category = await _context.Categories.FirstOrDefaultAsync(x => x.CategoryId == id);
-                if (category == null)
-                {
-                    return NotFound();
-                }
-
-                // Lưu hình ảnh mới nếu có
-                if (imageFile != null && imageFile.Length > 0)
-                {
-                    // Kiểm tra và xóa ảnh cũ nếu có
-                    if (!string.IsNullOrEmpty(category.Image) && category.Image != "none.jpg")
-                    {
-                        var oldImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Logo", category.Image);
-                        if (System.IO.File.Exists(oldImagePath))
-                        {
-                            System.IO.File.Delete(oldImagePath);
-                        }
-                    }
-                    var fileName = $"Cate_{Guid.NewGuid()}.png";
-                    var newImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Logo", fileName);
-                    Directory.CreateDirectory(Path.GetDirectoryName(newImagePath)!);
-
-                    using (var stream = new FileStream(newImagePath, FileMode.Create))
-                    {
-                        await imageFile.CopyToAsync(stream);
-                    }
-
-                    // Cập nhật tên file vào thuộc tính Image của `category`
-                    category.Image = fileName;
-                }
-
-                // Cập nhật các thuộc tính khác
-                category.Name = cate.Name;
-                category.EngTitle = cate.EngTitle;
-                category.Description = cate.Description;
-                category.Visible = cate.Visible;
-
-                await _context.SaveChangesAsync();
-                return Ok();
+                return NotFound(new { success = false, message = "Không tìm thấy danh mục" });
             }
-            catch (Exception ex)
-            {
-                // Ghi lại thông tin lỗi
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+            return Ok(new { success = true, message = "Cập nhật thành công" });
         }
 
 
         [HttpDelete("Delete/{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            try
+           var result = _categoryService.DeleteCategoryAsync(id);
+            if (!await result)
             {
-                var cate = await _context.Categories.FindAsync(id); // Tìm danh mục theo ID
-                if (cate == null)
-                {
-                    return BadRequest();
-                }
-
-                _context.Categories.Remove(cate);
-                await _context.SaveChangesAsync();
-                return NoContent();
+                return NotFound();
             }
-            catch(Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            return Ok(new { success = true, message = "Xóa thành công" });
 
         }
+        // Controller
         [HttpPost("ChangeVisible")]
         public async Task<JsonResult> ChangeVisible(int id)
         {
-            if (id == 0)
-            {
-                return Json(new { success = false, message = "Không tìm thấy ID danh mục" });
-            }
-
-            var cate = await _context.Categories.FirstOrDefaultAsync(x => x.CategoryId == id);
-            if (cate == null)
-            {
+            var result = await _categoryService.ChangeVisible(id);
+            if (!result)
                 return Json(new { success = false, message = "Không tìm thấy danh mục" });
-            }
 
-            // Đảo ngược giá trị Visible
-            cate.Visible = cate.Visible == 0 ? 1 : 0;
-
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, message = "Thay đổi thành công", visible = cate.Visible });
+            return Json(new { success = true, message = "Thay đổi thành công", visible = result });
         }
 
     }

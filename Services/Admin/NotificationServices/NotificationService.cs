@@ -4,7 +4,7 @@ using Tech_Store.Events;
 using Tech_Store.Hubs;
 using Tech_Store.Models;
 
-namespace Tech_Store.Services.NotificationServices
+namespace Tech_Store.Services.Admin.NotificationServices
 {
     public class NotificationService
     {

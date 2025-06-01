@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Drawing.Printing;
 using Tech_Store.Models;
 using Tech_Store.Models.ViewModel;
-using Tech_Store.Services.NotificationServices;
+using Tech_Store.Services.Admin.NotificationServices;
 using X.PagedList.Extensions;
 
 namespace Tech_Store.Controllers
@@ -38,8 +38,10 @@ namespace Tech_Store.Controllers
             {
                 Category = category,
                 Products = _context.Products
+                    .Include(p=> p.Brand)
                     .Where(p => p.CategoryId == category.CategoryId)
                     .Take(10)
+                    .OrderByDescending(p => p.ProductId)
                     .ToList()
             }).ToList();
 
@@ -276,7 +278,7 @@ namespace Tech_Store.Controllers
             ViewBag.Price = price;
             ViewBag.Brand = brand;
             var cate = _context.Categories.FirstOrDefault(x => x.EngTitle.Contains(eng_title));
-            var list_brand = _context.Brands.ToList();
+            var list_brand = _context.Brands.Where(s => s.CategoryId == cate.CategoryId || s.CategoryId == null).ToList();
             ViewBag.list_brand = list_brand;
             ViewBag.Category = cate;
   
@@ -291,6 +293,7 @@ namespace Tech_Store.Controllers
             int pageNumber = page ?? 1;
 
             var products = _context.Products
+               .Include(p=>p.Category)
               .Where(x => string.IsNullOrEmpty(key) || x.Name.Contains(key))  // Kiểm tra nếu key trống thì không lọc
               .OrderByDescending(x => x.ProductId)
               .ToPagedList(pageNumber, pageSize); // Áp dụng phân trang

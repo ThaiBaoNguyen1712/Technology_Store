@@ -31,7 +31,7 @@
             <div class="card mx-3 shadow-sm p-4" style="border-radius: 15px;">
                 <div class="row">
                     <div class="col-3">
-                        <img src="~/Upload/Products/@Model.Image" class="image" style="height:150px;width:150px;" />
+                        <img src="~/Upload/Products/@Model.Image?v=@DateTime.UtcNow.Ticks" class="image" style="height:150px;width:150px;" />
                     </div>
                     <div class="col-9">
                         <h5 class="text-primary">@Model.Name
@@ -155,7 +155,7 @@
                             {
                                 <tr>
                                     <td>@index</td>
-                                    <td>@review.User.FirstName @review.User.LastName</td>
+                                    <td> @review.User.LastName @review.User.FirstName</td>
                                     <td><i class="fas fa-star text-warning"></i> @review.Rating</td>
                                     <td>@review.Comment</td>
                                     <td>@review.ReviewDate</td>

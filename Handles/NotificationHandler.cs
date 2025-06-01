@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.SignalR;
 using Tech_Store.Events;
 using Tech_Store.Hubs;
 using Tech_Store.Models;
-using Tech_Store.Services.NotificationServices;
+using Tech_Store.Services.Admin.NotificationServices;
 
 namespace Tech_Store.EventHandlers
 {

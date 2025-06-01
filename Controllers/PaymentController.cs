@@ -11,9 +11,9 @@ using Tech_Store.Models.DTO.Payment;
 using Tech_Store.Models.DTO.Payment.Client;
 using Tech_Store.Models.DTO.Payment.Client.Momo;
 using Tech_Store.Models.DTO.Payment.Client.VnPay;
-using Tech_Store.Services.MomoServices;
-using Tech_Store.Services.NotificationServices;
-using Tech_Store.Services.VNPayServices;
+using Tech_Store.Services.Admin.MomoServices;
+using Tech_Store.Services.Admin.NotificationServices;
+using Tech_Store.Services.Admin.VNPayServices;
 
 namespace Tech_Store.Controllers
 {

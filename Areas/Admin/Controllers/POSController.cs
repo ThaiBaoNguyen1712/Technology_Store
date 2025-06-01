@@ -9,7 +9,7 @@ using System.Text;
 using Tech_Store.Models;
 using Tech_Store.Models.DTO;
 using Tech_Store.Models.DTO.Payment.Admin;
-using Tech_Store.Services.NotificationServices;
+using Tech_Store.Services.Admin.NotificationServices;
 using ZXing.QrCode.Internal;
 using static Tech_Store.Models.DTO.Province;
 

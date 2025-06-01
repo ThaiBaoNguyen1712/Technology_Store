@@ -6,16 +6,18 @@ using reCAPTCHA.AspNetCore;
 using Tech_Store.Models;
 using Tech_Store.Helpers;
 using Tech_Store.Services;
-using Tech_Store.Services.VNPayServices;
 using Tech_Store.Models.DTO.Payment.Client.Momo;
-using Tech_Store.Services.MomoServices;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.Extensions.Options;
 using Tech_Store.Hubs;
-using Tech_Store.Services.NotificationServices;
 using MediatR;
 using System.Reflection;
-
+using Tech_Store.Services.Admin.VNPayServices;
+using Tech_Store.Services.Admin.MomoServices;
+using Tech_Store.Services.Admin.NotificationServices;
+using Tech_Store.Services.Admin.Interfaces;
+using Tech_Store.Services.Admin.BrandServices;
+using Tech_Store.Services.Admin.CategoryServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +31,9 @@ builder.Services.AddControllersWithViews().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
 });
+// Identity Configuration
+builder.Services.AddScoped<IBrandService, BrandService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 
 // VNPay and Momo Payment Services
 builder.Services.AddSingleton<IVnPayService, VnPayService>();

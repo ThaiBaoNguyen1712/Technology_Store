@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Tech_Store.Models;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using Tech_Store.Services.Admin.Interfaces;
 
 namespace Tech_Store.Areas.Admin.Controllers
 {
@@ -9,48 +10,36 @@ namespace Tech_Store.Areas.Admin.Controllers
     [Route("admin/[controller]")]
     public class BrandsController : BaseAdminController
     {
-     
-        public BrandsController(ApplicationDbContext context) : base(context) { }
-     
+        private readonly IBrandService _brandService;
+
+        public BrandsController(ApplicationDbContext context, IBrandService brandService) : base(context)
+        {
+            _brandService = brandService;
+        }
 
         [HttpGet]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var list_cate = _context.Categories.ToList();
-            ViewBag.cate = list_cate;
-            var list_brands = _context.Brands.Include(p=>p.Category).ToList();
-            return View(list_brands);
+            ViewBag.cate = _context.Categories.ToList();
+            var brands = await _brandService.GetAllBrandsAsync();
+            return View(brands);
         }
 
         [Route("Create")]
         [HttpPost]
         public async Task<IActionResult> Create([FromForm]Brand brand,IFormFile? imageFile)
-        {   // Lưu hình ảnh vào file
-            if (imageFile.Length > 0 && imageFile != null)
+        {   
+            if (brand == null)
             {
-                var fileName = $"Brand_{Guid.NewGuid()}.png";
-                var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Logo", fileName);
-                Directory.CreateDirectory(Path.GetDirectoryName(imagePath));
-
-                using (var stream = new FileStream(imagePath, FileMode.Create))
-                {
-                    await imageFile.CopyToAsync(stream);
-                }
-
-                brand.Image = fileName;
+                return BadRequest("Dữ liệu brand không được trống");
             }
-            else
-            {
-                brand.Image = "none.jpg";
-            }
-            _context.Brands.Add(brand);
-            await _context.SaveChangesAsync();
+            _brandService.CreateBrandAsync(brand, imageFile).Wait();
             return Ok();
         }
         [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(int id)
         {
-            var brand = _context.Brands.FirstOrDefault(x=>x.BrandId==id);
+            var brand = _brandService.GetBrandByIdAsync(id).Result;
             if(brand == null)
             {
                 return NotFound();
@@ -60,70 +49,28 @@ namespace Tech_Store.Areas.Admin.Controllers
         [HttpPut("Update/{id}")]
         public async Task<IActionResult> Update(int id, [FromForm] Brand _brand,IFormFile? imageFile)
         {
-            try
+           var result = await _brandService.UpdateBrandAsync(id, _brand, imageFile);
+            if (result)
             {
-                var brand = await _context.Brands.FirstOrDefaultAsync(x => x.BrandId == id);
-                if (_brand == null)
-                {
-                    return NotFound();
-                }
-            
-
-                // Lưu hình ảnh mới nếu có
-                if (imageFile != null && imageFile.Length > 0)
-                {
-                    // Kiểm tra và xóa ảnh cũ nếu có
-                    if (!string.IsNullOrEmpty(brand.Image) && brand.Image != "none.jpg")
-                    {
-                        var oldImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Logo", brand.Image);
-                        if (System.IO.File.Exists(oldImagePath))
-                        {
-                            System.IO.File.Delete(oldImagePath);
-                        }
-                    }
-                    var fileName = $"Brand_{Guid.NewGuid()}.png";
-                    var newImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Logo", fileName);
-                    Directory.CreateDirectory(Path.GetDirectoryName(newImagePath)!);
-
-                    using (var stream = new FileStream(newImagePath, FileMode.Create))
-                    {
-                        await imageFile.CopyToAsync(stream);
-                    }
-
-                    // Cập nhật tên file vào thuộc tính Image của `category`
-                    brand.Image = fileName;
-                }
-                brand.Name = _brand.Name;
-                brand.Description = _brand.Description;
-                brand.CategoryId = _brand.CategoryId;
-                await _context.SaveChangesAsync();
                 return Ok();
             }
-            catch (Exception ex)
+            else
             {
-                // Ghi lại thông tin lỗi
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return NotFound("Không tìm thấy brand với ID đã cho");
             }
         }
-
+        // Xóa brand theo ID
         [HttpDelete("Delete/{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            try
+          var result = await _brandService.DeleteBrandAsync(id);
+            if (result)
             {
-                var brand = await _context.Brands.FindAsync(id); // Tìm danh mục theo ID
-                if (brand == null)
-                {
-                    return BadRequest();
-                }
-
-                _context.Brands.Remove(brand);
-                await _context.SaveChangesAsync();
-                return NoContent();
+                return Ok();
             }
-            catch(Exception ex)
+            else
             {
-                return BadRequest(ex.Message);
+                return NotFound("Không tìm thấy brand với ID đã cho");
             }
 
         }

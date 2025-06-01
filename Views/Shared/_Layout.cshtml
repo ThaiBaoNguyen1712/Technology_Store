@@ -577,7 +577,11 @@
                         }
                     },
                     error: function (response) {
-                        notyf.error(response.responseJSON?.message || 'Có lỗi xảy ra, vui lòng thử lại.');
+                        $('.loading-container').hide();
+
+                        var loginModal = new bootstrap.Modal(document.getElementById('loginRequiredModal'));
+                        loginModal.show();
+                        return false;
                     }
                 });
             });

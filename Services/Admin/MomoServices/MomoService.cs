@@ -7,7 +7,7 @@ using Tech_Store.Helpers;
 using Tech_Store.Models.DTO.Payment.Client.Momo;
 using Tech_Store.Models.DTO.Payment.Client.VnPay;
 
-namespace Tech_Store.Services.MomoServices
+namespace Tech_Store.Services.Admin.MomoServices
 {
     public class MomoService : IMomoService
     {
@@ -49,7 +49,7 @@ namespace Tech_Store.Services.MomoServices
                     requestType = _config["MomoPay:RequestType"],
                     extraData = "",
                     lang = "vi",
-                    signature = signature
+                    signature
                 };
 
                 using var httpClient = new HttpClient();
@@ -99,7 +99,7 @@ namespace Tech_Store.Services.MomoServices
 
         public MomoExecuteResponseModel PaymentExecute(IQueryCollection collections)
         {
-            var amount = collections.First(s=>s.Key=="amount").Value;
+            var amount = collections.First(s => s.Key == "amount").Value;
             var orderInfo = collections.First(s => s.Key == "orderInfo").Value;
             var orderId = collections.First(s => s.Key == "orderId").Value;
 

@@ -12,7 +12,7 @@ using Tech_Store.Models;
 using Tech_Store.Models.DTO;
 using Tech_Store.Models.DTO.Authentication;
 using Tech_Store.Models.ViewModel;
-using Tech_Store.Services.NotificationServices;
+using Tech_Store.Services.Admin.NotificationServices;
 
 namespace Tech_Store.Controllers
 {

@@ -100,7 +100,7 @@
                     <!-- Nội dung sản phẩm -->
                     @foreach (var hot in ViewBag.productsHotSale)
                     {
-                        <div class="col-6 col-md-3 card product-card-csl" style="max-width: 250px;" data-id="@hot.ProductId">
+                        <div class="col-6 col-md-3 card product-card" style="max-width: 250px;" data-id="@hot.ProductId">
 
                             <!-- Sale Badge -->
                             <div class="position-absolute d-flex gap-1" style="top: 8px; left: 8px; z-index: 2;">
@@ -167,6 +167,7 @@
             <div class="product-section" data-section="@item.Category.Name">
                 <div style="max-width: 85vw; padding: 10px; display: flex; justify-content: space-between; align-items: center;">
                     <h3 class="text-dark mb-0">@item.Category.Name</h3>
+
                     <a href="~/Category/@item.Category.EngTitle" class="text-decoration-none text-primary position-absolute end-0 me-3 d-flex align-items-center">
                         <span class="me-1" style="color:#ff0000">Xem tất cả</span>
                         <i class="fa fa-angle-right" style="color:#ff0000" aria-hidden="true"></i>

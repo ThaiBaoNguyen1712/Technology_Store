@@ -131,7 +131,13 @@ namespace Tech_Store.Controllers
             {
                 return false;
             }
-            if(string.IsNullOrEmpty(user.FirstName) || string.IsNullOrEmpty(user.LastName) || string.IsNullOrEmpty(user.PhoneNumber) || user.Addresses.Any() == null)
+            if (user.Addresses == null || !user.Addresses.Any() || user.Addresses.All(a => string.IsNullOrWhiteSpace(a.Ward))
+                || user.Addresses.All(a => string.IsNullOrWhiteSpace(a.Province)) || user.Addresses.All(a => string.IsNullOrWhiteSpace(a.Province))
+                || user.Addresses.All(a=>string.IsNullOrEmpty(a.District) || user.Addresses.All(a=>string.IsNullOrEmpty(a.AddressLine))))
+            {
+                return false;
+            }
+            if (string.IsNullOrEmpty(user.FirstName) || string.IsNullOrEmpty(user.LastName) || string.IsNullOrEmpty(user.PhoneNumber) || user.Addresses.Any() == null)
             {
                 return false;
             }

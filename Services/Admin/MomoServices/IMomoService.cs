@@ -2,7 +2,7 @@
 using Tech_Store.Models.DTO.Payment.Client.Momo;
 using Tech_Store.Models.DTO.Payment.Client.VnPay;
 
-namespace Tech_Store.Services.MomoServices
+namespace Tech_Store.Services.Admin.MomoServices
 {
     public interface IMomoService
     {

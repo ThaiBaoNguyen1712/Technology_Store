@@ -3,13 +3,14 @@ using Tech_Store.Helpers;
 using Tech_Store.Models;
 using Tech_Store.Models.DTO.Payment.Client.VnPay;
 
-namespace Tech_Store.Services.VNPayServices
+namespace Tech_Store.Services.Admin.VNPayServices
 {
     public class VnPayService : IVnPayService
     {
         private readonly IConfiguration _config;
 
-        public VnPayService(IConfiguration config) {
+        public VnPayService(IConfiguration config)
+        {
             _config = config;
         }
         public string CreatePaymentUrl(HttpContext context, VnPaymentResquestModel model)
@@ -33,9 +34,9 @@ namespace Tech_Store.Services.VNPayServices
             vnpay.AddRequestData("vnp_OrderType", "other"); //default value: other
             vnpay.AddRequestData("vnp_ReturnUrl", _config["VnPay:ReturnUrl"]);
             vnpay.AddRequestData("vnp_TxnRef", tick); // Mã tham chiếu của giao dịch tại hệ 
-                                                                           //thống của merchant.Mã này là duy nhất dùng để phân biệt các đơn hàng gửi sang VNPAY.Không được
-                                                                           //    trùng lặp trong ngày
-                                                                           //Add Params of 2.1.0 
+                                                      //thống của merchant.Mã này là duy nhất dùng để phân biệt các đơn hàng gửi sang VNPAY.Không được
+                                                      //    trùng lặp trong ngày
+                                                      //Add Params of 2.1.0 
             var paymentUrl = vnpay.CreateRequestUrl(_config["VnPay:BaseUrl"], _config["VnPay:HashSecret"]);
 
             return paymentUrl;

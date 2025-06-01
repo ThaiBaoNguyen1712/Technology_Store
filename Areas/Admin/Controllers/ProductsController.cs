@@ -13,7 +13,7 @@ using System.Text.RegularExpressions;
 using Tech_Store.Models;
 using Tech_Store.Models.DTO;
 using Tech_Store.Models.ViewModel;
-using Tech_Store.Services.NotificationServices;
+using Tech_Store.Services.Admin.NotificationServices;
 using static System.Net.Mime.MediaTypeNames;
 using Product = Tech_Store.Models.Product;
 
@@ -80,7 +80,9 @@ namespace Tech_Store.Areas.Admin.Controllers
         {
 
             var detail = await _context.Products.Include(x => x.Category).Include(x => x.Brand)
-                .Include(x => x.Galleries).Include(x => x.Reviews).Include(x => x.VarientProducts).
+                .Include(x => x.Galleries)
+                .Include(x => x.Reviews).ThenInclude(x => x.User)
+                .Include(x => x.VarientProducts).
                 FirstOrDefaultAsync(x => x.ProductId == id);
             var review = await _context.Reviews.Where(x=>x.ProductId == id).ToListAsync();
             var order = await _context.OrderItems.Where(x => x.ProductId == id).ToListAsync();
