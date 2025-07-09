@@ -1,4 +1,5 @@
-﻿body {
+﻿
+body {
 }
 
 /* Dành riêng cho multiple (filepond-multiple) */
@@ -234,6 +235,12 @@ Phần card Varients Product*/
 #variantCardsContainer {
     max-height: 400px;
     overflow-y: auto;
+}
+#variantCardsContainer {
+    -webkit-user-select: none; /* Cho Safari */
+    -moz-user-select: none; /* Cho Firefox */
+    -ms-user-select: none; /* Cho IE/Edge */
+    user-select: none; /* Chuẩn chung */
 }
 
 .option-buttons li {

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualBasic;
 using Tech_Store.Models;
+using Tech_Store.Services.Admin.Interfaces;
 
 namespace Tech_Store.Areas.Admin.Controllers
 {
@@ -14,8 +15,10 @@ namespace Tech_Store.Areas.Admin.Controllers
     [Route("admin/[controller]")]
     public class VouchersController : BaseAdminController
     {
-        public VouchersController(ApplicationDbContext context) : base(context)
+        private readonly IVoucherService _voucherService;
+        public VouchersController(ApplicationDbContext context, IVoucherService voucherService) : base(context)
         {
+            _voucherService= voucherService;
         }
 
         // GET: Admin/Vouchers
@@ -29,13 +32,12 @@ namespace Tech_Store.Areas.Admin.Controllers
         [HttpPost("Create")]
         public async Task<IActionResult> Create(Voucher vou)
         {
-            if (ModelState.IsValid)
+            if (vou == null)
             {
-                _context.Vouchers.Add(vou);
-                await _context.SaveChangesAsync();
-                return Ok();
+                   return BadRequest("Voucher không được để trống.");
             }
-            return BadRequest();
+            _voucherService.CreateVoucherAsync(vou).Wait();
+            return Ok();
         }
 
         [Route("Edit")]
@@ -44,65 +46,39 @@ namespace Tech_Store.Areas.Admin.Controllers
             if (id == null)
                 return NotFound();
 
-            var voucher = await _context.Vouchers.FindAsync(id);
-            if (voucher ==null)
-            {
-                return BadRequest();
-            }
+            var voucher = await _voucherService.GetVoucherByIdAsync(id);
             return Json(voucher);
         }
         [HttpPost("Update")]
         public async Task<IActionResult> Update([FromBody] Voucher vou)
         {
-            if (ModelState.IsValid)
+            if (vou == null)
             {
-                var voucher = await _context.Vouchers.FindAsync(vou.VoucherId);
-                if (voucher == null)
-                {
-                    return NotFound();
-                }
-                voucher.Name = vou.Name;
-                voucher.Description = vou.Description;
-                voucher.Code = vou.Code.Trim();
-                voucher.Promotion = vou.Promotion;
-                voucher.Quantity = vou.Quantity;
-                voucher.ExpiredAt = vou.ExpiredAt;
-                voucher.StartedAt = vou.StartedAt;
-                await _context.SaveChangesAsync();
+                return BadRequest("Voucher không được để trống.");
+            }
+            var result = await _voucherService.UpdateVoucherAsync(vou.VoucherId, vou);
+            if (result)
+            {
                 return Ok();
             }
             else
             {
-                var errors = ModelState.Values.SelectMany(v => v.Errors);
-                foreach (var error in errors)
-                {
-                    Console.WriteLine(error.ErrorMessage); // hoặc dùng log để kiểm tra
-                }
-                return BadRequest(ModelState); // có thể trả về chi tiết lỗi của model
+                return NotFound("Không tìm thấy voucher với ID đã cho.");
             }
-
         }
 
         [HttpDelete("Delete")]
         public async Task<IActionResult> Delete(int id)
         {
-            try
+           var result = await _voucherService.DeleteVoucherAsync(id);
+            if (result)
             {
-                var vou = await _context.Vouchers.FindAsync(id); 
-                if (vou == null)
-                {
-                    return BadRequest();
-                }
-
-                _context.Vouchers.Remove(vou);
-                await _context.SaveChangesAsync();
-                return NoContent();
+                return Ok();
             }
-            catch (Exception ex)
+            else
             {
-                return BadRequest(ex.Message);
+                return NotFound("Không tìm thấy voucher với ID đã cho.");
             }
-
         }
     }
 }

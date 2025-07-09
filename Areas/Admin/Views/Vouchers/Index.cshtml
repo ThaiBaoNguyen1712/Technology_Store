@@ -1,6 +1,6 @@
 ﻿@model IEnumerable<Tech_Store.Models.Voucher>
 @{
-    ViewData["Title"] = "Vouchers";
+    ViewData["Title"] = "Mã khuyến mãi";
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
 }
 
@@ -27,20 +27,19 @@
                     <div class="table-responsive">
                         <table id="add-row" class="display table table-striped table-hover">
                             <thead>
-                                <tr>
-                                    <th>Tên</th>
-                                    <th>Mã KM</th>
-                                    <th>Mô tả</th>
-                                    <th>Ngày bắt đầu</th>
-                                    <th>Ngày hết hạn</th>
-                                    <th>Hành động</th>
-
+                                <tr class="table-primary text-center align-middle">
+                                    <th class="fw-semibold">Tên</th>
+                                    <th class="fw-semibold"> Mã KM</th>
+                                    <th class="fw-semibold">Mô tả</th>
+                                    <th class="fw-semibold">Bắt đầu</th>
+                                    <th class="fw-semibold">Hết hạn</th>
+                                    <th class="fw-semibold">Hành động</th>
                                 </tr>
                             </thead>
                             <tfoot>
                                 <tr>
                                     <th>Tên</th>
-                                    <th>Mã KM</th>
+                                    <th>>Mã KM</th>
                                     <th>Mô tả</th>
                                     <th>Ngày bắt đầu</th>
                                     <th>Ngày hết hạn</th>
@@ -55,10 +54,21 @@
                                     {
                                         <tr>
                                             <td>@vou.Name</td>
-                                            <td>@vou.Code</td>
+                                            <td><span class="badge bg-warning text-dark text-bold">@vou.Code</span></td>
                                             <td>@vou.Description</td>
-                                            <td>@vou.StartedAt</td>
-                                            <td>@vou.ExpiredAt</td>
+                                            <td class="text-center">
+                                                <div style="background:#e7f9ed;padding:5px 10px;border-radius:6px;color:#1a7f37;">
+                                                    @vou.StartedAt?.ToString("dd/MM/yyyy")
+                                                </div>
+                                            </td>
+                                            <td class="text-center">
+                                                <div style="background:#fdecea;padding:5px 10px;border-radius:6px;color:#b02a37;">
+                                                    @vou.ExpiredAt?.ToString("dd/MM/yyyy")
+                                                </div>
+                                            </td>
+                                          
+
+
 
                                             <td>
                                                 <div class="form-button-action">

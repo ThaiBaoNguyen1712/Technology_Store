@@ -104,16 +104,16 @@
         <div class="table-responsive">
             <table id="add-row" class="table table-striped table-hover">
                 <thead>
-                    <tr>
-                        <th>Ảnh</th>
-                        <th>Tên</th>
-                        <th>SKU</th>
-                        <th>Thương Hiệu</th>
-                        <th>Danh Mục</th>
-                        <th>Giá</th>
-                        <th>Số lượng</th>
-                        <th>Tình trạng</th>
-                        <th style="width:10%">Action</th>
+                    <tr class="table-primary text-center align-middle">
+                        <th class="fw-semibold">Ảnh</th>
+                        <th class="fw-semibold">Tên</th>
+                        <th class="fw-semibold">SKU</th>
+                        <th class="fw-semibold">Thương Hiệu</th>
+                        <th class="fw-semibold">>Danh Mục</th>
+                        <th class="fw-semibold">Giá</th>
+                        <th class="fw-semibold">Số lượng</th>
+                        <th class="fw-semibold">Tình trạng</th>
+                        <th class="fw-semibold" style="width:10%">Thao tác</th>
                     </tr>
                 </thead>
 
@@ -142,7 +142,7 @@
                                 <td>@product.Brand?.Name</td>
                                 <td>@product.Category?.Name</td>
                                 <td style="white-space:nowrap">@product.SellPrice?.ToString("C0", new CultureInfo("vi-VN"))</td>
-                                <td>@product.Stock</td>
+                                <td class="text-center">@product.Stock</td>
                                 <td>
                                     <span class="badge @(product.Status == "available" ? "bg-success" :
                                     product.Status == "outstock" ? "bg-danger" :

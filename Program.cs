@@ -18,6 +18,7 @@ using Tech_Store.Services.Admin.NotificationServices;
 using Tech_Store.Services.Admin.Interfaces;
 using Tech_Store.Services.Admin.BrandServices;
 using Tech_Store.Services.Admin.CategoryServices;
+using Tech_Store.Services.Admin.VoucherServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,6 +35,7 @@ builder.Services.AddControllersWithViews().AddJsonOptions(options =>
 // Identity Configuration
 builder.Services.AddScoped<IBrandService, BrandService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IVoucherService, VoucherService>();
 
 // VNPay and Momo Payment Services
 builder.Services.AddSingleton<IVnPayService, VnPayService>();

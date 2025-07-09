@@ -232,14 +232,31 @@ namespace Tech_Store.Areas.Admin.Controllers
                     {
                         foreach (var variantDto in productDto.VarientProducts)
                         {
+                            var imageFileName = $"SP_{product.Sku}_{variantDto.Sku}.webp";
+                            string? imageUrl = null;
+
+                            if (variantDto.Image != null)
+                            {
+                                var variantImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Products", imageFileName);
+                                Directory.CreateDirectory(Path.GetDirectoryName(variantImagePath));
+                                using (var stream = new FileStream(variantImagePath, FileMode.Create))
+                                {
+                                    await variantDto.Image.CopyToAsync(stream);
+                                }
+
+                                imageUrl = imageFileName; // Lưu tên tệp hình ảnh
+                            }
                             var variant = new VarientProduct
                             {
                                 ProductId = product.ProductId,
                                 Sku = variantDto.Sku,
                                 Attributes = variantDto.Attributes,
                                 Stock = variantDto.Stock ?? 0,
-                                Price = variantDto.Price ?? product.SellPrice
+                                Price = variantDto.Price ?? product.SellPrice,
+                                ImageUrl = variantDto.Image != null ? imageUrl : product.Image // Sử dụng hình ảnh chính nếu không có
                             };
+                          
+                            // Thêm biến thể vào cơ sở dữ liệu
                             _context.VarientProducts.Add(variant);
                             await _context.SaveChangesAsync();
 
@@ -290,7 +307,8 @@ namespace Tech_Store.Areas.Admin.Controllers
                             Sku = product.Sku,
                             Attributes = "",
                             Stock = product.Stock,
-                            Price = product.SellPrice
+                            Price = product.SellPrice,
+                            ImageUrl = product.Image, // Sử dụng hình ảnh chính của sản phẩm
                         };
 
                         _context.VarientProducts.Add(defaultVariant);
@@ -358,12 +376,12 @@ namespace Tech_Store.Areas.Admin.Controllers
             //lấy variant_id
             var variant_id = await _context.VarientProducts
            .Where(x => x.ProductId == _product.ProductId)
-           .Select(x => x.VarientId) // Sửa chỗ này: chọn VarientId thay vì ProductId
-           .ToListAsync(); // Sửa chỗ này: thêm Async()
+           .Select(x => x.VarientId) 
+           .ToListAsync(); 
 
             // Lấy danh sách Attribute ID
             var productAttributes = await _context.VariantAttributes
-                .Where(pa => variant_id.Contains(pa.ProductVariantId)) // Sửa chỗ này: dùng .Contains()
+                .Where(pa => variant_id.Contains(pa.ProductVariantId)) 
                 .Include(pa => pa.AttributeValue)
                 .Select(pa => pa.AttributeValue.AttributeId)
                 .Distinct()
@@ -480,25 +498,51 @@ namespace Tech_Store.Areas.Admin.Controllers
             var safeToDelete = removedVariants.Where(v => !referencedVariantIds.Contains(v.VarientId)).ToList();
             _context.VarientProducts.RemoveRange(safeToDelete);
 
-            // Update/Add variants
             foreach (var variantDto in dto.VarientProducts)
             {
                 var existing = existingVariants.FirstOrDefault(v => v.Sku == variantDto.Sku);
+                string? newImageFileName = $"SP_{dto.Sku}_{variantDto.Sku}_{Guid.NewGuid()}.webp";
+                string? imageUrl = null;
+                // Handle image upload for both new and existing variants
+                if (variantDto.Image is IFormFile newImage && newImage.Length > 0)
+                {
+                    // Generate new file name
+                    var imagePath = Path.Combine("wwwroot/Upload/Products", newImageFileName);
+
+                    // Delete old image if exists (for existing variant)
+                    if (existing != null && !string.IsNullOrEmpty(existing.ImageUrl))
+                    {
+                        var oldPath = Path.Combine("wwwroot/Upload/Products", existing.ImageUrl);
+                        if (System.IO.File.Exists(oldPath))
+                            System.IO.File.Delete(oldPath);
+                    }
+
+                    // Save new image
+                    using (var stream = new FileStream(imagePath, FileMode.Create))
+                    {
+                        newImage.CopyTo(stream);
+                    }
+                    imageUrl = newImageFileName; // Set the new image URL
+                }
+
                 if (existing != null)
                 {
                     existing.Attributes = variantDto.Attributes;
                     existing.Stock = variantDto.Stock ?? 0;
                     existing.Price = variantDto.Price ?? dto.SellPrice ?? 0;
+                    existing.ImageUrl = variantDto.Image != null ? imageUrl : existing.ImageUrl;
                 }
                 else
                 {
+                    var imagePathDefault = _context.Products.FirstOrDefault(x=>x.ProductId == dto.ProductId)?.Image;
                     _context.VarientProducts.Add(new VarientProduct
                     {
                         ProductId = dto.ProductId,
                         Sku = variantDto.Sku,
                         Attributes = variantDto.Attributes,
                         Stock = variantDto.Stock ?? 0,
-                        Price = variantDto.Price ?? dto.SellPrice ?? 0
+                        Price = variantDto.Price ?? dto.SellPrice ?? 0,
+                        ImageUrl = variantDto.Image!= null ? imageUrl : imagePathDefault // Sử dụng hình ảnh chính nếu không có
                     });
                 }
             }
@@ -653,6 +697,18 @@ namespace Tech_Store.Areas.Admin.Controllers
                     // Xóa biến thể sản phẩm
                     if (variantProducts.Any())
                     {
+                        foreach(var variant in variantProducts)
+                        {
+                            // Xóa hình ảnh của biến thể nếu có
+                            if (!string.IsNullOrEmpty(variant.ImageUrl))
+                            {
+                                var variantImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Products", variant.ImageUrl);
+                                if (System.IO.File.Exists(variantImagePath))
+                                {
+                                    System.IO.File.Delete(variantImagePath);
+                                }
+                            }
+                        }
                         _context.VarientProducts.RemoveRange(variantProducts);
                         await _context.SaveChangesAsync();
                     }

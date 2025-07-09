@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Tech_Store.Models.DTO;
 
 namespace Tech_Store.Models;
 
@@ -52,6 +53,6 @@ public class ProductDTo
     //Product Variant
     public bool? IsUseVariant { get; set; }
 
-    public virtual ICollection<VarientProduct>? VarientProducts { get; set; } = new List<VarientProduct>();
+    public virtual ICollection<VarientProductDTo>? VarientProducts { get; set; } = new List<VarientProductDTo>();
 
 }

@@ -93,16 +93,16 @@
                     <div class="table-responsive">
                         <table id="add-row" class="display table table-striped table-hover">
                             <thead>
-                                <tr>
-                                    <th>ID Đơn Hàng</th>
-                                    <th>Ngày Đặt</th>
-                                    <th>Thông Tin Khách Hàng</th>
-                                    <th>Sản Phẩm</th>
-                                    <th>Tổng Số Tiền</th>
-                                    <th>Thanh toán</th>
-                                    <th>Trạng Thái Đơn Hàng</th>
-                                    <th>Chuyển TT Đơn Hàng</th>
-                                    <th style="width:10%">Hành động</th>
+                                <tr class="table-primary text-center align-middle">
+                                    <th class="fw-semibold">ID Đơn Hàng</th>
+                                    <th class="fw-semibold">Ngày Đặt</th>
+                                    <th class="fw-semibold"> Thông Tin Khách Hàng</th>
+                                    <th class="fw-semibold">Sản Phẩm</th>
+                                    <th class="fw-semibold">Tổng Số Tiền</th>
+                                    <th class="fw-semibold">Thanh toán</th>
+                                    <th class="fw-semibold">Trạng Thái Đơn Hàng</th>
+                                    <th class="fw-semibold">Chuyển TT Đơn Hàng</th>
+                                    <th class="fw-semibold" style="width:10%">Hành động</th>
                                 </tr>
                             </thead>
                             <tfoot>
@@ -133,8 +133,11 @@
                                             <td>@(string.Join(", ", order.OrderItems.Select(item => item.Product?.Name ?? "Không có sản phẩm")))</td>
 
 
-                                            <td>
-                                                <p style="white-space:nowrap">@order.TotalAmount.ToString("C0", new CultureInfo("vi-VN"))</p>
+                                            <td class="text-center">
+                                                <div style="background:#d1fae5;padding:8px 12px;border-radius:8px;color:#065f46;font-weight:bold; font-size:1.1rem; display:inline-block; box-shadow:0 0 3px rgba(0,0,0,0.1);">
+                                                    <p style="white-space:nowrap">@order.TotalAmount.ToString("C0", new CultureInfo("vi-VN"))</p>
+                                                </div>
+
                                             </td>
                                             <td>
                                                 @{

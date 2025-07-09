@@ -127,7 +127,7 @@
     <loc>https://techshop-c4cafccbh0dmcwdp.eastasia-01.azurewebsites.net//product/laptop-acer-gaming-aspire-7-a715-76-53pj</loc>
     <priority>0.9</priority>
     <changefreq>weekly</changefreq>
-    <lastmod>2025-03-13</lastmod>
+    <lastmod>2025-06-27</lastmod>
   </url>
   <url xmlns="">
     <loc>https://techshop-c4cafccbh0dmcwdp.eastasia-01.azurewebsites.net//product/cu-sac-a-nang-aukey-pa-ta07-pd35w-nhieu-cong</loc>
@@ -158,5 +158,11 @@
     <priority>0.9</priority>
     <changefreq>weekly</changefreq>
     <lastmod>2025-03-13</lastmod>
+  </url>
+  <url xmlns="">
+    <loc>https://techshop-c4cafccbh0dmcwdp.eastasia-01.azurewebsites.net//product/iphone-15-128gb-chinh-hang-vna</loc>
+    <priority>0.9</priority>
+    <changefreq>weekly</changefreq>
+    <lastmod>2025-07-08</lastmod>
   </url>
 </urlset>

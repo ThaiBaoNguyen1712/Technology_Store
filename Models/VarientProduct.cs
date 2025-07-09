@@ -17,6 +17,8 @@ public partial class VarientProduct
 
     public int? Stock { get; set; }
 
+    public string? ImageUrl { get; set; }
+
     public DateTime? CreatedAt { get; set; }
 
     public virtual ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();

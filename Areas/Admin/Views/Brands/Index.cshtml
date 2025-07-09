@@ -1,6 +1,6 @@
 ﻿@model IEnumerable<Tech_Store.Models.Brand>
 @{
-    ViewData["Title"] = "Brand";
+    ViewData["Title"] = "Thương hiệu";
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
 }
 
@@ -27,12 +27,12 @@
                     <div class="table-responsive">
                         <table id="add-row" class="display table table-striped table-hover">
                             <thead>
-                                <tr>
-                                    <th>Tên</th>
-                                    <th>Hình ảnh</th>
-                                    <th>Cho danh mục</th>
-                                    <th>Mô tả</th>
-                                    <th style="width:10%">Hành động</th>
+                                <tr class="table-primary text-center align-middle">
+                                    <th class="fw-semibold">Tên</th>
+                                    <th class="fw-semibold">Hình ảnh</th>
+                                    <th class="fw-semibold">Cho danh mục</th>
+                                    <th class="fw-semibold">Mô tả</th>
+                                    <th class="fw-semibold" style="width:10%">Hành động</th>
                                 </tr>
                             </thead>
                             <tfoot>
@@ -52,7 +52,7 @@
                                     <tr>
                                             <td>@brand.Name</td>
                                             <td class="text-center">
-                                                <img src="/Upload/Logo/@(brand.Image ?? "none.jpg")"  height="90px" class="rounded circle" />
+                                                <img src="/Upload/Logo/@(brand.Image ?? "none.jpg")"  height="60px" class="rounded circle" />
                                             </td>
                                             <td>@(brand.Category != null ? brand.Category.Name : "Tất cả danh mục")</td>
                                             <td>@brand.Description</td>

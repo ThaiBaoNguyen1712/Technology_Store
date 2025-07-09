@@ -17,7 +17,7 @@ public partial class Voucher
 
     public int? Quantity { get; set; }
 
-    public DateOnly? StartedAt { get; set; }
+    public DateTime? StartedAt { get; set; }
 
-    public DateOnly? ExpiredAt { get; set; }
+    public DateTime? ExpiredAt { get; set; }
 }

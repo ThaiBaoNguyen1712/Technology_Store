@@ -209,15 +209,16 @@
                         </div>
                     }
                     <div class="table-responsive table-Varient mt-4" style="display:none">
-                        <table class="table table-hover">
+                        <table class="table table-hover table-striped">
                             <thead>
-                                <tr>
-                                    <th>STT</th>
-                                    <th>Biến thể thuộc tính</th>
-                                    <th>Giá theo biến thể (đ)</th>
-                                    <th>SKU</th>
-                                    <th>Hàng tồn kho theo biến thể</th>
-                                    <th>Trạng thái</th>
+                                <tr class="table-primary text-center align-middle">
+                                    <th class="fw-semibold">STT</th>
+                                    <th class="fw-semibold">Biến thể thuộc tính</th>
+                                    <th class="fw-semibold">Giá theo biến thể (đ)</th>
+                                    <th class="fw-semibold">SKU</th>
+                                    <th class="fw-semibold">Hàng tồn kho theo biến thể</th>
+                                    <th class="fw-semibold">Ảnh SP</th>
+                                    <th class="fw-semibold">Trạng thái</th>
                                 </tr>
                             </thead>
                             <tbody id="variantTableBody"></tbody>
@@ -368,7 +369,9 @@ Ckeditor CDN*@
                 row.append($('<td>').html(
                     '<input type="number" class="form-control" name="VarientProducts[' + index + '].Stock" value="1" required/>'
                 ));
-     
+              row.append($('<td>').html(
+                    '<input type="file" class="form-control form-control-sm" name="VarientProducts[' + index + '].Image"/>'
+                ));
                 row.append($('<td style="width:10%">').html(
                     '<i class="fas fa-trash delete-btn text-center text-danger" title="Xóa"></i>'
                 ));

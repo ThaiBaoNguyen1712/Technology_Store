@@ -66,7 +66,7 @@
 
         </div>
 
-        <div class="col-md-5 product-info">
+        <div class="col-md-6 product-info">
             <h3>@Model.Name</h3>
             <div class="rating pb-3">
                 <span class="text-muted">(@ViewBag.review_count Đánh giá)</span>
@@ -81,25 +81,36 @@
                     {
                         <div class="card varient-card @(varient.Stock <= 0 ? "disabled" : "") @(isFirst ? "selected" : "")"
                              data-id="@varient.VarientId"
-                        @(varient.Stock <= 0 ? "style='pointer-events: none; opacity: 0.5;'" : "")>
+                             @(varient.Stock <= 0 ? "style='pointer-events: none; opacity: 0.5;'" : "")>
 
-                            <div class="varient-attributes">
-                                @foreach (var attrValue in varient.VariantAttributes)
-                                {
-                                    <span>@string.Join("-", attrValue.AttributeValue.Value)</span>
-                                }
-                            </div>
-                            <div class="varient-price">
-                                @if (varient.Stock <= 0)
-                                {
-                                    <p class="price" style="font-size:14px!important">(Hết hàng)</p>
-                                }
-                                else
-                                {
-                                    <span class="price" style="font-size:14px!important">@varient.Price?.ToString("C0", new CultureInfo("vi-VN"))</span>
-                                }
+                            <div class="d-flex align-items-center gap-3 p-2">
+                                <img src="~/Upload/Products/@varient.ImageUrl" alt="Alternate Text"
+                                     style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;" />
+
+                                <div class="flex-grow-1">
+                                    <div class="varient-attributes mb-1">
+                                        @foreach (var attrValue in varient.VariantAttributes)
+                                        {
+                                            <span>@string.Join("-", attrValue.AttributeValue.Value)</span>
+                                        }
+                                    </div>
+
+                                    <div class="varient-price">
+                                        @if (varient.Stock <= 0)
+                                        {
+                                            <p class="price" style="font-size: 14px !important; margin: 0;">(Hết hàng)</p>
+                                        }
+                                        else
+                                        {
+                                            <span class="price" style="font-size: 14px !important;">
+                                                @varient.Price?.ToString("C0", new CultureInfo("vi-VN"))
+                                            </span>
+                                        }
+                                    </div>
+                                </div>
                             </div>
                         </div>
+
                     }
                     else
                     {
@@ -119,23 +130,26 @@
                     @Model.SellPrice?.ToString("C0", new CultureInfo("vi-VN"))
                 </div>
             }
-            
-            <div class="row g-3 p-3 bg-white rounded-3 shadow-sm">
+
+            <div class="row g-3 py-3">
                 <!-- Nút Mua ngay -->
-                <div class="col-md-8">
-                    <button type="button" id="ToCheckOutBtn" data-id="@Model.ProductId" class="btn btn-buy-now text-white w-100 py-3 fw-semibold text-uppercase shadow">
+                <div class="col-7 col-md-8">
+                    <button type="button" id="ToCheckOutBtn" data-id="@Model.ProductId"
+                            class="btn btn-buy-now text-white w-100 py-3 fw-semibold text-uppercase shadow">
                         <i class="fas fa-bolt me-2"></i>
                         Mua ngay
                     </button>
                 </div>
                 <!-- Nút Thêm vào giỏ -->
-                <div class="col-md-4 ">
-                    <button type="button" id="AddToCart" class="btn btn-cart btn-outline-danger w-100 py-3">
+                <div class="col-5 col-md-4">
+                    <button type="button" id="AddToCart"
+                            class="btn btn-cart btn-outline-danger w-100 py-3">
                         <i class="fa fa-cart-plus" aria-hidden="true"></i>
                         Thêm vào giỏ
                     </button>
                 </div>
             </div>
+
         </div>
     </div>
     <style>

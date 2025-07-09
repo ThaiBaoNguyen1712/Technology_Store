@@ -1,6 +1,6 @@
 ﻿<!-- Modal -->
 <div class="modal fade" id="VoucherModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" style="min-width:80vw;">
+    <div class="modal-dialog modal-lg" style="min-width:60vw;">
         <form id="addVoucherForm">
             @Html.AntiForgeryToken()
             <div class="modal-content">
@@ -62,7 +62,7 @@
                             <div class="form-group row mb-3">
                                 <label class="col-sm-4 col-form-label">Ngày bắt đầu:</label>
                                 <div class="col-sm-8">
-                                    <input type="date" class="form-control" name="startedAt" required />
+                                    <input type="datetime-local" class="form-control" name="startedAt" required />
                                 </div>
 
                             </div>
@@ -70,7 +70,7 @@
                             <div class="form-group row mb-3">
                                 <label class="col-sm-4 col-form-label">Ngày kết thúc:</label>
                                 <div class="col-sm-8">
-                                    <input type="date" class="form-control" name="expiredAt" required />
+                                    <input type="datetime-local" class="form-control" name="expiredAt" required />
                                 </div>
                             </div>
                         </div>

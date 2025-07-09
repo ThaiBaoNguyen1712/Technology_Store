@@ -1,6 +1,6 @@
 ﻿@model IEnumerable<Tech_Store.Models.Category>
 @{
-    ViewData["Title"] = "Category";
+    ViewData["Title"] = "Danh mục";
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
 }
 
@@ -27,13 +27,13 @@
                     <div class="table-responsive">
                         <table id="add-row" class="display table table-striped table-hover">
                             <thead>
-                                <tr>
-                                    <th>Tên</th>
-                                    <th>Tiêu đề tiếng Anh</th>
-                                    <th>Hình ảnh</th>
-                                    <th>Mô tả</th>
-                                    <th style="width:15%">Hiển thị</th>
-                                    <th style="width:10%">Hành động</th>
+                                <tr class="table-primary text-center align-middle">
+                                    <th class="fw-semibold">Tên</th>
+                                    <th class="fw-semibold">Tiêu đề tiếng Anh</th>
+                                    <th class="fw-semibold">Hình ảnh</th>
+                                    <th class="fw-semibold">Mô tả</th>
+                                    <th class="fw-semibold" style="width:15%">Hiển thị</th>
+                                    <th class="fw-semibold" style="width:10%">Hành động</th>
                                 </tr>
                             </thead>
                             <tfoot>

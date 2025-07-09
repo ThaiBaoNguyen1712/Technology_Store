@@ -102,17 +102,17 @@ namespace Tech_Store.Areas.Admin.Controllers
             }
             else
             {
-                // Chuyển DateTime.Now thành DateOnly
-                var today = DateOnly.FromDateTime(DateTime.Now);
+               
+                var today = DateTime.Now;
 
                 // Kiểm tra nếu voucher chưa bắt đầu
-                if (voucher.StartedAt.HasValue && voucher.StartedAt.Value > today)
+                if (voucher.StartedAt.HasValue && voucher.StartedAt.Value.Date > today)
                 {
                     return Json(new { success = false, message = "Voucher chưa đến thời hạn sử dụng" });
                 }
 
                 // Kiểm tra nếu voucher đã hết hạn
-                if (voucher.ExpiredAt.HasValue && voucher.ExpiredAt.Value < today)
+                if (voucher.ExpiredAt.HasValue && voucher.ExpiredAt.Value.Date < today)
                 {
                     return Json(new { success = false, message = "Voucher đã hết hạn" });
                 }

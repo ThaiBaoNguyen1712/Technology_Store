@@ -262,20 +262,20 @@
 
                 </div>
                 <div class="table-responsive table-Varient mt-4" style="@(Model.VarientProducts.Any(s => !string.IsNullOrEmpty(s.Attributes)) ? "" : "display:none")">
-                    <table class="table table-hover">
+                    <table class="table table-hover table-striped">
                         <thead>
-                            <tr>
-                                <th>STT</th>
-                                <th>Biến thể thuộc tính</th>
-                                <th>Giá theo biến thể (đ)</th>
-                                <th>
+                            <tr class="table-primary text-center align-middle">
+                                <th class="fw-semibold">STT</th>
+                                <th class="fw-semibold">Biến thể thuộc tính</th>
+                                <th class="fw-semibold">Giá theo biến thể (đ)</th>
+                                <th class="fw-semibold">
                                     SKU
                                     <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Nếu chưa có mã SKU đầy đủ hãy copy SKU sản phẩm phía trên để bổ sung">
                                         <i class="fas fa-info-circle text-info"></i>
                                     </span>
                                 </th>
-                                <th>Hàng tồn kho theo biến thể</th>
-                            
+                                <th class="fw-semibold">Hàng tồn kho theo biến thể</th>
+                                <th class="fw-semibold">Ảnh SP</th>
                             </tr>
                         </thead>
                         <tbody id="variantTableBody">
@@ -303,6 +303,12 @@
                                     <td>
                                         <input type="number" class="form-control" name="VarientProducts[@index].Stock" value="@varient.Stock" required />
                                     </td>
+                                 <td class="align-middle text-center">
+                                  <div class="d-flex flex-column align-items-center gap-2">
+                                    <img src="~/Upload/Products/@varient.ImageUrl" alt="Product Image" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;">
+                                    <input type="file" class="form-control form-control-sm" name="VarientProducts[@index].Image" accept="image/*" style="max-width: 200px;">
+                                  </div>
+                                </td>
                                 </tr>
                                 index++;  // Tăng giá trị index sau mỗi lần lặp
                             }

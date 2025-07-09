@@ -698,8 +698,8 @@ namespace Tech_Store.Controllers
             }
             else
             {
-                // Chuyển DateTime.Now thành DateOnly
-                var today = DateOnly.FromDateTime(DateTime.Now);
+                
+                var today = DateTime.Now;
 
                 // Kiểm tra nếu voucher chưa bắt đầu
                 if (voucher.StartedAt.HasValue && voucher.StartedAt.Value > today)
