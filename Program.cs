@@ -1,24 +1,26 @@
-﻿using Microsoft.AspNetCore.Authentication.Cookies;
+﻿using MediatR;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using reCAPTCHA.AspNetCore;
-using Tech_Store.Models;
-using Tech_Store.Helpers;
-using Tech_Store.Services;
-using Tech_Store.Models.DTO.Payment.Client.Momo;
-using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.Extensions.Options;
-using Tech_Store.Hubs;
-using MediatR;
+using reCAPTCHA.AspNetCore;
+using StackExchange.Redis;
 using System.Reflection;
-using Tech_Store.Services.Admin.VNPayServices;
-using Tech_Store.Services.Admin.MomoServices;
-using Tech_Store.Services.Admin.NotificationServices;
-using Tech_Store.Services.Admin.Interfaces;
+using Tech_Store.Helpers;
+using Tech_Store.Hubs;
+using Tech_Store.Models;
+using Tech_Store.Models.DTO.Payment.Client.Momo;
+using Tech_Store.Services;
 using Tech_Store.Services.Admin.BrandServices;
 using Tech_Store.Services.Admin.CategoryServices;
+using Tech_Store.Services.Admin.Interfaces;
+using Tech_Store.Services.Admin.MomoServices;
+using Tech_Store.Services.Admin.NotificationServices;
+using Tech_Store.Services.Admin.VNPayServices;
 using Tech_Store.Services.Admin.VoucherServices;
+using static Org.BouncyCastle.Math.EC.ECCurve;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +33,23 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddControllersWithViews().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+});
+// Configure Identity
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    var config = builder.Configuration;
+    var redisHost = config["Redis:Host"];
+    var redisPassword = config["Redis:Password"];
+
+    var options = new ConfigurationOptions
+    {
+        EndPoints = { redisHost },
+        Password = redisPassword,
+        Ssl = true,
+        AbortOnConnectFail = false
+    };
+
+    return ConnectionMultiplexer.Connect(options);
 });
 // Identity Configuration
 builder.Services.AddScoped<IBrandService, BrandService>();
@@ -100,6 +119,10 @@ builder.Services.AddAuthentication(option =>
 // SignalR for Realtime Notifications
 builder.Services.AddScoped<SitemapService>();
 builder.Services.AddScoped<NotificationService>();
+
+//Redis cache
+builder.Services.AddScoped<RedisService>();
+
 builder.Services.AddSignalR();
 
 var app = builder.Build();

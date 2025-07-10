@@ -1,10 +1,14 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml.FormulaParsing.Excel.Functions.Math;
+using StackExchange.Redis;
 using System.Diagnostics;
 using System.Drawing.Printing;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Tech_Store.Models;
 using Tech_Store.Models.ViewModel;
+using Tech_Store.Services;
 using Tech_Store.Services.Admin.NotificationServices;
 using X.PagedList.Extensions;
 
@@ -15,23 +19,27 @@ namespace Tech_Store.Controllers
 		private readonly ILogger<HomeController> _logger;
 		private readonly IConfiguration _configuration;
         private readonly NotificationService _notificationService;
-
+        private readonly RedisService _redis;
         // Khai báo chỉ cần ILogger và IConfiguration
-        public HomeController(ILogger<HomeController> logger, NotificationService notificationService, IConfiguration configuration, ApplicationDbContext context)
+        public HomeController(ILogger<HomeController> logger, NotificationService notificationService, IConfiguration configuration, ApplicationDbContext context,
+            RedisService redis)
 			: base(context) // Gọi constructor của BaseController
 		{
 			_logger = logger;
 			_configuration = configuration;
             _notificationService = notificationService;
+            _redis = redis;
 		}
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             // Lấy danh sách danh mục có trạng thái hiển thị
             var list_cate = _context.Categories
                 .Include(p => p.Products)
                 .Where(x => x.Visible == 1)
                 .ToList();
+
+            var list_hotSearch = await _redis.GetTopSearchKeywords(list_cate.ToList(),10);
 
             // Lấy tối đa 10 sản phẩm cho mỗi danh mục
             var productsByCategory = list_cate.Select(category => new
@@ -72,10 +80,11 @@ namespace Tech_Store.Controllers
             ViewBag.productsHotSale = hotSaleProducts;
             ViewBag.List_cate = list_cate;
             ViewBag.ProductsByCategory = productsByCategory;
+            ViewBag.List_TopHotSearch = list_hotSearch;
             return View();
         }
 
-
+ 
         [Route("View/{slug}")]
         public IActionResult View(string slug)
         {
@@ -200,12 +209,19 @@ namespace Tech_Store.Controllers
         {
             int pageSize = 20; 
             int pageNumber = page ?? 1;
-
             var products = _context.Products.Where(x => x.Category.EngTitle.Contains(eng_title)).OrderByDescending(x=>x.ProductId).ToPagedList(pageNumber, pageSize); // Áp dụng phân trang;
             var cate = _context.Categories.FirstOrDefault(x => x.EngTitle.Contains(eng_title));
             var list_brand = _context.Brands.Where(s=>s.CategoryId == cate.CategoryId || s.CategoryId == null).ToList();
+
+            if(cate != null)
+            {
+                var list_HotSearch = _redis.GetTopSearchKeywordsByCategory(cate.EngTitle, 10).Result;
+                ViewBag.list_HotSearch = list_HotSearch;
+            }
+           
             ViewBag.list_brand = list_brand;
             ViewBag.Category = cate;
+            
             return View(products);
         }
         [HttpGet("Category/FilterCategory")]
@@ -287,11 +303,11 @@ namespace Tech_Store.Controllers
         }
 
         [Route("Search/{key?}")]
-        public IActionResult Search(string key, int? page)
+        public async Task<IActionResult> SearchAsync(string key, int? page)
         {
             int pageSize = 20;
             int pageNumber = page ?? 1;
-
+           
             var products = _context.Products
                .Include(p=>p.Category)
               .Where(x => string.IsNullOrEmpty(key) || x.Name.Contains(key))  // Kiểm tra nếu key trống thì không lọc
@@ -307,14 +323,47 @@ namespace Tech_Store.Controllers
         }
 
         [HttpGet("Search/Filter")]
-        public IActionResult Filter(string key,string? category , string? order, string? price, string? brand, int pageNumber = 1)
+        public async Task<IActionResult> FilterAsync(string key,string? category , string? order, string? price, string? brand, int pageNumber = 1)
         {
             int pageSize = 20;
 
             // Truy vấn cơ bản
-            IQueryable<Models.Product> query = _context.Products
-                .Where(x => string.IsNullOrEmpty(key) || x.Name.Contains(key));  // Kiểm tra nếu key trống thì không lọc;
+            var keywords = key?.ToLower().Split(" ", StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
 
+            IQueryable<Models.Product> query = _context.Products
+                .Include(x => x.Category)
+                .Where(p =>
+                    string.IsNullOrEmpty(key) || keywords.All(word =>
+                        (p.Name != null && p.Name.ToLower().Contains(word)) ||
+                        (p.Description != null && p.Description.ToLower().Contains(word))
+                    )
+                );
+
+            // Gọi Redis lưu hot search keyword nếu hợp lệ
+            if (!string.IsNullOrWhiteSpace(key) && key.Length >= 3)
+            {
+                var keyword = key.Trim().ToLower();
+
+                if (Regex.IsMatch(keyword, @"^[a-zA-Z0-9\s]+$"))
+                {
+                    // Lấy category có nhiều sản phẩm khớp keyword nhất
+                    var matchedCategorySlug = _context.Categories
+                        .Select(c => new
+                        {
+                            c.EngTitle,
+                            MatchCount = c.Products.Count(p =>
+                                keywords.All(word =>
+                                    p.Name.ToLower().Contains(word) ||
+                                    (p.Description != null && p.Description.ToLower().Contains(word))
+                                )
+                            )
+                        })
+                        .OrderByDescending(x => x.MatchCount)
+                        .FirstOrDefault(x => x.MatchCount > 0)?.EngTitle ?? "all";
+
+                    await _redis.IncrementHotKeywordAsync(keyword, matchedCategorySlug);
+                }
+            }
             // Sắp xếp theo `order`
             if (!string.IsNullOrEmpty(order))
             {

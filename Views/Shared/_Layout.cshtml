@@ -24,7 +24,28 @@
 </head>
    @using Tech_Store.Helpers
 <body class="d-flex flex-column min-vh-100">
+    <div class="marquee-line ">
+        <div class="row">
+            <div class="col-md-8 marquee-tag">
+                <marquee class="" direction="left">
+                    <p>
+                        Tận tâm , phục vụ khách hàng là sứ mệnh của chúng tôi. Chúng tôi cam kết mang đến những sản phẩm chất lượng và dịch vụ tốt nhất để đáp ứng nhu cầu của bạn. Hãy cùng chúng tôi trải nghiệm sự khác biệt!
+                    </p>
+                   
+                </marquee>
+            </div>
+            <div class="col-md-4 d-flex flex-wrap gap-4">
+                <p> <i class="fa fa-phone"></i>  1800-xx12</p>
+                <p><i class="fa fa-map-marked"></i>  Địa chỉ cửa hàng</p>
+                <p><i class="fa fa-award"></i>  Chứng nhận</p>
+            </div>
+        </div>
+       
+
+    </div>
+   
     <nav class="navbar navbar-expand-lg navbar-dark custom-navbar">
+       
         <div class="container">
             <!-- Logo/Brand -->
             <a class="navbar-brand d-flex align-items-center" href="/">
@@ -46,7 +67,7 @@
                         <i class="fa fa-list me-2"></i> 
                         <span>Danh Mục</span>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-dark animate slideIn" aria-labelledby="categoryMenu">
+                    <ul class="dropdown-menu dropdown-menu-light animate slideIn" aria-labelledby="categoryMenu">
                         @foreach(var cate in ViewBag.Categories)
                         {
                             <li>
@@ -63,7 +84,7 @@
                     <div class="input-group">
                         <input type="search"
                                class="form-control search-input rounded-start-3 ps-3"
-                               placeholder="Tìm kiếm sản phẩm..."
+                               placeholder="Bạn đang tìm kiếm gì ? "
                                aria-label="Search"
                                id="searchInput"
                                autocomplete="off"
@@ -75,60 +96,69 @@
                     <!-- Dropdown suggestions -->
                     <ul class="list-group position-absolute w-100 mt-1 shadow-sm rounded-3 d-none"
                         id="searchSuggestions"
-                        style="max-height: 300px; overflow-y: auto; scrollbar-width: none; z-index:1000">
+                        style="max-height: 300px; overflow-y: auto; scrollbar-width: thin; z-index:1000">
                         <!-- Suggestions will be dynamically added here -->
                     </ul>
                 </form>
+             
                 <ul class="navbar-nav ms-auto nav-right">
             <style>
-        /* Đảm bảo navbar-nav luôn nằm ngang */
-        .nav-right {
-            display: flex;
-            flex-direction: row; /* Giữ các li trên một dòng */
-            flex-wrap: nowrap; /* Ngăn xuống dòng */
-            align-items: center;
-            justify-content: flex-end; /* Căn phải như ms-auto */
-            gap: 10px; /* Khoảng cách giữa các li */
-        }
+                        /* Đảm bảo navbar-nav luôn nằm ngang */
+                        .nav-right {
+                            display: flex;
+                            flex-direction: row; /* Giữ các li trên một dòng */
+                            flex-wrap: nowrap; /* Ngăn xuống dòng */
+                            align-items: center;
+                            justify-content: flex-end; /* Căn phải như ms-auto */
+                            gap: 10px; /* Khoảng cách giữa các li */
+                        }
 
-        /* Tối ưu kích thước trên mobile */
-        media (max-width: 991px) {
-            .nav-right {
-                padding: 0; /* Loại bỏ padding thừa */
-            }
-            .nav-right .nav-item {
-                margin: 0; /* Loại bỏ margin mặc định */
-                padding: 0 5px; /* Giảm padding để vừa màn hình */
-            }
-            .nav-right .nav-link {
-                padding: 5px; /* Giảm padding */
-                font-size: 0.9rem; /* Thu nhỏ chữ nếu cần */
-            }
-            .nav-right .badge {
-                font-size: 0.5rem; /* Thu nhỏ badge */
-                min-width: 14px;
-                min-height: 14px;
-            }
-            .nav-right .account-btn img {
-                width: 24px; /* Thu nhỏ avatar */
-                height: 24px;
-            }
-            .nav-right .account-btn span {
-                max-width: 80px; /* Giới hạn chiều rộng email */
-                font-size: 0.8rem; /* Thu nhỏ chữ */
-            }
-        }
+                        /* Tối ưu kích thước trên mobile */
+                        media (max-width: 991px) {
+                            .nav-right
 
-        /* Đảm bảo dropdown không bị ảnh hưởng */
+                        {
+                            padding: 0; /* Loại bỏ padding thừa */
+                        }
+
+                        .nav-right .nav-item {
+                            margin: 0; /* Loại bỏ margin mặc định */
+                            padding: 0 5px; /* Giảm padding để vừa màn hình */
+                        }
+
+                        .nav-right .nav-link {
+                            padding: 5px; /* Giảm padding */
+                            font-size: 0.9rem; /* Thu nhỏ chữ nếu cần */
+                        }
+
+                        .nav-right .badge {
+                            font-size: 0.5rem; /* Thu nhỏ badge */
+                            min-width: 14px;
+                            min-height: 14px;
+                        }
+
+                        .nav-right .account-btn img {
+                            width: 24px; /* Thu nhỏ avatar */
+                            height: 24px;
+                        }
+
+                        .nav-right .account-btn span {
+                            max-width: 80px; /* Giới hạn chiều rộng email */
+                            font-size: 0.8rem; /* Thu nhỏ chữ */
+                        }
+
+                        }
+
+                        /* Đảm bảo dropdown không bị ảnh hưởng */
                         .notification-dropdown {
                             position: absolute;
                             top: 100%; /* Vẫn nằm dưới nút thông báo */
                             left: 50%; /* Đưa điểm bắt đầu về giữa màn hình */
                             transform: translateX(-50%); /* Dịch ngược lại 50% chiều rộng để căn giữa */
-                            width: 300px; /* Giữ kích thước cố định */
+                            width: 320px; /* Giữ kích thước cố định */
                             margin-left: 0; /* Xóa margin-left cũ */
                         }
-    </style>
+                    </style>
 
                     <!-- Notification -->
                     <li class="nav-item dropdown position-relative px-md-2">
@@ -276,29 +306,29 @@
                                 <img class="rounded-circle me-2" width="30" height="30" src="~/Upload/Avatar/@ViewBag.User.Img" />
                                 <span class="d-inline-block text-truncate align-middle" style="max-width: 120px;">@ViewBag.User.Email</span>
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-dark animate slideIn" aria-labelledby="accountDropdown">
+                            <ul class="dropdown-menu dropdown-menu-light animate slideIn" aria-labelledby="accountDropdown">
                                 @{
                                     var userRoles = ViewBag.User?.Roles as IEnumerable<dynamic>;
                                 }
 
                                 @if (userRoles != null && userRoles.Any(r => r.RoleName == "Admin"))
                                 {
-                                    <li><a class="dropdown-item" href="/admin"><i class="fa fa-angle-double-right pe-2" aria-hidden="true"></i>Trang quản lý</a></li>
+                                    <li><a class="dropdown-item" href="/admin"><i class="fa fa-angle-double-right pe-2 text-danger" aria-hidden="true"></i>Trang quản lý</a></li>
                                 }
                                 else
                                 {
-                                    <li><a class="dropdown-item" href="/user/Information"><i class="fas fa-user me-2"></i>Tài Khoản</a></li>
+                                    <li><a class="dropdown-item" href="/user/Information"><i class="fas fa-user me-2 text-danger "></i>Tài Khoản</a></li>
                                 }
 
-                                <li><a class="dropdown-item" href="/user/MyOrders"><i class="fas fa-shopping-cart me-2" ></i>Đơn Hàng</a></li>
+                                <li><a class="dropdown-item" href="/user/MyOrders"><i class="fas fa-shopping-cart me-2 text-danger"></i>Đơn Hàng</a></li>
                                 <li>
                                     <a class="dropdown-item" href="/user/Wishlist">
-                                        <i class="fas fa-star me-2"></i>D.S Yêu Thích
+                                        <i class="fas fa-star me-2 text-danger"></i>Yêu Thích
                                     </a>
                                 </li>
                                 <li>
                                     <a class="dropdown-item" href="@Url.Action("Logout", "Authentication")">
-                                        <i class="fas fa-sign-out-alt me-2"></i>Đăng Xuất
+                                        <i class="fas fa-sign-out-alt me-2 text-danger"></i>Đăng Xuất
                                     </a>
                                 </li>
                             </ul>
@@ -306,13 +336,13 @@
                     }
                     else
                     {
-                        <li class="nav-item dropdown">
-                            <button class="btn account-btn dropdown-toggle" type="button" id="accountDropdown" data-bs-toggle="dropdown">
+                        <li class="nav-item dropdown ">
+                            <button class="btn account-btn dropdown-toggle text-white" type="button" id="accountDropdown" data-bs-toggle="dropdown">
                                 <i class="far fa-user-circle me-2"></i>Tài Khoản
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-dark animate slideIn" aria-labelledby="accountDropdown">
-                                <li><a class="dropdown-item" href="~/Auth/Login"><i class="fas fa-sign-in-alt me-2"></i>Đăng Nhập</a></li>
-                                <li><a class="dropdown-item" href="~/Auth/Register"><i class="fas fa-user-plus me-2"></i>Đăng Ký</a></li>
+                            <ul class="dropdown-menu dropdown-menu-light animate slideIn" aria-labelledby="accountDropdown">
+                                <li><a class="dropdown-item" href="~/Auth/Login"><i class="fas fa-sign-in-alt me-2 text-danger"></i>Đăng Nhập</a></li>
+                                <li><a class="dropdown-item" href="~/Auth/Register"><i class="fas fa-user-plus me-2 text-danger"></i>Đăng Ký</a></li>
                             </ul>
                         </li>
                     }
@@ -349,7 +379,7 @@
     </div>
 
     <!-- Footer -->
-    <footer class="text-center text-lg-start bg-dark text-white footer mt-auto">
+    <footer class="text-center text-lg-start text-white footer mt-auto">
         <section class="">
             <div class="container text-center text-md-start py-3">
                 <div class="row g-3">

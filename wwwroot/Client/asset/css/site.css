@@ -1,6 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
 body {
     background-color: #e0f7fa; /* Chọn màu nền nhẹ nhàng */
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Be Vietnam Pro', sans-serif;
 }
 
 .carousel-inner .carousel-item img,
@@ -29,7 +30,7 @@ body {
 }
 
   a {
-    text-decoration: none;
+    text-decoration: none!important;
     color: inherit; /* Giữ nguyên màu sắc của văn bản hoặc màu được thiết lập trước */
     transition: color 0.3s; /* Tạo hiệu ứng chuyển đổi khi thay đổi màu */
   }
@@ -58,6 +59,26 @@ body {
     background-color: #f8f9fa;
   }
   
+/*  dòng line chạy*/
+.marquee-line {
+    background-color: #dc2626;
+    color: white;
+    height:20px;
+}
+.marquee-tag {
+    max-width:80%;
+}
+    .marquee-line p {
+        font-size: 0.8rem;
+        color: white;
+        font-weight: 500;
+    }
+
+@media (max-width: 768px) {
+    .marquee-line {
+        display: none;
+    }
+}
   .category-icon {
     width: 35px;
     height: 35px;
@@ -87,7 +108,7 @@ body {
   }
   
   /* Dropdown animation */
-  .animate {
+            .animate {
     animation-duration: 0.3s;
     animation-fill-mode: both;
   }
@@ -251,16 +272,19 @@ body {
 .product-card {
     flex: 0 0 auto;
     scroll-snap-align: start;
-    border-radius: 12px;
+    border-radius: 15px;
     border: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     transition: transform 0.3s ease;
     cursor : pointer;
 }
 
-    .product-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    .product-card .product-image-csl-hotSale {
+        transition: transform 0.3s ease-in-out; /* Thêm hiệu ứng mượt */
+    }
+
+    .product-card:hover .product-image-csl-hotSale {
+        transform: scale(1.05);
     }
 
 /* Navigation button styles */
@@ -366,14 +390,14 @@ body {
       background-position: 200% center;
     }
 }
-footer{
-    background: linear-gradient(145deg, #707070, #b98888)
+footer {
+    background-color: #dc2626
 }
 
 /* Navbar Base Styles */
 .custom-navbar {
-    background: linear-gradient(145deg, #2c3e50, #3498db);
-    padding: 0.8rem 0;
+    background: #dc2626;
+    padding: 0.6rem 0;
     box-shadow: 0 2px 15px rgba(0,0,0,0.1);
 }
 
@@ -384,13 +408,15 @@ footer{
 }
 
 .brand-text {
-    font-weight: 600;
-    letter-spacing: 0.5px;
+    font-weight: 700; /* bold hơn */
+    letter-spacing: 1px; /* giãn thêm */
+    text-transform: uppercase; /* viết hoa toàn bộ */
+    font-size: 1.25rem; /* to vừa phải (~20px) */
 }
 
 /* Navbar Base Styles */
 .custom-navbar {
-    background: linear-gradient(145deg, #707070, #b98888);
+    background: #dc2626;
     padding: 0.8rem 0;
     box-shadow: 0 2px 15px rgba(0,0,0,0.1);
 }
@@ -465,8 +491,7 @@ footer{
 /* Account Button */
 .account-btn {
     background: rgba(255,255,255,0.1);
-    color: white;
-    border: 1px solid rgba(255,255,255,0.2);
+    border: none;
     padding: 0.5rem 1rem;
     transition: all 0.3s ease;
 }
@@ -494,7 +519,7 @@ footer{
 /* Responsive Adjustments */
 @media (max-width: 991.98px) {
     .navbar-collapse {
-        background: rgba(52, 73, 94, 0.95);
+        background: #dc2626;
         backdrop-filter: blur(10px);
         margin: 1rem -1rem -0.8rem;
         padding: 1rem;

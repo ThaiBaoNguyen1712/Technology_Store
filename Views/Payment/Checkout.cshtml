@@ -5,6 +5,11 @@
 @model Tuple<List<Tech_Store.Models.DTO.Payment.Client.CheckoutDTo>, Tech_Store.Models.DTO.UserDTo>
 @using System.Globalization
 <style>
+    .payment-method{
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+    }
     .payment-method-logo {
         width: 60px;
         height: 60px;
@@ -12,7 +17,7 @@
     }
 
     .selected-payment {
-        border: 2px solid #2579f2 !important;
+        border: 3px solid #dc2626 !important;
     }
 
     .form-control:focus {
@@ -191,7 +196,7 @@
                         </div>
                     </div>
 
-                    <button class="btn btn-primary w-100 py-2" id="PayBtn" type="button" form="checkoutForm">
+                    <button class="btn btn-danger w-100 py-2" id="PayBtn" type="button" form="checkoutForm">
                         Đặt hàng
                         <i class="fas fa-arrow-right ms-2"></i>
                     </button>

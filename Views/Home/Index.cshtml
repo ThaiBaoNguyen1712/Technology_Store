@@ -79,7 +79,7 @@
     <img src="~/client/asset/img/b2s-update-19-06 (1).gif" class="w-100" />
 </section>
 <section class="container pt-2" data-section="hot-sale">
-    <div class="card" style="background: linear-gradient(145deg, #e69a8d, #e96583); border: none;">
+    <div class="card" style="background: #dc2626; border: none;">
         <div class="card-body">
             <div class="d-flex align-items-center justify-content-between">
                 <h3 class="m-0" style="font-weight: bold;">
@@ -159,20 +159,47 @@
     </div>
 </section>
 
-
 @foreach (var item in ViewBag.ProductsByCategory)
 {
     <section class="products">
         <div class="container">
             <div class="product-section" data-section="@item.Category.Name">
-                <div style="max-width: 85vw; padding: 10px; display: flex; justify-content: space-between; align-items: center;">
-                    <h3 class="text-dark mb-0">@item.Category.Name</h3>
 
-                    <a href="~/Category/@item.Category.EngTitle" class="text-decoration-none text-primary position-absolute end-0 me-3 d-flex align-items-center">
-                        <span class="me-1" style="color:#ff0000">Xem tất cả</span>
-                        <i class="fa fa-angle-right" style="color:#ff0000" aria-hidden="true"></i>
-                    </a>
+                <div class="d-flex justify-content-between align-items-center flex-wrap px-3 mb-3" style="max-width: 90vw;">
+                    <!-- Tên danh mục -->
+                    <h4 class="text-dark mb-2 mb-md-0">@item.Category.Name</h4>
+
+                    <!-- Hot search + Xem tất cả -->
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        @{
+                            var hotSearchDict = ViewBag.List_TopHotSearch as Dictionary<string, List<string>>;
+                            var slug = item.Category.EngTitle;
+                            var keywords = (hotSearchDict != null && hotSearchDict.ContainsKey(slug))
+                            ? hotSearchDict[slug]
+                            : null;
+                        }
+
+                        @if (keywords != null)
+                        {
+                            @foreach (var keyword in keywords)
+                            {
+                                <a href="/Search/Filter?key=@Uri.EscapeDataString(keyword)"
+                                   class="badge bg-light text-dark border border-secondary px-3 py-2"
+                                   style="font-weight: 500;text-decoration:none">
+                                    @keyword
+                                </a>
+                            }
+                        }
+
+                        <a href="~/Category/@item.Category.EngTitle"
+                           style="color: #ff0000; font-weight: 500; text-decoration:none">
+                            <span>Xem thêm</span>
+                            <i class="fa fa-angle-right ms-1" aria-hidden="true"></i>
+                        </a>
+                    </div>
                 </div>
+
+
 
                 <!-- Nút điều hướng cho phần sản phẩm mới -->
                 <button class="btn-scroll btn-prev" data-target="@item.Category.Name">
@@ -182,7 +209,7 @@
                     <i class="fa fa-chevron-right"></i>
                 </button>
                 <div class="scrolling-wrapper" data-wrapper="@item.Category.Name">
-                    <div class="row g-2 pt-2 mx-auto">
+                    <div class="row g-2 pt-1 mx-auto">
                         @foreach (var product in item.Products)
                         {
                             <div class="col-6 col-md-3 card product-card" style="max-width: 250px;" data-id="@product.ProductId">

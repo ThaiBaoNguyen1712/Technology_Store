@@ -661,7 +661,7 @@ namespace Tech_Store.Controllers
                     {
                         ProductId = product.ProductId,
                         ProductName = product.Name,
-                        ImageUrl = product.Image,
+                        ImageUrl = varientProduct.ImageUrl,
                         Quantity = item.Quantity,
                         VarientId = item.VarientProductId,
                         SellPrice = varientProduct.Price ?? 0,
