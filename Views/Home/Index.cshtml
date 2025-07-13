@@ -5,7 +5,7 @@
 <!-- carousel -->
 <div class="container pt-2">
     <div class="row">
-        <div class="col-md-3">
+        <div class="d-none d-md-block col-md-3">
             <div class="card categories-menu">
                 <ul class="list-group list-group-flush">
                     @foreach (var item in ViewBag.list_cate)
@@ -26,7 +26,7 @@
                 </ul>
             </div>
         </div>
-        <div class="col-md-6">
+        <div class="col-12 col-md-6">
             <div class="card">
                 <div id="carouselExampleCaptions" class="carousel slide" data-bs-ride="carousel">
                     <div class="carousel-indicators">
@@ -63,7 +63,7 @@
             </div>
         </div>
         <!-- navbar right -->
-        <div class="col-md-3 d-flex flex-column align-items-center">
+        <div class="d-none d-md-block col-md-3 d-flex flex-column align-items-center">
             <div class="card mb-3" style="width: 100%; border: none; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
                 <img src="~/Client/asset/img/R.png" class="card-img-top" style="height: 120px; width: auto; object-fit: cover;" alt="">
             </div>
@@ -76,7 +76,7 @@
 </div>
 <!-- end carousel -->
 <section class="container pt-2">
-    <img src="~/client/asset/img/b2s-update-19-06 (1).gif" class="w-100" />
+    <img src="~/client/asset/img/b2s-update-19-06 (1).gif" class="w-100 h-auto" />
 </section>
 <section class="container pt-2" data-section="hot-sale">
     <div class="card" style="background: #dc2626; border: none;">
@@ -181,21 +181,26 @@
 
                         @if (keywords != null)
                         {
-                            @foreach (var keyword in keywords)
-                            {
-                                <a href="/Search/Filter?key=@Uri.EscapeDataString(keyword)"
-                                   class="badge bg-light text-dark border border-secondary px-3 py-2"
-                                   style="font-weight: 500;text-decoration:none">
-                                    @keyword
-                                </a>
-                            }
+                              <div class="d-none d-md-block"> 
+                                    @foreach (var keyword in keywords)
+                                    {
+                                       <a href="/Search/Filter?key=@Uri.EscapeDataString(keyword)"
+                                       class="badge bg-light text-dark border px-3 py-2"
+                                       style="font-weight: 500;text-decoration:none">
+                                       @(keyword.Length > 20 ? keyword.Substring(0, 20) + "..." : keyword)
+                                    </a>
+
+                                    }
+                            </div>
                         }
 
-                        <a href="~/Category/@item.Category.EngTitle"
-                           style="color: #ff0000; font-weight: 500; text-decoration:none">
+                      <a href="~/Category/@item.Category.EngTitle"
+                           class="badge bg-light text-danger border border-danger px-3 py-2"
+                           style="font-weight: 500; text-decoration: none;">
                             <span>Xem thêm</span>
-                            <i class="fa fa-angle-right ms-1" aria-hidden="true"></i>
+                         
                         </a>
+
                     </div>
                 </div>
 

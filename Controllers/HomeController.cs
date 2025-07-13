@@ -39,7 +39,7 @@ namespace Tech_Store.Controllers
                 .Where(x => x.Visible == 1)
                 .ToList();
 
-            var list_hotSearch = await _redis.GetTopSearchKeywords(list_cate.ToList(),10);
+            var list_hotSearch = await _redis.GetTopSearchKeywords(list_cate.ToList(),6);
 
             // Lấy tối đa 10 sản phẩm cho mỗi danh mục
             var productsByCategory = list_cate.Select(category => new

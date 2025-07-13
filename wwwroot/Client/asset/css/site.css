@@ -64,6 +64,7 @@ body {
     background-color: #dc2626;
     color: white;
     height:20px;
+    width:100%;
 }
 .marquee-tag {
     max-width:80%;
@@ -74,11 +75,11 @@ body {
         font-weight: 500;
     }
 
-@media (max-width: 768px) {
+/*@media (max-width: 768px) {
     .marquee-line {
         display: none;
     }
-}
+}*/
   .category-icon {
     width: 35px;
     height: 35px;
