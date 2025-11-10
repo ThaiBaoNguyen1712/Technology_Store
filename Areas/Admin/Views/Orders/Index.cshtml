@@ -283,8 +283,29 @@
                                         ${order.paymentStatus === 'Paid' ? 'Đã thanh toán' : 'Chưa thanh toán'}
                                     </span>
                                 </td>
-
-                           
+                                <td class="text-center">
+                                  <span class="badge ${
+                                    order.orderStatus === 'Pending'   ? 'bg-primary'   :
+                                    order.orderStatus === 'Confirmed' ? 'bg-info'      :
+                                    order.orderStatus === 'Shipping'  ? 'bg-warning'   :
+                                    order.orderStatus === 'Delivered' ? 'bg-success'   :
+                                    order.orderStatus === 'Completed' ? 'bg-success'   :
+                                    order.orderStatus === 'Cancelled' ? 'bg-danger'    :
+                                    order.orderStatus === 'Refunded'  ? 'bg-secondary' :
+                                                                        'bg-dark'
+                                  }">
+                                    ${
+                                      order.orderStatus === 'Pending'   ? 'Đang chờ' :
+                                      order.orderStatus === 'Confirmed' ? 'Đã xác nhận' :
+                                      order.orderStatus === 'Shipping'  ? 'Đang giao hàng' :
+                                      order.orderStatus === 'Delivered' ? 'Đã giao hàng' :
+                                      order.orderStatus === 'Completed' ? 'Hoàn thành' :
+                                      order.orderStatus === 'Cancelled' ? 'Đã hủy' :
+                                      order.orderStatus === 'Refunded'  ? 'Đã hoàn tiền' :
+                                                                          'Không xác định'
+                                    }
+                                  </span>
+                                </td>
                              <td>
                                 <select class="form-control border selectpicker changeStatus" data-id="${order.orderId}" data-current-status="${order.orderStatus}" data-live-search="true">
                                         <option value="Pending" ${order.orderStatus === "Pending" ? "selected" : ""}>Đang chờ</option>

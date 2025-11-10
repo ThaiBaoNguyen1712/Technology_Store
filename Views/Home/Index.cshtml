@@ -100,7 +100,7 @@
                     <!-- Nội dung sản phẩm -->
                     @foreach (var hot in ViewBag.productsHotSale)
                     {
-                        <div class="col-6 col-md-3 card product-card" style="max-width: 250px;" data-id="@hot.ProductId">
+                        <div class="col-6 col-md-3 card product-card" style="max-width: 235px;" data-id="@hot.ProductId">
 
                             <!-- Sale Badge -->
                             <div class="position-absolute d-flex gap-1" style="top: 8px; left: 8px; z-index: 2;">
@@ -137,8 +137,6 @@
                                             <span class="text-decoration-line-through text-muted" style="font-size: 0.9rem;">@hot.OriginalPrice?.ToString("C0", new CultureInfo("vi-VN"))</span>
                                         }
                                     </div>
-
-
                                     <button class="btn btn-outline-danger btn-sm w-100 mt-auto addToWishList d-inline-flex align-items-center justify-content-center text-nowrap"
                                             style="font-size: 0.9rem;"
                                             data-id="@hot.ProductId">
@@ -217,7 +215,7 @@
                     <div class="row g-2 pt-1 mx-auto">
                         @foreach (var product in item.Products)
                         {
-                            <div class="col-6 col-md-3 card product-card" style="max-width: 250px;" data-id="@product.ProductId">
+                            <div class="col-6 col-md-3 card product-card" style="max-width: 240px;" data-id="@product.ProductId">
                                 <!-- Sale Badge -->
                                 <div class="position-absolute d-flex gap-1" style="top: 8px; left: 8px; z-index: 2;">
                                     @if (product.SellPrice != product.OriginalPrice)

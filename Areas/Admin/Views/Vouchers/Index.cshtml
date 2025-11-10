@@ -20,6 +20,44 @@
                         </button>
                     </div>
                 </div>
+                <div class="card mb-6">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <!-- Hàng 1: Thông tin cơ bản -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Mã khuyến mãi</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" placeholder="Nhập mã khuyến mãi" id="filterCode">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Tên mã KM</label>
+                                <input type="text" class="form-control" placeholder="Nhập tên mã KM cần tìm" id="filterName">
+                            </div>
+                       
+                            <!-- Hàng 2: Thời gian và khoảng giá -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Ngày bắt đầu</label>
+                                <input type="date" class="form-control" id="filterDateFrom">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Ngày kết thúc</label>
+                                <input type="date" class="form-control" id="filterDateTo">
+                            </div>
+                            <!-- Nút tìm kiếm và reset -->
+                            <div class="col-12 mt-4">
+                                <div class="d-flex gap-2 justify-content-end">
+                                    <button type="button" class="btn btn-light px-4" id="btnReset">
+                                        <i class="fas fa-redo me-1"></i> Đặt lại
+                                    </button>
+                                    <button type="button" class="btn btn-primary px-4" id="btnSearch">
+                                        <i class="fas fa-search me-1"></i> Tìm kiếm
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="card-body">
                     <!-- Modal -->
                     @Html.Partial("ModalVoucher")
@@ -47,7 +85,7 @@
 
                                 </tr>
                             </tfoot>
-                            <tbody>
+                            <tbody id="VoucherList">
                                 @if (Model != null)
                                 {
                                     @foreach (var vou in Model)
@@ -213,5 +251,86 @@
             $('#update').hide();
             $('#add').show();
         });
+
+          $('#btnSearch').on('click', function () {
+        var filterData = {
+            code: $('#filterCode').val(),
+            name: $('#filterName').val(),
+            dateFrom: $('#filterDateFrom').val(),
+            dateTo: $('#filterDateTo').val()
+        };
+
+        $.ajax({
+            method: 'GET',
+            url: '@Url.Action("Filter", "Vouchers")',
+            data: filterData,
+            success: function (response) {
+                // Xóa dữ liệu cũ
+                var table = $('#add-row').DataTable();
+                table.clear();
+
+                // Thêm dữ liệu mới từ response (response là list voucher JSON)
+                $.each(response, function (i, vou) {
+                    const formatDate = (d) => {
+                    if (!d) return "";
+                    const date = new Date(d);
+                    return date.toLocaleDateString('vi-VN');
+                };
+
+                         table.row.add([
+                        `${vou.name}`,
+                        `<span class="badge bg-warning text-dark text-bold">${vou.code}</span>`,
+                        `${vou.description}`,
+                        `<div class="text-center">
+                            <div style="background:#e7f9ed;padding:5px 10px;border-radius:6px;color:#1a7f37;">
+                                ${formatDate(vou.startedAt)}
+                            </div>
+                        </div>`,
+                        `<div class="text-center">
+                            <div style="background:#fdecea;padding:5px 10px;border-radius:6px;color:#b02a37;">
+                                ${formatDate(vou.expiredAt)}
+                            </div>
+                        </div>`,
+                        `<div class="form-button-action">
+                            <button type="button"
+                                    data-bs-toggle="tooltip"
+                                    data-id="${vou.voucherId}"
+                                    id="editVou"
+                                    class="btn btn-link btn-primary btn-lg"
+                                    data-original-title="Edit Task">
+                                <i class="fa fa-edit"></i>
+                            </button>
+                            <button type="button"
+                                    data-bs-toggle="tooltip"
+                                    class="btn btn-link btn-danger"
+                                    data-id="${vou.voucherId}"
+                                    id="removeVou"
+                                    data-original-title="Remove">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </div>`
+                    ]);
+                });
+
+                // Cập nhật lại table hiển thị
+                table.draw();
+            },
+            error: function (xhr, status, error) {
+                alert("Đã xảy ra lỗi: " + error);
+            }
+        });
+        })
+
+        $('#btnReset').on('click', function () {
+            // Xóa giá trị trong các trường lọc
+            $('#filterCode').val('');
+            $('#filterName').val('');
+            $('#filterDateFrom').val('');
+            $('#filterDateTo').val('');
+            // Gọi lại hàm tìm kiếm để hiển thị tất cả dữ liệu
+            $('#btnSearch').click();
+
+        
+       })
     });
 </script>

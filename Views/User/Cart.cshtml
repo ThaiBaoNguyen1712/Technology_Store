@@ -116,7 +116,7 @@
                 <div class="row pt-2 mx-auto">
                     @foreach (var product in ViewBag.Product_Related)
                     {
-                        <div class="col-6 col-md-3 card product-card" style="max-width: 250px;" data-id="@product.ProductId">
+                        <div class="col-6 col-md-3 card product-card" style="max-width: 240px;" data-id="@product.ProductId">
                             <!-- Sale Badge -->
                             <div class="position-absolute d-flex gap-1" style="top: 8px; left: 8px; z-index: 2;">
                                 @if (product.SellPrice != product.OriginalPrice)

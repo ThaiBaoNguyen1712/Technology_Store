@@ -28,8 +28,8 @@ body {
 }
 
 .avatar-preview {
-    height: 85px!important;
-    width: 85px!important;
+    height: 85px !important;
+    width: 85px !important;
     cursor: pointer; /* Thêm con trỏ để chỉ rằng có thể bấm vào ảnh */
     transition: transform 0.2s; /* Hiệu ứng khi phóng to */
 }
@@ -173,19 +173,20 @@ body {
         font-size: 12px;
         cursor: pointer;
     }
-     .deleteImg-btn {
-        position: absolute;
-        top: -10px;
-        right: -10px;
-        background-color: red;
-        color: white;
-        border: none;
-        border-radius: 50%;
-        width: 20px;
-        height: 20px;
-        font-size: 12px;
-        cursor: pointer;
-    }
+
+.deleteImg-btn {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background-color: red;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    cursor: pointer;
+}
 
 
 .color-option {
@@ -236,6 +237,7 @@ Phần card Varients Product*/
     max-height: 400px;
     overflow-y: auto;
 }
+
 #variantCardsContainer {
     -webkit-user-select: none; /* Cho Safari */
     -moz-user-select: none; /* Cho Firefox */
@@ -271,6 +273,7 @@ Phần card Varients Product*/
 .option-buttons li:not(.d-none) {
     margin-right: 15px;
 }
+
 .nav-link.active {
     background: rgba(255,255,255,0.1);
     color: #fff !important;

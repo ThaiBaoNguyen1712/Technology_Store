@@ -336,7 +336,7 @@ body {
 
 @media (max-width: 767px) {
     .product-card {
-        width: calc((100% - 1rem) / 2); /* 2 cards on mobile */
+        max-width: calc((100% - 1rem) / 2); /* 2 cards on mobile */
     }
 
     /* Hide navigation buttons on mobile */
@@ -385,7 +385,11 @@ body {
     display: inline-block;
 
   }
-  
+@media(max-width: 768px) {
+    .hot-sale-txt {
+        font-size: 1.2rem; 
+            }
+         }
   @keyframes textclip {
     to {
       background-position: 200% center;
@@ -396,7 +400,7 @@ footer {
 }
 
 /* Navbar Base Styles */
-.custom-navbar {
+        .custom-navbar {
     background: #dc2626;
     padding: 0.6rem 0;
     box-shadow: 0 2px 15px rgba(0,0,0,0.1);

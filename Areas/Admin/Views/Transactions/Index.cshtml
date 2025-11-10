@@ -25,6 +25,68 @@
                         <h4 class="card-title">LỊCH SỬ GIAO DỊCH</h4>
                     </div>
                 </div>
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <!-- Hàng 1: Thông tin cơ bản -->
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Mã giao dịch</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" placeholder="Nhập mã đơn hàng" id="filterOrderId">
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label fw-semibold">Tên khách hàng</label>
+                                <input type="text" class="form-control" placeholder="Nhập tên khách hàng cần tìm" id="filterCustomerName">
+                            </div>
+                            <!-- Hàng 3: Số điện thoại -->
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Số điện thoại</label>
+                                <input type="text" class="form-control" placeholder="Nhập số điện thoại khách hàng" id="filterPhone">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Thanh toán</label>
+                                <select class="form-control border selectpicker" data-live-search="true" id="filterPaymentStatus">
+                                    <option value="">Tất cả trạng thái</option>
+                                    <option value="Paid">Đã thanh toán</option>
+                                    <option value="Unpaid">Chưa thanh toán</option>
+                                </select>
+                            </div>
+
+                            <!-- Hàng 2: Thời gian và khoảng giá -->
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Từ ngày</label>
+                                <input type="date" class="form-control" id="filterDateFrom">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Đến ngày</label>
+                                <input type="date" class="form-control" id="filterDateTo">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Khoảng giá trị đơn hàng</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" placeholder="Từ" id="filterAmountFrom">
+                                    <span class="input-group-text">-</span>
+                                    <input type="number" class="form-control" placeholder="Đến" id="filterAmountTo">
+                                </div>
+                            </div>
+
+                       
+
+                            <!-- Nút tìm kiếm và reset -->
+                            <div class="col-12 mt-4">
+                                <div class="d-flex gap-2 justify-content-end">
+                                    <button type="button" class="btn btn-light px-4" id="btnReset">
+                                        <i class="fas fa-redo me-1"></i> Đặt lại
+                                    </button>
+                                    <button type="button" class="btn btn-primary px-4" id="btnSearch">
+                                        <i class="fas fa-search me-1"></i> Tìm kiếm
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table id="add-row" class="display table table-striped table-hover">
@@ -34,6 +96,7 @@
                                     <th class="fw-semibold">Mã hóa đơn</th>
                                     <th class="fw-semibold">Người thanh toán</th>
                                     <th class="fw-semibold">Phương thức thanh toán</th>
+                                    <th class="fw-semibold">Giá trị đơn hàng</th>
                                     <th class="fw-semibold">Tình trạng</th>
                                     <th class="fw-semibold">Ngày tạo</th>
 
@@ -45,12 +108,13 @@
                                     <th>Mã hóa đơn</th>
                                     <th>Người thanh toán</th>
                                     <th>Phương thức thanh toán</th>
+                                    <th>Giá trị đơn hàng</th>
                                     <th>Tình trạng</th>
                                     <th>Ngày tạo</th>
 
                                 </tr>
                             </tfoot>
-                            <tbody>
+                            <tbody id="TransactionList">
 
                                 @if (Model != null)
                                 {
@@ -82,13 +146,16 @@
                                                     <i class="fas fa-money-bill-wave text-success me-2"></i>
                                                 }
                                                 <span>
-                                                    @(trans.PaymentMethod == "COD" ? "Thanh toán khi nhận hàng (COD)" :
-                                                        trans.PaymentMethod == "MoMo" ? "Thanh toán qua ví MoMo" :
-                                                        trans.PaymentMethod == "VNPay" ? "Thanh toán qua ví VNPay" :
-                                                        trans.PaymentMethod == "cash" ? "Thanh toán tiền mặt" : "Không xác định")
+                                                    @(trans.PaymentMethod == "COD" ? "TT khi nhận hàng (COD)" :
+                                                        trans.PaymentMethod == "MoMo" ? "TT qua ví MoMo" :
+                                                        trans.PaymentMethod == "VNPay" ? "TT qua ví VNPay" :
+                                                        trans.PaymentMethod == "cash" ? "TT tiền mặt" : "Không xác định")
                                                 </span>
                                             </td>
-                                            <td>
+                                            <td class="text-center">
+                                        @trans.Amount.ToString("C0", System.Globalization.CultureInfo.GetCultureInfo("vi-VN"))
+                                            </td>
+                                            <td class="text-center">
 
                                                 @if (trans.Status.ToLower() == "paid")
                                                 {
@@ -169,8 +236,107 @@
                 });
             }
         });
+
+    $('#btnReset').on('click', function () {
+        $('#filterOrderId').val('');
+        $('#filterCustomerName').val('');
+        $('#filterPhone').val('');
+        $('#filterPaymentStatus').val('');
+        $('#filterDateFrom').val('');
+        $('#filterDateTo').val('');
+        $('#filterAmountFrom').val('');
+        $('#filterAmountTo').val('');
+        $('#btnSearch').click();
     });
 
 
+
+ });
+
+</script>
+<script>
+        $(document).ready(function () {
+        $(document).on('click', '#btnSearch', function () {
+            var filter = {
+                transactionId: $('#filterOrderId').val(),
+                nameCustomer: $('#filterCustomerName').val(),
+                phoneNumber: $('#filterPhone').val(),
+                paymentStatus: $('#filterPaymentStatus').val(),
+                dateFrom: $('#filterDateFrom').val(),
+                dateTo: $('#filterDateTo').val(),
+                amountFrom: $('#filterAmountFrom').val(),
+                amountTo: $('#filterAmountTo').val()
+            };
+
+            $.ajax({
+                method: 'GET',
+                url: '@Url.Action("Filter", "Transactions")',
+                data: filter,
+                success: function (response) {
+                    var table = $('#add-row').DataTable();
+                    table.clear();
+
+                    $.each(response, function (i, trans) {
+                        const formatCurrency = (num) => num
+                            ? num.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })
+                            : '0 ₫';
+
+                        const formatDate = (d) => {
+                            if (!d) return "";
+                            const date = new Date(d);
+                            return date.toLocaleDateString('vi-VN', {
+                                day: '2-digit', month: '2-digit', year: 'numeric',
+                                hour: '2-digit', minute: '2-digit'
+                            });
+                        };
+
+                        let paymentIcon = '';
+                        switch (trans.paymentMethod) {
+                            case 'COD': paymentIcon = `<img src="/Upload/Logo/shipcod.png" class="payment-icon me-2" alt="COD"/>`; break;
+                            case 'MoMo': paymentIcon = `<img src="/Upload/Logo/LogoMoMo.webp" class="payment-icon me-2" alt="MoMo"/>`; break;
+                            case 'VNPay': paymentIcon = `<img src="/Upload/Logo/LogoVNPay.png" class="payment-icon me-2" alt="VNPay"/>`; break;
+                            case 'cash': paymentIcon = `<i class="fas fa-money-bill-wave text-success me-2"></i>`; break;
+                            default: paymentIcon = `<i class="fa fa-question-circle text-muted me-2"></i>`; break;
+                        }
+
+                        let paymentText = '';
+                        switch (trans.paymentMethod) {
+                            case 'COD': paymentText = 'TT khi nhận hàng (COD)'; break;
+                            case 'MoMo': paymentText = 'TT qua ví MoMo'; break;
+                            case 'VNPay': paymentText = 'TT qua ví VNPay'; break;
+                            case 'cash': paymentText = 'TT tiền mặt'; break;
+                            default: paymentText = 'Không xác định'; break;
+                        }
+
+                        let statusHtml = '';
+                        if (trans.status?.toLowerCase() === 'paid') {
+                            statusHtml = `<span class="badge bg-success">Đã thanh toán</span>`;
+                        } else {
+                            statusHtml = `
+                                <span class="badge bg-danger">Chưa thanh toán</span><br>
+                                <button class="btn btn-sm btn-primary btn-update-payment" data-id="${trans.transId}">
+                                    Xác nhận thanh toán
+                                </button>`;
+                        }
+
+                        table.row.add([
+                            `Giao dịch #${trans.transId}`,
+                            `<a href="/Admin/Orders/View/${trans.invoiceId}">Hóa đơn #${trans.invoiceId}</a>`,
+                            `${trans.customerName || ''}`,
+                            `${paymentIcon}<span>${paymentText}</span>`,
+                            `<div class="text-center">${formatCurrency(trans.amount)}</div>`,
+                            `<div class="text-center">${statusHtml}</div>`,
+                            `<div style="white-space:nowrap;">${formatDate(trans.paymentDate)}</div>`
+                        ]);
+                    });
+
+                    table.draw();
+                },
+                error: function (xhr, status, error) {
+                    alert("Đã xảy ra lỗi: " + error);
+                }
+            });
+        });
+    });
 
 </script>

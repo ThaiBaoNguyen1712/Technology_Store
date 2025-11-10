@@ -71,8 +71,8 @@
                             <i class="fas fa-info-circle text-info"></i>
                         </span>
                         <select name="Status" class="form-control border selectpicker" data-live-search="true" required>
-                            <option value="preorder" @(Model.Status == "preorder" ? "selected" : "")> Đặt trước </option>
                             <option value="available" @(Model.Status == "available" ? "selected" : "")> Có sẵn </option>
+                            <option value="preorder" @(Model.Status == "preorder" ? "selected" : "")> Đặt trước </option>
                             <option value="outstock" @(Model.Status == "outstock" ? "selected" : "")> Hết hàng </option>
                             <option value="StopSell" @(Model.Status == "discontinued" ? "selected" : "")> Ngưng bán </option>
                         </select>

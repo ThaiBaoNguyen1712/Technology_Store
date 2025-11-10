@@ -1,12 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualBasic;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Tech_Store.Models;
+using Tech_Store.Models.ViewModel;
 using Tech_Store.Services.Admin.Interfaces;
 
 namespace Tech_Store.Areas.Admin.Controllers
@@ -26,7 +27,7 @@ namespace Tech_Store.Areas.Admin.Controllers
         [Route("Index")]
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Vouchers.ToListAsync());
+            return View(await _context.Vouchers.OrderByDescending(x=>x.VoucherId).ToListAsync());
         }
 
         [HttpPost("Create")]
@@ -79,6 +80,35 @@ namespace Tech_Store.Areas.Admin.Controllers
             {
                 return NotFound("Không tìm thấy voucher với ID đã cho.");
             }
+        }
+        [HttpGet]
+        [Route("Filter")]
+        public IActionResult Filter(string? code, string? name, DateTime? dateFrom, DateTime? dateTo)
+        {
+            var voucher = _context.Vouchers.AsQueryable();
+
+            // Áp dụng các tiêu chí lọc
+            if (!string.IsNullOrEmpty(code))
+            {
+                voucher = voucher.Where(v => v.Code == code);
+            }
+            if (!string.IsNullOrEmpty(name))
+            {
+                voucher = voucher.Where(v => v.Name != null && v.Name.Contains(name));
+            }
+          
+            if (dateFrom.HasValue)
+            {
+                voucher = voucher.Where(v => v.StartedAt >= dateFrom.Value);
+            }
+            if (dateTo.HasValue)
+            {
+                voucher = voucher.Where(v => v.ExpiredAt <= dateTo.Value);
+            }
+            // Chuyển đổi sang view model để trả về JSON
+            var result = voucher.OrderByDescending(p => p.VoucherId).Take(100).ToList();
+
+            return Json(result);
         }
     }
 }
