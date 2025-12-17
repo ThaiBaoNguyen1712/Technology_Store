@@ -276,6 +276,7 @@
                                 </th>
                                 <th class="fw-semibold">Hàng tồn kho theo biến thể</th>
                                 <th class="fw-semibold">Ảnh SP</th>
+                                <th class="fw-semibold">#</th>
                             </tr>
                         </thead>
                         <tbody id="variantTableBody">
@@ -303,12 +304,15 @@
                                     <td>
                                         <input type="number" class="form-control" name="VarientProducts[@index].Stock" value="@varient.Stock" required />
                                     </td>
-                                 <td class="align-middle text-center">
-                                  <div class="d-flex flex-column align-items-center gap-2">
-                                    <img src="~/Upload/Products/@varient.ImageUrl" alt="Product Image" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;">
-                                    <input type="file" class="form-control form-control-sm" name="VarientProducts[@index].Image" accept="image/*" style="max-width: 200px;">
-                                  </div>
-                                </td>
+                                     <td class="align-middle text-center">
+                                      <div class="d-flex flex-column align-items-center gap-2">
+                                        <img src="~/Upload/Products/@varient.ImageUrl" alt="Product Image" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;">
+                                        <input type="file" class="form-control form-control-sm" name="VarientProducts[@index].Image" accept="image/*" style="max-width: 200px;">
+                                      </div>
+                                    </td>
+                                    <td>
+                                        <button id="delete-Variant" class="btn btn-sm btn-danger">Xóa</button>
+                                    </td>
                                 </tr>
                                 index++;  // Tăng giá trị index sau mỗi lần lặp
                             }
@@ -576,7 +580,8 @@ Ckeditor *@
                     .join(', ');
 
                 var skuProduct = $('#SkuCode').val() || '';
-                var sku = skuProduct + '-' + Object.values(variant).join('-');
+                var rawSku  = skuProduct + '-' + Object.values(variant).join('-');
+                var sku = removeVietnameseTones(rawSku);
                 var price = $('#sellPrice').val();
 
                 var row = $('<tr>');
@@ -594,7 +599,9 @@ Ckeditor *@
                 row.append($('<td>').html(
                     '<input type="number" class="form-control" name="VarientProducts[' + index + '].Stock" value="1" required/>'
                 ));
-     
+                row.append($('<td>').html(
+                    '<input type="file" class="form-control form-control-sm" name="VarientProducts[' + index + '].Image"/>'
+                ));
                 row.append($('<td style="width:10%">').html(
                     '<i class="fas fa-trash delete-btn text-center text-danger" title="Xóa"></i>'
                 ));

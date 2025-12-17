@@ -1,0 +1,59 @@
+﻿@{
+    ViewData["Title"] = "Không có quyền truy cập";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+<div class="container">
+    <div class="row justify-content-center align-items-center" style="min-height: 70vh;">
+        <div class="col-12 col-md-10 col-lg-8">
+            <div class="error-container text-center">
+                <!-- Animated 404 Illustration -->
+                <div class="error-animation mb-4">
+                    <svg width="300" height="200" viewBox="0 0 300 200" class="error-svg">
+
+                        <!-- Number 4 -->
+                        <text x="20" y="120"
+                              style="font-size:120px;font-weight:bold;fill:#ff0000;">
+                            5
+                        </text>
+
+                        <text x="210" y="120"
+                              style="font-size:120px;font-weight:bold;fill:#ff0000;">
+                            0
+                        </text>
+
+                        <!-- Number 4 -->
+                        <text x="210" y="120"
+                              style="font-size:120px;font-weight:bold;fill:#ff0000;">
+                            0
+                        </text>
+
+                    </svg>
+                </div>
+
+
+                <!-- Error Message -->
+                <div class="error-content">
+                    <h1 class="fw-bold mb-3" style="color: red;">
+                        Hmmm! Bạn không có quyền truy cập
+                    </h1>
+                    <p class="text-muted mb-4">
+                        Bạn không có quyền truy cập vào trang này. Vui lòng liên hệ với quản trị viên nếu bạn nghĩ đây là một sai lầm.
+                    </p>
+
+
+                    <!-- Help Text -->
+                    <div class="mt-5 pt-4" style="border-top: 1px solid #e9ecef;">
+                        <p class="text-muted small mb-2">
+                            <i class="fas fa-question-circle me-2"></i>
+                            Cần hỗ trợ?
+                            <a href="/contact" class="text-decoration-none" style="color: #ff0000; font-weight: 500;">Liên hệ với chúng tôi</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

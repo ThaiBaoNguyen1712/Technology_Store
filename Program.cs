@@ -127,10 +127,12 @@ builder.Services.AddSignalR();
 
 var app = builder.Build();
 
+app.UseStatusCodePagesWithReExecute("/404");
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
+    app.UseExceptionHandler("/500");
     app.UseHsts();
 }
 

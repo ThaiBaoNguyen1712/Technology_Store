@@ -351,7 +351,11 @@ Ckeditor CDN*@
                     .join(', ');
 
                 var skuProduct = $('#SkuCode').val() || '';
-                var sku = skuProduct + '-' + Object.values(variant).join('-');
+
+                var rawSku = skuProduct + '-' + Object.values(variant).join('-');
+                console.log(rawSku);
+                var sku = removeVietnameseTones(rawSku);
+                console.log(sku);
                 var price = $('#sellPrice').val();
 
                 var row = $('<tr>');
@@ -369,7 +373,7 @@ Ckeditor CDN*@
                 row.append($('<td>').html(
                     '<input type="number" class="form-control" name="VarientProducts[' + index + '].Stock" value="1" required/>'
                 ));
-              row.append($('<td>').html(
+                row.append($('<td>').html(
                     '<input type="file" class="form-control form-control-sm" name="VarientProducts[' + index + '].Image"/>'
                 ));
                 row.append($('<td style="width:10%">').html(
