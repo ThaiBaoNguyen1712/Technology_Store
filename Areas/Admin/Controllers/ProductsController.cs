@@ -12,8 +12,10 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Tech_Store.Models;
 using Tech_Store.Models.DTO;
+using Tech_Store.Models.Error;
 using Tech_Store.Models.ViewModel;
 using Tech_Store.Services.Admin.NotificationServices;
+using Tech_Store.Services.Admin.ProductServices;
 using static System.Net.Mime.MediaTypeNames;
 using Product = Tech_Store.Models.Product;
 
@@ -27,11 +29,15 @@ namespace Tech_Store.Areas.Admin.Controllers
         private readonly IConfiguration _configuration;
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly NotificationService _notificationService;
-        public ProductsController(ApplicationDbContext context, IConfiguration configuration, IWebHostEnvironment webHostEnvironment, NotificationService notificationService) : base(context)
+        //Sửa tên
+        private readonly ExcelService _productService;
+        public ProductsController(ApplicationDbContext context, IConfiguration configuration,
+            IWebHostEnvironment webHostEnvironment, NotificationService notificationService, ExcelService productService) : base(context)
         {
             _configuration = configuration;
             _webHostEnvironment = webHostEnvironment;
             _notificationService = notificationService;
+            _productService = productService;
         }
 
 
@@ -93,6 +99,30 @@ namespace Tech_Store.Areas.Admin.Controllers
 
             return View(detail);
         }
+
+        [Route("ImportExcel")]
+        public IActionResult ImportExcel()
+        {
+            return View();
+        }
+        [HttpPost("ImportExcel")]
+        public async Task<IActionResult> ImportExcel(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+            {
+                ViewBag.Error = "Vui lòng chọn file có đuôi .xlsx hoặc .csv";
+                return View();
+            }
+
+            var result = _productService.ImportExcel(file);
+
+            ViewBag.SuccessCount = result.products.Count;
+            ViewBag.ErrorCount = result.errors.Count;
+            ViewBag.Errors = result.errors;
+
+            return View();
+        }
+
 
         [Route("{status?}")]
         [Route("Index/{status?}")] // Thêm dấu hỏi để status có thể là null
@@ -657,13 +687,15 @@ namespace Tech_Store.Areas.Admin.Controllers
 
             // Lấy tất cả các bản ghi liên quan
             var variantProducts = await _context.VarientProducts.Where(x => x.ProductId == id).ToListAsync();
+            var variantProductIds = variantProducts.Select(x => x.VarientId).ToList();
             var galleries = await _context.Galleries.Where(x => x.ProductId == id).ToListAsync();
             var cartItems = await _context.CartItems.Where(x => x.ProductId == id).ToListAsync();
             var reviews = await _context.Reviews.Where(x => x.ProductId == id).ToListAsync();
             var wishlists = await _context.Wishlists.Where(x => x.ProductId == id).ToListAsync();
             var orderItems = await _context.OrderItems.Where(x => x.ProductId == id).ToListAsync();
             var variantProductAttrs = await _context.VariantAttributes
-                                        .Where(x => x.ProductVariantId == id).ToListAsync();
+                        .Where(x => variantProductIds.Contains(x.ProductVariantId))
+                        .ToListAsync();
 
             // Nếu sản phẩm đã được mua, chỉ ẩn và khóa lại
             if (orderItems.Any())

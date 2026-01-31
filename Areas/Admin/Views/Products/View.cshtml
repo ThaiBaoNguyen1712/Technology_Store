@@ -1,9 +1,10 @@
 ﻿@model Tech_Store.Models.Product;
 @{
-    ViewData["Title"] = "View";
+    ViewData["Title"] = "Admin-"+ Model.Name;
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
 }
 @using System.Globalization;
+@using Tech_Store.Helpers
 <style>
     .image {
         border-radius: 8px;
@@ -31,7 +32,20 @@
             <div class="card mx-3 shadow-sm p-4" style="border-radius: 15px;">
                 <div class="row">
                     <div class="col-3">
-                        <img src="~/Upload/Products/@Model.Image?v=@DateTime.UtcNow.Ticks" class="image" style="height:150px;width:150px;" />
+                        @if(Model.Image.Contains("http"))
+                        {
+                            <img src="@ResizeCDN.Cdn(Model.Image,150,150)" class="image" style="height:150px;width:150px;" />
+                        }
+                        else if(Model.Image == null || Model.Image == "")
+                        {
+                            <img src="~/Upload/Products/no-image.png" class="image" style="height:150px;width:150px;" />
+                        }
+                        else
+                        {
+                            <img src="~/Upload/Products/@Model.Image?v=@DateTime.UtcNow.Ticks" class="image" style="height:150px;width:150px;" />
+
+                        }
+     
                     </div>
                     <div class="col-9">
                         <h5 class="text-primary">@Model.Name
@@ -124,7 +138,21 @@
         @foreach(var img in Model.Galleries)
         {
             <div class="m-2" style="width:150px;">
-                <img src="~/Upload/Products/@img.Path" class="image" style="width:100%;height:auto;border-radius:10px;box-shadow: 0px 4px 8px rgba(0,0,0,0.1);" />
+                @if(img.Path.Contains("http"))
+                {
+                   <img src="@ResizeCDN.Cdn(img.Path,358,358)" class="image" style="width:100%;height:auto;border-radius:10px;box-shadow: 0px 4px 8px rgba(0,0,0,0.1);" />
+
+                }
+                else if(img.Path == null || img.Path == "")
+                {
+                   <img src="~/Upload/Products/no-image.png" class="image" style="width:100%;height:auto;border-radius:10px;box-shadow: 0px 4px 8px rgba(0,0,0,0.1);" />
+
+                }
+                else
+                {
+                   <img src="~/Upload/Products/@img.Path" class="image" style="width:100%;height:auto;border-radius:10px;box-shadow: 0px 4px 8px rgba(0,0,0,0.1);" />
+
+                }
             </div>
         }
     </div>

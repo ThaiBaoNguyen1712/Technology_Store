@@ -1,72 +1,107 @@
-﻿
+﻿@using Tech_Store.Helpers
+
 @{
     ViewData["Title"] = "Chi tiết đơn hàng";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 @model Tech_Store.Models.ViewModel.OrderDetailVM
 
-<!DOCTYPE html>
-<html lang="vi">
-    <style>
-        .order-progress .step {
-            position: relative;
-            min-height: 1rem;
+<style>
+    .order-progress {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+        padding-top: 10px;
+    }
+
+        /* Tạo thanh nền xám chạy ngang phía sau */
+        .order-progress::before {
+            content: '';
+            position: absolute;
+            top: 2rem; /* Căn giữa theo icon */
+            left: 10%;
+            right: 10%;
+            height: 4px;
+            background: #e9ecef;
+            z-index: 0;
         }
 
-            .order-progress .step::before {
-                content: '';
-                position: absolute;
-                left: 50%;
-                height: 2px;
-                width: 100%;
-                background: #e9ecef;
-                top: 1rem;
-            }
-
-            .order-progress .step:last-child::before {
-                display: none;
-            }
+        .order-progress .step {
+            position: relative;
+            z-index: 1;
+            flex: 1;
+            text-align: center;
+        }
 
         .order-progress .step-icon {
-            width: 2rem;
-            height: 2rem;
+            width: 2.5rem;
+            height: 2.5rem;
             border-radius: 50%;
             background: #fff;
-            border: 2px solid #dee2e6;
+            border: 3px solid #dee2e6;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto;
-            position: relative;
-            z-index: 1;
+            transition: all 0.3s ease;
         }
 
+        /* Trạng thái Active (Đang ở bước này) */
         .order-progress .step.active .step-icon {
-        border-color: floralwhite;
-            background: red;
-            color: white;
+            border-color: #dc3545; /* Màu đỏ */
+            background: #fff;
+            color: #dc3545;
+            font-weight: bold;
+            transform: scale(1.1);
         }
 
+        /* Trạng thái Completed (Đã đi qua) */
         .order-progress .step.completed .step-icon {
-            border-color: floralwhite;
-            background: red;
+            border-color: #dc3545;
+            background: #dc3545;
             color: white;
         }
 
-        .order-progress .step.completed::before {
-        background: red;
+        /* Hiệu ứng thanh nối màu đỏ khi hoàn thành */
+        .order-progress .step.completed::after {
+            content: '';
+            position: absolute;
+            top: 1rem; /* Khớp với vị trí ::before của cha */
+            left: -50%;
+            width: 100%;
+            height: 4px;
+            background: #dc3545;
+            z-index: -1;
         }
+
+        /* Loại bỏ thanh nối cho bước đầu tiên */
+        .order-progress .step:first-child::after {
+            display: none;
+        }
+
+    .step-text {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #6c757d;
+        margin-top: 0.5rem;
+    }
+
+    .step.active .step-text, .step.completed .step-text {
+        color: #212529;
+
+    }
 
     .payment-icon {
-        width: 40px; 
+        width: 40px;
         height: auto;
         border-radius: 5px;
     }
 
+
+
     .text-success {
         font-size: 1.5rem;
-    }
-    </style>
+</style>
     <div class="container py-5">
         <!-- Header -->
         <div class="d-flex align-items-center mb-4">
@@ -146,7 +181,21 @@
                                 {
                                     <!-- Item -->
                                     <div class="d-flex mb-3">
-                                        <img src="/Upload/Products/@item.ImageUrl" class="rounded" alt="@item.NameProduct" width="80" height="80">
+                                        @if(item.ImageUrl.Contains("http"))
+                                        {
+                                    <img src="@ResizeCDN.Cdn(item.ImageUrl)" class="rounded" alt="@item.NameProduct" width="80" height="80">
+
+                                }
+                                else if(string.IsNullOrEmpty(item.ImageUrl))
+                                {
+                                    <img src="/Upload/Products/no-image.png" class="rounded" alt="@item.NameProduct" width="80" height="80">
+
+                                }
+                                else
+                                {
+                                    <img src="/Upload/Products/@item.ImageUrl" class="rounded" alt="@item.NameProduct" width="80" height="80">
+
+                                }
                                         <div class="ms-3 flex-grow-1">
                                             <a style="text-decoration:none" href="/View/@item.Slug">
                                                 <h6 class="mb-1">@item.NameProduct</h6>
@@ -277,3 +326,5 @@
         });
     </script>
 
+
+            </div>

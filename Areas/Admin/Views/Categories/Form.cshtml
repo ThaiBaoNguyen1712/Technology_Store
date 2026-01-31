@@ -1,0 +1,175 @@
+﻿@model Tech_Store.Models.Category
+
+@{
+    bool isEdit = Model != null && Model.CategoryId > 0;
+    ViewData["Title"] = isEdit ? "Cập nhật danh mục" : "Thêm danh mục";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+}
+
+<h5 class="card-title mb-0 fw-bold text-primary pt-3 ms-3">
+    @(isEdit ? "Cập Nhật Danh Mục" : "Thêm Danh Mục Mới")
+</h5>
+
+<div class="py-4">
+    <form id="CategoryForm" action="~/Admin/Categories/Save" method="post" enctype="multipart/form-data">
+        <div class="shadow-sm border rounded bg-white p-4">
+            <input type="hidden" name="CategoryId" value="@Model?.CategoryId" />
+
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Tên danh mục</label>
+                            <input type="text" class="form-control focus-ring focus-ring-primary" name="Name"
+                                   value="@Model?.Name" placeholder="VD: Laptop Gaming" required />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Tiêu đề tiếng Anh (Slug)</label>
+                            <input type="text" class="form-control" name="EngTitle"
+                                   value="@Model?.EngTitle" placeholder="VD: laptop-gaming" required />
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold text-secondary">Mô tả ngắn</label>
+                            <textarea class="form-control" name="Description" rows="3"
+                                      placeholder="Nhập mô tả cho danh mục này...">@Model?.Description</textarea>
+                        </div>
+
+                        <div class="col-12 py-2">
+                            <label class="form-label fw-semibold d-block text-secondary">Cấu trúc danh mục</label>
+                            <div class="d-flex gap-4 border rounded p-3 bg-light-subtle">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="categoryType" id="typeRoot" value="root" @(Model?.ParentId == null ? "checked" : "") >
+                                    <label class="form-check-label fw-medium" for="typeRoot">Danh mục gốc</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="categoryType" id="typeSub" value="sub" @(Model?.ParentId != null ? "checked" : "")>
+                                    <label class="form-check-label fw-medium" for="typeSub">Danh mục con</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 @(Model?.ParentId != null ? "" : "d-none")" id="parentCategoryContainer">
+                            <div class="p-3 border">
+                                <label class="form-label fw-bold text-primary">
+                                    Lựa chọn danh mục cha
+                                </label>
+
+                                <select class="form-control border selectpicker " data-live-search="true" name="ParentId">
+                                    <option value="">-- Chọn danh mục cha --</option>
+
+                                    @if (ViewBag.ParentCategories != null)
+                                    {
+                                        foreach (var item in ViewBag.ParentCategories)
+                                        {
+                                            <option value="@item.CategoryId"
+                                                    @(Model?.ParentId != null && Model.ParentId.Value == item.CategoryId ? "selected" : "")>
+                                                @item.Name
+                                            </option>
+
+                                        }
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 border-start">
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-secondary">Trạng thái hiển thị</label>
+                        <select class="form-select" name="visible">
+                            <option value="1" @(Model?.Visible == 1 ? "selected" : "")>Hiển thị công khai</option>
+                            <option value="0" @(Model?.Visible == 0 ? "selected" : "")>Tạm ẩn</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary">Icon biểu tượng (Tỷ lệ 1:1)</label>
+                        <div class="text-center p-4 border rounded bg-light mb-2">
+                            <img id="previewImg"
+                                 src="@(Model?.Image != null ? "/Upload/Logo/" + Model.Image : "/Upload/Logo/none.jpg")"
+                                 class="rounded shadow-sm img-fluid object-fit-cover"
+                                 style="max-height: 120px; width: 120px;" />
+                        </div>
+                        <input type="file" class="form-control form-control-sm" name="imageFile" id="imageFile" accept="image/*" />
+                        <div class="form-text mt-2">Nên sử dụng ảnh .PNG hoặc .WebP trong suốt.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 d-flex justify-content-between align-items-center">
+            <a href="~/Admin/Categories" class="text-decoration-none text-secondary fw-medium">
+                <i class="fas fa-arrow-left me-1"></i> Quay lại danh sách
+            </a>
+            <div class="d-flex gap-2">
+                <button type="reset" class="btn btn-light px-4 border">Làm mới</button>
+                <button type="submit" class="btn btn-primary px-5 shadow-sm fw-bold">
+                    @(isEdit ? "Lưu thay đổi" : "Thêm danh mục")
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function () {
+
+        // $('#CategoryForm').on('submit', function (e) {
+        //     e.preventDefault();
+
+        //     const cateId = $("input[name='cate_id']").val();
+        //     const url = cateId
+        //         ? '/Categories/Edit'
+        //         : '/Categories/Create';
+
+        //     const formData = new FormData(this);
+
+        //     $.ajax({
+        //         url: url,
+        //         method: 'POST',
+        //         data: formData,
+        //         contentType: false,
+        //         processData: false,
+        //         success: function () {
+        //             window.location.href = '/Categories';
+        //         },
+        //         error: function () {
+        //             alert('Có lỗi xảy ra 😵');
+        //         }
+        //     });
+        // });
+
+        // auto replace space => "-"
+        $("input[name='EngTitle']").on('keypress', function (e) {
+            if (e.which === 32) {
+                e.preventDefault();
+                $(this).val($(this).val() + "-");
+            }
+        });
+
+        // preview image
+        $("#imageFile").change(function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = e => $("#previewImg").attr("src", e.target.result);
+            reader.readAsDataURL(file);
+        });
+
+    });
+
+    document.querySelectorAll('input[name="categoryType"]').forEach((radio) => {
+        radio.addEventListener('change', function() {
+            const container = document.getElementById('parentCategoryContainer');
+            if (this.value === 'sub') {
+                container.classList.remove('d-none');
+            } else {
+                container.classList.add('d-none');
+            }
+        });
+    });
+</script>

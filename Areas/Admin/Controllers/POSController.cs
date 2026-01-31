@@ -33,7 +33,8 @@ namespace Tech_Store.Areas.Admin.Controllers
                  .Include(x => x.VarientProducts)
                  .ThenInclude(vp => vp.VariantAttributes)
                      .ThenInclude(a => a.AttributeValue)
-                .OrderByDescending(x => x.ProductId).ToList();
+                     .Where(x=>x.Status != "outstock" && x.Status != "discontinued")
+                .OrderByDescending(x => x.ProductId).Take(50).ToList();
 
             var users = _context.Users.Where(x=>x.FirstName!=null&& x.LastName!=null).OrderByDescending(x => x.UserId).ToList();
 
@@ -128,37 +129,61 @@ namespace Tech_Store.Areas.Admin.Controllers
 
         [HttpGet]
         [Route("GetProduct")]
-        public async Task<JsonResult> GetProduct(int id)
+        public async Task<IActionResult> GetProduct(int id)
         {
-            var product = await _context.Products.Include(x=>x.VarientProducts).Include(x=>x.Brand).Include(x=>x.Category)
+            var product = await _context.Products
+                .AsNoTracking()
+                .Where(x => x.ProductId == id
+                         && x.Status != "outstock"
+                         && x.Status != "discontinued")
                 .Select(x => new
                 {
                     x.ProductId,
                     x.Name,
-                    SellPrice = x.SellPrice.HasValue ? x.SellPrice.Value.ToString("C0", new CultureInfo("vi-VN")) : null,
-                    OriginalPrice = x.OriginalPrice.HasValue ? x.OriginalPrice.Value.ToString("C0", new CultureInfo("vi-VN")) : null,
+                    SellPrice = x.SellPrice.HasValue
+                        ? x.SellPrice.Value.ToString("C0", new CultureInfo("vi-VN"))
+                        : null,
+                    OriginalPrice = x.OriginalPrice.HasValue
+                        ? x.OriginalPrice.Value.ToString("C0", new CultureInfo("vi-VN"))
+                        : null,
                     x.Description,
                     x.Image,
                     x.Stock,
                     x.Sku,
-                    x.VarientProducts,
-                    x.Brand,
-                    x.Category
+                    Status = x.Status,
+
+                    Category = new
+                    {
+                        x.Category.CategoryId,
+                        x.Category.Name
+                    },
+
+                    Brand = new
+                    {
+                        x.Brand.BrandId,
+                        x.Brand.Name
+                    },
+
+                    VarientProducts = x.VarientProducts
+                        .Select(v => new
+                        {
+                            v.VarientId,
+                            v.Sku,
+                            v.Stock,
+                            v.Price
+                        })
+                        .ToList()
                 })
-                .FirstOrDefaultAsync(x => x.ProductId == id);
+                .FirstOrDefaultAsync();
 
             if (product == null)
             {
                 return Json(new { success = false, message = "Sản phẩm không hợp lệ" });
             }
 
-            // Chỉ trả về những thông tin cần thiết
-            return Json(new
-            {
-                success = true,
-                product
-            });
+            return Json(new { success = true, product });
         }
+
         [HttpGet]
         [Route("GetProductsByCategory")]
         public async Task<JsonResult> GetProductsByCategory(int cateId)
@@ -171,8 +196,10 @@ namespace Tech_Store.Areas.Admin.Controllers
                     x.Name,
                     SellPrice = x.SellPrice.HasValue ? x.SellPrice.Value.ToString("C0", new CultureInfo("vi-VN")) : null,
                     x.Description,
-                    x.Image
+                    x.Image,
+                    x.Status
                 })
+               .Where(x => x.Status != "outstock" && x.Status != "discontinued")
                .ToListAsync();
             if(cateId != 0)
             {
@@ -184,8 +211,10 @@ namespace Tech_Store.Areas.Admin.Controllers
                    x.Name,
                    SellPrice = x.SellPrice.HasValue ? x.SellPrice.Value.ToString("C0", new CultureInfo("vi-VN")) : null,
                    x.Description,
-                   x.Image
+                   x.Image,
+                   x.Status
                })
+               .Where(x => x.Status != "outstock" && x.Status != "discontinued")
                .ToListAsync();
             }
             // Kiểm tra xem có sản phẩm nào không
@@ -274,7 +303,6 @@ namespace Tech_Store.Areas.Admin.Controllers
             var newRow = $@"
             <tr data-varient-id='{varient.VarientId}'>
                <td class='align-items-center'>
-                      <img src=""/Upload/Products/{varient.Product.Image}""  class=""img-thumbnail""  style=""height:35px;width:35px;object-fit: cover;"" />
                        <span class='text-truncate'>{varient.Product.Name}</span> 
                 </td>
                 </td>

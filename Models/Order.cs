@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Tech_Store.Models;
 
@@ -9,14 +10,19 @@ public partial class Order
 
     public int UserId { get; set; }
 
+    [Column(TypeName = "decimal(18,2)")]
     public decimal? OriginAmount { get; set; }
 
+    [Column(TypeName = "decimal(18,2)")]
     public decimal? DeductAmount { get; set; }
 
+    [Column(TypeName = "decimal(18,2)")]
     public decimal? DiscountAmount { get; set; }
 
+    [Column(TypeName = "decimal(18,2)")]
     public decimal? ShippingAmount { get; set; }
 
+    [Column(TypeName = "decimal(18,2)")]
     public decimal TotalAmount { get; set; }
 
     public string OrderStatus { get; set; } = null!;

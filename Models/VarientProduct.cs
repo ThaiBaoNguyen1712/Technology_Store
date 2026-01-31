@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Tech_Store.Models;
 
@@ -13,6 +14,7 @@ public partial class VarientProduct
 
     public string Sku { get; set; } = null!;
 
+    [Column(TypeName = "decimal(18,2)")]
     public decimal? Price { get; set; }
 
     public int? Stock { get; set; }
@@ -27,7 +29,7 @@ public partial class VarientProduct
 
     public virtual Product? Product { get; set; }
 
-    public virtual ICollection<ProductHistoryDetail> ProductHistoryDetails { get; set; } = new List<ProductHistoryDetail>();
+    public virtual ICollection<InventoryTransactionsDetail> ProductHistoryDetails { get; set; } = new List<InventoryTransactionsDetail>();
 
     public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
 

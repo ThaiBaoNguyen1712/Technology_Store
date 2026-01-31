@@ -6,10 +6,6 @@ namespace Tech_Store.Models;
 
 public partial class ApplicationDbContext : DbContext
 {
-    public ApplicationDbContext()
-    {
-    }
-
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
     {
@@ -21,6 +17,7 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<AttributeValue> AttributeValues { get; set; }
 
+    public virtual DbSet<Banner> Banners { get; set; }
     public virtual DbSet<Brand> Brands { get; set; }
 
     public virtual DbSet<Cart> Carts { get; set; }
@@ -42,10 +39,11 @@ public partial class ApplicationDbContext : DbContext
     public virtual DbSet<Payment> Payments { get; set; }
 
     public virtual DbSet<Product> Products { get; set; }
+    public virtual DbSet<Specs> Species { get; set; }
+    public virtual DbSet<SpecValue> SpecValues { get; set;}
+    public virtual DbSet<InventoryTransactions> InventoryTransactions { get; set; }
 
-    public virtual DbSet<ProductHistory> ProductHistories { get; set; }
-
-    public virtual DbSet<ProductHistoryDetail> ProductHistoryDetails { get; set; }
+    public virtual DbSet<InventoryTransactionsDetail> InventoryTransactionsDetail { get; set; }
 
     public virtual DbSet<Review> Reviews { get; set; }
 
@@ -65,9 +63,8 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<Wishlist> Wishlists { get; set; }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Data Source=tcp:svtechstore.database.windows.net,1433;Initial Catalog=techstore;User Id=techstore@svtechstore;Password=Ntbao123");
+
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -130,6 +127,20 @@ public partial class ApplicationDbContext : DbContext
                 .HasForeignKey(d => d.AttributeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_AttributeValue_Attribute");
+        });
+
+        modelBuilder.Entity<Banner>(entity =>
+        {
+            entity.ToTable("Banner");
+            entity.Property(e => e.BannerId).HasColumnName("banner_id").UseIdentityColumn(00000);
+            entity.Property(e=>e.Type).HasColumnName("type");
+            entity.Property(e => e.RefId).HasColumnName("refId");
+            entity.Property(e => e.ImageUrl).HasColumnName("imageUrl");
+            entity.Property(e=>e.Position).HasColumnName("position");
+            entity.Property(e=>e.LinkUrl).HasColumnName("link");
+            entity.Property(e => e.SortOrder).HasColumnName("sortOrder");
+            entity.Property(e => e.Device).HasColumnName("device");
+            entity.Property(e=>e.isActive).HasColumnName("active");
         });
 
         modelBuilder.Entity<Brand>(entity =>
@@ -206,6 +217,7 @@ public partial class ApplicationDbContext : DbContext
             entity.ToTable("Category");
 
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
+            entity.Property(e => e.ParentId).HasColumnName("parent_id");
             entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.EngTitle)
                 .HasMaxLength(50)
@@ -281,10 +293,10 @@ public partial class ApplicationDbContext : DbContext
 
             entity.Property(e => e.OrderId).HasColumnName("order_id");
             entity.Property(e => e.DeductAmount)
-                .HasColumnType("decimal(10, 2)")
+                .HasColumnType("decimal(18 ,2)")
                 .HasColumnName("deduct_amount");
             entity.Property(e => e.DiscountAmount)
-                .HasColumnType("decimal(10, 2)")
+                .HasColumnType("decimal(18 ,2)")
                 .HasColumnName("discount_amount");
             entity.Property(e => e.IsReviewed)
                 .HasDefaultValue(false)
@@ -299,14 +311,14 @@ public partial class ApplicationDbContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("order_status");
             entity.Property(e => e.OriginAmount)
-                .HasColumnType("decimal(10, 2)")
+                .HasColumnType("decimal(18 ,2)")
                 .HasColumnName("origin_amount");
             entity.Property(e => e.ShippingAddressId).HasColumnName("shipping_address_id");
             entity.Property(e => e.ShippingAmount)
-                .HasColumnType("decimal(10, 2)")
+                .HasColumnType("decimal(18 ,2)")
                 .HasColumnName("shipping_amount");
             entity.Property(e => e.TotalAmount)
-                .HasColumnType("decimal(10, 2)")
+                .HasColumnType("decimal(18 ,2)")
                 .HasColumnName("total_amount");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
@@ -329,7 +341,7 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.OrderItemId).HasColumnName("order_item_id");
             entity.Property(e => e.OrderId).HasColumnName("order_id");
             entity.Property(e => e.Price)
-                .HasColumnType("decimal(10, 2)")
+                .HasColumnType("decimal(18 ,2)")
                 .HasColumnName("price");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.Quantity).HasColumnName("quantity");
@@ -359,7 +371,7 @@ public partial class ApplicationDbContext : DbContext
 
             entity.Property(e => e.PaymentId).HasColumnName("payment_id");
             entity.Property(e => e.Amount)
-                .HasColumnType("decimal(10, 2)")
+                .HasColumnType("decimal(18 ,2)")
                 .HasColumnName("amount");
             entity.Property(e => e.OrderId).HasColumnName("order_id");
             entity.Property(e => e.PaymentDate)
@@ -388,14 +400,16 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasIndex(e => e.Sku, "UQ__Product__CA1ECF0D40802956").IsUnique();
 
-            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.ProductId).HasColumnName("product_id")
+                                              .UseIdentityColumn(100000,1);
+            entity.Property(e=>e.ProductSysId).HasColumnName("product_sys_id");
             entity.Property(e => e.BrandId).HasColumnName("brandId");
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
             entity.Property(e => e.Color)
                 .HasMaxLength(155)
                 .HasColumnName("color");
             entity.Property(e => e.CostPrice)
-                .HasColumnType("decimal(10, 2)")
+                .HasColumnType("decimal(18 ,2)")
                 .HasColumnName("costPrice");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -403,7 +417,7 @@ public partial class ApplicationDbContext : DbContext
                 .HasColumnName("created_at");
             entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.DiscountAmount)
-                .HasColumnType("decimal(10, 2)")
+                .HasColumnType("decimal(18 ,2)")
                 .HasColumnName("discountAmount");
             entity.Property(e => e.DiscountPercentage).HasColumnName("discountPercentage");
             entity.Property(e => e.Image)
@@ -413,10 +427,10 @@ public partial class ApplicationDbContext : DbContext
                 .HasMaxLength(200)
                 .HasColumnName("name");
             entity.Property(e => e.OriginalPrice)
-                .HasColumnType("decimal(10, 2)")
+                .HasColumnType("decimal(18 ,2)")
                 .HasColumnName("originalPrice");
             entity.Property(e => e.SellPrice)
-                .HasColumnType("decimal(10, 2)")
+                .HasColumnType("decimal(18 ,2)")
                 .HasColumnName("sellPrice");
             entity.Property(e => e.Sku)
                 .HasMaxLength(100)
@@ -449,13 +463,25 @@ public partial class ApplicationDbContext : DbContext
             entity.HasOne(d => d.Category).WithMany(p => p.Products)
                 .HasForeignKey(d => d.CategoryId)
                 .HasConstraintName("FK_Product_Category");
+
+
+            //Đánh Index
+            entity.HasIndex(p => p.Sku).IsUnique();
+            entity.HasIndex(p=>p.Slug).IsUnique();
+
+            //Index filtering
+            entity.HasIndex(p => p.CategoryId);
+            entity.HasIndex(p => p.BrandId);
+
+            //Index SortOrder
+            entity.HasIndex(p => p.SellPrice);
         });
 
-        modelBuilder.Entity<ProductHistory>(entity =>
+        modelBuilder.Entity<InventoryTransactions>(entity =>
         {
-            entity.ToTable("ProductHistory");
+            entity.ToTable("InventoryTransactions");
 
-            entity.Property(e => e.ProductHistoryId).HasColumnName("product_historyId");
+            entity.Property(e => e.InventoryTransId).HasColumnName("inventory_transactions_id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
@@ -467,30 +493,30 @@ public partial class ApplicationDbContext : DbContext
                 .HasColumnName("type");
             entity.Property(e => e.UserId).HasColumnName("userId");
 
-            entity.HasOne(d => d.Product).WithMany(p => p.ProductHistories)
+            entity.HasOne(d => d.Product).WithMany(p => p.InventoryTransactions)
                 .HasForeignKey(d => d.ProductId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ProductHistory_Product");
 
-            entity.HasOne(d => d.User).WithMany(p => p.ProductHistories)
+            entity.HasOne(d => d.User).WithMany(p => p.InventoryTransactions)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ProductHistory_User");
         });
 
-        modelBuilder.Entity<ProductHistoryDetail>(entity =>
+        modelBuilder.Entity<InventoryTransactionsDetail>(entity =>
         {
-            entity.HasKey(e => e.HistoryDetailId);
+            entity.HasKey(e => e.InventoryTransDetailId);
 
-            entity.ToTable("ProductHistoryDetail");
+            entity.ToTable("InventoryTransactionsDetail");
 
-            entity.Property(e => e.HistoryDetailId).HasColumnName("historyDetail_Id");
-            entity.Property(e => e.HistoryId).HasColumnName("historyId");
+            entity.Property(e => e.InventoryTransDetailId).HasColumnName("inventoryTrans_detail_id");
+            entity.Property(e => e.InventoryTransId).HasColumnName("historyId");
             entity.Property(e => e.Quantity).HasColumnName("quantity");
             entity.Property(e => e.VarientId).HasColumnName("varientId");
 
-            entity.HasOne(d => d.History).WithMany(p => p.ProductHistoryDetails)
-                .HasForeignKey(d => d.HistoryId)
+            entity.HasOne(d => d.InventoryTransactions).WithMany(p => p.InventoryTransactionsDetail)
+                .HasForeignKey(d => d.InventoryTransId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ProductHistoryDetail_ProductHistory");
 
@@ -499,7 +525,34 @@ public partial class ApplicationDbContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ProductHistoryDetail_VarientProduct");
         });
+        modelBuilder.Entity<Specs>(entity =>
+        {
+            entity.HasKey(e => e.SpecId);
+            entity.ToTable("Specs");
 
+            entity.Property(e => e.SpecId).HasColumnName("spec_id");
+            entity.Property(e => e.Name).HasColumnName("name");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e=>e.IsActive).HasColumnName("is_active");
+        });
+
+        modelBuilder.Entity<SpecValue>(entity =>
+        {
+            entity.HasKey(e=>e.SpecValueId);
+            entity.ToTable("SpecValue");
+
+            entity.Property(e => e.SpecValueId).HasColumnName("specValue_id");
+            entity.Property(e=> e.Value).HasColumnName("value");
+            entity.HasOne(d => d.Specs).WithMany(p => p.SpecValues)
+               .HasForeignKey(d => d.SpecId)
+               .OnDelete(DeleteBehavior.ClientSetNull)
+               .HasConstraintName("FK_SpecValue_Specs");
+
+            entity.HasOne(d => d.Product).WithMany(p => p.SpecValues)
+                         .HasForeignKey(d => d.ProductId)
+                         .OnDelete(DeleteBehavior.ClientSetNull)
+                         .HasConstraintName("FK_SpecValue_Product");
+        });
         modelBuilder.Entity<Review>(entity =>
         {
             entity.HasKey(e => e.ReviewId).HasName("PK__Review__60883D9045574F64");
@@ -692,9 +745,10 @@ public partial class ApplicationDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
             entity.Property(e => e.Price)
-                .HasColumnType("decimal(10, 2)")
+                .HasColumnType("decimal(18 ,2)")
                 .HasColumnName("price");
             entity.Property(e => e.ProductId).HasColumnName("productId");
+            entity.Property(e => e.ImageUrl).HasColumnName("imageUrl");
             entity.Property(e => e.Sku)
                 .HasMaxLength(100)
                 .IsUnicode(false)
@@ -704,6 +758,8 @@ public partial class ApplicationDbContext : DbContext
             entity.HasOne(d => d.Product).WithMany(p => p.VarientProducts)
                 .HasForeignKey(d => d.ProductId)
                 .HasConstraintName("FK_VarientProduct_Product");
+
+            entity.HasIndex(e => e.Sku, "UQ__VarientP__CA1ECF0D1E3D1C2E").IsUnique();
         });
 
         modelBuilder.Entity<Voucher>(entity =>

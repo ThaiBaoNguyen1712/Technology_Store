@@ -4,6 +4,7 @@
     Layout = "/Areas/Admin/Views/Shared/Layout.cshtml";
 }
 @using System.Globalization;
+@using Tech_Store.Helpers
 
 <style>
     .cke_contents {
@@ -17,10 +18,18 @@
                 <div class="card-header">
                     <div class="d-flex align-items-center">
                         <h4 class="card-title">Danh sách sản phẩm</h4>
-                        <a href="~/Admin/Products/Create" class="btn btn-primary btn-round ms-auto">
-                            <i class="fa fa-plus"></i>
-                            Thêm
-                        </a>
+                        <div class="ms-auto">
+                          
+                            <a href="~/Admin/Products/ImportExcel" class="btn btn-success btn-round ">
+                                <i class="fa fa-file"></i>
+                                Nhập Excel
+                            </a>
+                            <a href="~/Admin/Products/Create" class="btn btn-primary btn-round">
+                                <i class="fa fa-plus"></i>
+                                Thêm
+                            </a>
+                        </div>
+                        
                     </div>
                     <!-- Filter Section -->
                     <div class="card mb-4">
@@ -141,7 +150,20 @@
                                     @foreach (var product in Model)
                                     {
                                         <tr>
-                                            <td><img src="~/Upload/Products/@product.Image?v=@DateTime.UtcNow.Ticks" alt="@product.Name" style="width: 50px; height: 50px; object-fit: cover;"></td>
+                                            <td>
+                                                @if(product.Image == null)
+                                                {
+                                                    <img src="~/Upload/Products/no-image.png" alt="No Image Available" style="width: 50px; height: 50px; object-fit: cover;">
+                                                }
+                                                else if(product.Image.Contains("http"))
+                                                {
+                                                    <img src="@ResizeCDN.Cdn(product.Image, 50, 50)" alt="@product.Name" style="object-fit: cover;" />
+                                                }
+                                                else
+                                                {
+                                                    <img src="~/Upload/Products/@product.Image?v=@DateTime.UtcNow.Ticks" alt="@product.Name" style="width: 50px; height: 50px; object-fit: cover;">
+                                                }
+                                            </td>
                                             <td>@product.Name</td>
                                             <td>@product.Sku</td>
                                             <td>@product.Brand?.Name</td>
@@ -369,7 +391,7 @@
                         // Chuỗi HTML cho mỗi hàng sản phẩm
                         // Thêm hàng vào DataTable
                         table.row.add([
-                            `<img src="/Upload/Products/${product.image}" alt="${product.name}" style="width: 50px; height: 50px; object-fit: cover;">`,
+                            `<img src="${product.image?.startsWith('http') ? product.image: '/Upload/Products/' + product.image}" style="width: 50px; height: 50px; object-fit: cover;" loading="lazy">`,
                             product.name,
                             product.sku,
                             product.brandName || '',

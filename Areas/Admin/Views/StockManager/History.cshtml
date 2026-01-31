@@ -4,7 +4,7 @@
 }
 @using X.PagedList;
 @using X.PagedList.Mvc.Core
-@model IPagedList<Tech_Store.Models.ProductHistoryViewModel>
+@model IPagedList<Tech_Store.Models.InventoryTransactionsVM>
 
 <style>
     .history-card {
@@ -90,7 +90,7 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h6 class="mb-1">@(item.Type == "Import" ? "Nhập kho" : "Xuất kho") #@item.ProductHistoryId</h6>
+                                    <h6 class="mb-1">@(item.Type == "Import" ? "Nhập kho" : "Xuất kho") #@item.InventoryTransId</h6>
                                     <p class="text-muted mb-0">
                                         <small>
                                             <i class="fas fa-calendar-alt me-1"></i> @item.Product.CreatedAt
@@ -107,8 +107,8 @@
                                 </div>
                                 <div class="col-md-6 text-md-end">
                                     <p class="mb-1">
-                                        <strong>Số lượng:</strong>  @(item.ProductHistoryDetails != null && item.ProductHistoryDetails.Any()
-                                    ? item.ProductHistoryDetails.Sum(d => d.Quantity)
+                                        <strong>Số lượng:</strong>  @(item.InventoryTransactionDetail != null && item.InventoryTransactionDetail.Any()
+                                                                            ? item.InventoryTransactionDetail.Sum(d => d.Quantity)
                                     : 0)
                                     </p>
 
@@ -234,7 +234,7 @@
                         $('#productDetails').empty();
 
                         // Thêm mỗi dòng `varientId` và `quantity`
-                        history.productHistoryDetails.forEach(detail => {
+                        history.inventoryTransactionDetail.forEach(detail => {
                             var detailHtml = `
                       <tr>
                           <td>${detail.varientSku}</td>

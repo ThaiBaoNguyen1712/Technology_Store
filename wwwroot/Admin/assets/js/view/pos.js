@@ -22,7 +22,11 @@ $(document).ready(function () {
                             $('#categoryName').text(res.product.category.name);
                             $('#brandName').text(res.product.brand.name);
                             $('#sku').text(res.product.sku)
-                            $('#imgProduct').attr('src', '/Upload/Products/' + res.product.image);
+                            if (res.product.image.startsWith('http')) {
+                                $('#imgProduct').attr('src', res.product.image);
+                            } else {
+                                $('#imgProduct').attr('src', '/Upload/Products/' + res.product.image);
+                            }
                             $('#IdProduct').val(res.product.productId);
                             //Hiển thị số lượng tồn
                             if (res.product.stock > 0) {
@@ -129,7 +133,13 @@ $(document).ready(function () {
                                 <div class="col-6 col-md-3 mb-3">
                                     <div class="card h-100">
                                         <a class="getProductInfo" type="button" data-id="${product.productId}">
-                                            <img src="/Upload/Products/${product.image}" style="width:135px; height:135px; object-fit: cover; display: block; margin: 0 auto;" class="card-img-top" alt="${product.name}">
+                                            <img
+                                                    src="${product.image?.startsWith('http')
+                                                                            ? product.image
+                                                                            : `/Upload/Products/${product.image}`}"
+                                                    style="width:135px; height:135px; object-fit: cover; display: block; margin: 0 auto;"
+                                                    class="card-img-top"
+                                                    alt="${product.name}" >
                                             <div class="card-body">
                                                 <p class="card-text text-truncate-2">${product.name}</p>
                                                 <p class="card-text">${product.sellPrice || 'Giá chưa cập nhật'}</p>
@@ -175,7 +185,13 @@ $(document).ready(function () {
                     <div class="col-6 col-md-3 mb-3">
                         <div class="card h-100">
                             <a class="getProductInfo" type="button" data-id="${product.productId}">
-                                <img src="/Upload/Products/${product.image}" style="width:135px; height:135px; object-fit: cover; display: block; margin: 0 auto;" class="card-img-top" alt="...">
+                                <img
+                                    src="${product.image?.startsWith('http')
+                                                    ? product.image
+                                                    : `/Upload/Products/${product.image}`}"
+                                    style="width:135px; height:135px; object-fit: cover; display: block; margin: 0 auto;"
+                                    class="card-img-top"
+                                    alt="${product.name}">
                                 <div class="card-body">
                                     <p class="card-text text-truncate-2">${product.name}</p>
                                     <p class="card-text">${product.sellPrice || 'Giá chưa cập nhật'}</p>
@@ -490,7 +506,7 @@ $(document).ready(function () {
         $('#brandName').text('');
         $('#sku').text('');
         $('input[name="quantityValue"]').val(1);
-        $('#imgProduct').attr('src', '/Upload/Products/none.png');
+        $('#imgProduct').attr('src', '/Upload/Products/no-image.png');
         $('#IdProduct').val('');
         $('.loading-container').hide();
     });

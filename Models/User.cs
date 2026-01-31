@@ -39,7 +39,7 @@ public partial class User
 
     public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
 
-    public virtual ICollection<ProductHistory> ProductHistories { get; set; } = new List<ProductHistory>();
+    public virtual ICollection<InventoryTransactions> InventoryTransactions { get; set; } = new List<InventoryTransactions>();
 
     public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
 

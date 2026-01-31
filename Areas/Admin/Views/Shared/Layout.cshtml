@@ -54,7 +54,7 @@
     <script src="https://unpkg.com/filepond-plugin-image-exif-orientation/dist/filepond-plugin-image-exif-orientation.js"></script>
 
     <script src="~/Admin/assets/js/core/jquery-3.7.1.min.js"></script>
-    <script src="~/admin/assets/js/core/core.js"></script>
+    <script src="~/Admin/assets/js/core/core.js"></script>
 
 
     @{
@@ -400,13 +400,17 @@
                                 </ul>
                             </li>
                             <li class="nav-item dropdown hidden-caret">
+                                <div class="nav-link dropdown-toggle" id="realtimeClock">
+                                    Ngày giờ hiện tại Realtime
+                                </div>
+                                
                                 <a class="nav-link dropdown-toggle"
                                    href="https://dashboard.tawk.to/#/dashboard"
                                    id="messageDropdown"
                                    aria-haspopup="true"
                                    aria-expanded="false"
                                    target="_blank">
-                                   <strong class="text-warning">
+                                   <strong class="fw-bold text-warning">
                                         Ứng dụng nhắn tin
                                    </strong>
                            
@@ -430,11 +434,19 @@
                                         <div class="dropdown-title">
                                             Thông báo
                                         </div>
-                                        @if (ViewBag.Notifications.Count > 0)
-                                        {
-                                            <button class="d-flex text-end btn btn-sm" type="button" id="markAllAsRead">Đánh dấu tất cả là đã đọc</button>
 
-                                        }
+                                        <div class="d-flex justify-content-between align-items-center mt-2">
+                                            @if (ViewBag.Notifications.Count > 0)
+                                            {
+                                                <button class="btn p-0 border-0 text-primary" type="button" id="markAllAsRead">
+                                                    Đánh dấu tất cả là đã đọc
+                                                </button>
+                                            }
+
+                                            <a href="~/admin/notifications/index" class="ms-auto text-decoration-none small">
+                                                Xem tất cả
+                                            </a>
+                                        </div>
                                     </li>
                                     <li>
                                         <div class="notif-scroll scrollbar-outer">
@@ -836,6 +848,8 @@
 
             var table = $('#add-row').DataTable({
                 "order": [], // Tắt sắp xếp tự động
+                "stateSave": true,
+                "deferRender": true,
                 "drawCallback": function (settings) {
                     // Khôi phục lại các elements sau khi bảng được vẽ lại
                     $('[data-bs-toggle="tooltip"]').tooltip();
@@ -1023,6 +1037,16 @@
             });
         });
     </script>
+    @* RealTime Oclock *@
+    <script>
+        function updateClock() {
+            const now = new Date();
+            const time = now.toLocaleString('vi-VN');
+            document.getElementById('realtimeClock').innerText = time;
+        }
 
+        updateClock();
+        setInterval(updateClock, 1000);
+    </script>
 </body>
 </html>

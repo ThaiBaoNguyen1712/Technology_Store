@@ -306,7 +306,15 @@
                                     </td>
                                      <td class="align-middle text-center">
                                       <div class="d-flex flex-column align-items-center gap-2">
-                                        <img src="~/Upload/Products/@varient.ImageUrl" alt="Product Image" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;">
+                                        @if(varient.ImageUrl!= null && varient.ImageUrl.Contains("http"))
+                                            {
+                                                <img src="@varient.ImageUrl" alt="Product Image" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;">
+                                            }
+                                            else
+                                            {
+                                                <img src="~/Upload/Products/@varient.ImageUrl" alt="Product Image" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;">
+
+                                            }
                                         <input type="file" class="form-control form-control-sm" name="VarientProducts[@index].Image" accept="image/*" style="max-width: 200px;">
                                       </div>
                                     </td>
@@ -379,7 +387,7 @@
 <script src="~/Admin/assets/js/core/jquery-3.7.1.min.js"></script>
 @*
 Ckeditor *@
-<script src="~/admin/ckeditor/ckeditor.js"></script>
+<script src="~/Admin/ckeditor/ckeditor.js"></script>
 <script>
     $(document).ready(function () {
         FilePond.registerPlugin(

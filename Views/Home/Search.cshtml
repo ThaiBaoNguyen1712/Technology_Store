@@ -5,6 +5,7 @@
 }
 @model IPagedList<Tech_Store.Models.Product>
 @using System.Globalization;
+@using Tech_Store.Helpers
 @using X.PagedList;
 @using X.PagedList.Mvc.Core
 
@@ -131,7 +132,18 @@
                     </div> *@
 
                             <div class="image-container" style="overflow: hidden;">
-                                <img src="/Upload/Products/@item.Image" class="product-image" alt="@item.Name" />
+                                @if(item.Image == null)
+                                {
+                                    <img src="/Upload/Products/no-image.png" class="product-image" alt="No Image Available" />
+                                }
+                                else if (item.Image.Contains("http"))
+                                {
+                                    <img src="@ResizeCDN.Cdn(item.Image,358,358)" class="product-image" alt="@item.Name" />
+                                }
+                                else
+                                {
+                                    <img src="/Upload/Products/@item.Image" class="product-image" alt="@item.Name" />
+                                }
                             </div>
 
                             <div class="card-body p-3 d-flex flex-column">
@@ -152,21 +164,28 @@
                 </div>
             }
         </div>
-
+        <style>
+          
+        </style>
         <!-- Pagination -->
-        <div class="d-flex justify-content-center mt-3">
-            @Html.PagedListPager(Model, page => Url.Action("Search", new { page }), new PagedListRenderOptions
-               {
-                   UlElementClasses = new[] { "pagination" }, // Sử dụng lớp `pagination` của Bootstrap
-                   LiElementClasses = new[] { "page-item" },  // Sử dụng lớp `page-item` của Bootstrap
-                   PageClasses = new[] { "page-link" },       // Sử dụng lớp `page-link` của Bootstrap
-                   ActiveLiElementClass = "active",          // Đánh dấu trang hiện tại bằng `active`
-                   LinkToPreviousPageFormat = "&laquo;",     // Sử dụng ký tự Bootstrap mặc định cho trang trước
-                   LinkToNextPageFormat = "&raquo;",         // Sử dụng ký tự Bootstrap mặc định cho trang sau
-                   DisplayLinkToFirstPage = PagedListDisplayMode.Always, // Hiển thị nút về trang đầu
-                   DisplayLinkToLastPage = PagedListDisplayMode.Always,  // Hiển thị nút về trang cuối
-                   DisplayEllipsesWhenNotShowingAllPageNumbers = true    // Hiển thị dấu "..." nếu không hiển thị hết số trang
-               })
+         <div class="d-flex justify-content-center mt-4">
+                @Html.PagedListPager(Model, page => Url.Action("Search", new { page }), new PagedListRenderOptions
+                {
+                    UlElementClasses = new[] { "pagination" },
+                    LiElementClasses = new[] { "page-item" },
+                    PageClasses = new[] { "page-link" },
+                    ActiveLiElementClass = "active",
+
+                    // Thay icon để nhìn sang hơn
+                    LinkToPreviousPageFormat = "‹",
+                    LinkToNextPageFormat = "›",
+                    LinkToFirstPageFormat = "«",
+                    LinkToLastPageFormat = "»",
+
+                    // Giới hạn số con số hiển thị (VD: 1 2 3 ... 10)
+                    MaximumPageNumbersToDisplay = 5,
+                    DisplayEllipsesWhenNotShowingAllPageNumbers = true
+                    })
         </div>
 
     }

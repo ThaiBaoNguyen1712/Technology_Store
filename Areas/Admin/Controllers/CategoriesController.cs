@@ -25,32 +25,60 @@ namespace Tech_Store.Areas.Admin.Controllers
             return View(list_cate);
         }
 
-        [Route("Create")]
-        [HttpPost]
-        public async Task<IActionResult> Create([FromForm]Category cate,IFormFile? imageFile)
+        [HttpGet("Form")]
+        public IActionResult Form(int? id)
         {
-            if (cate == null)
+            Category model;
+
+            var categories = _context.Categories.Where(x=>x.Visible == 1).ToList();
+          
+            if (id == null)
             {
-                return BadRequest("Dữ liệu danh mục không được trống");
+                // CREATE
+                model = new Category();
             }
-            await _categoryService.CreateCategoryAsync(cate, imageFile);
-            return Ok();
+            else
+            {
+                // EDIT
+                model = _context.Categories.FirstOrDefault(x => x.CategoryId == id);
+                categories = categories.Where(x=>x.CategoryId != id).ToList();
+                if (model == null)
+                    return NotFound();
+            }
+            ViewBag.ParentCategories = categories;
+            return View(model);
         }
+
+        [HttpPost("Save")]
+        public async Task<IActionResult> Save([FromForm] Category cate, IFormFile? imageFile ,string categoryType)
+        {
+            if (categoryType == "root")
+            {
+                cate.ParentId = null;
+            }
+
+            if (cate.CategoryId == 0)
+            {
+                // Create
+                await _categoryService.CreateCategoryAsync(cate, imageFile);
+            }
+            else
+            {
+                // Update
+                var result = await _categoryService.UpdateCategoryAsync(cate.CategoryId, cate, imageFile);
+                if (!result)
+                {
+                    return NotFound(new { success = false, message = "Không tìm thấy danh mục" });
+                }
+            }
+            return RedirectToAction("Index");
+        }
+
         [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(int id)
         {
             var cate = await _categoryService.GetCategoryByIdAsync(id);
             return Json(cate);
-        }
-        [HttpPut("Update/{id}")]
-        public async Task<IActionResult> Update(int id, [FromForm] Category cate, IFormFile? imageFile)
-        {
-            var result = await _categoryService.UpdateCategoryAsync(id, cate, imageFile);
-            if (!result)
-            {
-                return NotFound(new { success = false, message = "Không tìm thấy danh mục" });
-            }
-            return Ok(new { success = true, message = "Cập nhật thành công" });
         }
 
 

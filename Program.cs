@@ -10,6 +10,7 @@ using StackExchange.Redis;
 using System.Reflection;
 using Tech_Store.Helpers;
 using Tech_Store.Hubs;
+using Tech_Store.Middleware;
 using Tech_Store.Models;
 using Tech_Store.Models.DTO.Payment.Client.Momo;
 using Tech_Store.Services;
@@ -18,8 +19,11 @@ using Tech_Store.Services.Admin.CategoryServices;
 using Tech_Store.Services.Admin.Interfaces;
 using Tech_Store.Services.Admin.MomoServices;
 using Tech_Store.Services.Admin.NotificationServices;
+using Tech_Store.Services.Admin.ProductServices;
 using Tech_Store.Services.Admin.VNPayServices;
 using Tech_Store.Services.Admin.VoucherServices;
+using Tech_Store.Services.Client;
+using Tech_Store.Services.Client.RecommendServices;
 using static Org.BouncyCastle.Math.EC.ECCurve;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -63,6 +67,11 @@ builder.Services.AddSingleton<IMomoService, MomoService>();
 // Email Service
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddTransient<IEmailService, EmailService>();
+
+builder.Services.AddScoped<ProductServices>();
+builder.Services.AddScoped<ExcelService>();
+builder.Services.AddScoped<RecommendServices>();
+
 
 // Configure Form Options
 builder.Services.Configure<FormOptions>(options =>
@@ -125,6 +134,8 @@ builder.Services.AddScoped<RedisService>();
 
 builder.Services.AddSignalR();
 
+builder.Services.AddHttpClient();
+
 var app = builder.Build();
 
 app.UseStatusCodePagesWithReExecute("/404");
@@ -138,8 +149,13 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// 🟢 Serve static files before routing
+// Serve static files before routing
+
 app.UseStaticFiles();
+// Custom Middleware to manage guest sessions
+app.UseMiddleware<GuestSessionMiddleware>();
+// Custom Middleware to track product views
+app.UseMiddleware<TrackProductViewMiddleware>();
 
 app.UseRouting();
 
@@ -154,10 +170,10 @@ app.Use(async (context, next) =>
     await next();
 });
 
-// 🟢 Enable session first
+//  Enable session first
 app.UseSession();
 
-// 🟢 Authentication & Authorization should be placed after session
+//Authentication & Authorization should be placed after session
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -168,5 +184,17 @@ app.MapHub<NotificationHub>("/notificationHub");
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+
+if (app.Environment.IsDevelopment())
+{
+    app.Use(async (context, next) =>
+    {
+        context.Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0";
+        context.Response.Headers["Pragma"] = "no-cache";
+        context.Response.Headers["Expires"] = "0";
+        await next();
+    });
+}
 
 app.Run();

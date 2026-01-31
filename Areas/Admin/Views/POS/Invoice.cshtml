@@ -4,6 +4,7 @@
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
 }
 @using System.Globalization;
+@using Tech_Store.Helpers
 <div class="container-fluid">
     <div class="card pt-4 pb-4 bg-light text-center shadow-sm">
         <div class="card-body">
@@ -55,7 +56,14 @@
                                 <tr>
                                     <td>@i</td>
                                     <td>
-                                        <img src="/Upload/Products/@item.Product.Image" style="width:60px;height:60px;object-fit:cover" alt="Ảnh sản phẩm" />
+                                        @if(item.Product.Image.Contains("http"))
+                                        {
+                                            <img src="@ResizeCDN.Cdn(item.Product.Image)" style="width:60px;height:60px;object-fit:cover" alt="Ảnh sản phẩm" />
+                                        }
+                                        else
+                                        {
+                                            <img src="/Upload/Products/@item.Product.Image" style="width:60px;height:60px;object-fit:cover" alt="Ảnh sản phẩm" />
+                                        }
                                     </td>
                                     <td>@item.VarientProduct.Sku</td>
                                     <td>@item.Product.Name</td>

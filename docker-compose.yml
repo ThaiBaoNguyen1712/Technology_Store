@@ -1,0 +1,44 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver
+    user: root
+    environment:
+      SA_PASSWORD: "Ntbao123@"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sql_data:/var/opt/mssql
+      - ./sql:/var/opt/mssql/backup
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: web
+    ports:
+      - "8080:8080"
+    depends_on:
+      - sqlserver
+    environment:
+      ConnectionStrings__DefaultConnection: >
+        Server=sqlserver,1433;
+        Database=Electronics_Shop;
+        User Id=sa;
+        Password=Ntbao123@;
+        TrustServerCertificate=True;
+    
+  ml-api:
+    build:
+      context: ../products-rcm-sys-api
+    container_name: python_ml
+    ports:
+      - "8000:8000"  
+    environment:
+      - DB_SERVER=sqlserver
+      - DB_NAME=Electronics_Shop
+      - DB_USER=sa
+      - DB_PASSWORD=Ntbao123@
+volumes:
+  sql_data:

@@ -1,4 +1,5 @@
-﻿@{
+﻿@using Tech_Store.Helpers
+@{
     ViewData["Title"] = "POS";
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
 }
@@ -40,7 +41,19 @@
                         <div class="col-6 col-md-3 mb-3">
                             <div class="card h-100">
                                 <a class="getProductInfo" type="button" data-id="@product.ProductId">
-                                    <img src="~/Upload/Products/@product.Image" style="width:135px; height:135px; object-fit: cover; display: block; margin: 0 auto;" class="card-img-top" alt="...">
+                                    @if (product.Image == null)
+                                    {
+                                        <img src="~/Upload/Products/no-image.png" style="width:135px; height:135px; object-fit: cover; display: block; margin: 0 auto;" class="card-img-top" alt="...">
+                                    }
+                                    else if(product.Image.Contains("http"))
+                                    {
+                                        <img src="@ResizeCDN.Cdn(product.Image,135,135)" style="width:135px; height:135px; object-fit: cover; display: block; margin: 0 auto;" class="card-img-top" alt="...">
+                                    }
+                                    else
+                                    {
+                                        <img src="~/Upload/Products/@product.Image" style="width:135px; height:135px; object-fit: cover; display: block; margin: 0 auto;" class="card-img-top" alt="...">
+
+                                    }
                                     <div class="card-body">
                                         <p class="card-text text-truncate-2">@product.Name</p>
                                     </div>
@@ -207,4 +220,4 @@
 
 </div>
 <script src="~/Admin/assets/js/core/jquery-3.7.1.min.js"></script>
-<script src="~/admin/assets/js/view/pos.js"></script>
+<script src="~/Admin/assets/js/view/pos.js"></script>

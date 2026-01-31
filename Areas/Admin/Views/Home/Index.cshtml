@@ -4,6 +4,7 @@
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
 }
 @using System.Globalization;
+@using Tech_Store.Helpers
 
     <div class="page-inner">
         <div class="d-flex align-items-left align-items-md-center flex-column flex-md-row pt-2 pb-4">
@@ -305,7 +306,20 @@
                             @foreach (var item in ViewBag.hotSaleProducts)
                             {
                                 <tr>
-                                    <td><img src="~/Upload/Products/@item.Image" width="40" height="40" alt="@item.Name" class="img-fluid" /></td>
+                                    <td>
+                                        @if(item.Image.Contains("http"))
+                                        {
+                                            <img src="@ResizeCDN.Cdn(item.Image,40,40)" width="40" height="40" alt="@item.Name" class="img-fluid" />
+                                        }
+                                        else if(item.Image == null)
+                                        {
+                                            <img src="~/Upload/Products/no-image.png" width="40" height="40" alt="@item.Name" class="img-fluid" />
+                                        }
+                                        else
+                                        {
+                                            <img src="~/Upload/Products/@item.Image" width="40" height="40" alt="@item.Name" class="img-fluid" />
+                                        }
+                                    </td>
                                     <td class="text-truncate" style="max-width:200px">
                                         <a href="/Admin/Products/View/@item.ProductId">
                                             @item.Name

@@ -5,11 +5,13 @@ function loadNotifications() {
         const notificationList = $(".notification-list"); // Trỏ tới danh sách thông báo
         notificationList.empty(); // Xóa hết thông báo cũ
 
-        // Cập nhật badge số lượng thông báo chưa đọc
-        var $notificationBadge = $('.notification'); // Chọn phần tử hiển thị số thông báo
-        var currentCount = parseInt($notificationBadge.text(), 10); // Lấy số lượng hiện tại
-        if (!isNaN(currentCount) && currentCount > 0) {
-            $notificationBadge.text(currentCount + 1); // Tăng số lượng lên 1
+        const unreadCount = data.filter(n => !n.isRead).length;
+        const $notificationBadge = $('.notification');
+
+        if (unreadCount > 0) {
+            $notificationBadge.text(unreadCount).show();
+        } else {
+            $notificationBadge.hide();
         }
         // Nếu có thông báo, hiển thị danh sách
         if (data.length > 0) {

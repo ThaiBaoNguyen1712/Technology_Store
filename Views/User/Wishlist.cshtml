@@ -4,6 +4,7 @@
 }
 @model IEnumerable<Tech_Store.Models.ViewModel.WishlistVM>
 @using System.Globalization
+@using Tech_Store.Helpers
 <div class="container py-4">
     <h3 class="mb-4">Danh sách yêu thích</h3>
 
@@ -23,9 +24,27 @@
 
                                         <!-- Hình ảnh sản phẩm -->
                                         <div class="col-3 col-md-2">
-                                            <img src="/Upload/Products/@item.ImageUrl"
-                                                 class="img-fluid rounded"
-                                                 alt="@item.ProductName">
+                                            @if (item.ImageUrl == null)
+                                            {
+                                                <img src="/Upload/Products/no-image.png"
+                                                class="img-fluid rounded"
+                                                alt="No Image Available">
+                                            }
+                                            else if(item.ImageUrl.Contains("http"))
+                                            {
+                                                <img src="@ResizeCDN.Cdn(item.ImageUrl,358,358)"
+                                                     class="img-fluid rounded"
+                                                     alt="@item.ProductName">
+                                            }
+      
+                                            else
+                                            {
+                                                <img src="/Upload/Products/@item.ImageUrl"
+                                                     class="img-fluid rounded"
+                                                     alt="@item.ProductName">
+
+                                            }
+                                           
                                         </div>
 
                                         <!-- Thông tin sản phẩm -->
@@ -53,6 +72,8 @@
                         </div>
                     }
                 </div>
+
+              
             }
 
             else
@@ -63,10 +84,38 @@
             }
         </div>
     </div>
+
+    <section class="products">
+        <div class="container">
+            <div class="product-section">
+                <div style="max-width: 85vw; padding: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <h3 class="text-dark mb-0">Gợi ý cho bạn</h3>
+                </div>
+
+                <button class="btn-scroll btn-prev" data-target="suggestion">
+                    <i class="fa fa-chevron-left"></i>
+                </button>
+                <button class="btn-scroll btn-next" data-target="suggestion">
+                    <i class="fa fa-chevron-right"></i>
+                </button>
+
+                <div class="scrolling-wrapper" data-wrapper="suggestion">
+                    <div id="recommendation-container" class="row pt-2 mx-auto">
+                        <div class="text-center w-100 py-5">
+                            <div class="spinner-border text-danger" role="status"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 </div>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script type="text/javascript">
     $(document).ready(function () {
+
+        RecommendationManager.init('wishlist', 10);
+
         const notyf = new Notyf({
             position: {
                 x: 'right', // Căn phải

@@ -12,6 +12,7 @@ using Tech_Store.Models;
 using Tech_Store.Models.DTO;
 using Tech_Store.Models.DTO.Authentication;
 using Tech_Store.Models.ViewModel;
+using Tech_Store.Services;
 using Tech_Store.Services.Admin.NotificationServices;
 
 namespace Tech_Store.Controllers
@@ -21,8 +22,11 @@ namespace Tech_Store.Controllers
     public class UserController : BaseController
     {
         private readonly NotificationService _notificationService;
-        public UserController(ApplicationDbContext context, NotificationService notificationService) : base(context) {
-        _notificationService = notificationService;
+        private readonly RedisService _redisService;
+
+        public UserController(ApplicationDbContext context, NotificationService notificationService, RedisService redisService) : base(context) {
+            _notificationService = notificationService;
+            _redisService = redisService;
         }
         public IActionResult Index()
         {
@@ -61,9 +65,11 @@ namespace Tech_Store.Controllers
                 .ToList();
 
             //Tìm các sản phẩm liên quan theo danh mục
+            // Còn hàng và vẫn còn được đăng bán
             var relatedByCategory = await _context.Products
                 .Where(p => cartProductCategories.Contains(p.CategoryId))
                 .Where(p => !cartProductIds.Contains(p.ProductId))
+                .Where(p=> p.Stock >=1 && p.Status !="outstock")
                 .ToListAsync();
 
             // lấy duy nhất các sp liên quan theo tên
@@ -285,7 +291,7 @@ namespace Tech_Store.Controllers
         {
             if (!User.Identity.IsAuthenticated)
             {
-                return Json(new { success = false, message = "Cần đăng nhập trước khi thêm sản phẩm vào giỏ hàng" });
+                return Json(new { success = false, message = "login require" });
             }
 
             // Kiểm tra tính hợp lệ của quantity
@@ -297,7 +303,7 @@ namespace Tech_Store.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             // Kiểm tra sản phẩm có tồn tại hay không
-            var product = await _context.VarientProducts.FindAsync(itemId);
+            var product = await _context.VarientProducts.Include(x => x.Product).FirstOrDefaultAsync(x=>x.VarientId == itemId);
             if (product == null)
             {
                 return Json(new { success = false, message = "Sản phẩm không tồn tại" });
@@ -344,6 +350,17 @@ namespace Tech_Store.Controllers
             cart.UpdatedAt = DateTime.Now;
 
             await _context.SaveChangesAsync();
+
+            try
+            {
+                await _redisService.TrackUserWatchedProductAsync(int.Parse(userId), product.Product.ProductSysId, 5);
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine($"Lỗi khi theo dõi sản phẩm đã xem: {ex.Message}");
+            }
+            //Add vào Redis để theo dõi sản phẩm đã xem
+
             return Json(new { success = true, message = "Đã thêm vào giỏ hàng" });
         }
 
@@ -644,6 +661,11 @@ namespace Tech_Store.Controllers
             _context.Wishlists.Add(wishlist);
             await _context.SaveChangesAsync();
 
+            //Add vào Redis để theo dõi sản phẩm đã xem
+            var product_get = await _context.Products.Select(x => new { x.ProductId, x.ProductSysId, x.Name }).FirstOrDefaultAsync(x => x.ProductId == productId);
+
+            await _redisService.TrackUserWatchedProductAsync(int.Parse(userId), product_get.ProductSysId, 3);
+
             return Json(new { success = true, message = "Đã thêm vào DS yêu thích" });
         }
 
@@ -812,6 +834,15 @@ namespace Tech_Store.Controllers
             await _context.SaveChangesAsync();
 
             return Json(new { success = true, message = "Đã xóa bình luận thành công" });
+        }
+
+        #endregion
+
+        #region Generate Guest ID 
+        [HttpGet("Generate_Guest_ID")]
+        public async Task<int> generate_guest_Id()
+        {
+            return await Task.FromResult(Random.Shared.Next(1000, int.MaxValue));
         }
 
         #endregion

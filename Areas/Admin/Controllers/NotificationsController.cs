@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using Tech_Store.Models;
 
 namespace Tech_Store.Areas.Admin.Controllers
@@ -80,6 +81,70 @@ namespace Tech_Store.Areas.Admin.Controllers
                 // Ghi log lỗi tại đây
                 return Json(new { success = false, message = "Đã xảy ra lỗi khi đánh dấu thông báo.", error = ex.Message });
             }
+        }
+
+        // Trang xem tất cả thông báo
+        [Route("Index")]        
+        public async Task<IActionResult> Index()
+        {
+            int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+            var notifications = await _context.UserNotifications
+                 .Where(x => x.UserId == userId)
+                 .Include(x => x.Notification)
+                .OrderBy(x =>
+                        x.IsRead == true ? 1 : 0
+                    )
+                    .ThenByDescending(x => x.Notification.CreatedAt)
+                 .ToListAsync();
+
+
+            return View("Index", notifications);
+
+        }
+
+
+        //Xóa thông báo
+        [HttpGet("Delete")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+            var userNoti = await _context.UserNotifications
+                .FirstOrDefaultAsync(x => x.NotificationId == id && x.UserId == userId);
+
+            if (userNoti == null)
+            {
+                return NotFound();
+            }
+
+            _context.UserNotifications.Remove(userNoti);
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Index));
+
+        }
+
+        //Xóa các thông báo đã đọc
+        [HttpGet("Delete_Read")]
+        public async Task<IActionResult> Delete_Read()
+        {
+            int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+            var userNotis = await _context.UserNotifications
+                .Include(x => x.Notification)
+               .Where(x => x.UserId == userId && x.IsRead == true)
+                .ToListAsync();
+
+            if (!userNotis.Any())
+                return RedirectToAction("Index");
+
+            _context.UserNotifications.RemoveRange(userNotis);
+
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Index));
+
         }
 
     }

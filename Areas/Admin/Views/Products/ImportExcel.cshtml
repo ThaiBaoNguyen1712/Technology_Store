@@ -1,0 +1,36 @@
+﻿@{
+    ViewData["Title"] = "Nhập thông tin sản phẩm Excel";
+    Layout = "/Areas/Admin/Views/Shared/Layout.cshtml";
+}
+
+<div class="container-fluid mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Nhập thông tin sản phẩm từ Excel</h4>
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data" action="~/admin/products/importExcel">
+                <div class="mb-3">
+                    <label class="form-label fw-bold" for="FileExcel">Chọn file Excel</label>
+                    <input class="form-control" type="file" id="FileExcel" name="file" accept=".csv,.xlsx" />
+                </div>
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-upload"></i> Tải lên
+                </button>
+            </form>
+        </div>
+        <div>
+            <strong class="text-success">@ViewBag.SuccessCount</strong>
+            <strong class="text-danger" >@ViewBag.ErrorCount</strong>
+            <strong class="text-danger">@ViewBag.Error</strong>
+        </div>
+        <div class="card-footer text-muted">
+            <p class="mb-1">
+                <strong>(*) Để thuận tiện trong việc nhập dữ liệu, hãy sử dụng file mẫu dưới đây:</strong>
+            </p>
+            <a href="~/Template/SampleFiles/ImportProducts_sample.xlsx" class="btn btn-link" download>
+                <i class="bi bi-download"></i> Tải file mẫu
+            </a>
+        </div>
+    </div>
+</div>

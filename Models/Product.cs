@@ -1,11 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using CsvHelper.Configuration.Attributes;
+using HashidsNet;
 
 namespace Tech_Store.Models;
 
 public partial class Product
 {
     public int ProductId { get; set; }
+
+    public string? ProductSysId { get; set; }
 
     public string Name { get; set; } = null!;
 
@@ -14,16 +19,19 @@ public partial class Product
     public string? Sku { get; set; }
 
     public string? Slug { get; set; }
+    [Column(TypeName = "decimal(18,2)")]
 
     public decimal? CostPrice { get; set; }
+    [Column(TypeName = "decimal(18,2)")]
 
     public decimal? OriginalPrice { get; set; }
+    [Column(TypeName = "decimal(18,2)")]
 
     public decimal? SellPrice { get; set; }
 
     public decimal? DiscountAmount { get; set; }
 
-    public int? DiscountPercentage { get; set; }
+    public int? DiscountPercentage { get; set; } 
 
     public int Stock { get; set; }
 
@@ -55,13 +63,15 @@ public partial class Product
 
     public virtual Category? Category { get; set; }
 
+    public virtual ICollection<SpecValue> SpecValues { get; set; } = new List<SpecValue>();
+
     public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
 
     public virtual ICollection<Gallery> Galleries { get; set; } = new List<Gallery>();
 
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 
-    public virtual ICollection<ProductHistory> ProductHistories { get; set; } = new List<ProductHistory>();
+    public virtual ICollection<InventoryTransactions> InventoryTransactions { get; set; } = new List<InventoryTransactions>();
 
     public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
 

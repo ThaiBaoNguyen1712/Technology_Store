@@ -1,0 +1,49 @@
+﻿/* Container: Tối giản khoảng cách */
+.pagination {
+    gap: 4px;
+}
+
+    /* Nút cơ bản: Loại bỏ hoàn toàn viền, dùng font-weight để tạo điểm nhấn */
+    .pagination .page-item .page-link {
+        border: none;
+        background-color: #f1f1f1; /* Xám cực nhạt, tạo khối chìm */
+        color: #555;
+        border-radius: 6px; /* Bo góc vừa phải, hiện đại */
+        padding: 8px 16px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+        /* Hover: Chỉ thay đổi độ đậm của xám hoặc một chút sắc đỏ rất nhẹ */
+        .pagination .page-item .page-link:hover {
+            background-color: #e8e8e8;
+            color: #000;
+        }
+
+    /* Active: Đây là điểm nhấn duy nhất */
+    .pagination .page-item.active .page-link {
+        background-color: #d9534f !important; /* Đỏ đặc trưng của bạn */
+        color: #fff !important;
+        font-weight: 600;
+    }
+
+    /* Các nút điều hướng (Trước/Sau): Dùng màu chữ nhẹ hơn để tập trung vào số trang */
+    .pagination .page-item:first-child .page-link,
+    .pagination .page-item:last-child .page-link {
+        background-color: transparent; /* Không nền */
+        color: #888;
+    }
+
+    .pagination .page-item:not(.disabled):first-child .page-link:hover,
+    .pagination .page-item:not(.disabled):last-child .page-link:hover {
+        background-color: #f1f1f1;
+    }
+
+    /* Disabled: Làm mờ hẳn để không gây chú ý */
+    .pagination .page-item.disabled .page-link {
+        background-color: transparent;
+        opacity: 0.4;
+        color: #ccc;
+    }
+

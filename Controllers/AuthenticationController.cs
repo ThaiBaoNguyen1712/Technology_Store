@@ -24,18 +24,21 @@ namespace Tech_Store.Controllers
         private readonly IEmailService _emailService;
         private readonly IRecaptchaService _recaptchaService;
         private readonly NotificationService _notificationService;
+        private readonly RedisService _redisService;
         private const int OTP_EXPIRATION_MINUTES = 3;
 
         public AuthenticationController(
             ApplicationDbContext context,
             IEmailService emailService,
             IRecaptchaService recaptchaService,
-            NotificationService notificationService)
+            NotificationService notificationService,
+            RedisService redisService)
         {
             _context = context;
             _emailService = emailService;
             _recaptchaService = recaptchaService;
             _notificationService = notificationService;
+            _redisService = redisService;
         }
 
         #region Public Actions
@@ -70,6 +73,13 @@ namespace Tech_Store.Controllers
                 {
                     ViewData["ValidateMessage"] = message;
                     return View(loginDto);
+                }
+
+                var guestId = HttpContext.Items["guest_id"]?.ToString() ?? HttpContext.Request.Cookies["guest_id"];
+
+                if (user != null && !string.IsNullOrEmpty(guestId))
+                {
+                    await _redisService.MergeGuestToUserHistory(guestId, user.UserId);
                 }
 
                 await SignInUser(user, loginDto.Remember);

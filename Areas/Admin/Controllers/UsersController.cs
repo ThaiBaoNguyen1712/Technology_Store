@@ -346,27 +346,28 @@ namespace Tech_Store.Areas.Admin.Controllers
                 }
 
                 // Xóa bản ghi trong bảng UserRole
-                var userRole = await _context.Set<Dictionary<string, object>>("UserRole")
-                    .FirstOrDefaultAsync(x => x["UserId"].Equals(id));
-                if (userRole != null)
-                {
-                    _context.Set<Dictionary<string, object>>("UserRole").Remove(userRole);
-                }
+                var userRoles = _context.Set<Dictionary<string, object>>("UserRole")
+                .Where(x => x["UserId"].Equals(id));
+
+                _context.Set<Dictionary<string, object>>("UserRole").RemoveRange(userRoles);
+
 
 
                 //Xóa address
-                var address = await _context.Addresses.FirstOrDefaultAsync(x=>x.UserId == id);
-                if (address != null)
+                var addresses = _context.Addresses.Where(x => x.UserId == id);
+                if (addresses.Any())
                 {
-                    _context.Addresses.Remove(address);
+                    _context.Addresses.RemoveRange(addresses);
                 }
 
+
                 // Xoá wishlist của người dùng
-                var wishlist = await _context.Wishlists.FirstOrDefaultAsync(x => x.UserId == id);
-                if (wishlist != null)
+                var wishlists = _context.Wishlists.Where(x => x.UserId == id);
+                if (wishlists.Any())
                 {
-                    _context.Wishlists.Remove(wishlist);
+                    _context.Wishlists.RemoveRange(wishlists);
                 }
+
 
                 // Tìm giỏ hàng của người dùng
                 var cart = await _context.Carts.FirstOrDefaultAsync(x => x.UserId == id);
@@ -381,6 +382,12 @@ namespace Tech_Store.Areas.Admin.Controllers
 
                     // Xoá giỏ hàng
                     _context.Carts.Remove(cart);
+                }
+                // Xóa notifications của user
+                var notifications = _context.UserNotifications.Where(x => x.UserId == id);
+                if (notifications.Any())
+                {
+                    _context.UserNotifications.RemoveRange(notifications);
                 }
 
                 // Xoá người dùng

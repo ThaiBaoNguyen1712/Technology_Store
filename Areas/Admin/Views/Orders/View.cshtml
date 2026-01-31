@@ -1,9 +1,10 @@
 ﻿@model Tech_Store.Models.Order
 @{
-    ViewData["Title"] = "Invoice";
+    ViewData["Title"] = "Hóa đơn " + Model.OrderId ;
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
 }
 @using System.Globalization;
+@using Tech_Store.Helpers
 <div class="container-fluid">
     <div class="row">
         <div class="col-md-7 col-sm-12">
@@ -25,8 +26,8 @@
             <div class="card p-3">
                 <h4 class="card-title">Chi tiết đơn hàng</h4>
                 <hr />
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
+                <div class="table-responsive small">
+                    <table class="table table-hover table-sm align-middle">
                         <thead class="table-light">
                             <tr>
                                 <th>#</th>
@@ -47,13 +48,24 @@
                                 <tr>
                                     <td>@i</td>
                                     <td>
-                                        <img src="/Upload/Products/@item.Product.Image" style="width:60px;height:60px;object-fit:cover" alt="Ảnh sản phẩm" />
+                                        @if(item.Product.Image == null)
+                                        {
+                                            <img src="/Upload/Products/no-image.png" style="width:40px;height:40px;object-fit:cover" alt="Ảnh sản phẩm" />
+                                        }
+                                        else if (item.Product.Image.Contains("http"))
+                                        {
+                                            <img src="@ResizeCDN.Cdn(item.Product.Image,40,40)" style="width:40px;height:40px;object-fit:cover" alt="Ảnh sản phẩm" />
+                                        }
+                                        else
+                                        {
+                                            <img src="/Upload/Products/@item.Product.Image" style="width:40px;height:40px;object-fit:cover" alt="Ảnh sản phẩm" />
+                                        }
                                     </td>
-                                    <td>@item.VarientProduct.Sku</td>
-                                    <td>@item.Product.Name</td>
+                                    <td class="text-muted text-nowrap" style="font-size:0.9rem">@item.VarientProduct.Sku</td>
+                                    <td style="font-size:0.9rem">@item.Product.Name</td>
                                     <td>@item.VarientProduct.Attributes</td>
                                     <td>@item.Quantity</td>
-                                    <td>@((item.VarientProduct.Price * item.Quantity)?.ToString("C0", new CultureInfo("vi-VN")))</td>
+                                    <td class="text-nowrap" style="font-size:0.9rem">@((item.VarientProduct.Price * item.Quantity)?.ToString("C0", new CultureInfo("vi-VN")))</td>
                                 </tr>
                                 i++;
                             }
@@ -154,9 +166,9 @@
                                                 {
                                                     <tr>
                                                         <td class="text-center">@(index++)</td>
-                                                        <td>@item.Product.Name (@item.VarientProduct.Attributes)</td>
+                                                        <td style="font-size:0.9rem">@item.Product.Name (@item.VarientProduct.Attributes)</td>
                                                         <td class="text-center">@item.Quantity</td>
-                                                        <td class="text-end">@item.VarientProduct.Price?.ToString("C0", new CultureInfo("vi-VN"))</td>
+                                                        <td class="text-end text-nowrap">@item.VarientProduct.Price?.ToString("C0", new CultureInfo("vi-VN"))</td>
                                                     </tr>
                                                 }
                                             </tbody>

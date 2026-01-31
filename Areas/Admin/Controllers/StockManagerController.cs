@@ -99,7 +99,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                 try
                 {
                     var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                    var productHistory = new ProductHistory
+                    var productHistory = new InventoryTransactions
                     {
                         ProductId = productHistoryDTo.ProductId,
                         Type = productHistoryDTo.Type,
@@ -108,7 +108,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                         CreatedAt = DateTime.Now
                     };
 
-                    await _context.ProductHistories.AddAsync(productHistory);
+                    await _context.InventoryTransactions.AddAsync(productHistory);
                     await _context.SaveChangesAsync();
 
                     var product = await _context.Products
@@ -119,7 +119,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                         return Json(new { success = false, message = "Sản phẩm không tồn tại" });
                     }
 
-                    List<ProductHistoryDetail> productHistoryDetails = new List<ProductHistoryDetail>();
+                    List<InventoryTransactionsDetail> productHistoryDetails = new List<InventoryTransactionsDetail>();
 
                     foreach (var item in productHistoryDTo.Variants)
                     {
@@ -149,9 +149,9 @@ namespace Tech_Store.Areas.Admin.Controllers
                             }
                         }
 
-                        var productHistoryDetail = new ProductHistoryDetail
+                        var productHistoryDetail = new InventoryTransactionsDetail
                         {
-                            HistoryId = productHistory.ProductHistoryId,
+                            InventoryTransId = productHistory.InventoryTransId,
                             VarientId = item.VariantId,
                             Quantity = quantityChange
                         };
@@ -167,7 +167,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                         product.Status = "available";
                     }
 
-                    await _context.ProductHistoryDetails.AddRangeAsync(productHistoryDetails);
+                    await _context.InventoryTransactionsDetail.AddRangeAsync(productHistoryDetails);
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
 
@@ -187,22 +187,22 @@ namespace Tech_Store.Areas.Admin.Controllers
             int pageSize = 5; // Số lượng bản ghi trên mỗi trang
             int pageNumber = page ?? 1; // Trang hiện tại, mặc định là 1
 
-            var history = _context.ProductHistories
+            var history = _context.InventoryTransactions
                 .Include(p => p.Product)
-                .Include(p => p.ProductHistoryDetails) // Bao gồm chi tiết lịch sử sản phẩm
+                .Include(p => p.InventoryTransactionsDetail) // Bao gồm chi tiết lịch sử sản phẩm
                 .Include(p => p.User)
                 .ThenInclude(p => p.Roles)
-                .Select(ph => new ProductHistoryViewModel
+                .Select(ph => new InventoryTransactionsVM
                 {
-                    Id = ph.ProductHistoryId,
+                    Id = ph.InventoryTransId,
                     Product = ph.Product,
-                    ProductHistoryId = ph.ProductHistoryId,
+                    InventoryTransId = ph.InventoryTransId,
                     Type = ph.Type,
                     Note = ph.Note,
                     UserName = ph.User.LastName + " " + ph.User.FirstName,
                     UserRole = ph.User.Roles.FirstOrDefault().RoleName,
-                    ProductHistoryDetails = ph.ProductHistoryDetails
-                        .Select(d => new ProductHistoryDetailViewModel // Ánh xạ từng ProductHistoryDetail thành ProductHistoryDetailViewModel
+                    InventoryTransactionDetail = ph.InventoryTransactionsDetail
+                        .Select(d => new InventorTransactionDetailViewModel // Ánh xạ từng ProductHistoryDetail thành ProductHistoryDetailViewModel
                         {
                             Quantity = d.Quantity
                         })
@@ -218,22 +218,22 @@ namespace Tech_Store.Areas.Admin.Controllers
         [HttpGet("GetHistoryDetail/{id}")]
         public async Task<JsonResult> GetHistoryDetail(int id)
         {
-            var history = await _context.ProductHistories
-                .Where(ph => ph.ProductHistoryId == id) // Điều kiện lọc trước khi Select
+            var history = await _context.InventoryTransactions
+                .Where(ph => ph.InventoryTransId == id) // Điều kiện lọc trước khi Select
                 .Include(p => p.Product)
                 .Include(p => p.User)
                 .ThenInclude(p => p.Roles)
-                .Include(p => p.ProductHistoryDetails).ThenInclude(p => p.Varient)
-                .Select(ph => new ProductHistoryViewModel
+                .Include(p => p.InventoryTransactionsDetail).ThenInclude(p => p.Varient)
+                .Select(ph => new InventoryTransactionsVM
                 {
-                    Id = ph.ProductHistoryId,
+                    Id = ph.InventoryTransId,
                     Product = ph.Product,
                     Type = ph.Type,
                     Note = ph.Note,
                     CreatedAt = (DateTime)ph.CreatedAt,
-                    ProductHistoryDetails = ph.ProductHistoryDetails.Select(d => new ProductHistoryDetailViewModel
+                    InventoryTransactionDetail = ph.InventoryTransactionsDetail.Select(d => new InventorTransactionDetailViewModel
                     {
-                        HistoryDetailId = d.HistoryDetailId,
+                        InventoryTransId = d.InventoryTransId,
                         VarientId = d.VarientId,
                         VarientSku = d.Varient.Sku,
                         Quantity = d.Quantity,
@@ -257,8 +257,8 @@ namespace Tech_Store.Areas.Admin.Controllers
             int pageSize = 5; // Số lượng bản ghi mỗi trang
 
             // Truy vấn cơ bản từ ProductHistories
-            var query = _context.ProductHistories
-                .Include(ph => ph.ProductHistoryDetails)
+            var query = _context.InventoryTransactions
+                .Include(ph => ph.InventoryTransactionsDetail)
                 .Include(ph => ph.Product)
                 .Include(ph => ph.User)
                 .ThenInclude(u => u.Roles)
@@ -282,24 +282,24 @@ namespace Tech_Store.Areas.Admin.Controllers
 
             if (!string.IsNullOrEmpty(filterCode))
             {
-                query = query.Where(ph => ph.Product.Sku.Contains(filterCode) || ph.ProductHistoryId.ToString().Contains(filterCode));
+                query = query.Where(ph => ph.Product.Sku.Contains(filterCode) || ph.InventoryTransId.ToString().Contains(filterCode));
             }
 
             // Áp dụng phân trang và ánh xạ sang ProductHistoryViewModel
             var result = query
-                .OrderByDescending(ph => ph.ProductHistoryId) // Sắp xếp giảm dần theo ID
+                .OrderByDescending(ph => ph.InventoryTransId) // Sắp xếp giảm dần theo ID
                 .ToPagedList(page, pageSize)
-                .Select(ph => new ProductHistoryViewModel
+                .Select(ph => new InventoryTransactionsVM
                 {
-                    Id = ph.ProductHistoryId,
+                    Id = ph.InventoryTransId,
                     Product = ph.Product,
-                    ProductHistoryId = ph.ProductHistoryId,
+                    InventoryTransId = ph.InventoryTransId,
                     Type = ph.Type,
                     Note = ph.Note,
                     UserName = ph.User.LastName + " " + ph.User.FirstName,
                     UserRole = ph.User.Roles.FirstOrDefault()?.RoleName,
-                    ProductHistoryDetails = ph.ProductHistoryDetails
-                        .Select(d => new ProductHistoryDetailViewModel
+                    InventoryTransactionDetail = ph.InventoryTransactionsDetail  
+                        .Select(d => new InventorTransactionDetailViewModel
                         {
                             Quantity = d.Quantity
                         })

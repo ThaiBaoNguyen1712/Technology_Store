@@ -48,6 +48,7 @@ namespace Tech_Store.Services.Admin.CategoryServices
             category.Description = updatedCategory.Description;
             category.EngTitle = updatedCategory.EngTitle;
             category.Visible = updatedCategory.Visible; 
+            category.ParentId = updatedCategory.ParentId;
 
             await _context.SaveChangesAsync();
             return true;

@@ -1,10 +1,11 @@
 ﻿
 @{
-    ViewData["Title"] = "StockManager";
+    ViewData["Title"] = "Quản lý kho hàng";
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
 }
 @model IEnumerable<Tech_Store.Models.Product>
 @using System.Globalization;
+@using Tech_Store.Helpers
 
 <div class="container-fluid">
     <h2 class="my-4">Quản lý Kho</h2>
@@ -136,7 +137,21 @@
                         @foreach (var product in Model)
                         {
                             <tr>
-                                <td><img src="~/Upload/Products/@product.Image" alt="@product.Name" style="width: 50px; height: 50px; object-fit: cover;"></td>
+                                <td>
+                                    @if (string.IsNullOrEmpty(product.Image))
+                                    {
+                                        <img src="~/Upload/Products/no-image.png" alt="No Image" style="width: 50px; height: 50px; object-fit: cover;" loading="lazy">
+                                    }
+                                    else if(product.Image.Contains("http"))
+                                    {
+                                        <img src="@ResizeCDN.Cdn(product.Image, 50, 50)" alt="@product.Name" style="width: 50px; height: 50px; object-fit: cover;" loading="lazy">
+                                    }
+                                    else
+                                    {
+                                        <img src="~/Upload/Products/@product.Image" alt="@product.Name" style="width: 50px; height: 50px; object-fit: cover;" loading="lazy">
+                                    }
+
+                                </td>
                                 <td>@product.Name</td>
                                 <td>@product.Sku</td>
                                 <td>@product.Brand?.Name</td>
@@ -215,7 +230,9 @@
                             // Chuỗi HTML cho mỗi hàng sản phẩm
                         // Thêm hàng vào DataTable
                         table.row.add([
-                            `<img src="/Upload/Products/${product.image}" alt="${product.name}" style="width: 50px; height: 50px; object-fit: cover;">`,
+                            `<img src="${product.image.startsWith('http') ? product.image : `/Upload/Products/${product.image}`}"
+                                    loading="lazy"
+                                    style="width:50px;height:50px;object-fit:cover;">`,
                             product.name,
                             product.sku,
                             product.brandName || '',
@@ -308,7 +325,8 @@
                             table.row.add([
                                 '<input type="checkbox" name="selectVariant" value="' + variant.id + '">', // Cột "Chọn"
                                 variant.sku, // Cột SKU
-                                '<img src="/upload/Products/' + variant.imageUrl + '" alt="' + variant.productName + '" style="width:50px;height:50px;">',
+                                   '<img src="' + (variant.imageUrl?.startsWith("http") ? variant.imageUrl : '/Upload/Products/' + variant.imageUrl)
+                                        + '" alt="' + variant.productName + '" style="width:50px;height:50px;object-fit:cover;" loading="lazy">',
                                 variant.productName, // Cột Tên sản phẩm
                                 variant.attribute, // Cột Biến thể sản phẩm
                                 variant.sellPrice.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' }), // Cột Đơn giá

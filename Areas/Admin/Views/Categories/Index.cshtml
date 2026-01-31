@@ -12,12 +12,11 @@
                 <div class="card-header">
                     <div class="d-flex align-items-center">
                         <h4 class="card-title">DANH SÁCH DANH MỤC</h4>
-                        <button class="btn btn-primary btn-round ms-auto"
-                                data-bs-toggle="modal"
-                                data-bs-target="#CategoryModal">
+                        <a href="/Admin/Categories/Form"
+                           class="btn btn-primary btn-round ms-auto">
                             <i class="fa fa-plus"></i>
                             Thêm
-                        </button>
+                        </a>
                     </div>
                 </div>
                 <div class="card-body">
@@ -55,7 +54,7 @@
                                         <td>@cate.Name</td>
                                             <td>@cate.EngTitle</td>
                                         <td class="text-center">
-                                           <img src="/Upload/Logo/@cate.Image" width="60px" height="60px" class="rounded border" />
+                                           <img src="/Upload/Logo/@cate.Image" width="40px" height="40px" class="rounded border" />
                                         </td>
                                         <td>@cate.Description</td>
                                        
@@ -69,13 +68,12 @@
                                         </td>
                                         <td>
                                             <div class="form-button-action">
-                                                <button type="button"
-                                                            data-bs-toggle="tooltip" data-id="@cate.CategoryId"
-                                                        id="editCategory"
-                                                        class="btn btn-link btn-primary btn-lg"
-                                                        data-original-title="Edit Task">
-                                                    <i class="fa fa-edit"></i>
-                                                </button>
+                                                    <a href="/Admin/Categories/Form?id=@cate.CategoryId"
+                                                       class="btn btn-link btn-primary btn-lg"
+                                                       data-bs-toggle="tooltip"
+                                                       title="Edit">
+                                                        <i class="fa fa-edit"></i>
+                                                    </a>
                                                 <button type="button"
                                                         data-bs-toggle="tooltip"
                                                         title=""
@@ -154,36 +152,36 @@
 
 
         // Xử lý sự kiện click cho nút chỉnh sửa
-        $(document).on('click', '#editCategory', function () {
-            var id_cate = $(this).data('id'); // Lấy ID từ thuộc tính data-id
-            $('.loading-container').show(); // Hiển thị loading
+        // $(document).on('click', '#editCategory', function () {
+        //     var id_cate = $(this).data('id'); Lấy ID từ thuộc tính data-id
+        //     $('.loading-container').show(); Hiển thị loading
 
-            $.ajax({
-                method: 'GET',
-                url: 'Categories/Edit/' + id_cate, // Lấy dữ liệu từ server
-                success: function (response) {
-                    // Đặt giá trị của các input và select
-                    $('input[name="name"]').val(response.name); // Đặt giá trị cho input name
-                    $('input[name="EngTitle"]').val(response.engTitle);
-                    $('input[name="description"]').val(response.description); // Đặt giá trị cho input description
-                    $('select[name="visible"]').val(response.visible); // Đặt giá trị cho select visible
-                    $('input[name="cate_id"]').val(response.categoryId);
-                    $('#ImageUrl').attr('src','/Upload/Logo/' + response.image);
-                    // Hiển thị nút Lưu thay đổi và ẩn nút Thêm mới
-                    $('#update').show();
-                    $('#add').hide();
+        //     $.ajax({
+        //         method: 'GET',
+        //         url: 'Categories/Edit/' + id_cate, Lấy dữ liệu từ server
+        //         success: function (response) {
+        //             Đặt giá trị của các input và select
+        //             $('input[name="name"]').val(response.name); Đặt giá trị cho input name
+        //             $('input[name="EngTitle"]').val(response.engTitle);
+        //             $('input[name="description"]').val(response.description); Đặt giá trị cho input description
+        //             $('select[name="visible"]').val(response.visible); Đặt giá trị cho select visible
+        //             $('input[name="cate_id"]').val(response.categoryId);
+        //             $('#ImageUrl').attr('src','/Upload/Logo/' + response.image);
+        //             Hiển thị nút Lưu thay đổi và ẩn nút Thêm mới
+        //             $('#update').show();
+        //             $('#add').hide();
 
-                    // Ẩn biểu tượng loading
-                    $('.loading-container').hide();
-                    //Mở popup
-                    $('#CategoryModal').modal('show');
-                },
-                error: function (xhr, status, error) {
-                    alert("Đã xảy ra lỗi: " + error);
-                    $('.loading-container').hide(); // Ẩn loading khi có lỗi
-                }
-            });
-        });
+        //             Ẩn biểu tượng loading
+        //             $('.loading-container').hide();
+        //             Mở popup
+        //             $('#CategoryModal').modal('show');
+        //         },
+        //         error: function (xhr, status, error) {
+        //             alert("Đã xảy ra lỗi: " + error);
+        //             $('.loading-container').hide(); Ẩn loading khi có lỗi
+        //         }
+        //     });
+        // });
         //Thay đổi ẩn/hiện
         $(document).on('change', '#flexSwitchCheckChecked', function () {
             // Lấy ID danh mục từ thuộc tính data-id của checkbox
@@ -243,20 +241,20 @@
         });
 
         // Sự kiện khi modal bị ẩn
-        $('#CategoryModal').on('hidden.bs.modal', function () {
-            // Đặt lại các trường trong modal khi ẩn
-            $('input[name="name"]').val('');
-            $('input[name="engTitle"]').val('');
-            $('input[name="description"]').val('');
-            $('select[name="visible"]').val('1'); // Đặt lại giá trị mặc định cho select
-            $('input[name="cate_id"]').val('');
-            $('#ImageUrl').attr('src', '/Upload/Logo/none.jpg');
-            //Tắt trạng thái load
-            $('.loading-container').hide();
+        // $('#CategoryModal').on('hidden.bs.modal', function () {
+        //     Đặt lại các trường trong modal khi ẩn
+        //     $('input[name="name"]').val('');
+        //     $('input[name="engTitle"]').val('');
+        //     $('input[name="description"]').val('');
+        //     $('select[name="visible"]').val('1'); Đặt lại giá trị mặc định cho select
+        //     $('input[name="cate_id"]').val('');
+        //     $('#ImageUrl').attr('src', '/Upload/Logo/none.jpg');
+        //     Tắt trạng thái load
+        //     $('.loading-container').hide();
 
-            // Ẩn nút Lưu thay đổi và hiển thị nút Thêm mới
-            $('#update').hide();
-            $('#add').show();
-        });
+        //     Ẩn nút Lưu thay đổi và hiển thị nút Thêm mới
+        //     $('#update').hide();
+        //     $('#add').show();
+        // });
     });
 </script>
