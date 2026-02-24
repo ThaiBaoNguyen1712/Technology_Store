@@ -1,6 +1,6 @@
 ﻿
 @{
-    ViewData["Title"] = "Tìm kiếm";
+    ViewData["Title"] = $"Tìm kiếm {ViewBag.Key}";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 @model IPagedList<Tech_Store.Models.Product>
@@ -8,6 +8,10 @@
 @using Tech_Store.Helpers
 @using X.PagedList;
 @using X.PagedList.Mvc.Core
+
+
+<link href="~/client/asset/css/searchview.css" rel="stylesheet" />
+
 
 <div class="container mt-3">
     <!-- Breadcrumb -->
@@ -21,77 +25,73 @@
     </nav>
 
     <!-- Filter Section -->
-    <div class="filter-toolbar p-2 bg-light rounded-3 mb-4">
-        <!-- Giảm p-3 thành p-2 -->
-        <form action="~/Search/Filter" method="get" autocomplete="off" novalidate>
-            <div class="row g-2 align-items-center flex-wrap">
-                <!-- Giảm g-3 thành g-2, thêm flex-wrap -->
-                <input type="hidden" name="key" value="@ViewBag.Key" />
+ <div class="filter-toolbar mb-4 p-3 bg-white rounded-4 shadow-sm border">
+    <form action="~/Search/@ViewBag.Key" method="get" id="filterForm" autocomplete="off">
+        <input type="hidden" name="key" value="@ViewBag.Key" />
 
-                <!-- Label -->
-                <div class="col-12 col-md-auto mb-1 mb-md-0">
-                    <span class="text-muted small fw-medium">Bộ lọc:</span>
+        <div class="d-flex flex-column gap-3">
+            <div class="filter-group">
+                <div class="d-flex align-items-center gap-2 overflow-auto pb-2 no-scrollbar">
+                    <span class="text-secondary small fw-bold text-nowrap me-2"><i class="fas fa-sort-amount-down me-1"></i>Sắp xếp:</span>
+                        <input type="radio" onchange="this.form.submit()" class="btn-check" name="order" id="ord_default" value="" @(string.IsNullOrEmpty(ViewBag.Order) ? "checked" : "")>
+                        <label class="btn btn-outline-light btn-sm rounded-pill text-dark shadow-none border text-nowrap" for="ord_default">Liên quan</label>
+
+                        <input type="radio" class="btn-check" onchange="this.form.submit()"
+                               name="order" id="ord_price_desc" value="price_desc"
+                               @(ViewBag.Order == "price_desc" ? "checked" : "")> <label class="btn btn-outline-light btn-sm rounded-pill text-dark shadow-none border text-nowrap" for="ord_price_desc">
+                            Giá cao <i class="fas fa-sort-amount-down-alt me-1"></i>
+                        </label>
+
+                        <input type="radio" class="btn-check" onchange="this.form.submit()"
+                               name="order" id="ord_price_asc" value="price"
+                               @(ViewBag.Order == "price" ? "checked" : "")> <label class="btn btn-outline-light btn-sm rounded-pill text-dark shadow-none border text-nowrap" for="ord_price_asc">
+                            Giá thấp <i class="fas fa-sort-amount-up me-1"></i>
+                        </label>
                 </div>
+            </div>
 
-                <!-- Sắp xếp -->
-                <div class="col-6 col-md-auto mb-1 mb-md-0">
-                    <select name="order" id="order" class="form-select form-select-sm border-0 bg-white shadow-sm w-100">
-                        <option value="" selected>Sắp xếp</option> <!-- Rút gọn chữ -->
-                        <option value="alphabet">A-Z</option>
-                        <option value="alphabet_desc">Z-A</option>
-                        <option value="price">Giá thấp</option>
-                        <option value="price_desc">Giá cao</option>
-                        <option value="sell">Lượt bán</option>
-                        <option value="care">Quan tâm</option>
-                    </select>
+            <div class="row g-2">
+                <div class="col-6 col-md-3">
+                        <select name="price" class="form-select ..." onchange="this.form.submit()">
+                            <option value="">Mọi mức giá</option>
+                            <option value="max5" selected="@(ViewBag.Price == "max5")">Dưới 5tr</option>
+                            <option value="max10" selected="@(ViewBag.Price == "max10")">5 - 10tr</option>
+                            <option value="max20" selected="@(ViewBag.Price == "max20")">10 - 20tr</option>
+                            <option value="max50" selected="@(ViewBag.Price == "max50")">20 - 50tr</option>
+                            <option value="more" selected="@(ViewBag.Price == "more")">Trên 50tr</option>
+                        </select>
                 </div>
-
-                <!-- Mức giá -->
-                <div class="col-6 col-md-auto mb-1 mb-md-0">
-                    <select name="price" id="price" class="form-select form-select-sm border-0 bg-white shadow-sm w-100">
-                        <option value="" selected>Mức giá</option>
-                        <option value="max5">Dưới 5tr</option>
-                        <option value="max10">5-10tr</option>
-                        <option value="max20">10-20tr</option>
-                        <option value="max50">20-50tr</option>
-                        <option value="more">Trên 50tr</option>
-                    </select>
+                <div class="col-6 col-md-3">
+                        <select name="category" class="form-select ..." onchange="this.form.submit()">
+                            <option value="">Tất cả danh mục</option>
+                            @foreach (var cate in ViewBag.list_category)
+                            {
+                                <option value="@cate.CategoryId" selected="@(ViewBag.Category == cate.CategoryId.ToString())">
+                                    @cate.Name
+                                </option>
+                            }
+                        </select>
                 </div>
-
-                <!-- Danh mục -->
-                <div class="col-6 col-md-auto mb-1 mb-md-0">
-                    <select name="category" id="category" class="form-select form-select-sm border-0 bg-white shadow-sm w-100">
-                        <option value="" selected>Danh mục</option>
-                        @foreach (var cate in ViewBag.list_category)
-                        {
-                            <option value="@cate.CategoryId">@cate.Name</option>
-                        }
-                    </select>
+                <div class="col-6 col-md-3">
+                        <select name="brand" class="form-select ..." onchange="this.form.submit()">
+                            <option value="">Thương hiệu</option>
+                            @foreach (var brand in ViewBag.list_brand)
+                            {
+                                <option value="@brand.BrandId" selected="@(ViewBag.Brand == brand.BrandId.ToString())">
+                                    @brand.Name
+                                </option>
+                            }
+                        </select>
                 </div>
-
-                <!-- Thương hiệu -->
-                <div class="col-6 col-md-auto mb-1 mb-md-0">
-                    <select name="brand" id="brand" class="form-select form-select-sm border-0 bg-white shadow-sm w-100">
-                        <option value="" selected>Thương hiệu</option>
-                        @foreach (var brand in ViewBag.list_brand)
-                        {
-                            <option value="@brand.BrandId">@brand.Name</option>
-                        }
-                    </select>
-                </div>
-
-                <!-- Buttons -->
-                <div class="col-12 col-md-auto ms-md-auto d-flex justify-content-center gap-2">
-                    <button class="btn btn-sm btn-outline-success flex-grow-1 flex-md-grow-0" type="submit">
-                        <i class="fas fa-search me-1"></i>Tìm
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger flex-grow-1 flex-md-grow-0" id="resetBtn" type="button">
-                        <i class="fas fa-sync-alt me-1"></i>Reset
+                <div class="col-6 col-md-3">
+                    <button type="button" id="resetBtn" class="btn btn-sm btn-white w-100 py-2 border rounded-3 text-danger fw-bold shadow-sm">
+                        <i class="fas fa-undo-alt me-1"></i> Làm mới
                     </button>
                 </div>
             </div>
-        </form>
-    </div>
+        </div>
+    </form>
+</div>
 </div>
 <div class="container">
     @if (!Model.Any())
@@ -109,7 +109,7 @@
         <div class="row g-2">
             @foreach (var item in Model)
             {
-                <div class="col-4 col-md-3 product-card-ct" data-id="@item.ProductId">
+                <div class="col-6 col-md-3 product-card-ct" data-id="@item.ProductId">
                     <div class="product-link" data-slug="@item.Slug">
                         <div class="card h-100">
                             <!-- Sale Badge -->
@@ -169,7 +169,17 @@
         </style>
         <!-- Pagination -->
          <div class="d-flex justify-content-center mt-4">
-                @Html.PagedListPager(Model, page => Url.Action("Search", new { page }), new PagedListRenderOptions
+                @Html.PagedListPager(Model, page => Url.Action(
+                    "Search",
+                    new {
+                        key = ViewBag.Key,
+                        category = ViewBag.Category,
+                        brand = ViewBag.Brand,
+                        order = ViewBag.Order,
+                        price = ViewBag.Price,
+                        page
+                    }
+                ), new PagedListRenderOptions
                 {
                     UlElementClasses = new[] { "pagination" },
                     LiElementClasses = new[] { "page-item" },

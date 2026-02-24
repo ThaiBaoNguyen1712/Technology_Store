@@ -1,0 +1,49 @@
+﻿/*Thanh lọc sản phẩm (filter toolbar) */
+.filter-toolbar {
+    transition: all 0.3s ease;
+    border: 1px solid #f1f1f1 !important;
+}
+
+/* Hiệu ứng cho các nút Radio thay thế cho Select truyền thống */
+.btn-check:checked + .btn-outline-light {
+    background-color: #d70018 !important; /* Đỏ CellphoneS */
+    border-color: #d70018 !important;
+    color: white !important;
+}
+
+.btn-outline-light:hover {
+    background-color: #fee2e2; /* Đỏ rất nhạt khi hover */
+    border-color: #d70018;
+    color: #d70018 !important;
+}
+
+
+/* Tùy chỉnh Select mượt mà hơn */
+.custom-select {
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke=' %23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right .75rem center;
+    background-size: 12px 10px;
+    appearance: none;
+}
+
+/* Ẩn thanh cuộn nhưng vẫn cho cuộn ngang trên mobile */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.btn-white {
+    background: white;
+    transition: all 0.2s;
+}
+
+    .btn-white:hover {
+        background: #fff5f5;
+        border-color: #ffc1c1;
+    }

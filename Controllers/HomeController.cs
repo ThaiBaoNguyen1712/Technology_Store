@@ -221,182 +221,108 @@ namespace Tech_Store.Controllers
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
 
-        [Route("Category/{eng_title}")]
-        public IActionResult Category(string eng_title,int? page)
-        {
-            int pageSize = 20; 
-            int pageNumber = page ?? 1;
-            var products = _context.Products.Where(x => x.Category.EngTitle.Contains(eng_title) && x.Status != "outstock" && x.SellPrice > 0).
-                OrderByDescending(x=>x.ProductId).ToPagedList(pageNumber, pageSize); // Áp dụng phân trang;
-
-            var cate = _context.Categories.FirstOrDefault(x => x.EngTitle.Contains(eng_title));
-
-            var list_brand = _context.Brands.Where(s=>s.CategoryId == cate.CategoryId || s.CategoryId == null).ToList();
-
-            if(cate != null)
-            {
-                var list_HotSearch = _redis.GetTopSearchKeywordsByCategory(cate.EngTitle, 10).Result;
-                ViewBag.list_HotSearch = list_HotSearch;
-            }
-           
-            ViewBag.list_brand = list_brand;
-            ViewBag.Category = cate;
-            
-            return View(products);
-        }
-        [HttpGet("Category/FilterCategory")]
-        public IActionResult FilterCategory(string eng_title, string? order, string? price, string? brand, int pageNumber = 1)
+        [HttpGet("Category/{eng_title}")]
+        public IActionResult Category(string eng_title, string? order,string? price,string? brand,int page = 1)
         {
             int pageSize = 20;
 
-            // Truy vấn cơ bản
+            var cate = _context.Categories
+                .AsNoTracking()
+                .FirstOrDefault(x => x.EngTitle == eng_title);
+
+            if (cate == null)
+                return NotFound();
+
             IQueryable<Models.Product> query = _context.Products
-                .Where(x => x.Category.EngTitle.Contains(eng_title));
+                .AsNoTracking()
+                .Where(x =>
+                    x.CategoryId == cate.CategoryId &&
+                    x.Status != "outstock" &&
+                    x.SellPrice > 0
+                );
 
-            // Sắp xếp theo `order`
-            if (!string.IsNullOrEmpty(order))
-            {
-                switch (order.ToLower())
-                {
-                    case "alphabet":
-                        query = query.OrderBy(x => x.Name);
-                        break;
-                    case "alphabet_desc":
-                        query = query.OrderByDescending(x => x.Name);
-                        break;
-                    case "price":
-                        query = query.OrderBy(x => x.SellPrice);
-                        break;
-                    case "price_desc":
-                        query = query.OrderByDescending(x => x.SellPrice);
-                        break;
-                    case "care":
-                        query = query.OrderBy(x => x.Reviews);
-                        break;
-                    default:
-                        query = query.OrderByDescending(x => x.ProductId); // Sắp xếp mặc định
-                        break;
-                }
-            }
+            //  Brand filter
+            if (!string.IsNullOrEmpty(brand) && int.TryParse(brand, out int brandId))
+                query = query.Where(x => x.BrandId == brandId);
 
-            // Lọc theo `price`
+            // Price filter
             if (!string.IsNullOrEmpty(price))
             {
-                switch (price.ToLower())
+                query = price switch
                 {
-                    case "max5":
-                        query = query.Where(x => x.SellPrice.HasValue && x.SellPrice.Value > 0 && x.SellPrice.Value < 5000000);
-                        break;
-                    case "max10":
-                        query = query.Where(x => x.SellPrice.HasValue && x.SellPrice.Value >= 5000000 && x.SellPrice.Value < 10000000);
-                        break;
-                    case "max20":
-                        query = query.Where(x => x.SellPrice.HasValue && x.SellPrice.Value >= 10000000 && x.SellPrice.Value < 20000000);
-                        break;
-                    case "max50":
-                        query = query.Where(x => x.SellPrice.HasValue && x.SellPrice.Value >= 20000000 && x.SellPrice.Value < 50000000);
-                        break;
-                    case "more":
-                        query = query.Where(x => x.SellPrice.HasValue && x.SellPrice.Value >= 50000000);
-                        break;
-                }
+                    "max5" => query.Where(x => x.SellPrice < 5_000_000),
+                    "max10" => query.Where(x => x.SellPrice >= 5_000_000 && x.SellPrice < 10_000_000),
+                    "max20" => query.Where(x => x.SellPrice >= 10_000_000 && x.SellPrice < 20_000_000),
+                    "max50" => query.Where(x => x.SellPrice >= 20_000_000 && x.SellPrice < 50_000_000),
+                    "more" => query.Where(x => x.SellPrice >= 50_000_000),
+                    _ => query
+                };
             }
 
-            // Lọc theo `brandId`
-            if (!string.IsNullOrEmpty(brand) && int.TryParse(brand, out int brandIdValue))
+            // 🔥 Sort
+            query = order switch
             {
-                query = query.Where(x => x.BrandId == brandIdValue);
-            }
+                "alphabet" => query.OrderBy(x => x.Name),
+                "alphabet_desc" => query.OrderByDescending(x => x.Name),
+                "price" => query.OrderBy(x => x.SellPrice),
+                "price_desc" => query.OrderByDescending(x => x.SellPrice),
+                "care" => query.OrderByDescending(x => x.Reviews),
+                _ => query.OrderByDescending(x => x.ProductId)
+            };
 
-            // Phân trang
-            var products = query.ToPagedList(pageNumber, pageSize);
+            var products = query.ToPagedList(page, pageSize);
+
+            // 🔥 Hot search
+            var list_HotSearch = _redis
+                .GetTopSearchKeywordsByCategory(cate.EngTitle, 10)
+                .Result;
+
+            ViewBag.list_HotSearch = list_HotSearch;
+
             ViewBag.Order = order;
             ViewBag.Price = price;
             ViewBag.Brand = brand;
-            var cate = _context.Categories.FirstOrDefault(x => x.EngTitle.Contains(eng_title));
-            var list_brand = _context.Brands.Where(s => s.CategoryId == cate.CategoryId || s.CategoryId == null).ToList();
-            ViewBag.list_brand = list_brand;
             ViewBag.Category = cate;
-  
-            // Trả về view
-            return View("Category", products);
-        }
 
-        [Route("Brand/{brand_name}")]
-        public IActionResult Brand(string brand_name, int? page)
-        {
-            int pageSize = 20;
-            int pageNumber = page ?? 1;
-
-            // Lấy sản phẩm theo brand
-            var products = _context.Products
-                .Where(x => x.Brand.Name.Contains(brand_name) && x.Status != "outstock" && x.SellPrice > 0)
-                .OrderByDescending(x => x.ProductId )
-                .ToPagedList(pageNumber, pageSize);
-
-            // Lấy brand hiện tại
-            var brand = _context.Brands
-                .FirstOrDefault(x => x.Name.Contains(brand_name));
-
-            // Lấy danh sách brand cùng category
-            var list_brand = _context.Brands
-                .Where(x => x.CategoryId == brand.CategoryId || x.CategoryId == null)
+            ViewBag.list_brand = _context.Brands
+                .AsNoTracking()
+                .Where(b => b.CategoryId == cate.CategoryId || b.CategoryId == null)
                 .ToList();
-
-            // Hot search theo category của brand
-            if (brand?.Category != null)
-            {
-                var list_HotSearch = _redis
-                    .GetTopSearchKeywordsByCategory(brand.Category.EngTitle, 10)
-                    .Result;
-
-                ViewBag.list_HotSearch = list_HotSearch;
-            }
-
-            ViewBag.list_brand = list_brand;
-            ViewBag.Brand = brand;
-            ViewBag.Category = brand?.Category;
 
             return View(products);
         }
-        [HttpGet("Brand/FilterBrand")]
-        public async Task<IActionResult> FilterBrand(string? key,string? order,string? price,string? brand,int pageNumber = 1)
+
+        [HttpGet("Brand/{brand_name}")]
+        public async Task<IActionResult> Brand(string brand_name,string? key, string? order,string? price,int page = 1)
         {
             int pageSize = 20;
 
-            var currentBrand = _context.Brands.Include(b => b.Category).FirstOrDefault(b => b.Name == brand);
+            var currentBrand = _context.Brands
+                .Include(b => b.Category)
+                .FirstOrDefault(b => b.Name.Contains(brand_name));
 
             if (currentBrand == null)
                 return NotFound();
 
-            // Keywords
             var keywords = key?.ToLower()
                 .Split(" ", StringSplitOptions.RemoveEmptyEntries)
                 ?? Array.Empty<string>();
 
             IQueryable<Models.Product> query = _context.Products
-                   .Include(p => p.Category)
-                   .Include(p => p.Brand)
-                   .Where(p =>!string.IsNullOrEmpty(brand) &&
-                       p.Brand != null &&
-                       p.Brand.Name.ToLower() == brand.ToLower()
-                   )
-                   .Where(p =>string.IsNullOrEmpty(key) || keywords.All(word =>
-                           (p.Name != null && p.Name.ToLower().Contains(word)) ||
-                           (p.Description != null && p.Description.ToLower().Contains(word))
-                       )
-                   );
+                .AsNoTracking()
+                .Where(p =>
+                    p.BrandId == currentBrand.BrandId &&
+                    p.Status != "outstock" &&
+                    p.SellPrice > 0
+                );
 
-
-            // 🔥 Hot search (theo category của brand)
-            if (!string.IsNullOrWhiteSpace(key) && key.Length >= 3)
+            if (!string.IsNullOrEmpty(key))
             {
-                var keyword = key.Trim().ToLower();
-                if (Regex.IsMatch(keyword, @"^[a-zA-Z0-9\s]+$"))
+                foreach (var word in keywords)
                 {
-                    await _redis.IncrementHotKeywordAsync(
-                        keyword,
-                        currentBrand.Category?.EngTitle ?? "all"
+                    query = query.Where(p =>
+                        p.Name.Contains(word) ||
+                        (p.Description != null && p.Description.Contains(word))
                     );
                 }
             }
@@ -426,10 +352,20 @@ namespace Tech_Store.Controllers
                 };
             }
 
-            // Paging
-            var products = query.ToPagedList(pageNumber, pageSize);
+            var products = query.ToPagedList(page, pageSize);
 
-            // ViewBag (⚠️ đồng bộ với Brand.cshtml)
+            // Hot search
+            if (!string.IsNullOrWhiteSpace(key) && key.Length >= 3)
+            {
+                if (Regex.IsMatch(key, @"^[a-zA-Z0-9\s]+$"))
+                {
+                    await _redis.IncrementHotKeywordAsync(
+                        key.Trim().ToLower(),
+                        currentBrand.Category?.EngTitle ?? "all"
+                    );
+                }
+            }
+
             ViewBag.Brand = currentBrand;
             ViewBag.Category = currentBrand.Category;
             ViewBag.Order = order;
@@ -440,155 +376,110 @@ namespace Tech_Store.Controllers
                 .Where(b => b.CategoryId == currentBrand.CategoryId || b.CategoryId == null)
                 .ToList();
 
-            return View("Brand", products);
-        }
-
-
-        [Route("Search/{key?}")]
-        public async Task<IActionResult> SearchAsync(string key, int? page)
-        {
-            int pageSize = 20;
-            int pageNumber = page ?? 1;
-
-            var products = _context.Products.Include(p => p.Category)
-                 .Where(x => string.IsNullOrEmpty(key) || x.Name.Contains(key))
-                 .Select(x => new
-                 {
-                     Product = x,
-                     Score =
-                         x.Name == key ? 3 :
-                         x.Name.StartsWith(key) ? 2 :
-                         x.Name.Contains(key) ? 1 : 0
-                 })
-                 .OrderByDescending(x => x.Score)
-                 .ThenByDescending(x => x.Product.ProductId)
-                 .Select(x => x.Product)
-                 .ToPagedList(pageNumber, pageSize);
-
-
-            var cate = _context.Categories.ToList();
-            var list_brand = _context.Brands.ToList();
-            ViewBag.list_brand = list_brand;
-            ViewBag.list_category = cate;
-            ViewBag.Key = key;
             return View(products);
         }
 
-        [HttpGet("Search/Filter")]
-        public async Task<IActionResult> FilterAsync(string key,string? category , string? order, string? price, string? brand, int pageNumber = 1)
+        [HttpGet("Search/{key?}")]
+        public async Task<IActionResult> SearchAsync(string? key, string? category, string? brand, string? order, string? price, int page = 1)
         {
             int pageSize = 20;
 
-            // Truy vấn cơ bản
-            var keywords = key?.ToLower().Split(" ", StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
-
             IQueryable<Models.Product> query = _context.Products
-                .Include(x => x.Category)
-                .Where(p =>
-                    string.IsNullOrEmpty(key) || keywords.All(word =>
-                        (p.Name != null && p.Name.ToLower().Contains(word)) ||
-                        (p.Description != null && p.Description.ToLower().Contains(word))
-                    )
-                );
+                .AsNoTracking()
+                .Where(x => x.Status != "outstock" && x.SellPrice > 0);
 
-            // Gọi Redis lưu hot search keyword nếu hợp lệ
-            if (!string.IsNullOrWhiteSpace(key) && key.Length >= 3)
+            // 1️⃣ Keyword
+            var keywords = key?.Split(" ", StringSplitOptions.RemoveEmptyEntries)
+                           ?? Array.Empty<string>();
+
+            foreach (var word in keywords)
             {
-                var keyword = key.Trim().ToLower();
-
-                if (Regex.IsMatch(keyword, @"^[a-zA-Z0-9\s]+$"))
-                {
-                    // Lấy category có nhiều sản phẩm khớp keyword nhất
-                    var matchedCategorySlug = _context.Categories
-                        .Select(c => new
-                        {
-                            c.EngTitle,
-                            MatchCount = c.Products.Count(p =>
-                                keywords.All(word =>
-                                    p.Name.ToLower().Contains(word) ||
-                                    (p.Description != null && p.Description.ToLower().Contains(word))
-                                )
-                            )
-                        })
-                        .OrderByDescending(x => x.MatchCount)
-                        .FirstOrDefault(x => x.MatchCount > 0)?.EngTitle ?? "all";
-
-                    await _redis.IncrementHotKeywordAsync(keyword, matchedCategorySlug);
-                }
-            }
-            // Sắp xếp theo `order`
-            if (!string.IsNullOrEmpty(order))
-            {
-                switch (order.ToLower())
-                {
-                    case "alphabet":
-                        query = query.OrderBy(x => x.Name);
-                        break;
-                    case "alphabet_desc":
-                        query = query.OrderByDescending(x => x.Name);
-                        break;
-                    case "price":
-                        query = query.OrderBy(x => x.SellPrice);
-                        break;
-                    case "price_desc":
-                        query = query.OrderByDescending(x => x.SellPrice);
-                        break;
-                    case "care":
-                        query = query.OrderBy(x => x.Reviews);
-                        break;
-                    default:
-                        query = query.OrderByDescending(x => x.ProductId); // Sắp xếp mặc định
-                        break;
-                }
+                query = query.Where(p =>
+                    p.Name.Contains(word) ||
+                    (p.Description != null && p.Description.Contains(word)));
             }
 
-            // Lọc theo `price`
+            // 2️⃣ Category
+            if (!string.IsNullOrEmpty(category) && int.TryParse(category, out int cateId))
+                query = query.Where(x => x.CategoryId == cateId);
+
+            // 3️⃣ Brand
+            if (!string.IsNullOrEmpty(brand) && int.TryParse(brand, out int brandId))
+                query = query.Where(x => x.BrandId == brandId);
+
+            // 4️⃣ Price
             if (!string.IsNullOrEmpty(price))
             {
-                switch (price.ToLower())
+                query = price switch
                 {
-                    case "max5":
-                        query = query.Where(x => x.SellPrice.HasValue && x.SellPrice.Value > 0 && x.SellPrice.Value < 5000000);
-                        break;
-                    case "max10":
-                        query = query.Where(x => x.SellPrice.HasValue && x.SellPrice.Value >= 5000000 && x.SellPrice.Value < 10000000);
-                        break;
-                    case "max20":
-                        query = query.Where(x => x.SellPrice.HasValue && x.SellPrice.Value >= 10000000 && x.SellPrice.Value < 20000000);
-                        break;
-                    case "max50":
-                        query = query.Where(x => x.SellPrice.HasValue && x.SellPrice.Value >= 20000000 && x.SellPrice.Value < 50000000);
-                        break;
-                    case "more":
-                        query = query.Where(x => x.SellPrice.HasValue && x.SellPrice.Value >= 50000000);
-                        break;
-                }
-            }
-            if (!string.IsNullOrEmpty(category) && int.TryParse(category, out int categoryIdValue))
-            {
-                query = query.Where(x => x.CategoryId == categoryIdValue);
-            }
-            // Lọc theo `brandId`
-            if (!string.IsNullOrEmpty(brand) && int.TryParse(brand, out int brandIdValue))
-            {
-                query = query.Where(x => x.BrandId == brandIdValue);
+                    "max5" => query.Where(x => x.SellPrice < 5_000_000),
+                    "max10" => query.Where(x => x.SellPrice >= 5_000_000 && x.SellPrice < 10_000_000),
+                    "max20" => query.Where(x => x.SellPrice >= 10_000_000 && x.SellPrice < 20_000_000),
+                    "max50" => query.Where(x => x.SellPrice >= 20_000_000 && x.SellPrice < 50_000_000),
+                    "more" => query.Where(x => x.SellPrice >= 50_000_000),
+                    _ => query
+                };
             }
 
-            // Phân trang
-            var products = query.ToPagedList(pageNumber, pageSize);
+            // 5️⃣ Sort
+            query = order switch
+            {
+                "alphabet" => query.OrderBy(x => x.Name),
+                "alphabet_desc" => query.OrderByDescending(x => x.Name),
+                "price" => query.OrderBy(x => x.SellPrice),
+                "price_desc" => query.OrderByDescending(x => x.SellPrice),
+                "care" => query.OrderByDescending(x => x.Reviews),
+                _ => query.OrderByDescending(x => x.ProductId)
+            };
+
+            var pagedProducts = query
+                .Select(p => new Models.Product
+                {
+                    ProductId = p.ProductId,
+                    Slug = p.Slug,
+                    Image = p.Image,
+                    Name = p.Name,
+                    SellPrice = p.SellPrice,
+                    OriginalPrice = p.OriginalPrice,
+                    DiscountPercentage = p.DiscountPercentage,
+                    DiscountAmount = p.DiscountAmount,
+                    Category = new Category
+                    {
+                        EngTitle = p.Category.EngTitle
+                    }
+                })
+                .ToPagedList(page, pageSize);
+
+            // 🔥 Hot search
+            if (!string.IsNullOrWhiteSpace(key) &&
+                key.Length >= 3 &&
+                Regex.IsMatch(key, @"^[a-zA-Z0-9\s]+$"))
+            {
+                var matchedCategorySlug =
+                    pagedProducts.FirstOrDefault()?.Category?.EngTitle ?? "all";
+
+                await _redis.IncrementHotKeywordAsync(
+                    key.Trim().ToLower(),
+                    matchedCategorySlug);
+            }
+
             ViewBag.Order = order;
             ViewBag.Price = price;
             ViewBag.Brand = brand;
             ViewBag.Category = category;
             ViewBag.Key = key;
 
-            var cate = _context.Categories.ToList();
-            var list_brand = _context.Brands.ToList();
-            ViewBag.list_brand = list_brand;
-            ViewBag.list_category = cate;
+            ViewBag.list_brand = _context.Brands
+                .AsNoTracking()
+                .Select(b => new { b.BrandId, b.Name })
+                .ToList();
 
-            // Trả về view
-            return View("Search", products);
+            ViewBag.list_category = _context.Categories
+                .AsNoTracking()
+                .Select(c => new { c.CategoryId, c.Name })
+                .ToList();
+
+            return View(pagedProducts);
         }
 
     }

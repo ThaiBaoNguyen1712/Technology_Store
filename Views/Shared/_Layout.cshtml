@@ -82,7 +82,7 @@
                 </div>
 
                 <!-- Search Form -->
-                <form action="~/Search/Filter" method="get" class="search-form mx-auto position-relative" id="searchForm">
+                <form action="~/Search" method="get" class="search-form mx-auto position-relative" id="searchForm">
                     <div class="input-group">
                         <input type="search"
                                class="form-control search-input rounded-start-3 ps-3"
@@ -103,11 +103,7 @@
                     </ul>
                 </form>
              
-                <ul class="navbar-nav ms-auto nav-right">
-            <style>
-                    
-                    </style>
-
+                <ul class="navbar-nav ms-auto nav-right d-flex flex-row align-items-center">
                     <!-- Notification -->
                     <li class="nav-item dropdown position-relative px-md-2">
                         <a class="nav-link text-white d-flex align-items-center" href="#" id="notificationToggle">
@@ -536,7 +532,7 @@
             });
 
             // Bắt sự kiện click trên nút yêu thích
-          $(document).on('mousedown touchstart', '.addToWishList', function (e) {
+          $(document).on('mousedown', '.addToWishList', function (e) {
                 e.stopPropagation(); // Ngăn sự kiện click lan ra ngoài
                 var productId = $(this).data('id');
 

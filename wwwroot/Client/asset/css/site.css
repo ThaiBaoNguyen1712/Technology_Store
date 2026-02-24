@@ -40,6 +40,36 @@ body {
     
   }
 
+@media (max-width: 767px) {
+    #notificationDropdown {
+        /* 1. Ngắt kết nối bám dính vào cạnh trái/phải của nút chuông */
+        position: fixed !important;
+        /* 2. Đẩy ra giữa màn hình theo chiều ngang */
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        /* 4. Chiều rộng linh hoạt */
+        width: 95vw !important; /* Chiếm gần hết chiều ngang mobile */
+        max-width: 450px;
+        /* 5. Giới hạn chiều cao để không tràn khỏi màn hình */
+        max-height: 70vh !important;
+        display: none; /* Hiện bằng JS class .show */
+        /* 6. Thẩm mỹ */
+        z-index: 1050 !important;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        margin: 0 !important;
+    }
+
+        #notificationDropdown.show {
+            display: flex !important;
+            flex-direction: column;
+        }
+
+    /* Đảm bảo danh sách bên trong cuộn được */
+    .notification-body {
+        overflow-y: auto !important;
+    }
+}
   /* Custom styles for categories menu */
 /* Container tổng của menu */
 .categories-menu {
@@ -341,14 +371,14 @@ body {
     display: flex;
     overflow-x: auto;
     scroll-behavior: smooth;
-    scroll-snap-type: x mandatory;
+    scroll-snap-type: x proximity;
     -webkit-overflow-scrolling: touch; /* Enables smooth scrolling on iOS */
     scrollbar-width: none;
     -ms-overflow-style: none;
     width: 100%;
     position: relative;
     padding: 1rem 0;
-    touch-action: pan-x;
+    touch-action: auto;
 }
 
     .scrolling-wrapper::-webkit-scrollbar {
@@ -364,7 +394,7 @@ body {
     }
 .addToWishList {
     position: relative !important;
-    z-index: 100 !important;
+    z-index: 10 !important;
     /* Ép nút phải nhận chuột */
     pointer-events: auto !important;
 }
@@ -917,3 +947,5 @@ media (max-width: 991px) {
     width: 320px; /* Giữ kích thước cố định */
     margin-left: 0; /* Xóa margin-left cũ */
 }
+
+
