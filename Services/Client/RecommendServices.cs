@@ -17,11 +17,11 @@ namespace Tech_Store.Services.Client.RecommendServices
         public RecommendServices(HttpClient http, ProductServices productServices, ApplicationDbContext context)
         {
             _http = http;
-        //http://ml-api:8000/
-             //http://127.0.0.1:8000/
-             //_http.BaseAddress = new Uri("");
-            _http.BaseAddress = new Uri("http://127.0.0.1:8000/"); 
-            _http.Timeout = TimeSpan.FromSeconds(5);
+            //http://ml-api:8000/
+            //http://127.0.0.1:8000/
+            //_http.BaseAddress = new Uri("");
+            _http.BaseAddress = new Uri("https://techstore-ai-service.azurewebsites.net/");
+            _http.Timeout = TimeSpan.FromSeconds(15);
             _productServices = productServices;
             _context = context;
         }

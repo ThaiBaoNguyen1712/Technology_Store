@@ -58,8 +58,10 @@
     }
 
     .thumbnail.active {
-        border-color: var(--primary-color);
-        transform: scale(1.1);
+        border: 2px solid #d70018 !important; /* Dùng !important để chắc chắn ăn màu */
+        transform: scale(1.05) !important; /* Scale nhẹ lại cho tinh tế trên mobile */
+        box-shadow: 0 0 8px rgba(215, 0, 24, 0.3); /* Thêm đổ bóng nhẹ cho nổi bật */
+        transition: all 0.2s ease-in-out;
     }
 /* Thẻ biến thể */
 .varient-card {

@@ -208,21 +208,24 @@
                 price = ViewBag.Price,
                 page
             }
-        ), new PagedListRenderOptions
-            {
-                UlElementClasses = new[] { "pagination" }, // Sử dụng lớp `pagination` của Bootstrap
-                LiElementClasses = new[] { "page-item" },  // Sử dụng lớp `page-item` của Bootstrap
-                PageClasses = new[] { "page-link" },       // Sử dụng lớp `page-link` của Bootstrap
-                ActiveLiElementClass = "active",          // Đánh dấu trang hiện tại bằng `active`
-                LinkToPreviousPageFormat = "&laquo;",     // Sử dụng ký tự Bootstrap mặc định cho trang trước
-                LinkToNextPageFormat = "&raquo;",         // Sử dụng ký tự Bootstrap mặc định cho trang sau
-                DisplayLinkToFirstPage = PagedListDisplayMode.Always, // Hiển thị nút về trang đầu
-                DisplayLinkToLastPage = PagedListDisplayMode.Always,  // Hiển thị nút về trang cuối
-                DisplayEllipsesWhenNotShowingAllPageNumbers = true    // Hiển thị dấu "..." nếu không hiển thị hết số trang
-                })
-    </div>
+            ), new PagedListRenderOptions
+                {
+                    UlElementClasses = new[] { "pagination" }, // Sử dụng lớp `pagination` của Bootstrap
+                    LiElementClasses = new[] { "page-item" },  // Sử dụng lớp `page-item` của Bootstrap
+                    PageClasses = new[] { "page-link" },       // Sử dụng lớp `page-link` của Bootstrap
+                    ActiveLiElementClass = "active",          // Đánh dấu trang hiện tại bằng `active`
+                      // Thay icon để nhìn sang hơn
+                    LinkToPreviousPageFormat = "‹",
+                    LinkToNextPageFormat = "›",
+                    LinkToFirstPageFormat = "«",
+                    LinkToLastPageFormat = "»",
 
-        }
+                    MaximumPageNumbersToDisplay = 4,            // Hiển thị tối đa 4 số trang
+                    DisplayEllipsesWhenNotShowingAllPageNumbers = true    // Hiển thị dấu "..." nếu không hiển thị hết số trang
+                    })
+        </div>
+
+            }
 
 </div>
 

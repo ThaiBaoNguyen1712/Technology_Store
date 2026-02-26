@@ -1,0 +1,87 @@
+﻿
+
+/* TỐI ƯU CHO THIẾT BỊ DI ĐỘNG (< 768px) */
+@media (max-width: 767.98px) {
+
+    /* 1. Loại bỏ khoảng trắng thừa của Container */
+    .container, .container-fluid {
+        padding-left: 5px !important;
+        padding-right: 5px !important;
+    }
+
+    html, body {
+        overflow-x: hidden !important;
+    }
+
+    /* 3. Biến các nút bấm thành Full-width (dễ chạm ngón cái) */
+    .btn-mobile-full {
+        width: 100% !important;
+        margin-bottom: 10px;
+        padding: 12px !important; /* Tăng vùng chạm */
+    }
+
+    /* 5. Khoảng cách (Ghi đè các class m-5, p-5 vốn quá lớn trên mobile) */
+    .py-5 {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+    }
+
+    .my-5 {
+        margin-top: 2rem !important;
+        margin-bottom: 2rem !important;
+    }
+
+    /* 6. Xử lý bảng (Table) - Ép cuộn ngang để không vỡ khung */
+    .table-responsive-fix {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .reviews-section {
+        padding: 0 !important;
+    }
+
+    .comments-product-container {
+        padding: 0 !important;
+    }
+
+
+/*    footer*/
+    /* 1. Giấu bớt các mục không quá quan trọng trên mobile */
+    footer .col-6:nth-child(2), /* Giấu Danh mục */
+    footer .col-6:nth-child(3) { /* Giấu Mạng xã hội */
+        display: none !important;
+    }
+
+    /* 2. Thu nhỏ font chữ và khoảng cách tối đa */
+    footer {
+        padding-top: 0px !important;
+        padding-bottom: 0px !important;
+        font-size: 0.85rem;
+    }
+
+        footer h6 {
+            font-size: 0.9rem !important;
+            margin-bottom: 10px !important;
+        }
+
+        /* 3. Biến Contact thành hàng ngang gọn hơn */
+        footer .col-12.col-md-4 {
+            text-align: center !important;
+        }
+        footer image {
+            width: 20px !important;
+            height: 20px !important;
+            margin-right: 5px !important;
+        }
+
+/*        pagination*/
+        .pagination {
+            max-width: 100% !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+        }
+}
+
