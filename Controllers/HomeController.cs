@@ -292,6 +292,46 @@ namespace Tech_Store.Controllers
             return View(products);
         }
 
+        [HttpGet("Category")]
+        public IActionResult Categories()
+        {
+            var categories = _context.Categories
+                .AsNoTracking()
+                .Where(x => x.Visible == 1)
+                .OrderBy(x => x.Name)
+                .Select(x => new Category
+                {
+                    CategoryId = x.CategoryId,
+                    Name = x.Name,
+                    EngTitle = x.EngTitle,
+                    Image = x.Image,
+                    Description = x.Description,
+                    Visible = x.Visible
+                })
+                .ToList();
+
+            var categoryProductCounts = _context.Products
+                .AsNoTracking()
+                .Where(x => x.CategoryId != null && x.Status != "outstock" && x.SellPrice > 0)
+                .GroupBy(x => x.CategoryId!.Value)
+                .Select(x => new { CategoryId = x.Key, Count = x.Count() })
+                .ToDictionary(x => x.CategoryId, x => x.Count);
+
+            var featuredProducts = _context.Products
+                .AsNoTracking()
+                .Where(x => x.Visible == true && x.Stock >= 1 && x.Status != "outstock" && x.SellPrice > 0)
+                .OrderByDescending(x => x.OrderItems.Count)
+                .ThenByDescending(x => x.ProductId)
+                .Take(8)
+                .ToList();
+
+            ViewBag.CategoryCards = categories;
+            ViewBag.CategoryProductCounts = categoryProductCounts;
+            ViewBag.FeaturedProducts = featuredProducts;
+
+            return View();
+        }
+
         [HttpGet("Brand/{brand_name}")]
         public async Task<IActionResult> Brand(string brand_name,string? key, string? order,string? price,int page = 1)
         {

@@ -281,11 +281,16 @@
                     <!-- Hot search + Xem tất cả -->
                     <div class="d-flex flex-wrap align-items-center gap-2">
                         @{
-                            var hotSearchDict = ViewBag.List_TopHotSearch as Dictionary<string, List<string>>;
-                            var slug = item.Category.EngTitle;
-                            var keywords = (hotSearchDict != null && hotSearchDict.ContainsKey(slug))
-                            ? hotSearchDict[slug]
-                            : null;
+                            var keywords = new List<string>();
+                            if(ViewBag.List_TopHotSearch != null)
+                            {
+                                var hotSearchDict = ViewBag.List_TopHotSearch as Dictionary<string, List<string>>;
+                                var slug = item.Category.EngTitle;
+                                keywords = (hotSearchDict != null && hotSearchDict.ContainsKey(slug))
+                                ? hotSearchDict[slug]
+                                : null;
+                                
+                            }
                         }
 
                         @if (keywords != null)

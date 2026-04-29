@@ -47,7 +47,7 @@
 
     </div>
    
-    <nav class="navbar navbar-expand-lg navbar-dark custom-navbar">
+    <nav class="navbar navbar-expand-lg navbar-dark custom-navbar sticky-top">
        
         <div class="container">
             <!-- Logo/Brand -->
@@ -91,7 +91,7 @@
                                aria-label="Search"
                                id="searchInput"
                                autocomplete="off"
-                               name="key">
+                               name="key" required>
                         <button class="btn border bg-white search-btn rounded-end-3" type="submit">
                             <i class="fa fa-search text-danger"></i>
                         </button>
@@ -133,80 +133,6 @@
                                         {
                                             <a href="@noti.RedirectUrl" class="notification-item @(noti.IsRead == false ? "bg-light mark-as-read" : "bg-white") " data-id="@noti.UserNotificationId">
                                                 <div class="notification-content">
-                                                    <div class="notification-avatar">
-                                                        @if (noti.Type == "new register")
-                                                        {
-                                                            <div class="notif-icon text-primary">
-                                                                <i class="fa fa-user-plus"></i>
-                                                            </div>
-                                                        }
-                                                        else if (noti.Type == "order completed")
-                                                        {
-                                                            <div class="notification-avatar text-success">
-                                                                <i class="fa fa-check-circle"></i>
-                                                            </div>
-                                                        }
-                                                        else if (noti.Type == "low stock" || noti.Type == "warning")
-                                                        {
-                                                            <div class="notif-icon text-warning">
-                                                                <i class="fa fa-exclamation-triangle"></i>
-                                                            </div>
-                                                        }
-                                                        else if (noti.Type == "error" || noti.Type == "danger")
-                                                        {
-                                                            <div class="notif-icon text-danger">
-                                                                <i class="fa fa-times-circle"></i>
-                                                            </div>
-                                                        }
-                                                        else if (noti.Type == "new comment")
-                                                        {
-                                                            <div class="notif-icon text-success">
-                                                                <i class="fa fa-comment"></i>
-                                                            </div>
-                                                        }
-                                                        else if (noti.Type == "new order")
-                                                        {
-                                                            <div class="notif-icon text-primary">
-                                                                <i class="fa fa-shopping-cart"></i>
-                                                            </div>
-                                                        }
-                                                        else if (noti.Type == "payment received" || noti.Type == "success")
-                                                        {
-                                                            <div class="notif-icon text-success">
-                                                                <i class="fa fa-credit-card"></i>
-                                                            </div>
-                                                        }
-                                                        else if (noti.Type == "product added" || noti.Type == "info")
-                                                        {
-                                                            <div class="notif-icon text-info">
-                                                                <i class="fa fa-plus"></i>
-                                                            </div>
-                                                        }
-                                                        else if (noti.Type == "shipment sent")
-                                                        {
-                                                            <div class="notif-icon text-warning">
-                                                                <i class="fa fa-truck"></i>
-                                                            </div>
-                                                        }
-                                                        else if (noti.Type == "account updated")
-                                                        {
-                                                            <div class="notif-icon text-secondary">
-                                                                <i class="fa fa-user-edit"></i>
-                                                            </div>
-                                                        }
-                                                        else if (noti.Type == "system update")
-                                                        {
-                                                            <div class="notif-icon text-secondary">
-                                                                <i class="fa fa-wrench"></i>
-                                                            </div>
-                                                        }
-                                                        else
-                                                        {
-                                                            <div class="notif-icon text-secondary">
-                                                                <i class="fa fa-info-circle"></i>
-                                                            </div>
-                                                        }
-                                                    </div>
                                                     <div class="notification-info">
                                                         <p class="notification-text">@noti.Title</p>
                                                         <span class="block">
@@ -281,14 +207,10 @@
                     }
                     else
                     {
-                        <li class="nav-item dropdown ">
-                            <button class="btn account-btn dropdown-toggle text-white" type="button" id="accountDropdown" data-bs-toggle="dropdown">
-                                <i class="far fa-user-circle me-2"></i>Tài Khoản
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-light animate slideIn" aria-labelledby="accountDropdown">
-                                <li><a class="dropdown-item" href="~/Auth/Login"><i class="fas fa-sign-in-alt me-2 text-danger"></i>Đăng Nhập</a></li>
-                                <li><a class="dropdown-item" href="~/Auth/Register"><i class="fas fa-user-plus me-2 text-danger"></i>Đăng Ký</a></li>
-                            </ul>
+                        <li class="nav-item">
+                            <a href="~/Auth/Login" class="btn account-btn text-white" type="button">
+                                <i class="far fa-user-circle me-2"></i> Đăng nhập
+                            </a>
                         </li>
                     }
                 </ul>
@@ -324,7 +246,7 @@
     </div>
 
     <!-- Footer -->
-    <footer class="text-center text-lg-start text-white footer mt-auto">
+    <footer class="text-center text-lg-start tex t-white footer mt-auto">
         <section class="">
             <div class="container text-center text-md-start py-3">
                 <div class="row g-3">

@@ -46,9 +46,12 @@
     .comments-product-container {
         padding: 0 !important;
     }
-
-
-/*    footer*/
+    .rating-summary {
+        gap: 0.5rem !important;
+        padding: 1rem !important;
+        margin-bottom: 1rem !important;
+    }
+    /*    footer*/
     /* 1. Giấu bớt các mục không quá quan trọng trên mobile */
     footer .col-6:nth-child(2), /* Giấu Danh mục */
     footer .col-6:nth-child(3) { /* Giấu Mạng xã hội */
@@ -83,5 +86,7 @@
             margin-left: 0 !important;
             margin-right: 0 !important;
         }
+
+
 }
 

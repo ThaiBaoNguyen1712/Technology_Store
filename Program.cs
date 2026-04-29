@@ -59,6 +59,7 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 builder.Services.AddScoped<IBrandService, BrandService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IVoucherService, VoucherService>();
+builder.Services.AddScoped<IAdminProductService, AdminProductService>();
 
 // VNPay and Momo Payment Services
 builder.Services.AddSingleton<IVnPayService, VnPayService>();

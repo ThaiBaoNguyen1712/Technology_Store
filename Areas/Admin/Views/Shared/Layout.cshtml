@@ -300,7 +300,64 @@
                                 </ul>
                             </div>
                         </li>
+                        <!-- SECTION: Cài đặt campain -->
+                        <li class="nav-section">
+                            <span class="sidebar-mini-icon">
+                                <i class="fa fa-ellipsis-h"></i>
+                            </span>
+                            <h4 class="text-section">Cài đặt Campain</h4>
+                        </li>
 
+                        <!-- Banner -->
+                        <li class="nav-item">
+                            <a data-bs-toggle="collapse" href="#banner" class="nav-link">
+                                <i class="fas fa-images me-2"></i>
+                                <p>Banner</p>
+                                <span class="caret"></span>
+                            </a>
+                            <div class="collapse" id="banner">
+                                <ul class="nav nav-collapse">
+                                    <li>
+                                        <a href="/Admin/Banner/Index" class="nav-link">
+                                            <span class="sub-item">Danh sách banner</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="/Admin/Banner/Create" class="nav-link">
+                                            <span class="sub-item">Thêm banner</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+
+                        <!-- Chiến dịch -->
+                        <li class="nav-item">
+                            <a data-bs-toggle="collapse" href="#campaign" class="nav-link">
+                                <i class="fas fa-bullhorn me-2"></i>
+                                <p>Chiến dịch</p>
+                                <span class="caret"></span>
+                            </a>
+                            <div class="collapse" id="campaign">
+                                <ul class="nav nav-collapse">
+                                    <li>
+                                        <a href="/Admin/Campaign/Index" class="nav-link">
+                                            <span class="sub-item">Quản lý chiến dịch</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="/Admin/Campaign/Create" class="nav-link">
+                                            <span class="sub-item">Tạo chiến dịch</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="/Admin/Campaign/Report" class="nav-link">
+                                            <span class="sub-item">Thống kê</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
                         <!-- SECTION: Cài đặt hệ thống -->
                         <li class="nav-section">
                             <span class="sidebar-mini-icon">
@@ -844,18 +901,37 @@
                 $('.loading-container').hide();
             });
 
-
-
-            var table = $('#add-row').DataTable({
-                "order": [], // Tắt sắp xếp tự động
-                "stateSave": true,
-                "deferRender": true,
-                "drawCallback": function (settings) {
-                    // Khôi phục lại các elements sau khi bảng được vẽ lại
-                    $('[data-bs-toggle="tooltip"]').tooltip();
-                    initializeStatusSelects(); // Hàm mới để khởi tạo các select
+            window.initDataTableSafe = function (selector, options) {
+                if (!$.fn.DataTable) {
+                    return null;
                 }
-            });
+
+                var $table = $(selector);
+                if (!$table.length) {
+                    return null;
+                }
+
+                if ($.fn.DataTable.isDataTable($table)) {
+                    return $table.DataTable();
+                }
+
+                return $table.DataTable($.extend(true, {
+                    retrieve: true
+                }, options || {}));
+            };
+
+            var $defaultTable = $('#add-row');
+            if ($defaultTable.length && !$defaultTable.is('[data-skip-auto-datatable]')) {
+                window.initDataTableSafe('#add-row', {
+                    "order": [],
+                    "stateSave": true,
+                    "deferRender": true,
+                    "drawCallback": function (settings) {
+                        $('[data-bs-toggle="tooltip"]').tooltip();
+                        initializeStatusSelects();
+                    }
+                });
+            }
 
             // Hàm khởi tạo các select box
             function initializeStatusSelects() {
@@ -873,7 +949,7 @@
         });
 
 
-          $("#add-row-child").DataTable();
+          window.initDataTableSafe('#add-row-child');
 
         $(function () {
             $('[data-toggle="tooltip"]').tooltip()
