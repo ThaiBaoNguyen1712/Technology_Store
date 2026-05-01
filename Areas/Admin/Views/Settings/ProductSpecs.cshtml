@@ -1,0 +1,336 @@
+@model IEnumerable<Tech_Store.Models.Specs>
+@{
+    ViewData["Title"] = "Thông số sản phẩm";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+    var keyword = ViewBag.Keyword as string;
+    var currentPage = (int)(ViewBag.Page ?? 1);
+    var pageSize = (int)(ViewBag.PageSize ?? 20);
+    var totalPages = (int)(ViewBag.TotalPages ?? 1);
+    var totalItems = (int)(ViewBag.TotalItems ?? 0);
+}
+
+<div class="container-fluid">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 my-4">
+        <div>
+            <h2 class="mb-1">Thông số sản phẩm</h2>
+            <p class="text-muted mb-0">Quản trị bộ thông số chuẩn dùng cho form thêm, sửa sản phẩm và trang chi tiết sản phẩm.</p>
+        </div>
+        <button type="button" class="btn btn-primary" id="openSpecCreate">
+            <i class="fas fa-plus me-2"></i>Thêm thông số
+        </button>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-10">
+                    <label class="form-label">Tìm kiếm</label>
+                    <input type="text" class="form-control" name="keyword" value="@keyword" placeholder="Tìm theo tên, mã hoặc nhóm thông số" />
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-fill">Lọc</button>
+                    <a href="/Admin/Settings/ProductSpecs" class="btn btn-light border flex-fill">Đặt lại</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <div class="text-muted">
+                    Tổng cộng <strong>@totalItems</strong> thông số
+                </div>
+                <div class="text-muted">
+                    Trang <strong>@currentPage</strong> / <strong>@totalPages</strong>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Thông số</th>
+                            <th>Nhóm</th>
+                            <th>Mã</th>
+                            <th>Đơn vị</th>
+                            <th>Kiểu nhập</th>
+                            <th>Hiển thị</th>
+                            <th>Thứ tự</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="specTableBody">
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="9" class="text-center text-muted py-4">Không tìm thấy thông số phù hợp.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var spec in Model)
+                            {
+                                <tr data-spec-id="@spec.SpecId"
+                                    data-name="@spec.Name"
+                                    data-code="@spec.Code"
+                                    data-group="@spec.GroupName"
+                                    data-unit="@spec.Unit"
+                                    data-description="@spec.Description"
+                                    data-input-type="@spec.InputType"
+                                    data-sort-order="@spec.SortOrder"
+                                    data-is-active="@spec.IsActive.ToString().ToLower()"
+                                    data-is-filterable="@spec.IsFilterable.ToString().ToLower()"
+                                    data-is-visible="@spec.IsVisibleOnProductPage.ToString().ToLower()">
+                                    <td>
+                                        <div class="fw-semibold">@spec.Name</div>
+                                        <div class="small text-muted">@spec.Description</div>
+                                    </td>
+                                    <td>@(string.IsNullOrWhiteSpace(spec.GroupName) ? "Thông số chung" : spec.GroupName)</td>
+                                    <td><code>@spec.Code</code></td>
+                                    <td>@(string.IsNullOrWhiteSpace(spec.Unit) ? "-" : spec.Unit)</td>
+                                    <td>@spec.InputType</td>
+                                    <td>
+                                        <span class="badge bg-@(spec.IsVisibleOnProductPage ? "success" : "secondary")">
+                                            @(spec.IsVisibleOnProductPage ? "Hiện ở trang SP" : "Ẩn ở trang SP")
+                                        </span>
+                                    </td>
+                                    <td>@spec.SortOrder</td>
+                                    <td>
+                                        <span class="badge bg-@(spec.IsActive ? "primary" : "secondary")">
+                                            @(spec.IsActive ? "Đang dùng" : "Ngừng dùng")
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <button type="button" class="btn btn-sm btn-outline-primary spec-edit">Sửa</button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger spec-delete">Xóa</button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (totalPages > 1)
+            {
+                @await Html.PartialAsync("_ManualPagination", new Tech_Store.Models.ViewModel.ManualPaginationViewModel
+                {
+                    CurrentPage = currentPage,
+                    TotalPages = totalPages,
+                    BaseUrl = Url.Action("ProductSpecs", "Settings", new { area = "Admin" }) ?? "/Admin/Settings/ProductSpecs",
+                    QueryString = string.IsNullOrWhiteSpace(keyword)
+                        ? $"pageSize={pageSize}"
+                        : $"keyword={Uri.EscapeDataString(keyword)}&pageSize={pageSize}"
+                })
+            }
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="specModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="specModalTitle">Thêm thông số</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="specForm">
+                    <input type="hidden" id="specId" name="SpecId" />
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Tên thông số</label>
+                            <input class="form-control" id="specName" name="Name" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Mã thông số</label>
+                            <input class="form-control" id="specCode" name="Code" readonly required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Nhóm hiển thị</label>
+                            <input class="form-control" id="specGroupName" name="GroupName" placeholder="Ví dụ: Màn hình, Camera, Bộ nhớ" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Đơn vị</label>
+                            <input class="form-control" id="specUnit" name="Unit" placeholder="GB, inch, mAh..." />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Thứ tự</label>
+                            <input type="number" min="0" class="form-control" id="specSortOrder" name="SortOrder" value="0" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Kiểu nhập</label>
+                            <select class="form-select" id="specInputType" name="InputType">
+                                <option value="text">Text</option>
+                                <option value="number">Number</option>
+                                <option value="textarea">Textarea</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Mô tả</label>
+                            <input class="form-control" id="specDescription" name="Description" />
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" id="specIsActive" name="IsActive" checked />
+                                <label class="form-check-label" for="specIsActive">Kích hoạt</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" id="specIsFilterable" name="IsFilterable" />
+                                <label class="form-check-label" for="specIsFilterable">Dùng cho lọc</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" id="specIsVisibleOnProductPage" name="IsVisibleOnProductPage" checked />
+                                <label class="form-check-label" for="specIsVisibleOnProductPage">Hiển thị ở trang sản phẩm</label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" id="saveSpecButton">Lưu thông số</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const specModalElement = document.getElementById('specModal');
+        const specModal = new bootstrap.Modal(specModalElement);
+        const form = document.getElementById('specForm');
+        const modalTitle = document.getElementById('specModalTitle');
+        const tableBody = document.getElementById('specTableBody');
+        const openCreateButton = document.getElementById('openSpecCreate');
+
+        async function fillNextMetadata() {
+            const response = await fetch('/Admin/Settings/GetNextProductSpecMetadata');
+            const payload = await response.json();
+            if (!payload.success) {
+                return;
+            }
+
+            document.getElementById('specCode').value = payload.code;
+            document.getElementById('specSortOrder').value = payload.sortOrder;
+        }
+
+        function resetForm() {
+            form.reset();
+            document.getElementById('specId').value = '';
+            document.getElementById('specCode').value = '';
+            document.getElementById('specSortOrder').value = '0';
+            document.getElementById('specIsActive').checked = true;
+            document.getElementById('specIsVisibleOnProductPage').checked = true;
+            document.getElementById('specIsFilterable').checked = false;
+        }
+
+        function fillFormFromRow(row) {
+            document.getElementById('specId').value = row.dataset.specId || '';
+            document.getElementById('specName').value = row.dataset.name || '';
+            document.getElementById('specCode').value = row.dataset.code || '';
+            document.getElementById('specGroupName').value = row.dataset.group || '';
+            document.getElementById('specUnit').value = row.dataset.unit || '';
+            document.getElementById('specDescription').value = row.dataset.description || '';
+            document.getElementById('specInputType').value = row.dataset.inputType || 'text';
+            document.getElementById('specSortOrder').value = row.dataset.sortOrder || '0';
+            document.getElementById('specIsActive').checked = row.dataset.isActive === 'true';
+            document.getElementById('specIsFilterable').checked = row.dataset.isFilterable === 'true';
+            document.getElementById('specIsVisibleOnProductPage').checked = row.dataset.isVisible === 'true';
+        }
+
+        openCreateButton.addEventListener('click', async function () {
+            resetForm();
+            await fillNextMetadata();
+            modalTitle.textContent = 'Thêm thông số';
+            specModal.show();
+        });
+
+        tableBody.addEventListener('click', async function (event) {
+            const editButton = event.target.closest('.spec-edit');
+            const deleteButton = event.target.closest('.spec-delete');
+
+            if (editButton) {
+                resetForm();
+                fillFormFromRow(editButton.closest('tr'));
+                modalTitle.textContent = 'Cập nhật thông số';
+                specModal.show();
+                return;
+            }
+
+            if (!deleteButton) {
+                return;
+            }
+
+            const row = deleteButton.closest('tr');
+            const specId = row.dataset.specId;
+
+            const result = await Swal.fire({
+                title: 'Xóa thông số?',
+                text: 'Nếu thông số đang được dùng, hệ thống sẽ chuyển sang ngừng hoạt động thay vì xóa cứng.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Xóa',
+                cancelButtonText: 'Hủy'
+            });
+
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('specId', specId);
+
+            const response = await fetch('/Admin/Settings/DeleteProductSpec', {
+                method: 'POST',
+                body: formData
+            });
+            const payload = await response.json();
+
+            await Swal.fire({
+                icon: payload.success ? 'success' : 'error',
+                title: payload.success ? 'Thành công' : 'Lỗi',
+                text: payload.message
+            });
+
+            if (payload.success) {
+                window.location.reload();
+            }
+        });
+
+        document.getElementById('saveSpecButton').addEventListener('click', async function () {
+            if (!form.reportValidity()) {
+                return;
+            }
+
+            const formData = new FormData(form);
+            formData.set('IsActive', document.getElementById('specIsActive').checked ? 'true' : 'false');
+            formData.set('IsFilterable', document.getElementById('specIsFilterable').checked ? 'true' : 'false');
+            formData.set('IsVisibleOnProductPage', document.getElementById('specIsVisibleOnProductPage').checked ? 'true' : 'false');
+
+            const response = await fetch('/Admin/Settings/UpsertProductSpec', {
+                method: 'POST',
+                body: formData
+            });
+            const payload = await response.json();
+
+            await Swal.fire({
+                icon: payload.success ? 'success' : 'error',
+                title: payload.success ? 'Thành công' : 'Lỗi',
+                text: payload.message
+            });
+
+            if (payload.success) {
+                window.location.reload();
+            }
+        });
+    });
+</script>
+}

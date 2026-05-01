@@ -300,11 +300,13 @@
     </section>
     <div class="container-md">
         <div class="reviews-section">
-            <h3 class="text-center">Đánh giá sản phẩm</h3>
+            <div class="reviews-section__header">
+                <h3>Đánh giá sản phẩm</h3>
+            </div>
             <div class="rating-summary">
                 <div class="average-rating">
                     <span class="rating-number">@ViewBag.averageRating.ToString("F1")</span>
-                    <div class="stars ">
+                    <div class="stars rating-stars">
                         @for (int i = 1; i <= 5; i++)
                         {
                             if (i <= Math.Floor((decimal)ViewBag.averageRating))
@@ -345,16 +347,17 @@
                 @foreach (var review in ViewBag.reviews)
                 {
                     <div class="review-item">
-                        <div class="d-flex align-items-start">
+                        <div class="review-item__inner">
                             <img src="/Upload/Avatar/@(review.User.Img ?? "none.png")" class="user-avatar" alt="User Avatar">
 
                             <div class="review-content">
                                 <div class="review-header">
-                                    <h5> @review.User.LastName @review.User.FirstName</h5>
+                                    <h5>@review.User.LastName @review.User.FirstName</h5>
                                     <div class="review-rating">
-                                       (@review.Rating <i class="fas fa-star stars"></i>)
+                                        <span class="review-rating__value">@review.Rating</span>
+                                        <i class="fas fa-star stars"></i>
                                     </div>
-                                    <small class="text-muted">
+                                    <small class="review-date">
                                         @((review.ReviewDate as DateTime?)?.TimeAgo() ?? "Không xác định")
                                     </small>
                                 </div>
@@ -378,7 +381,7 @@
     <div class="comments-product-container">
         <div class="comments-product-section">
             <div class="comments-product-title">
-                <h3 class="text-center">Bình luận</h3>
+                <h3>Bình luận</h3>
             </div>
 
             <div class="comments-product-new-comment">
@@ -397,14 +400,14 @@
                 <input type="text"
                        class="comments-product-comment-input"
                        id="CmContent"
-                       placeholder="Viết bình luận của bạn..."
-                       rows="1" />
+                               placeholder="Viết bình luận của bạn..."
+                               rows="1" />
                 <button id="CreateCm"
                         data-userId="@(ViewBag.User != null ? ViewBag.User.UserId : "")"
                         data-product-id="@Model.ProductId"
                         class="comments-product-send-btn">
                     <i class="fas fa-paper-plane"></i>
-                    <span>Gửi</span>
+                    <span class="comments-product-send-btn__label">Gửi</span>
                 </button>
             </div>
 
@@ -420,7 +423,7 @@
 
                             <div class="comments-product-item-content">
                                 <div class="comments-product-item-header">
-                                    <div>
+                                    <div class="comments-product-item-meta">
                                         <h5 class="comments-product-item-username">@parentComment.UserName</h5>
                                         <small class="comments-product-item-date">
                                             @((parentComment.CreatedAt as DateTime?)?.TimeAgo() ?? "Không xác định")
@@ -458,9 +461,9 @@
                                 </p>
 
                                 <div class="comments-product-reply-container">
-                                    <span class="comments-product-reply-link">
+                                    <button type="button" class="comments-product-reply-link">
                                         <i class="fas fa-reply"></i> Trả lời
-                                    </span>
+                                    </button>
                                     <div class="comments-product-reply-form">
                                         <input type="text"
                                                class="comments-product-reply-input reply-text"
@@ -471,6 +474,7 @@
                                                 data-product-id="@Model.ProductId"
                                                 data-comment-id="@parentComment.CommentId">
                                             <i class="fas fa-paper-plane"></i>
+                                            <span>Gửi</span>
                                         </button>
                                     </div>
                                 </div>
@@ -486,13 +490,12 @@
                                                      alt="User Avatar">
                                                 <div class="comments-product-item-content">
                                                     <div class="comments-product-item-header">
-                                                        <div>
+                                                        <div class="comments-product-item-meta">
                                                             <h6 class="comments-product-item-username">@reply.UserName</h6>
-                                                            <span class="text-muted" style="font-size: 0.75rem;">
+                                                            <span class="comments-product-item-replying-to">
                                                                 đã trả lời bình luận của
-                                                                <span class="text-primary">@parentComment.UserName</span>
+                                                                <span>@parentComment.UserName</span>
                                                             </span>
-                                                            <br />
                                                             <small class="comments-product-item-date">
                                                                 @((reply.CreatedAt as DateTime?)?.TimeAgo() ?? "Không xác định")
                                                             </small>

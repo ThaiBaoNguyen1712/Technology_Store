@@ -5,6 +5,9 @@
     <title>@ViewData["Title"]</title>
     <meta content="width=device-width, initial-scale=1.0, shrink-to-fit=no"
           name="viewport" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="icon"
           href="@ViewBag.LogoUrl"
           type="image/x-icon"  asp-append-version="true"/>
@@ -17,7 +20,6 @@
         var fontsUrl = '@Url.Content("~/Admin/assets/css/fonts.min.css")'; // Tạo đường dẫn chính xác cho CSS
 
         WebFont.load({
-            google: { families: ["Public Sans:300,400,500,600,700"] },
             custom: {
                 families: [
                     "Font Awesome 5 Solid",
@@ -379,6 +381,26 @@
                                         <a href="/Admin/Settings/Index" class="nav-link">
                                             <span class="sub-item">Cài đặt chung</span>
                                         </a>
+                                    </li>
+                                    <li>
+                                        <a data-bs-toggle="collapse" href="#productMetadata" class="nav-link">
+                                            <span class="sub-item">Thông tin sản phẩm</span>
+                                            <span class="caret"></span>
+                                        </a>
+                                        <div class="collapse" id="productMetadata">
+                                            <ul class="nav nav-collapse subnav">
+                                                <li>
+                                                    <a href="/Admin/Settings/ProductSpecs" class="nav-link">
+                                                        <span class="sub-item">Thông số sản phẩm</span>
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a href="/Admin/Settings/ProductAttributes" class="nav-link">
+                                                        <span class="sub-item">Thuộc tính biến thể</span>
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
                                     </li>
                                 </ul>
                             </div>
@@ -955,6 +977,8 @@
             $('[data-toggle="tooltip"]').tooltip()
         })
     </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
 
     @* Đánh dấu là đã đọc thông báo *@
     <script>

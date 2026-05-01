@@ -104,6 +104,7 @@ namespace Tech_Store.Areas.Admin.Controllers
             ViewBag.Categories = lookup.Categories;
             ViewBag.Brands = lookup.Brands;
             ViewBag.Attributes = lookup.Attributes;
+            ViewBag.Specs = lookup.Specs;
             return View();
         }
 
@@ -140,6 +141,8 @@ namespace Tech_Store.Areas.Admin.Controllers
             ViewBag.Categories = data.Categories;
             ViewBag.Brands = data.Brands;
             ViewBag.Attributes = data.Attributes;
+            ViewBag.Specs = data.Specs;
+            ViewBag.ProductSpecValues = data.ProductSpecValues;
             return View(data.Product);
         }
 

@@ -531,9 +531,30 @@ public partial class ApplicationDbContext : DbContext
             entity.ToTable("Specs");
 
             entity.Property(e => e.SpecId).HasColumnName("spec_id");
-            entity.Property(e => e.Name).HasColumnName("name");
+            entity.Property(e => e.Name)
+                .HasMaxLength(150)
+                .HasColumnName("name");
+            entity.Property(e => e.Code)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("code");
+            entity.Property(e => e.GroupName)
+                .HasMaxLength(150)
+                .HasColumnName("group_name");
+            entity.Property(e => e.Unit)
+                .HasMaxLength(50)
+                .HasColumnName("unit");
             entity.Property(e => e.Description).HasColumnName("description");
-            entity.Property(e=>e.IsActive).HasColumnName("is_active");
+            entity.Property(e => e.InputType)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("input_type");
+            entity.Property(e => e.SortOrder).HasColumnName("sort_order");
+            entity.Property(e => e.IsActive).HasColumnName("is_active");
+            entity.Property(e => e.IsFilterable).HasColumnName("is_filterable");
+            entity.Property(e => e.IsVisibleOnProductPage).HasColumnName("is_visible_on_product_page");
+
+            entity.HasIndex(e => e.Code).IsUnique();
         });
 
         modelBuilder.Entity<SpecValue>(entity =>
@@ -542,7 +563,13 @@ public partial class ApplicationDbContext : DbContext
             entity.ToTable("SpecValue");
 
             entity.Property(e => e.SpecValueId).HasColumnName("specValue_id");
-            entity.Property(e=> e.Value).HasColumnName("value");
+            entity.Property(e => e.SpecId).HasColumnName("spec_id");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.Value)
+                .HasMaxLength(500)
+                .HasColumnName("value");
+            entity.Property(e => e.SortOrder).HasColumnName("sort_order");
+
             entity.HasOne(d => d.Specs).WithMany(p => p.SpecValues)
                .HasForeignKey(d => d.SpecId)
                .OnDelete(DeleteBehavior.ClientSetNull)
@@ -552,6 +579,8 @@ public partial class ApplicationDbContext : DbContext
                          .HasForeignKey(d => d.ProductId)
                          .OnDelete(DeleteBehavior.ClientSetNull)
                          .HasConstraintName("FK_SpecValue_Product");
+
+            entity.HasIndex(e => new { e.ProductId, e.SpecId }).IsUnique();
         });
         modelBuilder.Entity<Review>(entity =>
         {

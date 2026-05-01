@@ -170,6 +170,102 @@
         </div>
 
         <div class="card mb-4">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <h5 class="mb-0">
+                    <i class="fas fa-microchip text-info pe-2"></i>Thông số kỹ thuật
+                </h5>
+                <a href="/Admin/Settings/ProductSpecs" class="btn btn-outline-primary btn-sm">
+                    Quản lý bộ thông số
+                </a>
+            </div>
+            <div class="card-body">
+                @{
+                    var productSpecValues = ViewBag.ProductSpecValues as IEnumerable<Tech_Store.Models.DTO.ProductSpecValueDTo>;
+                }
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-8">
+                        <label class="form-label">Chọn thông số để thêm</label>
+                        <select class="form-control border selectpicker" id="specPicker" data-live-search="true" multiple data-actions-box="true">
+                            @foreach (var spec in ViewBag.Specs)
+                            {
+                                <option value="@spec.SpecId"
+                                        data-name="@spec.Name"
+                                        data-code="@spec.Code"
+                                        data-group="@spec.GroupName"
+                                        data-unit="@spec.Unit"
+                                        data-input="@spec.InputType"
+                                        data-sort="@spec.SortOrder"
+                                        data-description="@spec.Description">
+                                    @spec.Name (@(string.IsNullOrWhiteSpace(spec.GroupName as string) ? "Thông số chung" : spec.GroupName))
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="button" class="btn btn-primary w-100" id="addSelectedSpecs">
+                            <i class="fas fa-plus me-2"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive mt-4">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 22%">Thông số</th>
+                                <th style="width: 16%">Nhóm</th>
+                                <th style="width: 42%">Giá trị</th>
+                                <th style="width: 10%">Đơn vị</th>
+                                <th style="width: 10%" class="text-center">Xóa</th>
+                            </tr>
+                        </thead>
+                        <tbody id="specEditorTableBody">
+                            @foreach (var specValue in productSpecValues ?? Enumerable.Empty<Tech_Store.Models.DTO.ProductSpecValueDTo>())
+                            {
+                                <tr data-spec-id="@specValue.SpecId">
+                                    <td>
+                                        <div class="fw-semibold">@specValue.SpecName</div>
+                                        <div class="small text-muted"><code>@specValue.SpecCode</code></div>
+                                        <input type="hidden" name="SpecValues.Index" value="@specValue.SpecId" />
+                                        <input type="hidden" name="SpecValues[@specValue.SpecId].SpecValueId" value="@specValue.SpecValueId" />
+                                        <input type="hidden" name="SpecValues[@specValue.SpecId].SpecId" value="@specValue.SpecId" />
+                                        <input type="hidden" name="SpecValues[@specValue.SpecId].SpecName" value="@specValue.SpecName" />
+                                        <input type="hidden" name="SpecValues[@specValue.SpecId].SpecCode" value="@specValue.SpecCode" />
+                                        <input type="hidden" name="SpecValues[@specValue.SpecId].GroupName" value="@specValue.GroupName" />
+                                        <input type="hidden" name="SpecValues[@specValue.SpecId].Unit" value="@specValue.Unit" />
+                                        <input type="hidden" name="SpecValues[@specValue.SpecId].InputType" value="@specValue.InputType" />
+                                        <input type="hidden" name="SpecValues[@specValue.SpecId].SortOrder" value="@specValue.SortOrder" />
+                                    </td>
+                                    <td>@(string.IsNullOrWhiteSpace(specValue.GroupName) ? "Thông số chung" : specValue.GroupName)</td>
+                                    <td>
+                                        @if (specValue.InputType == "textarea")
+                                        {
+                                            <textarea class="form-control" rows="3" name="SpecValues[@specValue.SpecId].Value" placeholder="Nhập @specValue.SpecName">@specValue.Value</textarea>
+                                        }
+                                        else if (specValue.InputType == "number")
+                                        {
+                                            <input type="number" step="0.01" class="form-control" name="SpecValues[@specValue.SpecId].Value" value="@specValue.Value" placeholder="Nhập @specValue.SpecName" />
+                                        }
+                                        else
+                                        {
+                                            <input type="text" class="form-control" name="SpecValues[@specValue.SpecId].Value" value="@specValue.Value" placeholder="Nhập @specValue.SpecName" />
+                                        }
+                                    </td>
+                                    <td>@(string.IsNullOrWhiteSpace(specValue.Unit) ? "-" : specValue.Unit)</td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-outline-danger remove-spec-row">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
             <div class="card-header">
                 <h5>
                     <i class="fas fa-layer-group text-info pe-2"></i>
@@ -238,9 +334,9 @@
 
                                 }
                             </select>
-                            <button type="button" class="btn btn-primary ms-2" data-bs-toggle="modal" data-bs-target="#attributeModal">
+                            <a href="/Admin/Settings/ProductAttributes" class="btn btn-primary ms-2">
                                 <i class="fa fa-plus-circle"></i>
-                            </button>
+                            </a>
                         </div>
                     </div>
 
@@ -383,7 +479,6 @@
     </div>
 </form>
 <!--Modal Attribute-->
-@Html.Partial("AttributeModal")
 <script src="~/Admin/assets/js/core/jquery-3.7.1.min.js"></script>
 @*
 Ckeditor *@
@@ -832,19 +927,82 @@ Ckeditor *@
         });
     });
 </script>
-
- @*  Sự kiện khi modal bị ẩn *@
 <script>
     $(document).ready(function () {
-      
-        $('#attributeModal').on('hidden.bs.modal', function () {
-            // Đặt lại các trường trong modal khi ẩn
-            $('input[name="attributeName"]').val('');
-            $('input[name="attributeCode"]').val('');
-            $('input[name="attributeValue"]').val('');
-            $('input[name="attributeOrder"]').val('');
-        
-            $('.loading-container').hide();
+        const $specPicker = $('#specPicker');
+        const $specTableBody = $('#specEditorTableBody');
+
+        function buildSpecValueInput(specId, specName, inputType, value) {
+            const safeValue = value || '';
+            if (inputType === 'textarea') {
+                return `<textarea class="form-control" rows="3" name="SpecValues[${specId}].Value" placeholder="Nhập ${specName}">${safeValue}</textarea>`;
+            }
+
+            if (inputType === 'number') {
+                return `<input type="number" step="0.01" class="form-control" name="SpecValues[${specId}].Value" value="${safeValue}" placeholder="Nhập ${specName}" />`;
+            }
+
+            return `<input type="text" class="form-control" name="SpecValues[${specId}].Value" value="${safeValue}" placeholder="Nhập ${specName}" />`;
+        }
+
+        function appendSpecRow(specData, value = '', specValueId = '') {
+            if ($specTableBody.find(`tr[data-spec-id="${specData.id}"]`).length) {
+                return;
+            }
+
+            const groupName = specData.group || 'Thông số chung';
+            const unit = specData.unit || '-';
+
+            const rowHtml = `
+                <tr data-spec-id="${specData.id}">
+                    <td>
+                        <div class="fw-semibold">${specData.name}</div>
+                        <div class="small text-muted"><code>${specData.code}</code></div>
+                        <input type="hidden" name="SpecValues.Index" value="${specData.id}" />
+                        <input type="hidden" name="SpecValues[${specData.id}].SpecValueId" value="${specValueId}" />
+                        <input type="hidden" name="SpecValues[${specData.id}].SpecId" value="${specData.id}" />
+                        <input type="hidden" name="SpecValues[${specData.id}].SpecName" value="${specData.name}" />
+                        <input type="hidden" name="SpecValues[${specData.id}].SpecCode" value="${specData.code}" />
+                        <input type="hidden" name="SpecValues[${specData.id}].GroupName" value="${groupName}" />
+                        <input type="hidden" name="SpecValues[${specData.id}].Unit" value="${specData.unit || ''}" />
+                        <input type="hidden" name="SpecValues[${specData.id}].InputType" value="${specData.input}" />
+                        <input type="hidden" name="SpecValues[${specData.id}].SortOrder" value="${specData.sort}" />
+                    </td>
+                    <td>${groupName}</td>
+                    <td>${buildSpecValueInput(specData.id, specData.name, specData.input, value)}</td>
+                    <td>${unit}</td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-spec-row">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+
+            $specTableBody.append(rowHtml);
+        }
+
+        $('#addSelectedSpecs').on('click', function () {
+            const selectedOptions = $specPicker.find('option:selected');
+            selectedOptions.each(function () {
+                const $option = $(this);
+                appendSpecRow({
+                    id: $option.val(),
+                    name: $option.data('name'),
+                    code: $option.data('code'),
+                    group: $option.data('group'),
+                    unit: $option.data('unit'),
+                    input: $option.data('input'),
+                    sort: $option.data('sort')
+                });
+            });
+
+            $specPicker.selectpicker('deselectAll');
+            $specPicker.selectpicker('refresh');
+        });
+
+        $specTableBody.on('click', '.remove-spec-row', function () {
+            $(this).closest('tr').remove();
         });
     });
 </script>

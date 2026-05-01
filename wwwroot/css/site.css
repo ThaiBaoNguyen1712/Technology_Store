@@ -19,10 +19,52 @@
 html {
     position: relative;
     min-height: 100%;
+    font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
 }
 
 body {
     margin-bottom: 60px;
+    font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+    color: #1f2937;
+}
+
+body,
+button,
+input,
+select,
+textarea,
+.btn,
+.form-control,
+.form-select,
+.dropdown-menu,
+.nav-link,
+.navbar,
+.table,
+.badge,
+.pagination,
+.modal-title,
+.card,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.btn,
+.navbar-brand,
+.dropdown-item,
+.form-label,
+th {
+    letter-spacing: 0;
 }
 
 @keyframes ldio-yzaezf3dcmj {

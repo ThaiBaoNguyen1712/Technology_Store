@@ -111,7 +111,7 @@
 
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table id="" class="table table-bordered table-hover" data-skip-auto-datatable="true">
+                        <table id="" class="table  table-bordered table-hover" data-skip-auto-datatable="true">
                             <thead>
                                 <tr class="table-primary text-center align-middle">
                                     <th class="fw-semibold">Ảnh</th>
@@ -171,35 +171,48 @@
                                         </td>
                                         <td>
                                             <span class="badge @(product.Status == "available" ? "bg-success" :
-                                                product.Status == "outstock" ? "bg-danger" :
-                                                product.Status == "preorder" ? "bg-warning" :
-                                                product.Status == "discontinued" ? "bg-secondary" :
-                                                "bg-dark")">
+                                                                                                  product.Status == "outstock" ? "bg-danger" :
+                                                                                                  product.Status == "preorder" ? "bg-warning" :
+                                                                                                  product.Status == "discontinued" ? "bg-secondary" :
+                                                                                                  "bg-dark")">
                                                 @(product.Status == "available" ? "Còn hàng" :
-                                                    product.Status == "outstock" ? "Hết hàng" :
-                                                    product.Status == "preorder" ? "Đặt trước" :
-                                                    product.Status == "discontinued" ? "Ngừng bán" :
-                                                    "Không xác định")
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div class="form-button-action">
-                                                <a class="btn btn-link btn-primary" href="~/Admin/Products/GenerateCode/@product.ProductId">
-                                                    <i class="fa fa-barcode"></i>
-                                                </a>
-                                                <a class="btn btn-link btn-primary" href="~/Admin/Products/View/@product.ProductId">
-                                                    <i class="fa fa-eye"></i>
-                                                </a>
-                                                <button class="btn btn-link btn-primary" onclick="editProduct(@product.ProductId)">
-                                                    <i class="fa fa-edit"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-link btn-danger" onclick="deleteProduct(@product.ProductId)">
-                                                    <i class="fa fa-times"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
+                                                                                            product.Status == "outstock" ? "Hết hàng" :
+                                                                                            product.Status == "preorder" ? "Đặt trước" :
+                                                                                            product.Status == "discontinued" ? "Ngừng bán" :
+                                                                                            "Không xác định")
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="dropdown">
+                                            <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="actionMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                                                Hành động
+                                            </button>
+                                            <ul class="dropdown-menu" aria-labelledby="actionMenuButton">
+                                                <li>
+                                                    <a class="dropdown-item" href="~/Admin/Products/GenerateCode/@product.ProductId">
+                                                        <i class="fa fa-barcode me-2"></i> Tạo mã vạch
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item" href="~/Admin/Products/View/@product.ProductId">
+                                                        <i class="fa fa-eye me-2"></i> Xem chi tiết
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <button class="dropdown-item" onclick="editProduct(@product.ProductId)">
+                                                        <i class="fa fa-edit me-2"></i> Chỉnh sửa
+                                                    </button>
+                                                </li>
+                                                <li>
+                                                    <button class="dropdown-item text-danger" onclick="deleteProduct(@product.ProductId)">
+                                                        <i class="fa fa-times me-2"></i> Xóa
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                                                                }
                             </tbody>
                         </table>
                     </div>
@@ -210,31 +223,31 @@
                         </div>
                         <div class="d-flex justify-content-center">
                             @Html.PagedListPager(Model, page => Url.Action("Index", "Products", new
-                                {
-                                    area = "Admin",
-                                    status = string.IsNullOrWhiteSpace(filters.Status) ? null : filters.Status,
-                                    sku = string.IsNullOrWhiteSpace(filters.Sku) ? null : filters.Sku,
-                                    name = string.IsNullOrWhiteSpace(filters.Name) ? null : filters.Name,
-                                    categoryId = filters.CategoryId,
-                                    brandId = filters.BrandId,
-                                    stockFrom = filters.StockFrom,
-                                    stockTo = filters.StockTo,
-                                    page,
-                                    pageSize = ViewBag.PageSize
-                                }),
-                                new PagedListRenderOptions
-                                {
-                                    UlElementClasses = new[] { "pagination", "mb-0" },
-                                    LiElementClasses = new[] { "page-item" },
-                                    PageClasses = new[] { "page-link" },
-                                    ActiveLiElementClass = "active",
-                                    LinkToPreviousPageFormat = "‹",
-                                    LinkToNextPageFormat = "›",
-                                    LinkToFirstPageFormat = "«",
-                                    LinkToLastPageFormat = "»",
-                                    MaximumPageNumbersToDisplay = 5,
-                                    DisplayEllipsesWhenNotShowingAllPageNumbers = true
-                                })
+                            {
+                                area = "Admin",
+                                                        status = string.IsNullOrWhiteSpace(filters.Status) ? null : filters.Status,
+                                                        sku = string.IsNullOrWhiteSpace(filters.Sku) ? null : filters.Sku,
+                                                        name = string.IsNullOrWhiteSpace(filters.Name) ? null : filters.Name,
+                                                        categoryId = filters.CategoryId,
+                                                        brandId = filters.BrandId,
+                                                        stockFrom = filters.StockFrom,
+                                                        stockTo = filters.StockTo,
+                                                        page,
+                                                        pageSize = ViewBag.PageSize
+                                                        }),
+                                                        new PagedListRenderOptions
+                                                        {
+                                                            UlElementClasses = new[] { "pagination", "mb-0" },
+                                                            LiElementClasses = new[] { "page-item" },
+                                                            PageClasses = new[] { "page-link" },
+                                                            ActiveLiElementClass = "active",
+                                                            LinkToPreviousPageFormat = "‹",
+                                                            LinkToNextPageFormat = "›",
+                                                            LinkToFirstPageFormat = "«",
+                                                            LinkToLastPageFormat = "»",
+                                                            MaximumPageNumbersToDisplay = 5,
+                                                            DisplayEllipsesWhenNotShowingAllPageNumbers = true
+                                                        })
                         </div>
                     </div>
                 </div>

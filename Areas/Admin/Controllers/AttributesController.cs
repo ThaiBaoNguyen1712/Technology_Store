@@ -27,6 +27,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                     AttributeId = att.AttributeId,
                     Name = att.Name,
                     Code = att.Code,
+                    IsActive = att.IsActive,
                     Value = att.AttributeValues != null
                         ? string.Join(", ", att.AttributeValues.Select(v => v.Value))
                         : string.Empty,
@@ -37,6 +38,20 @@ namespace Tech_Store.Areas.Admin.Controllers
             {
                 success = true,
                 data = attributesList
+            });
+        }
+
+        [HttpGet("GetNextMetadata")]
+        public JsonResult GetNextMetadata()
+        {
+            var nextSortOrder = (_context.Attributes.Max(x => (int?)x.SortOrder) ?? 0) + 1;
+            var nextCodeNumber = (_context.Attributes.Count() + 1).ToString("D3");
+
+            return Json(new
+            {
+                success = true,
+                code = $"attr_{nextCodeNumber}",
+                sortOrder = nextSortOrder
             });
         }
 
@@ -63,7 +78,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                         Code = attributeDto.Code,
                         Name = attributeDto.Name,
                         SortOrder = attributeDto.SortOrder,
-                        IsActive = true
+                        IsActive = attributeDto.IsActive
                     };
                     _context.Attributes.Add(attribute);
                     _context.SaveChanges();

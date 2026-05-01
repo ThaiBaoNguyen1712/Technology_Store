@@ -1,0 +1,33 @@
+@{
+    ViewData["Title"] = "Không tìm thấy trang";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+}
+
+<div class="page-inner">
+    <div class="admin-error-page">
+        <div class="admin-error-page__content">
+            <span class="admin-error-page__eyebrow">Lỗi 404</span>
+            <h1>Không tìm thấy trang quản trị</h1>
+            <p>
+                Đường dẫn bạn vừa truy cập không tồn tại, đã bị thay đổi hoặc bạn không có quyền truy cập khu vực này.
+            </p>
+
+           @*  <div class="admin-error-page__actions">
+                <a href="/Admin" class="btn btn-primary">
+                    <i class="fas fa-home me-2"></i>
+                    Về bảng điều khiển
+                </a>
+                <a href="/Admin/Settings" class="btn btn-outline-secondary">
+                    <i class="fas fa-cog me-2"></i>
+                    Mở cài đặt
+                </a>
+            </div> *@
+        </div>
+
+        <div class="admin-error-page__code" aria-hidden="true">
+            <span>4</span>
+            <span>0</span>
+            <span>4</span>
+        </div>
+    </div>
+</div>

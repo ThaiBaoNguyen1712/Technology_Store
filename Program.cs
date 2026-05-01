@@ -139,7 +139,21 @@ builder.Services.AddHttpClient();
 
 var app = builder.Build();
 
-app.UseStatusCodePagesWithReExecute("/404");
+app.UseStatusCodePages(async statusCodeContext =>
+{
+    var httpContext = statusCodeContext.HttpContext;
+    var requestPath = httpContext.Request.Path;
+    var statusCode = httpContext.Response.StatusCode;
+
+    if (statusCode == StatusCodes.Status404NotFound)
+    {
+        var errorPath = requestPath.StartsWithSegments("/Admin", StringComparison.OrdinalIgnoreCase)
+            ? "/Admin/Error/404"
+            : "/404";
+
+        httpContext.Response.Redirect(errorPath);
+    }
+});
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

@@ -51,41 +51,12 @@
         padding: 1rem !important;
         margin-bottom: 1rem !important;
     }
-    /*    footer*/
-    /* 1. Giấu bớt các mục không quá quan trọng trên mobile */
-    footer .col-6:nth-child(2), /* Giấu Danh mục */
-    footer .col-6:nth-child(3) { /* Giấu Mạng xã hội */
-        display: none !important;
+    /* pagination */
+    .pagination {
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
     }
-
-    /* 2. Thu nhỏ font chữ và khoảng cách tối đa */
-    footer {
-        padding-top: 0px !important;
-        padding-bottom: 0px !important;
-        font-size: 0.85rem;
-    }
-
-        footer h6 {
-            font-size: 0.9rem !important;
-            margin-bottom: 10px !important;
-        }
-
-        /* 3. Biến Contact thành hàng ngang gọn hơn */
-        footer .col-12.col-md-4 {
-            text-align: center !important;
-        }
-        footer image {
-            width: 20px !important;
-            height: 20px !important;
-            margin-right: 5px !important;
-        }
-
-/*        pagination*/
-        .pagination {
-            max-width: 100% !important;
-            margin-left: 0 !important;
-            margin-right: 0 !important;
-        }
 
 
 }

@@ -55,4 +55,6 @@ public class ProductDTo
 
     public virtual ICollection<VarientProductDTo>? VarientProducts { get; set; } = new List<VarientProductDTo>();
 
+    public virtual ICollection<ProductSpecValueDTo>? SpecValues { get; set; } = new List<ProductSpecValueDTo>();
+
 }

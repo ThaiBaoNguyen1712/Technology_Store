@@ -185,6 +185,13 @@ namespace Tech_Store.Services.Admin.ProductServices
                         SortOrder = x.SortOrder
                     })
                     .OrderBy(x => x.SortOrder)
+                    .ToListAsync(),
+                Specs = await _context.Species
+                    .AsNoTracking()
+                    .Where(x => x.IsActive)
+                    .OrderBy(x => x.GroupName)
+                    .ThenBy(x => x.SortOrder)
+                    .ThenBy(x => x.Name)
                     .ToListAsync()
             };
         }
@@ -216,6 +223,25 @@ namespace Tech_Store.Services.Admin.ProductServices
                 .ToListAsync();
 
             var lookup = await GetLookupDataAsync();
+            var productSpecValues = await _context.SpecValues
+                .Where(x => x.ProductId == id)
+                .Include(x => x.Specs)
+                .OrderBy(x => x.Specs.GroupName)
+                .ThenBy(x => x.Specs.SortOrder)
+                .ThenBy(x => x.SortOrder)
+                .Select(x => new ProductSpecValueDTo
+                {
+                    SpecValueId = x.SpecValueId,
+                    SpecId = x.SpecId,
+                    SpecName = x.Specs.Name,
+                    SpecCode = x.Specs.Code,
+                    GroupName = x.Specs.GroupName,
+                    Unit = x.Specs.Unit,
+                    InputType = x.Specs.InputType,
+                    SortOrder = x.SortOrder,
+                    Value = x.Value
+                })
+                .ToListAsync();
 
             return new AdminProductEditData
             {
@@ -223,7 +249,9 @@ namespace Tech_Store.Services.Admin.ProductServices
                 CheckedAttributeIds = productAttributes,
                 Categories = lookup.Categories,
                 Brands = lookup.Brands,
-                Attributes = lookup.Attributes
+                Attributes = lookup.Attributes,
+                Specs = lookup.Specs,
+                ProductSpecValues = productSpecValues
             };
         }
 
@@ -322,6 +350,8 @@ namespace Tech_Store.Services.Admin.ProductServices
                     await _context.SaveChangesAsync();
                 }
 
+                await SyncProductSpecsAsync(product.ProductId, productDto.SpecValues);
+
                 await transaction.CommitAsync();
                 await GenerateProductsJsonAsync();
 
@@ -368,6 +398,8 @@ namespace Tech_Store.Services.Admin.ProductServices
                 {
                     await AddGalleryImagesAsync(product, productDto.Galleries);
                 }
+
+                await SyncProductSpecsAsync(product.ProductId, productDto.SpecValues);
 
                 product.UpdatedAt = DateTime.Now;
                 await _context.SaveChangesAsync();
@@ -808,6 +840,40 @@ namespace Tech_Store.Services.Admin.ProductServices
                 {
                     ProductId = product.ProductId,
                     Path = fileName
+                });
+            }
+        }
+
+        private async Task SyncProductSpecsAsync(int productId, ICollection<ProductSpecValueDTo>? specValues)
+        {
+            var existingSpecValues = await _context.SpecValues
+                .Where(x => x.ProductId == productId)
+                .ToListAsync();
+
+            _context.SpecValues.RemoveRange(existingSpecValues);
+
+            if (specValues == null || !specValues.Any())
+            {
+                return;
+            }
+
+            var normalizedSpecValues = specValues
+                .Where(x => x.SpecId > 0 && !string.IsNullOrWhiteSpace(x.Value))
+                .GroupBy(x => x.SpecId)
+                .Select(g => g
+                    .OrderBy(x => x.SortOrder)
+                    .ThenBy(x => x.SpecName)
+                    .First())
+                .ToList();
+
+            foreach (var specValue in normalizedSpecValues)
+            {
+                _context.SpecValues.Add(new SpecValue
+                {
+                    ProductId = productId,
+                    SpecId = specValue.SpecId,
+                    Value = specValue.Value.Trim(),
+                    SortOrder = specValue.SortOrder
                 });
             }
         }

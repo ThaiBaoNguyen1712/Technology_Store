@@ -17,6 +17,7 @@ namespace Tech_Store.Models.DTO
         public List<Category> Categories { get; set; } = new();
         public List<Brand> Brands { get; set; } = new();
         public List<Models.Attribute> Attributes { get; set; } = new();
+        public List<Specs> Specs { get; set; } = new();
     }
 
     public class AdminProductDetailData
@@ -31,6 +32,7 @@ namespace Tech_Store.Models.DTO
     {
         public Product? Product { get; set; }
         public List<int> CheckedAttributeIds { get; set; } = new();
+        public List<ProductSpecValueDTo> ProductSpecValues { get; set; } = new();
     }
 
     public class AdminProductCodeData
@@ -62,5 +64,33 @@ namespace Tech_Store.Models.DTO
         public int? StockTo { get; set; }
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 25;
+    }
+
+    public class ProductSpecValueDTo
+    {
+        public int? SpecValueId { get; set; }
+        public int SpecId { get; set; }
+        public string SpecName { get; set; } = string.Empty;
+        public string SpecCode { get; set; } = string.Empty;
+        public string? GroupName { get; set; }
+        public string? Unit { get; set; }
+        public string InputType { get; set; } = "text";
+        public int SortOrder { get; set; }
+        public string Value { get; set; } = string.Empty;
+    }
+
+    public class SpecDefinitionDTo
+    {
+        public int? SpecId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
+        public string? GroupName { get; set; }
+        public string? Unit { get; set; }
+        public string? Description { get; set; }
+        public string InputType { get; set; } = "text";
+        public int SortOrder { get; set; }
+        public bool IsActive { get; set; } = true;
+        public bool IsFilterable { get; set; }
+        public bool IsVisibleOnProductPage { get; set; } = true;
     }
 }

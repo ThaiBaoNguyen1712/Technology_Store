@@ -1,0 +1,396 @@
+@{
+    ViewData["Title"] = "Thuộc tính biến thể";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+    var defaultPageSize = (int)(ViewBag.PageSize ?? 20);
+}
+
+<div class="container-fluid">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 my-4">
+        <div>
+            <h2 class="mb-1">Thuộc tính biến thể</h2>
+            <p class="text-muted mb-0">Quản lý tập thuộc tính và các giá trị dùng cho biến thể sản phẩm.</p>
+        </div>
+        <button type="button" class="btn btn-primary" id="openAttributeCreate">
+            <i class="fas fa-plus me-2"></i>Thêm thuộc tính
+        </button>
+    </div>
+
+    <div class="card admin-card">
+        <div class="card-body">
+            <form id="attributeSearchForm" class="row g-3 align-items-end mb-4">
+                <div class="col-md-10">
+                    <label class="form-label">Tìm kiếm</label>
+                    <input type="text" class="form-control" id="attributeKeyword" placeholder="Tìm theo tên, mã hoặc giá trị thuộc tính" />
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="button" class="btn btn-primary flex-fill" id="searchAttributeButton">Lọc</button>
+                    <button type="button" class="btn btn-light border flex-fill" id="resetAttributeButton">Đặt lại</button>
+                </div>
+            </form>
+
+            <div class="table-responsive reusable-admin-table">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Tên thuộc tính</th>
+                            <th>Mã</th>
+                            <th>Giá trị</th>
+                            <th>Thứ tự</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attributeTableBody"></tbody>
+                </table>
+            </div>
+
+            <div class="reusable-admin-pagination d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+                <div class="text-muted" id="attributePaginationInfo"></div>
+                <div class="pagination pagination-sm mb-0" id="attributePaginationControls"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="attributeManagerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="attributeModalTitle">Thêm thuộc tính</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="attributeForm">
+                    <input type="hidden" id="attributeId" />
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Tên thuộc tính</label>
+                            <input type="text" class="form-control" id="attributeName" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Mã thuộc tính</label>
+                            <input type="text" class="form-control" id="attributeCode" readonly required />
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Giá trị</label>
+                            <input type="text" class="form-control tags-input" id="attributeValue" placeholder="Ví dụ: Đen, Trắng, Xanh" required />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Thứ tự</label>
+                            <input type="number" class="form-control" id="attributeOrder" min="1" required />
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" id="attributeIsActive" checked />
+                                <label class="form-check-label" for="attributeIsActive">Kích hoạt</label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" id="saveAttributeButton">Lưu thuộc tính</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const attributeModalElement = document.getElementById('attributeManagerModal');
+        const attributeModal = new bootstrap.Modal(attributeModalElement);
+        const tableBody = document.getElementById('attributeTableBody');
+        const paginationInfo = document.getElementById('attributePaginationInfo');
+        const paginationControls = document.getElementById('attributePaginationControls');
+        const keywordInput = document.getElementById('attributeKeyword');
+        const attributeValueInput = document.getElementById('attributeValue');
+        const attributeValueTagify = new Tagify(attributeValueInput, {
+            originalInputValueFormat: valuesArr => valuesArr.map(item => item.value).join(',')
+        });
+
+        let currentPage = 1;
+        const pageSize = @defaultPageSize;
+
+        async function getNextMetadata() {
+            const response = await fetch('/Admin/Attributes/GetNextMetadata');
+            return await response.json();
+        }
+
+        function resetForm() {
+            document.getElementById('attributeId').value = '';
+            document.getElementById('attributeName').value = '';
+            document.getElementById('attributeCode').value = '';
+            document.getElementById('attributeOrder').value = '';
+            document.getElementById('attributeIsActive').checked = true;
+            attributeValueTagify.removeAllTags();
+        }
+
+        function renderValueTags(rawValue) {
+            const values = (rawValue || '')
+                .split(',')
+                .map(x => x.trim())
+                .filter(Boolean);
+
+            if (!values.length) {
+                return '<span class="text-muted">-</span>';
+            }
+
+            const visibleValues = values.slice(0, 4);
+            const remainCount = values.length - visibleValues.length;
+            const tags = visibleValues.map(value => `<span class="badge bg-light text-dark border me-1 mb-1">${value}</span>`).join('');
+
+            return remainCount > 0
+                ? `${tags}<span class="badge bg-secondary mb-1">+${remainCount}</span>`
+                : tags;
+        }
+
+        function buildPageItems(page, totalPages) {
+            const items = [];
+            const add = value => {
+                if (!items.includes(value)) items.push(value);
+            };
+
+            add(1);
+            add(totalPages);
+
+            for (let i = page - 1; i <= page + 1; i++) {
+                if (i > 1 && i < totalPages) {
+                    add(i);
+                }
+            }
+
+            if (page <= 3) {
+                for (let i = 2; i <= Math.min(4, totalPages - 1); i++) add(i);
+            }
+
+            if (page >= totalPages - 2) {
+                for (let i = Math.max(2, totalPages - 3); i < totalPages; i++) add(i);
+            }
+
+            return items.sort((a, b) => a - b);
+        }
+
+        function renderPagination(page, totalPages) {
+            paginationControls.innerHTML = '';
+            if (totalPages <= 1) {
+                return;
+            }
+
+            const createButton = (label, targetPage, disabled, active = false) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = `page-link ${active ? 'active' : ''}`;
+                button.textContent = label;
+                button.disabled = disabled;
+                if (!disabled && !active) {
+                    button.addEventListener('click', () => loadAttributes(targetPage));
+                }
+                return button;
+            };
+
+            const previousItem = document.createElement('div');
+            previousItem.className = `page-item ${page <= 1 ? 'disabled' : ''}`;
+            previousItem.appendChild(createButton('Trước', page - 1, page <= 1));
+            paginationControls.appendChild(previousItem);
+
+            const pages = buildPageItems(page, totalPages);
+            let previousPage = 0;
+
+            pages.forEach(pageNumber => {
+                if (previousPage && pageNumber - previousPage > 1) {
+                    const dots = document.createElement('div');
+                    dots.className = 'page-item disabled';
+                    dots.innerHTML = '<span class="page-link">...</span>';
+                    paginationControls.appendChild(dots);
+                }
+
+                const item = document.createElement('div');
+                item.className = `page-item ${pageNumber === page ? 'active' : ''}`;
+                item.appendChild(createButton(String(pageNumber), pageNumber, false, pageNumber === page));
+                paginationControls.appendChild(item);
+                previousPage = pageNumber;
+            });
+
+            const nextItem = document.createElement('div');
+            nextItem.className = `page-item ${page >= totalPages ? 'disabled' : ''}`;
+            nextItem.appendChild(createButton('Sau', page + 1, page >= totalPages));
+            paginationControls.appendChild(nextItem);
+        }
+
+        async function loadAttributes(page = 1) {
+            currentPage = page;
+            const response = await fetch('/Admin/Attributes/GetAll');
+            const payload = await response.json();
+
+            tableBody.innerHTML = '';
+            paginationControls.innerHTML = '';
+
+            if (!payload.success) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Không tải được dữ liệu.</td></tr>';
+                return;
+            }
+
+            const keyword = (keywordInput.value || '').trim().toLowerCase();
+            const filtered = payload.data.filter(item => {
+                if (!keyword) return true;
+                return (item.name || '').toLowerCase().includes(keyword)
+                    || (item.code || '').toLowerCase().includes(keyword)
+                    || (item.value || '').toLowerCase().includes(keyword);
+            });
+
+            const totalItems = filtered.length;
+            const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+            currentPage = Math.max(1, Math.min(page, totalPages));
+            const start = (currentPage - 1) * pageSize;
+            const pageItems = filtered.slice(start, start + pageSize);
+
+            if (!pageItems.length) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Không tìm thấy thuộc tính phù hợp.</td></tr>';
+            } else {
+                pageItems.forEach(item => {
+                    tableBody.insertAdjacentHTML('beforeend', `
+                        <tr data-id="${item.attributeId}" data-name="${item.name}" data-code="${item.code}" data-value="${item.value}" data-sort-order="${item.sortOrder}" data-is-active="${String(item.isActive).toLowerCase()}">
+                            <td class="fw-semibold">${item.name}</td>
+                            <td><code>${item.code}</code></td>
+                            <td><div class="attribute-tag-list">${renderValueTags(item.value)}</div></td>
+                            <td>${item.sortOrder}</td>
+                            <td><span class="badge bg-${item.isActive ? 'primary' : 'secondary'}">${item.isActive ? 'Đang dùng' : 'Ngừng dùng'}</span></td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-outline-primary attribute-edit">Sửa</button>
+                                <button type="button" class="btn btn-sm btn-outline-danger attribute-delete">Xóa</button>
+                            </td>
+                        </tr>
+                    `);
+                });
+            }
+
+            paginationInfo.textContent = `Hiển thị ${pageItems.length ? start + 1 : 0}-${start + pageItems.length} trên ${totalItems} thuộc tính`;
+            renderPagination(currentPage, totalPages);
+        }
+
+        document.getElementById('openAttributeCreate').addEventListener('click', async function () {
+            resetForm();
+            const metadata = await getNextMetadata();
+            if (metadata.success) {
+                document.getElementById('attributeCode').value = metadata.code;
+                document.getElementById('attributeOrder').value = metadata.sortOrder;
+            }
+            document.getElementById('attributeModalTitle').textContent = 'Thêm thuộc tính';
+            attributeModal.show();
+        });
+
+        document.getElementById('searchAttributeButton').addEventListener('click', () => loadAttributes(1));
+        document.getElementById('resetAttributeButton').addEventListener('click', function () {
+            keywordInput.value = '';
+            loadAttributes(1);
+        });
+
+        tableBody.addEventListener('click', async function (event) {
+            const editButton = event.target.closest('.attribute-edit');
+            const deleteButton = event.target.closest('.attribute-delete');
+
+            if (editButton) {
+                const row = editButton.closest('tr');
+                resetForm();
+                document.getElementById('attributeId').value = row.dataset.id;
+                document.getElementById('attributeName').value = row.dataset.name;
+                document.getElementById('attributeCode').value = row.dataset.code;
+                document.getElementById('attributeOrder').value = row.dataset.sortOrder;
+                document.getElementById('attributeIsActive').checked = row.dataset.isActive === 'true';
+                attributeValueTagify.addTags((row.dataset.value || '').split(',').map(x => x.trim()).filter(Boolean));
+                document.getElementById('attributeModalTitle').textContent = 'Cập nhật thuộc tính';
+                attributeModal.show();
+                return;
+            }
+
+            if (!deleteButton) {
+                return;
+            }
+
+            const row = deleteButton.closest('tr');
+            const id = row.dataset.id;
+
+            const result = await Swal.fire({
+                title: 'Xóa thuộc tính?',
+                text: 'Hành động này sẽ xóa thuộc tính nếu hệ thống cho phép.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Xóa',
+                cancelButtonText: 'Hủy'
+            });
+
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('attributeId', id);
+
+            const response = await fetch('/Admin/Attributes/Delete', {
+                method: 'POST',
+                body: formData
+            });
+            const payload = await response.json();
+
+            await Swal.fire({
+                icon: payload.success ? 'success' : 'error',
+                title: payload.success ? 'Thành công' : 'Lỗi',
+                text: payload.message
+            });
+
+            if (payload.success) {
+                loadAttributes(currentPage);
+            }
+        });
+
+        document.getElementById('saveAttributeButton').addEventListener('click', async function () {
+            const attributeId = document.getElementById('attributeId').value;
+            const name = document.getElementById('attributeName').value.trim();
+            const code = document.getElementById('attributeCode').value.trim();
+            const value = attributeValueInput.value.trim();
+            const sortOrder = document.getElementById('attributeOrder').value;
+            const isActive = document.getElementById('attributeIsActive').checked;
+
+            if (!name || !code || !value || !sortOrder) {
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi',
+                    text: 'Vui lòng nhập đầy đủ thông tin thuộc tính.'
+                });
+                return;
+            }
+
+            const url = attributeId ? '/Admin/Attributes/Update' : '/Admin/Attributes/Create';
+            const method = attributeId ? 'PUT' : 'POST';
+            const formData = new FormData();
+            if (attributeId) formData.append('attributeId', attributeId);
+            formData.append('name', name);
+            formData.append('code', code);
+            formData.append('value', value);
+            formData.append('sortOrder', sortOrder);
+            formData.append('isActive', isActive ? 'true' : 'false');
+
+            const response = await fetch(url, {
+                method,
+                body: formData
+            });
+            const payload = await response.json();
+
+            await Swal.fire({
+                icon: payload.success ? 'success' : 'error',
+                title: payload.success ? 'Thành công' : 'Lỗi',
+                text: payload.message
+            });
+
+            if (payload.success) {
+                attributeModal.hide();
+                loadAttributes(currentPage);
+            }
+        });
+
+        loadAttributes(1);
+    });
+</script>
+}

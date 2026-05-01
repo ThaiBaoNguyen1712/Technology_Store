@@ -129,8 +129,11 @@ namespace Tech_Store.Controllers
             // Load specs in a single query
             var specs = await _context.Species
                 .AsNoTracking()
+                .Where(s => s.IsActive && s.IsVisibleOnProductPage)
                 .Include(s => s.SpecValues.Where(v => v.ProductId == product.ProductId))
                 .Where(s => s.SpecValues.Any(v => v.ProductId == product.ProductId))
+                .OrderBy(s => s.GroupName)
+                .ThenBy(s => s.SortOrder)
                 .ToListAsync();
 
             // Load reviews and calculate summary

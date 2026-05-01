@@ -13,7 +13,9 @@
     <link rel="stylesheet" href="@Url.Content("~/Client/asset/css/categoryview.css")" asp-append-version="true" />
     <link rel="stylesheet" href="@Url.Content("~/Client/asset/css/pagination.css")" asp-append-version="true" />
 
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Roboto:wght@400&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <!-- Bootstrap-select CSS -->
@@ -28,8 +30,8 @@
 <body class="d-flex flex-column min-vh-100">
     <div class="marquee-line">
         <div class="row w-100">
-            <div class="col-12 col-md-8 marquee-tag" style="overflow: hidden;">
-                <marquee style="width: 100%;" direction="left">
+            <div class="col-12 col-md-8 marquee-tag marquee-wrap">
+                <marquee class="marquee-content" direction="left">
                     <p class="m-0">
                         Tận tâm , phục vụ khách hàng là sứ mệnh của chúng tôi. Chúng tôi cam kết mang đến những sản phẩm chất lượng và dịch vụ tốt nhất để đáp ứng nhu cầu của bạn. Hãy cùng chúng tôi trải nghiệm sự khác biệt!
                     </p>
@@ -50,20 +52,62 @@
     <nav class="navbar navbar-expand-lg navbar-dark custom-navbar sticky-top">
        
         <div class="container">
-            <!-- Logo/Brand -->
-            <a class="navbar-brand d-flex align-items-center" href="/">
-               <img src="@ViewBag.LogoUrl" width="30px"/>
-                <span class="brand-text ps-2">@ViewBag.NameWebsite</span>
-            </a>
+            <div class="navbar-header-row">
+                <a class="navbar-brand d-flex align-items-center" href="/">
+                   <img src="@ViewBag.LogoUrl" width="30px"/>
+                    <span class="brand-text ps-2">@ViewBag.NameWebsite</span>
+                </a>
 
-            <!-- Toggle Button -->
-            <!-- Thử với nút mặc định -->
-            <button class="navbar-toggler" type="button" style="z-index:20" data-bs-toggle="collapse" data-bs-target="#navbarTogglerDemo01" aria-controls="navbarTogglerDemo01" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-          
+                <ul class="navbar-nav nav-right nav-right-mobile d-flex flex-row align-items-center d-lg-none">
+                    <li class="nav-item dropdown position-relative">
+                        <a class="nav-link text-white d-flex align-items-center" href="#" id="notificationToggleMobile">
+                            <div class="position-relative">
+                                <i class="fa fa-bell" aria-hidden="true"></i>
+                                <span id="notification_count_mobile" class="badge bg-danger position-absolute top-0 start-100 translate-middle rounded-circle p-1 notification notification-badge-compact">
+                                    @(ViewBag.Notification_count != null ? ViewBag.Notification_count : 0 )
+                                </span>
+                            </div>
+                        </a>
+                    </li>
+                    <li class="nav-item position-relative">
+                        <a class="nav-link text-white d-flex align-items-center" href="~/User/Cart">
+                            <div class="position-relative">
+                                <i class="fa fa-shopping-cart" aria-hidden="true"></i>
+                                <span id="Cart_numb_mobile" class="badge bg-danger position-absolute top-0 start-100 translate-middle rounded-circle p-1 badge-counter-compact">
+                                    @ViewBag.cart_numb
+                                </span>
+                            </div>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <button class="navbar-toggler navbar-toggler-header" type="button" data-bs-toggle="collapse" data-bs-target="#navbarTogglerDemo01" aria-controls="navbarTogglerDemo01" aria-expanded="false" aria-label="Toggle navigation">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+                    </li>
+                </ul>
 
-            <div class="collapse navbar-collapse" id="navbarTogglerDemo01" style="z-index:3">
+                <button class="navbar-toggler d-none d-lg-inline-flex navbar-toggler-header" type="button" data-bs-toggle="collapse" data-bs-target="#navbarTogglerDemo01" aria-controls="navbarTogglerDemo01" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+
+            <form action="~/Search" method="get" class="search-form search-form-mobile position-relative d-lg-none" data-search-form>
+                <div class="input-group">
+                    <input type="search"
+                           class="form-control search-input search-input-mobile rounded-start-3 ps-3 js-search-input"
+                           placeholder="Bạn đang tìm kiếm gì ? "
+                           aria-label="Search"
+                           autocomplete="off"
+                           name="key" required>
+                    <button class="btn border bg-white search-btn rounded-end-3" type="submit">
+                        <i class="fa fa-search text-danger"></i>
+                    </button>
+                </div>
+                <ul class="list-group position-absolute w-100 mt-1 shadow-sm rounded-3 d-none search-suggestions js-search-suggestions">
+                </ul>
+            </form>
+
+            <div class="collapse navbar-collapse navbar-collapse-custom" id="navbarTogglerDemo01">
                 <!-- Category Dropdown -->
                 <div class="dropdown category-dropdown mx-3">
                     <button class="btn btn-outline-light category-btn dropdown-toggle" type="button" id="categoryMenu" data-bs-toggle="dropdown">
@@ -83,35 +127,29 @@
                 </div>
 
                 <!-- Search Form -->
-                <form action="~/Search" method="get" class="search-form mx-auto position-relative" id="searchForm">
+                <form action="~/Search" method="get" class="search-form search-form-desktop mx-auto position-relative d-none d-lg-block" data-search-form>
                     <div class="input-group">
                         <input type="search"
-                               class="form-control search-input rounded-start-3 ps-3"
+                               class="form-control search-input rounded-start-3 ps-3 js-search-input"
                                placeholder="Bạn đang tìm kiếm gì ? "
                                aria-label="Search"
-                               id="searchInput"
                                autocomplete="off"
                                name="key" required>
                         <button class="btn border bg-white search-btn rounded-end-3" type="submit">
                             <i class="fa fa-search text-danger"></i>
                         </button>
                     </div>
-                    <!-- Dropdown suggestions -->
-                    <ul class="list-group position-absolute w-100 mt-1 shadow-sm rounded-3 d-none"
-                        id="searchSuggestions"
-                        style="max-height: 300px; overflow-y: auto; scrollbar-width: thin; z-index:1000">
-                        <!-- Suggestions will be dynamically added here -->
+                    <ul class="list-group position-absolute w-100 mt-1 shadow-sm rounded-3 d-none search-suggestions js-search-suggestions">
                     </ul>
                 </form>
              
-                <ul class="navbar-nav ms-auto nav-right d-flex flex-row align-items-center">
+                <ul class="navbar-nav ms-auto nav-right d-none d-lg-flex flex-row align-items-center">
                     <!-- Notification -->
                     <li class="nav-item dropdown position-relative px-md-2">
                         <a class="nav-link text-white d-flex align-items-center" href="#" id="notificationToggle">
                             <div class="position-relative">
                                 <i class="fa fa-bell" aria-hidden="true"></i>
-                                <span id="notification_count" class="badge bg-danger position-absolute top-0 start-100 translate-middle rounded-circle p-1 notification"
-                                      style="font-size: 0.6rem; min-width: 16px; min-height: 16px; transform: translate(-50%, -50%);">
+                                <span id="notification_count" class="badge bg-danger position-absolute top-0 start-100 translate-middle rounded-circle p-1 notification notification-badge-compact">
                                     @(ViewBag.Notification_count != null ? ViewBag.Notification_count : 0 )
                                 </span>
                             </div>
@@ -136,7 +174,7 @@
                                                     <div class="notification-info">
                                                         <p class="notification-text">@noti.Title</p>
                                                         <span class="block">
-                                                            <small class="text-truncated" style="max-width:400px" title="@noti.Message">
+                                                            <small class="text-truncated notification-message-preview" title="@noti.Message">
                                                                 @(noti.Message.Length > 30 ? noti.Message.Substring(0, Math.Min(50, noti.Message.Length)) + "..." : noti.Message)
                                                             </small>
                                                         </span>
@@ -161,8 +199,7 @@
                         <a class="nav-link text-white d-flex align-items-center" href="~/User/Cart">
                             <div class="position-relative">
                                 <i class="fa fa-shopping-cart" aria-hidden="true"></i>
-                                <span id="Cart_numb" class="badge bg-danger position-absolute top-0 start-100 translate-middle rounded-circle p-1"
-                                      style="font-size: 0.6rem; min-width: 16px; min-height: 16px; transform: translate(-50%, -50%);">
+                                <span id="Cart_numb" class="badge bg-danger position-absolute top-0 start-100 translate-middle rounded-circle p-1 badge-counter-compact">
                                     @ViewBag.cart_numb
                                 </span>
                             </div>
@@ -175,7 +212,7 @@
                         <li class="nav-item dropdown">
                             <button class="btn btn-outline-light account-btn dropdown-toggle d-flex align-items-center" type="button" id="accountDropdown" data-bs-toggle="dropdown">
                                 <img class="rounded-circle me-2" width="30" height="30" src="~/Upload/Avatar/@ViewBag.User.Img" />
-                                <span class="d-inline-block text-truncate align-middle" style="max-width: 120px;">@ViewBag.User.Email</span>
+                                <span class="d-inline-block text-truncate align-middle account-email-text">@ViewBag.User.Email</span>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-light animate slideIn" aria-labelledby="accountDropdown">
                                 @{
@@ -246,84 +283,135 @@
     </div>
 
     <!-- Footer -->
-    <footer class="text-center text-lg-start tex t-white footer mt-auto">
-        <section class="">
-            <div class="container text-center text-md-start py-3">
-                <div class="row g-3">
-                    <!-- Giảm khoảng cách giữa các cột với g-3 -->
-                    <!-- Logo and Slogan -->
-                    <div class="col-4 col-md-3 col-lg-4 col-xl-3 mx-auto mb-3">
-                        <h6 class="text-uppercase fw-bold mb-3">
-                            <img src="@ViewBag.LogoUrl" width="30px" alt="Logo" /> <!-- Giảm kích thước logo -->
-                            @ViewBag.NameWebsite
-                        </h6>
-                        <p class="small">@ViewBag.Slogan</p> <!-- Font nhỏ hơn -->
+    <footer class="site-footer mt-auto">
+        <div class="site-footer__top">
+            <div class="container">
+                <div class="site-footer__benefits">
+                    <div class="site-footer__benefit">
+                        <span class="site-footer__benefit-icon"><i class="fas fa-shield-alt"></i></span>
+                        <div>
+                            <strong>Hàng chính hãng</strong>
+                            <p>Bảo đảm nguồn gốc rõ ràng, đầy đủ bảo hành.</p>
+                        </div>
                     </div>
-
-                    <!-- Categories -->
-                    <div class="col-6 col-md-2 col-lg-3 col-xl-2 mx-auto mb-3">
-                        <h6 class="text-uppercase fw-bold mb-3">Danh mục</h6> <!-- Rút ngắn tiêu đề -->
-                        @foreach (var cate in ViewBag.Categories)
-                        {
-                            <p class="mb-1">
-                                <a class="dropdown-item" href="~/Category/@cate.EngTitle">@cate.Name</a>
-                            </p>
-                        }
+                    <div class="site-footer__benefit">
+                        <span class="site-footer__benefit-icon"><i class="fas fa-truck-fast"></i></span>
+                        <div>
+                            <strong>Giao hàng toàn quốc</strong>
+                            <p>Hỗ trợ giao nhanh, kiểm tra trước khi nhận.</p>
+                        </div>
                     </div>
-
-                    <!-- Social Media Links -->
-                    <div class="col-6 col-md-3 col-lg-3 col-xl-2 mx-auto mb-3">
-                        <h6 class="text-uppercase fw-bold mb-3">Mạng xã hội</h6>
-                        @if (!string.IsNullOrEmpty(ViewBag.FacebookUrl))
-                        {
-                            <p class="mb-1">
-                                <a href="@(ViewBag.FacebookUrl.StartsWith("http") ? ViewBag.FacebookUrl : "https://" + ViewBag.FacebookUrl)"
-                                   class="text-reset" target="_blank">
-                                    <i class="fab fa-facebook me-1"></i> Facebook
-                                </a>
-                            </p>
-                        }
-                        @if (!string.IsNullOrEmpty(ViewBag.InstagramUrl))
-                        {
-                            <p class="mb-1">
-                                <a href="@(ViewBag.InstagramUrl.StartsWith("http") ? ViewBag.InstagramUrl : "https://" + ViewBag.InstagramUrl)"
-                                   class="text-reset" target="_blank">
-                                    <i class="fab fa-instagram me-1"></i> Instagram
-                                </a>
-                            </p>
-                        }
-                        @if (!string.IsNullOrEmpty(ViewBag.TwitterUrl))
-                        {
-                            <p class="mb-1">
-                                <a href="@(ViewBag.TwitterUrl.StartsWith("http") ? ViewBag.TwitterUrl : "https://" + ViewBag.TwitterUrl)"
-                                   class="text-reset" target="_blank">
-                                    <i class="fab fa-twitter me-1"></i> Twitter
-                                </a>
-                            </p>
-                        }
-                        @if (!string.IsNullOrEmpty(ViewBag.YoutubeUrl))
-                        {
-                            <p class="mb-1">
-                                <a href="@(ViewBag.YoutubeUrl.StartsWith("http") ? ViewBag.YoutubeUrl : "https://" + ViewBag.YoutubeUrl)"
-                                   class="text-reset" target="_blank">
-                                    <i class="fab fa-youtube me-1"></i> Youtube
-                                </a>
-                            </p>
-                        }
-
-                    </div>
-
-                    <!-- Contact Information -->
-                    <div class="col-8 col-md-4 col-lg-3 col-xl-3 mx-auto mb-3">
-                        <h6 class="text-uppercase fw-bold mb-3">Liên hệ</h6>
-                        <p class="mb-1"><i class="fas fa-home me-2"></i> @ViewBag.AddressCompany</p>
-                        <p class="mb-1"><i class="fas fa-envelope me-2"></i> @ViewBag.Email</p>
-                        <p class="mb-1"><i class="fas fa-phone me-2"></i> @ViewBag.PhoneNumber</p>
-                        <p class="mb-1"><i class="fas fa-print me-2"></i> @ViewBag.MoreInfo</p>
+                    <div class="site-footer__benefit">
+                        <span class="site-footer__benefit-icon"><i class="fas fa-headset"></i></span>
+                        <div>
+                            <strong>Hỗ trợ tận tâm</strong>
+                            <p>Tư vấn mua hàng và hậu mãi trong giờ làm việc.</p>
+                        </div>
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
+
+        <div class="site-footer__main">
+            <div class="container">
+                <div class="row g-4">
+                    <div class="col-12 col-lg-4">
+                        <div class="site-footer__brand">
+                            <div class="site-footer__brand-head">
+                                <img src="@ViewBag.LogoUrl" width="40" height="40" alt="Logo" class="site-footer__logo" />
+                                <div>
+                                    <h5 class="site-footer__title mb-1">@ViewBag.NameWebsite</h5>
+                                    <p class="site-footer__subtitle mb-0">Kênh mua sắm công nghệ dành cho khách hàng Việt Nam.</p>
+                                </div>
+                            </div>
+                            <p class="site-footer__desc">@(string.IsNullOrWhiteSpace(ViewBag.Slogan as string) ? "Cung cấp sản phẩm công nghệ, phụ kiện và dịch vụ với trải nghiệm mua sắm rõ ràng, minh bạch và thuận tiện." : ViewBag.Slogan)</p>
+
+                            <div class="site-footer__contact-card">
+                                <div class="site-footer__contact-row">
+                                    <i class="fas fa-phone-alt"></i>
+                                    <div>
+                                        <span>Hotline</span>
+                                        <strong>@ViewBag.PhoneNumber</strong>
+                                    </div>
+                                </div>
+                                <div class="site-footer__contact-row">
+                                    <i class="fas fa-envelope"></i>
+                                    <div>
+                                        <span>Email hỗ trợ</span>
+                                        <strong>@ViewBag.Email</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <div class="site-footer__section">
+                            <h6 class="site-footer__heading">Danh mục nổi bật</h6>
+                            <ul class="site-footer__links">
+                                @foreach (var cate in ViewBag.Categories)
+                                {
+                                    <li><a href="~/Category/@cate.EngTitle">@cate.Name</a></li>
+                                }
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="col-6 col-md-4 col-lg-3">
+                        <div class="site-footer__section">
+                            <h6 class="site-footer__heading">Hỗ trợ khách hàng</h6>
+                            <ul class="site-footer__links">
+                                <li><a href="~/Search">Tìm kiếm sản phẩm</a></li>
+                                <li><a href="~/User/Cart">Giỏ hàng</a></li>
+                                <li><a href="~/User/MyOrders">Tra cứu đơn hàng</a></li>
+                                <li><a href="~/Auth/Login">Tài khoản của tôi</a></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-4 col-lg-3">
+                        <div class="site-footer__section">
+                            <h6 class="site-footer__heading">Thông tin liên hệ</h6>
+                            <ul class="site-footer__info">
+                                <li><i class="fas fa-location-dot"></i><span>@ViewBag.AddressCompany</span></li>
+                                <li><i class="fas fa-phone"></i><span>@ViewBag.PhoneNumber</span></li>
+                                <li><i class="fas fa-envelope"></i><span>@ViewBag.Email</span></li>
+                                @if (!string.IsNullOrEmpty(ViewBag.MoreInfo as string))
+                                {
+                                    <li><i class="fas fa-circle-info"></i><span>@ViewBag.MoreInfo</span></li>
+                                }
+                            </ul>
+
+                            <div class="site-footer__social">
+                                @if (!string.IsNullOrEmpty(ViewBag.FacebookUrl))
+                                {
+                                    <a href="@(ViewBag.FacebookUrl.StartsWith("http") ? ViewBag.FacebookUrl : "https://" + ViewBag.FacebookUrl)" target="_blank" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                                }
+                                @if (!string.IsNullOrEmpty(ViewBag.InstagramUrl))
+                                {
+                                    <a href="@(ViewBag.InstagramUrl.StartsWith("http") ? ViewBag.InstagramUrl : "https://" + ViewBag.InstagramUrl)" target="_blank" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                                }
+                                @if (!string.IsNullOrEmpty(ViewBag.TwitterUrl))
+                                {
+                                    <a href="@(ViewBag.TwitterUrl.StartsWith("http") ? ViewBag.TwitterUrl : "https://" + ViewBag.TwitterUrl)" target="_blank" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                                }
+                                @if (!string.IsNullOrEmpty(ViewBag.YoutubeUrl))
+                                {
+                                    <a href="@(ViewBag.YoutubeUrl.StartsWith("http") ? ViewBag.YoutubeUrl : "https://" + ViewBag.YoutubeUrl)" target="_blank" aria-label="Youtube"><i class="fab fa-youtube"></i></a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="site-footer__bottom">
+            <div class="container site-footer__bottom-inner">
+                <p class="mb-0">© @DateTime.Now.Year @ViewBag.NameWebsite. All rights reserved.</p>
+                <p class="mb-0">Cam kết minh bạch thông tin, hỗ trợ nhanh và trải nghiệm mua sắm thuận tiện.</p>
+            </div>
+        </div>
     </footer>
     <!-- Footer -->
 
@@ -366,10 +454,6 @@
             $('.modal').on('hidden.bs.modal', function () {
                 $('.loading-container').hide();
             });
-            // Phần tìm kiếm
-            const searchInput = $("#searchInput");
-            const suggestionsBox = $("#searchSuggestions");
-
             // Load suggestions from JSON file
             let productSuggestions = [];
             $.getJSON("/json/products.json", function (data) {
@@ -377,40 +461,24 @@
              
             });
 
-            // Event listener for input change
-            searchInput.on("input", function () {
-                const query = $(this).val().trim().toLowerCase();
-                if (query) {
-                    const filteredSuggestions = productSuggestions.filter(item =>
-                        item.Name && item.Name.toLowerCase().includes(query)
-                    );
-                    updateSuggestions(filteredSuggestions);
-                } else {
-                    suggestionsBox.addClass("d-none");
-                }
-            });
-
-            // Function to update suggestions in the list
-            function updateSuggestions(suggestions) {
-                suggestionsBox.empty(); // Xóa các gợi ý cũ
+            function updateSuggestions($suggestionsBox, suggestions) {
+                $suggestionsBox.empty();
 
                 if (suggestions && suggestions.length > 0) {
                     suggestions.forEach(item => {
-                        // Kiểm tra từng thuộc tính
                         const name = item.Name || "Sản phẩm không tên";
-                           const image = item.Image ? (item.Image.startsWith('http') ? item.Image : `/Upload/Products/${item.Image}`) : '/Upload/Products/no-image.png';
+                        const image = item.Image ? (item.Image.startsWith('http') ? item.Image : `/Upload/Products/${item.Image}`) : '/Upload/Products/no-image.png';
                         const originalPrice = item.OriginalPrice ? item.OriginalPrice.toLocaleString() : "";
                         const sellPrice = item.SellPrice ? item.SellPrice.toLocaleString() : "Liên hệ";
 
-                        // Thêm item vào danh sách gợi ý
-                        suggestionsBox.append(
+                        $suggestionsBox.append(
                             `<a href="/View/${item.Slug}" class="text-decoration-none text-dark">
                                 <li class="list-group-item search-suggestion-item d-flex align-items-center p-2 hover-bg-light">
-                                    <img src="${image}" alt="${name}" class="me-3 rounded-2" style="width: 60px; height: 60px; object-fit: cover;">
+                                    <img src="${image}" alt="${name}" class="me-3 rounded-2 search-suggestion-thumb">
                                     <div class="flex-grow-1">
-                                        <div class="fw-bold mb-1" style="font-size:0.9rem">${name}</div>
+                                        <div class="fw-bold mb-1 search-suggestion-title">${name}</div>
                                         <div class="d-flex align-items-center">
-                                            <span class="text-muted text-decoration-line-through me-2 small" style="font-size:0.8rem">
+                                            <span class="text-muted text-decoration-line-through me-2 small search-suggestion-original-price">
                                                 ${originalPrice ? originalPrice + "đ" : ""}
                                             </span>
                                             <span class="text-danger">
@@ -425,26 +493,40 @@
                         );
                     });
 
-                    // Hiển thị gợi ý
-                    suggestionsBox.removeClass("d-none");
+                    $suggestionsBox.removeClass("d-none");
                 } else {
-                    // Ẩn gợi ý nếu không có kết quả
-                    suggestionsBox.addClass("d-none");
+                    $suggestionsBox.addClass("d-none");
                 }
             }
 
-            // Hide suggestions on clicking outside
-            $(document).on("click", function (e) {
-                if (!$(e.target).closest(".search-form").length) {
-                    suggestionsBox.addClass("d-none");
-                }
+            $("[data-search-form]").each(function () {
+                const $form = $(this);
+                const $searchInput = $form.find(".js-search-input");
+                const $suggestionsBox = $form.find(".js-search-suggestions");
+
+                $searchInput.on("input", function () {
+                    const query = $(this).val().trim().toLowerCase();
+                    if (query) {
+                        const filteredSuggestions = productSuggestions.filter(item =>
+                            item.Name && item.Name.toLowerCase().includes(query)
+                        );
+                        updateSuggestions($suggestionsBox, filteredSuggestions);
+                    } else {
+                        $suggestionsBox.addClass("d-none");
+                    }
+                });
+
+                $suggestionsBox.on("click", ".search-suggestion-item", function () {
+                    const selectedName = $(this).find(".fw-bold").text();
+                    $searchInput.val(selectedName);
+                    $suggestionsBox.addClass("d-none");
+                });
             });
 
-            // Suggestion click event
-            suggestionsBox.on("click", ".search-suggestion-item", function () {
-                const selectedName = $(this).find(".fw-bold").text();
-                searchInput.val(selectedName);
-                suggestionsBox.addClass("d-none");
+            $(document).on("click", function (e) {
+                if (!$(e.target).closest(".search-form").length) {
+                    $(".js-search-suggestions").addClass("d-none");
+                }
             });
 
 
@@ -484,7 +566,7 @@
     </script>
     <script>
         $(document).ready(function () {
-            const $notificationToggle = $('#notificationToggle');
+            const $notificationToggle = $('#notificationToggle, #notificationToggleMobile');
             const $notificationDropdown = $('#notificationDropdown');
             let isDropdownOpen = false;
 

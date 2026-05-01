@@ -9,7 +9,20 @@ namespace Tech_Store.Areas.Admin.Controllers
     [Route("Admin/[controller]")]
     public class SettingsController : BaseAdminController
     {
-        public SettingsController(ApplicationDbContext context) : base(context) { }
+        private readonly IConfiguration _configuration;
+
+        public SettingsController(ApplicationDbContext context, IConfiguration configuration) : base(context)
+        {
+            _configuration = configuration;
+        }
+
+        private const int FallbackPageSize = 20;
+
+        private int GetDefaultAdminPageSize()
+        {
+            var pageSize = _configuration.GetValue<int?>("AdminUi:DefaultPageSize");
+            return pageSize.GetValueOrDefault(FallbackPageSize) > 0 ? pageSize.Value : FallbackPageSize;
+        }
 
         [Route("Index")]
         [Route("")]
@@ -37,6 +50,193 @@ namespace Tech_Store.Areas.Admin.Controllers
 
             // Truyền dữ liệu vào View
             return View(settingsReturn);
+        }
+
+        [HttpGet("ProductSpecs")]
+        public IActionResult ProductSpecs(string? keyword, int page = 1, int? pageSize = null)
+        {
+            var resolvedPageSize = pageSize.GetValueOrDefault(GetDefaultAdminPageSize());
+            var query = _context.Species
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                var normalizedKeyword = keyword.Trim();
+                query = query.Where(x =>
+                    x.Name.Contains(normalizedKeyword) ||
+                    x.Code.Contains(normalizedKeyword) ||
+                    (x.GroupName != null && x.GroupName.Contains(normalizedKeyword)));
+            }
+
+            var totalItems = query.Count();
+            var totalPages = Math.Max(1, (int)Math.Ceiling(totalItems / (double)resolvedPageSize));
+            page = Math.Max(1, Math.Min(page, totalPages));
+
+            var specs = query
+                .OrderBy(x => x.GroupName)
+                .ThenBy(x => x.SortOrder)
+                .ThenBy(x => x.Name)
+                .Skip((page - 1) * resolvedPageSize)
+                .Take(resolvedPageSize)
+                .ToList();
+
+            ViewBag.Keyword = keyword;
+            ViewBag.Page = page;
+            ViewBag.PageSize = resolvedPageSize;
+            ViewBag.TotalPages = totalPages;
+            ViewBag.TotalItems = totalItems;
+
+            return View(specs);
+        }
+
+        [HttpGet("ProductAttributes")]
+        public IActionResult ProductAttributes()
+        {
+            ViewBag.PageSize = GetDefaultAdminPageSize();
+            return View();
+        }
+
+        [HttpGet("GetProductSpecs")]
+        public IActionResult GetProductSpecs(string? keyword, int page = 1, int? pageSize = null)
+        {
+            var resolvedPageSize = pageSize.GetValueOrDefault(GetDefaultAdminPageSize());
+            var query = _context.Species
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                var normalizedKeyword = keyword.Trim();
+                query = query.Where(x =>
+                    x.Name.Contains(normalizedKeyword) ||
+                    x.Code.Contains(normalizedKeyword) ||
+                    (x.GroupName != null && x.GroupName.Contains(normalizedKeyword)));
+            }
+
+            var totalItems = query.Count();
+            var totalPages = Math.Max(1, (int)Math.Ceiling(totalItems / (double)resolvedPageSize));
+            page = Math.Max(1, Math.Min(page, totalPages));
+
+            var specs = query
+                .OrderBy(x => x.GroupName)
+                .ThenBy(x => x.SortOrder)
+                .ThenBy(x => x.Name)
+                .Skip((page - 1) * resolvedPageSize)
+                .Take(resolvedPageSize)
+                .Select(x => new
+                {
+                    x.SpecId,
+                    x.Name,
+                    x.Code,
+                    x.GroupName,
+                    x.Unit,
+                    x.Description,
+                    x.InputType,
+                    x.SortOrder,
+                    x.IsActive,
+                    x.IsFilterable,
+                    x.IsVisibleOnProductPage
+                })
+                .ToList();
+
+            return Json(new
+            {
+                success = true,
+                data = specs,
+                pagination = new
+                {
+                    page,
+                    pageSize = resolvedPageSize,
+                    totalItems,
+                    totalPages
+                }
+            });
+        }
+
+        [HttpGet("GetNextProductSpecMetadata")]
+        public IActionResult GetNextProductSpecMetadata()
+        {
+            var nextSortOrder = (_context.Species.Max(x => (int?)x.SortOrder) ?? 0) + 1;
+            var nextCodeNumber = (_context.Species.Count() + 1).ToString("D3");
+
+            return Json(new
+            {
+                success = true,
+                code = $"spec_{nextCodeNumber}",
+                sortOrder = nextSortOrder
+            });
+        }
+
+        [HttpPost("UpsertProductSpec")]
+        public async Task<IActionResult> UpsertProductSpec([FromForm] SpecDefinitionDTo dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Name) || string.IsNullOrWhiteSpace(dto.Code))
+            {
+                return Json(new { success = false, message = "Tên và mã thông số là bắt buộc." });
+            }
+
+            var normalizedCode = dto.Code.Trim().ToLowerInvariant();
+            var duplicated = await _context.Species
+                .AnyAsync(x => x.Code == normalizedCode && x.SpecId != dto.SpecId);
+
+            if (duplicated)
+            {
+                return Json(new { success = false, message = "Mã thông số đã tồn tại." });
+            }
+
+            Specs spec;
+            if (dto.SpecId.HasValue && dto.SpecId.Value > 0)
+            {
+                spec = await _context.Species.FirstOrDefaultAsync(x => x.SpecId == dto.SpecId.Value) ?? new Specs();
+                if (spec.SpecId == 0)
+                {
+                    return Json(new { success = false, message = "Không tìm thấy thông số cần cập nhật." });
+                }
+            }
+            else
+            {
+                spec = new Specs();
+                _context.Species.Add(spec);
+            }
+
+            spec.Name = dto.Name.Trim();
+            spec.Code = normalizedCode;
+            spec.GroupName = string.IsNullOrWhiteSpace(dto.GroupName) ? "Thông số chung" : dto.GroupName.Trim();
+            spec.Unit = string.IsNullOrWhiteSpace(dto.Unit) ? null : dto.Unit.Trim();
+            spec.Description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim();
+            spec.InputType = string.IsNullOrWhiteSpace(dto.InputType) ? "text" : dto.InputType.Trim().ToLowerInvariant();
+            spec.SortOrder = dto.SortOrder;
+            spec.IsActive = dto.IsActive;
+            spec.IsFilterable = dto.IsFilterable;
+            spec.IsVisibleOnProductPage = dto.IsVisibleOnProductPage;
+
+            await _context.SaveChangesAsync();
+            return Json(new { success = true, message = dto.SpecId.HasValue ? "Đã cập nhật thông số." : "Đã thêm thông số." });
+        }
+
+        [HttpPost("DeleteProductSpec")]
+        public async Task<IActionResult> DeleteProductSpec(int specId)
+        {
+            var spec = await _context.Species
+                .Include(x => x.SpecValues)
+                .FirstOrDefaultAsync(x => x.SpecId == specId);
+
+            if (spec == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy thông số." });
+            }
+
+            if (spec.SpecValues.Any())
+            {
+                spec.IsActive = false;
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, message = "Thông số đang được sử dụng nên đã được chuyển sang trạng thái ngừng hoạt động." });
+            }
+
+            _context.Species.Remove(spec);
+            await _context.SaveChangesAsync();
+            return Json(new { success = true, message = "Đã xóa thông số." });
         }
 
 
