@@ -19,6 +19,13 @@ public partial class Category
 
     public int? Visible { get; set; }
 
+    public int? VisibleOnCategoryPage { get; set; }
+
+    public int? VisibleOnOtherPages { get; set; }
+
+    public DateTime? CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+
     public virtual ICollection<Brand> Brands { get; set; } = new List<Brand>();
 
     public virtual ICollection<Product> Products { get; set; } = new List<Product>();

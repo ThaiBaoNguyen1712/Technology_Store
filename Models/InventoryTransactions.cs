@@ -18,7 +18,7 @@ public partial class InventoryTransactions
     public string? Note { get; set; }
 
     public DateTime? CreatedAt { get; set; }
-
+    public DateTime? UpdatedAt { get; set; }
     public virtual Product Product { get; set; } = null!;
 
     public virtual ICollection<InventoryTransactionsDetail> InventoryTransactionsDetail { get; set; } = new List<InventoryTransactionsDetail>();

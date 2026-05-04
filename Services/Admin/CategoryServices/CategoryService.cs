@@ -28,6 +28,8 @@ namespace Tech_Store.Services.Admin.CategoryServices
         public async Task CreateCategoryAsync(Category category, IFormFile? imageFile)
         {
             category.Image = await SaveImageAsync(imageFile) ?? "none.jpg";
+            category.VisibleOnCategoryPage ??= 1;
+            category.VisibleOnOtherPages ??= 1;
             _context.Categories.Add(category);
             await _context.SaveChangesAsync();
         }
@@ -47,7 +49,9 @@ namespace Tech_Store.Services.Admin.CategoryServices
             category.Name = updatedCategory.Name;
             category.Description = updatedCategory.Description;
             category.EngTitle = updatedCategory.EngTitle;
-            category.Visible = updatedCategory.Visible; 
+            category.Visible = updatedCategory.Visible;
+            category.VisibleOnCategoryPage = updatedCategory.VisibleOnCategoryPage ?? 1;
+            category.VisibleOnOtherPages = updatedCategory.VisibleOnOtherPages ?? 1;
             category.ParentId = updatedCategory.ParentId;
 
             await _context.SaveChangesAsync();

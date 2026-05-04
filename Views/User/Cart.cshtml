@@ -5,18 +5,30 @@
 }
 @using System.Globalization
 @using Tech_Store.Helpers
-<div class="container ms-3 mb-3 mt-3">
-    <h4>Giỏ hàng của tôi</h4>
-</div>
-<div class="container d-flex justify-content-center">
- 
-    <div class="w-100" style="max-width: 800px;">
+<section class="client-list-page client-list-page--cart">
+    <div class="container">
+        <div class="client-list-page__header">
+            <div>
+                <span class="client-list-page__eyebrow">Tech Store</span>
+                <h1>Giỏ hàng của tôi</h1>
+            </div>
+            <a href="~/" class="client-list-page__back-link">
+                <i class="fa fa-arrow-left"></i>
+                Tiếp tục mua sắm
+            </a>
+        </div>
+
+        <div class="client-list-page__content">
         @if (Model != null && Model.CartItems != null && Model.CartItems.Any())
         {
-            <div class="d-flex justify-content-end mb-3">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="selectAll" style="cursor: pointer;">
-                    <label class="form-check-label ms-2" for="selectAll" style="cursor: pointer;">
+            <div class="client-list-toolbar">
+                <div>
+                    <strong>@Model.CartItems.Count</strong>
+                    <span>sản phẩm trong giỏ hàng</span>
+                </div>
+                <div class="form-check m-0">
+                    <input class="form-check-input" type="checkbox" id="selectAll">
+                    <label class="form-check-label ms-2" for="selectAll">
                         Chọn tất cả
                     </label>
                 </div>
@@ -26,100 +38,91 @@
             <div id="cartItemsContainer">
                 @foreach (var item in Model.CartItems)
                 {
-                    <div class="card mb-3 cart-item shadow-sm border-0" data-item-id="@item.VarientProductId">
-                        <div class="card-body">
-                            <div class="row align-items-center">
-                                <input type="hidden" name="ProductId" value="@item.ProductId"/>
-                                <!-- Hình ảnh sản phẩm -->
-                                <div class="col-4 col-md-2">
-                                    @if(item.VarientProduct.ImageUrl == null)
-                                    {
-                                        <img src="/Upload/Products/no-image.png"
-                                             class="img-fluid rounded shadow-sm"
-                                             alt="No Image">
-                                    }
-                                    else if(item.VarientProduct.ImageUrl.Contains("http"))
-                                    {
-                                        <img src="@ResizeCDN.Cdn(item.VarientProduct.ImageUrl, 358,358)"
-                                             class="img-fluid rounded shadow-sm"
-                                        alt="Product Image">
-                                    }
-                                    else
-                                    {
-                                        <img src="/Upload/Products/@item.VarientProduct.ImageUrl"
-                                             class="img-fluid rounded shadow-sm"
-                                             alt="Product Image">
-                                    }
+                    <article class="client-list-card cart-item" data-item-id="@item.VarientProductId">
+                        <div class="client-list-card__select">
+                            <input type="checkbox" class="form-check-input product-checkbox"
+                                   data-price="@item.VarientProduct.Price"
+                                   data-VarientId="@item.VarientProduct.VarientId"
+                                   data-productId="@item.ProductId">
+                        </div>
 
-                                 
+                        <div class="client-list-card__image">
+                            @if(item.VarientProduct.ImageUrl == null)
+                            {
+                                <img src="/Upload/Products/no-image.png"
+                                     alt="No Image">
+                            }
+                            else if(item.VarientProduct.ImageUrl.Contains("http"))
+                            {
+                                <img src="@ResizeCDN.Cdn(item.VarientProduct.ImageUrl, 358,358)"
+                                     alt="Product Image">
+                            }
+                            else
+                            {
+                                <img src="/Upload/Products/@item.VarientProduct.ImageUrl"
+                                     alt="Product Image">
+                            }
+                        </div>
+
+                        <div class="client-list-card__body">
+                            <input type="hidden" name="ProductId" value="@item.ProductId"/>
+                            <h2 class="client-list-card__title">@item.Product.Name</h2>
+                            @if (!string.IsNullOrWhiteSpace(item.VarientProduct.Attributes))
+                            {
+                                <p class="client-list-card__meta">@item.VarientProduct.Attributes</p>
+                            }
+                        </div>
+
+                        <div class="client-list-card__actions">
+                            <div class="client-list-card__price">
+                                @((item.VarientProduct.Price ?? 0).ToString("C0", new CultureInfo("vi-VN")))
+                            </div>
+                            <div class="client-list-card__control-row">
+                                <div class="input-group input-group-sm qty-control">
+                                    <button class="btn btn-outline-secondary minus-btn" type="button">-</button>
+                                    <input type="number" class="form-control text-center qty-input"
+                                           value="@item.Quantity" min="1" data-price="@item.VarientProduct.Price">
+                                    <button class="btn btn-outline-secondary plus-btn" type="button">+</button>
                                 </div>
-
-                                <!-- Thông tin sản phẩm -->
-                                <div class="col-8 col-md-4 text-md-start text-center mt-2 mt-md-0">
-                                    <h5 class="product-name mb-1">@item.Product.Name</h5>
-                                    <p class="text-muted mb-0 small">@item.VarientProduct.Attributes</p>
-                                </div>
-
-                                <!-- Giá và số lượng -->
-                                <div class="col-12 col-md-5 mt-3 mt-md-0 text-md-end text-center">
-                                    <div class="d-flex justify-content-md-end align-items-center flex-md-row flex-column">
-                                        <!-- Giá sản phẩm -->
-                                        <div class="product-price me-md-4 mb-2 mb-md-0">
-                                            <span class="fw-bold" style="white-space: nowrap;">
-                                                @((item.VarientProduct.Price ?? 0).ToString("C0", new CultureInfo("vi-VN")))
-                                            </span>
-                                        </div>
-
-                                        <!-- Nút tăng giảm số lượng -->
-                                        <div class="input-group input-group-sm qty-control mb-2 mb-md-0" style="max-width: 120px;">
-                                            <button class="btn btn-outline-secondary minus-btn">-</button>
-                                            <input type="number" class="form-control text-center qty-input"
-                                                   value="1" min="1" data-price="@item.VarientProduct.Price">
-                                            <button class="btn btn-outline-secondary plus-btn">+</button>
-                                        </div>
-
-                                        <!-- Nút xóa sản phẩm -->
-                                        <button class="btn btn-danger btn-sm ms-md-3 delete-item" data-item-id="@item.ProductId">
-                                            <i class="fa fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <!-- Checkbox chọn sản phẩm -->
-                                <div class="col-md-1 col-2 text-center">
-                                    <input type="checkbox" class="form-check-input product-checkbox"
-                                           data-price="@item.VarientProduct.Price"
-                                           data-VarientId="@item.VarientProduct.VarientId"
-                                           data-productId="@item.ProductId"
-                                    >
-                                </div>
+                                <button class="btn client-list-card__delete delete-item" type="button" data-item-id="@item.ProductId" aria-label="Xóa sản phẩm">
+                                    <i class="fa fa-trash"></i>
+                                </button>
                             </div>
                         </div>
-                    </div>
-
+                    </article>
                 }
             </div>
 
-            <div class="d-flex justify-content-end align-items-center mt-3" id="checkout-form">
-                <h5 class="me-4">Tổng giá tạm tính: <span id="subtotal">0₫</span></h5>
-                <button type="button" id="PayBtn" class="btn btn-lg btn-danger">Thanh Toán</button>
+            <div class="client-checkout-bar" id="checkout-form">
+                <div>
+                    <span>Tổng giá tạm tính</span>
+                    <strong id="subtotal">0₫</strong>
+                </div>
+                <button type="button" id="PayBtn" class="btn btn-danger">
+                    Thanh toán
+                    <i class="fa fa-arrow-right"></i>
+                </button>
             </div>
 
         }
         else
         {
-            <div class="alert alert-warning text-center">
-                Bạn chưa có món đồ nào trong giỏ hàng
+            <div class="client-empty-state">
+                <div class="client-empty-state__icon">
+                    <i class="fa fa-shopping-cart"></i>
+                </div>
+                <h2>Giỏ hàng đang trống</h2>
+                <p>Thêm sản phẩm yêu thích vào giỏ để bắt đầu thanh toán nhanh hơn.</p>
+                <a href="~/" class="btn btn-danger">Khám phá sản phẩm</a>
             </div>
         }
+        </div>
     </div>
-      
- 
-</div>
+</section>
 <section class="products">
     <div class="container">
         <div class="product-section">
-            <div style="max-width: 85vw; padding: 10px; display: flex; justify-content: space-between; align-items: center;">
+            <div class="client-recommendation-head">
                 <h3 class="text-dark mb-0">Gợi ý cho bạn</h3>
             </div>
 
@@ -176,8 +179,12 @@
                             if ($('.cart-item').length === 0) {
                                 $('#checkout-form').addClass('d-none');
                                 $('#cartItemsContainer').html(
-                                    '<div class="alert alert-warning text-center">' +
-                                    'Bạn chưa có món đồ nào trong giỏ hàng</div>'
+                                    '<div class="client-empty-state">' +
+                                    '<div class="client-empty-state__icon"><i class="fa fa-shopping-cart"></i></div>' +
+                                    '<h2>Giỏ hàng đang trống</h2>' +
+                                    '<p>Thêm sản phẩm yêu thích vào giỏ để bắt đầu thanh toán nhanh hơn.</p>' +
+                                    '<a href="/" class="btn btn-danger">Khám phá sản phẩm</a>' +
+                                    '</div>'
                                 );
                             }
                             calculateSubtotal();
@@ -212,7 +219,7 @@
         function calculateSubtotal() {
             let subtotal = 0;
             $('.product-checkbox:checked').each(function () {
-                const row = $(this).closest('.row');
+                const row = $(this).closest('.cart-item');
                 const price = parseFloat($(this).data('price')) || 0;
                 const quantity = parseInt(row.find('.qty-input').val()) || 1;
                 subtotal += price * quantity;

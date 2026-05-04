@@ -57,10 +57,10 @@ Use these files as the first place to understand or extend shared behavior:
 
 ### Typography
 
-- Site-wide font is `Inter`.
+- Site-wide storefront font is `Roboto` because it supports Vietnamese well and keeps product/card text compact.
 - Do not add a new font per page or module.
 - Allowed fallback stack:
-  - `"Inter", "Segoe UI", Roboto, Arial, sans-serif`
+  - `"Roboto", "Segoe UI", Arial, sans-serif`
 
 ### Layout
 
@@ -135,6 +135,7 @@ Use these files as the first place to understand or extend shared behavior:
 - Keep responsive behavior consistent across header, footer, search, category navigation, and product cards.
 - Do not add per-page fonts, button systems, or spacing systems.
 - Product, category, cart, and detail pages should inherit the same typography and spacing rules from shared CSS.
+- Use icons sparingly in client UI. Prefer clear text labels and product imagery over decorative or AI-looking icon clusters; avoid adding icons that do not improve scanning or action clarity.
 
 ## Performance Rules
 

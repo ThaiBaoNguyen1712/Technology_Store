@@ -253,6 +253,126 @@ namespace Tech_Store.Services.Admin.ProductServices
             return (products, errors);
         }
 
+        public (List<Product> products, List<ImportError> errors) ImportExcel_Specs(IFormFile file)
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+            using var stream = file.OpenReadStream();
+
+            IExcelDataReader reader;
+            var ext = Path.GetExtension(file.FileName).ToLower();
+
+            if (ext == ".csv")
+                reader = ExcelReaderFactory.CreateCsvReader(stream);
+            else if (ext == ".xlsx" || ext == ".xls")
+                reader = ExcelReaderFactory.CreateReader(stream);
+            else
+                throw new Exception("File không hỗ trợ");
+
+            var dataSet = reader.AsDataSet(new ExcelDataSetConfiguration
+            {
+                ConfigureDataTable = _ => new ExcelDataTableConfiguration
+                {
+                    UseHeaderRow = true
+                }
+            });
+
+            var table = dataSet.Tables[0];
+
+            var products = new List<Product>();
+            var errors = new List<ImportError>();
+
+            // 🔥 preload specs
+            var allSpecs = _context.Species.ToList();
+
+            for (int i = 0; i < table.Rows.Count; i++)
+            {
+                var row = table.Rows[i];
+
+                using var transaction = _context.Database.BeginTransaction();
+                try
+                {
+                    var productSysId = row["product_id"]?.ToString()?.Trim();
+
+                    if (string.IsNullOrEmpty(productSysId))
+                        throw new Exception("Thiếu product_id");
+
+                    var product = _context.Products
+                        .FirstOrDefault(x => x.ProductSysId == productSysId);
+
+                    if (product == null)
+                        throw new Exception($"Không tìm thấy product: {productSysId}");
+
+                    // 🔥 load specValues của product 1 lần
+                    var existingSpecValues = _context.SpecValues
+                        .Where(x => x.ProductId == product.ProductId)
+                        .ToList();
+
+                    if (row["specs"] != null)
+                    {
+                        var specs = ConvertSpec(row["specs"].ToString());
+
+                        foreach (var item in specs)
+                        {
+                            var key = item.Key.Trim().ToLower();
+
+                            // 🔥 tìm spec theo code (fallback name)
+                            var specEntity = allSpecs
+                                .FirstOrDefault(x =>
+                                    x.Code.ToLower() == key ||
+                                    x.Name.ToLower() == key);
+
+                            if (specEntity == null)
+                            {
+                                specEntity = new Specs
+                                {
+                                    Name = item.Key,
+                                    Code = key
+                                };
+
+                                _context.Species.Add(specEntity);
+                                allSpecs.Add(specEntity); // update cache
+                            }
+
+                            var existing = existingSpecValues
+                                .FirstOrDefault(x => x.SpecId == specEntity.SpecId);
+
+                            if (existing != null)
+                            {
+                                existing.Value = item.Value;
+                            }
+                            else
+                            {
+                                _context.SpecValues.Add(new SpecValue
+                                {
+                                    SpecId = specEntity.SpecId,
+                                    ProductId = product.ProductId,
+                                    Value = item.Value
+                                });
+                            }
+                        }
+                    }
+
+                    _context.SaveChanges();
+                    transaction.Commit();
+
+                    products.Add(product);
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+
+                    errors.Add(new ImportError
+                    {
+                        Row = i + 2,
+                        ProductName = row["name_product"]?.ToString(),
+                        Error = ex.Message
+                    });
+                }
+            }
+
+            return (products, errors);
+        }
 
         private static Dictionary<string, string> ConvertSpec(string spec)
         {

@@ -24,6 +24,10 @@ namespace Tech_Store.Models
 
         public bool IsVisibleOnProductPage { get; set; } = true;
 
+        public DateTime? CreatedAt { get; set; }
+
+        public DateTime? UpdatedAt { get; set; }
+
         public virtual ICollection<SpecValue> SpecValues { get; set; } = new List<SpecValue>();
     }
 }

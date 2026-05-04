@@ -18,6 +18,8 @@ public partial class Payment
     public decimal Amount { get; set; }
 
     public string Status { get; set; } = null!;
+    public DateTime? CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 
     public virtual Order? Order { get; set; }
 }

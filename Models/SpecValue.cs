@@ -12,6 +12,10 @@ namespace Tech_Store.Models
 
         public int SortOrder { get; set; }
 
+        public DateTime? CreatedAt { get; set; }
+
+        public DateTime? UpdatedAt { get; set; }
+
         public virtual Specs Specs { get; set; } = null!;
 
         public virtual Product Product { get; set; } = null!;

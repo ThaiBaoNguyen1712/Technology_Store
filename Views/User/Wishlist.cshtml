@@ -5,71 +5,73 @@
 @model IEnumerable<Tech_Store.Models.ViewModel.WishlistVM>
 @using System.Globalization
 @using Tech_Store.Helpers
-<div class="container py-4">
-    <h3 class="mb-4">Danh sách yêu thích</h3>
+<section class="client-list-page client-list-page--wishlist">
+    <div class="container">
+        <div class="client-list-page__header">
+            <div>
+                <span class="client-list-page__eyebrow">Tech Store</span>
+                <h1>Danh sách yêu thích</h1>
+            </div>
+            <a href="~/" class="client-list-page__back-link">
+                <i class="fa fa-arrow-left"></i>
+                Tiếp tục mua sắm
+            </a>
+        </div>
 
-    <div class="row justify-content-center">
-        <div class="col-12" style="max-width: 800px;">
+        <div class="client-list-page__content">
             @if (Model != null && Model.Any())
             {
+                <div class="client-list-toolbar">
+                    <div>
+                        <strong>@Model.Count()</strong>
+                        <span>sản phẩm đã lưu</span>
+                    </div>
+                </div>
+
                 <div id="cartItemsContainer">
                     @foreach (var item in Model)
                     {
-                        <div class="card mb-3 shadow-sm border-0" data-item-id="@item.ProductId">
-                            <div class="card-body p-3">
-                                <!-- Đặt product-link bao toàn bộ nội dung chính -->
-                                <div class="product-link" data-slug="@item.Slug" style="cursor: pointer;">
-                                    <div class="row g-3 align-items-center">
-                                        <input type="hidden" name="ProductId" value="@item.ProductId" />
+                        <article class="client-list-card client-list-card--wishlist" data-item-id="@item.ProductId">
+                            <div class="client-list-card__image product-link" data-slug="@item.Slug">
+                                @if (item.ImageUrl == null)
+                                {
+                                    <img src="/Upload/Products/no-image.png"
+                                         alt="No Image Available">
+                                }
+                                else if(item.ImageUrl.Contains("http"))
+                                {
+                                    <img src="@ResizeCDN.Cdn(item.ImageUrl,358,358)"
+                                         alt="@item.ProductName">
+                                }
+                                else
+                                {
+                                    <img src="/Upload/Products/@item.ImageUrl"
+                                         alt="@item.ProductName">
+                                }
+                            </div>
 
-                                        <!-- Hình ảnh sản phẩm -->
-                                        <div class="col-3 col-md-2">
-                                            @if (item.ImageUrl == null)
-                                            {
-                                                <img src="/Upload/Products/no-image.png"
-                                                class="img-fluid rounded"
-                                                alt="No Image Available">
-                                            }
-                                            else if(item.ImageUrl.Contains("http"))
-                                            {
-                                                <img src="@ResizeCDN.Cdn(item.ImageUrl,358,358)"
-                                                     class="img-fluid rounded"
-                                                     alt="@item.ProductName">
-                                            }
-      
-                                            else
-                                            {
-                                                <img src="/Upload/Products/@item.ImageUrl"
-                                                     class="img-fluid rounded"
-                                                     alt="@item.ProductName">
+                            <div class="client-list-card__body product-link" data-slug="@item.Slug">
+                                <input type="hidden" name="ProductId" value="@item.ProductId" />
+                                <h2 class="client-list-card__title">@item.ProductName</h2>
+                                <p class="client-list-card__meta">
+                                    <i class="fa fa-heart"></i>
+                                    Đã thêm vào @item.CreatedAt.ToString("dd/MM/yyyy")
+                                </p>
+                            </div>
 
-                                            }
-                                           
-                                        </div>
-
-                                        <!-- Thông tin sản phẩm -->
-                                        <div class="col-8 col-md-5">
-                                            <h5 class="h6 mb-2">@item.ProductName</h5>
-                                            <p class="text-muted mb-0 small">Đã thêm vào @item.CreatedAt.ToString("dd/MM/yyyy")</p>
-                                        </div>
-
-                                        <!-- Giá -->
-                                        <div class="col">
-                                            <span class="fw-bold">@item.Price</span>
-                                        </div>
-
-                                        <!-- Nút xóa - đặt ngoài product-link -->
-                                        <div class="col-auto">
-                                            <button class="btn btn-outline-danger btn-sm delete-item"
-                                                    data-id="@item.ProductId"
-                                                    onclick="event.stopPropagation();">
-                                                <i class="fa fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </div>
+                            <div class="client-list-card__actions">
+                                <div class="client-list-card__price">@item.Price</div>
+                                <div class="client-list-card__control-row">
+                                    <button class="btn btn-outline-danger btn-sm delete-item"
+                                            type="button"
+                                            data-id="@item.ProductId"
+                                            onclick="event.stopPropagation();">
+                                        <i class="fa fa-trash"></i>
+                                        Xóa
+                                    </button>
                                 </div>
                             </div>
-                        </div>
+                        </article>
                     }
                 </div>
 
@@ -78,17 +80,23 @@
 
             else
             {
-                <div class="alert alert-warning text-center">
-                    Bạn chưa có món đồ nào trong danh sách yêu thích
+                <div class="client-empty-state">
+                    <div class="client-empty-state__icon">
+                        <i class="fa fa-heart"></i>
+                    </div>
+                    <h2>Danh sách yêu thích đang trống</h2>
+                    <p>Lưu lại những sản phẩm bạn quan tâm để so sánh và mua sau.</p>
+                    <a href="~/" class="btn btn-danger">Khám phá sản phẩm</a>
                 </div>
             }
         </div>
     </div>
+</section>
 
     <section class="products">
         <div class="container">
             <div class="product-section">
-                <div style="max-width: 85vw; padding: 10px; display: flex; justify-content: space-between; align-items: center;">
+                <div class="client-recommendation-head">
                     <h3 class="text-dark mb-0">Gợi ý cho bạn</h3>
                 </div>
 
@@ -109,7 +117,6 @@
             </div>
         </div>
     </section>
-</div>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script type="text/javascript">
     $(document).ready(function () {

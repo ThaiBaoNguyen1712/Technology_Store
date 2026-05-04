@@ -21,6 +21,8 @@ public partial class User
 
     public DateTime? CreatedAt { get; set; }
 
+    public DateTime? UpdatedAt { get; set; }
+
     public DateTime? LastLogin { get; set; }
 
     public string? VerificationCode { get; set; }

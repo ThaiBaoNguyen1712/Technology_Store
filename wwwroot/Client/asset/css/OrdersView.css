@@ -9,14 +9,14 @@
 .card {
     border: none;
     border-radius: 1rem;
-    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    transition: border-color 0.12s ease, box-shadow 0.12s ease;
     margin-bottom: 1.5rem;
 }
 
     .card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        transform: none;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
     }
 
 .product-image {
@@ -101,7 +101,7 @@
     padding: 0.6rem 1.2rem;
     border-radius: 0.75rem;
     font-weight: 500;
-    transition: all 0.3s ease;
+    transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
 
 .btn-primary {
@@ -111,7 +111,7 @@
 
     .btn-primary:hover {
         background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-        transform: translateY(-2px);
+        transform: none;
     }
 
 .btn-outline {
@@ -131,7 +131,7 @@
     padding: 1rem;
     border-radius: 1rem;
     margin-bottom: 2rem;
-    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
 }
 
 .form-select {
@@ -154,11 +154,11 @@
 
     .rating i {
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: color 0.12s ease;
     }
 
         .rating i:hover {
-            transform: scale(1.2);
+            transform: none;
         }
 
 /* Modal Styles */
@@ -259,7 +259,7 @@
 
 /* Animations */
 .animate-fade-in {
-    animation: fadeIn 0.5s ease-in;
+    animation: none;
 }
 
 @keyframes fadeIn {

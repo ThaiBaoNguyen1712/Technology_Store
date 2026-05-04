@@ -9,10 +9,13 @@
             <h4 class="mb-0">Nhập thông tin sản phẩm từ Excel</h4>
         </div>
         <div class="card-body">
-            <form method="post" enctype="multipart/form-data" action="~/admin/products/importExcel">
+            <form asp-action="ImportExcel" asp-controller="Products" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
                 <div class="mb-3">
-                    <label class="form-label fw-bold" for="FileExcel">Chọn file Excel</label>
-                    <input class="form-control" type="file" id="FileExcel" name="file" accept=".csv,.xlsx" />
+                    <label class="form-label fw-bold" for="file">Chọn file Excel</label>
+                    <input class="form-control" type="file" id="file" name="file" accept=".csv,.xlsx" />
+                    <input type="checkbox" name="more" id="more" value="true" />
+                    <label for="more">Thêm thông số (Specs)</label>
                 </div>
                 <button type="submit" class="btn btn-success">
                     <i class="bi bi-upload"></i> Tải lên

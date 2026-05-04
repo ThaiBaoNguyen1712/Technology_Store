@@ -30,7 +30,9 @@ namespace Tech_Store.Controllers
         }
         protected virtual void LoadProductsAndCategories()
         {
-            var categories = _context.Categories.Where(x => x.Visible == 1).ToList();
+            var categories = _context.Categories
+                .Where(x => x.VisibleOnOtherPages == 1)
+                .ToList();
             var smartphone_products = _context.Products.Where(x => x.CategoryId == 1).OrderByDescending(x => x.CreatedAt).Take(10).ToList();
             var laptop_products = _context.Products.Where(x => x.CategoryId == 2).OrderByDescending(x => x.CreatedAt).Take(10).ToList();
             var tablet_products = _context.Products.Where(x => x.CategoryId == 3).OrderByDescending(x => x.CreatedAt).Take(10).ToList();
@@ -39,10 +41,16 @@ namespace Tech_Store.Controllers
 
             //Cart_item count
             var cart_items_count = 0;
+            var wishlistProductIds = new List<int>();
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId != null)
             {
-                cart_items_count = _context.CartItems.Where(x=>x.Cart.UserId == int.Parse(userId)).Count();
+                var parsedUserId = int.Parse(userId);
+                cart_items_count = _context.CartItems.Where(x=>x.Cart.UserId == parsedUserId).Count();
+                wishlistProductIds = _context.Wishlists
+                    .Where(x => x.UserId == parsedUserId && x.ProductId.HasValue)
+                    .Select(x => x.ProductId!.Value)
+                    .ToList();
             }
 
         
@@ -53,6 +61,7 @@ namespace Tech_Store.Controllers
             ViewBag.watch = watch_products;
             ViewBag.accessory = accessory_products;
             ViewBag.cart_numb = cart_items_count;
+            ViewBag.WishlistProductIds = wishlistProductIds;
       
         }
 

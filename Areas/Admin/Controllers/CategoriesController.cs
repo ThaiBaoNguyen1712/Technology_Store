@@ -30,7 +30,7 @@ namespace Tech_Store.Areas.Admin.Controllers
         {
             Category model;
 
-            var categories = _context.Categories.Where(x=>x.Visible == 1).ToList();
+            var categories = _context.Categories.ToList();
           
             if (id == null)
             {

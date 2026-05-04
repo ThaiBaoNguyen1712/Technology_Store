@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Tech_Store.Models;
 
@@ -64,15 +65,82 @@ public partial class ApplicationDbContext : DbContext
     public virtual DbSet<Wishlist> Wishlists { get; set; }
 
 
+    public override int SaveChanges()
+    {
+        ApplyTimestamps();
+        return base.SaveChanges();
+    }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        ApplyTimestamps();
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    private void ApplyTimestamps()
+    {
+        var now = DateTime.Now;
+
+        foreach (var entry in ChangeTracker.Entries())
+        {
+            if (entry.State != EntityState.Added && entry.State != EntityState.Modified)
+            {
+                continue;
+            }
+
+            var createdAt = entry.Properties.FirstOrDefault(p => p.Metadata.Name == "CreatedAt");
+            var updatedAt = entry.Properties.FirstOrDefault(p => p.Metadata.Name == "UpdatedAt");
+
+            if (entry.State == EntityState.Added)
+            {
+                if (createdAt?.CurrentValue == null)
+                {
+                    createdAt!.CurrentValue = now;
+                }
+
+                if (updatedAt?.CurrentValue == null)
+                {
+                    updatedAt!.CurrentValue = now;
+                }
+            }
+            else
+            {
+                if (createdAt != null)
+                {
+                    createdAt.IsModified = false;
+                }
+
+                if (updatedAt != null)
+                {
+                    updatedAt.CurrentValue = now;
+                }
+            }
+        }
+    }
+
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        static void ConfigureTimestamps<TEntity>(EntityTypeBuilder<TEntity> entity)
+            where TEntity : class
+        {
+            entity.Property<DateTime?>("CreatedAt")
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property<DateTime?>("UpdatedAt")
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
+        }
+
         modelBuilder.Entity<Address>(entity =>
         {
             entity.HasKey(e => e.AddressId).HasName("PK__Address__CAA247C87ED1B05A");
 
             entity.ToTable("Address");
+            ConfigureTimestamps(entity);
 
             entity.Property(e => e.AddressId).HasColumnName("address_id");
             entity.Property(e => e.AddressLine)
@@ -101,6 +169,7 @@ public partial class ApplicationDbContext : DbContext
         modelBuilder.Entity<Attribute>(entity =>
         {
             entity.ToTable("Attribute");
+            ConfigureTimestamps(entity);
 
             entity.Property(e => e.AttributeId).HasColumnName("attributeId");
             entity.Property(e => e.Code)
@@ -117,6 +186,7 @@ public partial class ApplicationDbContext : DbContext
         modelBuilder.Entity<AttributeValue>(entity =>
         {
             entity.ToTable("AttributeValue");
+            ConfigureTimestamps(entity);
 
             entity.Property(e => e.AttributeId).HasColumnName("attributeId");
             entity.Property(e => e.Value)
@@ -132,6 +202,7 @@ public partial class ApplicationDbContext : DbContext
         modelBuilder.Entity<Banner>(entity =>
         {
             entity.ToTable("Banner");
+            ConfigureTimestamps(entity);
             entity.Property(e => e.BannerId).HasColumnName("banner_id").UseIdentityColumn(00000);
             entity.Property(e=>e.Type).HasColumnName("type");
             entity.Property(e => e.RefId).HasColumnName("refId");
@@ -146,6 +217,7 @@ public partial class ApplicationDbContext : DbContext
         modelBuilder.Entity<Brand>(entity =>
         {
             entity.ToTable("Brand");
+            ConfigureTimestamps(entity);
 
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
             entity.Property(e => e.Description).HasColumnName("description");
@@ -188,6 +260,7 @@ public partial class ApplicationDbContext : DbContext
             entity.HasKey(e => e.CartItemId).HasName("PK__CartItem__5D9A6C6EEDADB402");
 
             entity.ToTable("CartItem");
+            ConfigureTimestamps(entity);
 
             entity.Property(e => e.CartItemId).HasColumnName("cart_item_id");
             entity.Property(e => e.CartId).HasColumnName("cart_id");
@@ -215,6 +288,7 @@ public partial class ApplicationDbContext : DbContext
             entity.HasKey(e => e.CategoryId).HasName("PK__Category__D54EE9B4A1BB5889");
 
             entity.ToTable("Category");
+            ConfigureTimestamps(entity);
 
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
             entity.Property(e => e.ParentId).HasColumnName("parent_id");
@@ -229,6 +303,12 @@ public partial class ApplicationDbContext : DbContext
                 .HasMaxLength(100)
                 .HasColumnName("name");
             entity.Property(e => e.Visible).HasColumnName("visible");
+            entity.Property(e => e.VisibleOnCategoryPage)
+                .HasDefaultValue(1)
+                .HasColumnName("visible_on_category_page");
+            entity.Property(e => e.VisibleOnOtherPages)
+                .HasDefaultValue(1)
+                .HasColumnName("visible_on_other_pages");
         });
 
         modelBuilder.Entity<Comment>(entity =>
@@ -254,6 +334,7 @@ public partial class ApplicationDbContext : DbContext
             entity.HasKey(e => e.ImageId).HasName("PK_image");
 
             entity.ToTable("Gallery");
+            ConfigureTimestamps(entity);
 
             entity.Property(e => e.ImageId).HasColumnName("image_id");
             entity.Property(e => e.Path)
@@ -290,6 +371,7 @@ public partial class ApplicationDbContext : DbContext
             entity.HasKey(e => e.OrderId).HasName("PK__Order__46596229037B3931");
 
             entity.ToTable("Order");
+            ConfigureTimestamps(entity);
 
             entity.Property(e => e.OrderId).HasColumnName("order_id");
             entity.Property(e => e.DeductAmount)
@@ -337,6 +419,7 @@ public partial class ApplicationDbContext : DbContext
             entity.HasKey(e => e.OrderItemId).HasName("PK__OrderIte__3764B6BCEECC8333");
 
             entity.ToTable("OrderItem");
+            ConfigureTimestamps(entity);
 
             entity.Property(e => e.OrderItemId).HasColumnName("order_item_id");
             entity.Property(e => e.OrderId).HasColumnName("order_id");
@@ -368,6 +451,7 @@ public partial class ApplicationDbContext : DbContext
             entity.HasKey(e => e.PaymentId).HasName("PK__Payment__ED1FC9EAAA6E7EEE");
 
             entity.ToTable("Payment");
+            ConfigureTimestamps(entity);
 
             entity.Property(e => e.PaymentId).HasColumnName("payment_id");
             entity.Property(e => e.Amount)
@@ -486,6 +570,10 @@ public partial class ApplicationDbContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
             entity.Property(e => e.Note).HasColumnName("note");
             entity.Property(e => e.ProductId).HasColumnName("productId");
             entity.Property(e => e.Type)
@@ -509,6 +597,7 @@ public partial class ApplicationDbContext : DbContext
             entity.HasKey(e => e.InventoryTransDetailId);
 
             entity.ToTable("InventoryTransactionsDetail");
+            ConfigureTimestamps(entity);
 
             entity.Property(e => e.InventoryTransDetailId).HasColumnName("inventoryTrans_detail_id");
             entity.Property(e => e.InventoryTransId).HasColumnName("historyId");
@@ -529,6 +618,7 @@ public partial class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.SpecId);
             entity.ToTable("Specs");
+            ConfigureTimestamps(entity);
 
             entity.Property(e => e.SpecId).HasColumnName("spec_id");
             entity.Property(e => e.Name)
@@ -561,6 +651,7 @@ public partial class ApplicationDbContext : DbContext
         {
             entity.HasKey(e=>e.SpecValueId);
             entity.ToTable("SpecValue");
+            ConfigureTimestamps(entity);
 
             entity.Property(e => e.SpecValueId).HasColumnName("specValue_id");
             entity.Property(e => e.SpecId).HasColumnName("spec_id");
@@ -587,6 +678,7 @@ public partial class ApplicationDbContext : DbContext
             entity.HasKey(e => e.ReviewId).HasName("PK__Review__60883D9045574F64");
 
             entity.ToTable("Review");
+            ConfigureTimestamps(entity);
 
             entity.Property(e => e.ReviewId).HasColumnName("review_id");
             entity.Property(e => e.Comment)
@@ -633,6 +725,7 @@ public partial class ApplicationDbContext : DbContext
         modelBuilder.Entity<Setting>(entity =>
         {
             entity.ToTable("Setting");
+            ConfigureTimestamps(entity);
 
             entity.Property(e => e.SettingId).HasColumnName("settingId");
             entity.Property(e => e.DataType)
@@ -661,6 +754,10 @@ public partial class ApplicationDbContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
             entity.Property(e => e.CreatedVerify)
                 .HasColumnType("datetime")
                 .HasColumnName("created_verify");
@@ -743,6 +840,7 @@ public partial class ApplicationDbContext : DbContext
         modelBuilder.Entity<VariantAttribute>(entity =>
         {
             entity.ToTable("VariantAttribute");
+            ConfigureTimestamps(entity);
 
             entity.Property(e => e.VariantAttributeId).HasColumnName("variantAttributeId");
             entity.Property(e => e.AttributeValueId).HasColumnName("attribute_ValueId");
@@ -773,6 +871,10 @@ public partial class ApplicationDbContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
             entity.Property(e => e.Price)
                 .HasColumnType("decimal(18 ,2)")
                 .HasColumnName("price");
@@ -794,6 +896,7 @@ public partial class ApplicationDbContext : DbContext
         modelBuilder.Entity<Voucher>(entity =>
         {
             entity.ToTable("Voucher");
+            ConfigureTimestamps(entity);
 
             entity.Property(e => e.Code)
                 .HasMaxLength(50)

@@ -27,7 +27,7 @@ namespace Tech_Store.Controllers
         // Khai báo chỉ cần ILogger và IConfiguration
         public HomeController(ILogger<HomeController> logger, NotificationService notificationService, IConfiguration configuration, ApplicationDbContext context,
             RedisService redis, RecommendServices recommendServices)
-			: base(context) // Gọi constructor của BaseController
+			: base(context) 
 		{
 			_logger = logger;
 			_configuration = configuration;
@@ -191,19 +191,6 @@ namespace Tech_Store.Controllers
                 .OrderByDescending(c => c.CreatedAt)
                 .ToList();
 
-            // Load recommended products
-            var productSysId = product.ProductSysId;
-            HttpContext.Items["product_sys_id"] = productSysId;
-
-            var recommendResult = await _recommendServices.GetSceneRecommend(userId, "detail", productSysId, 10);
-       
-            // Load related products
-            var relatedProducts = await _context.Products
-                .AsNoTracking()
-                .Where(p => p.CategoryId == product.CategoryId && p.ProductId != product.ProductId && p.Stock > 0 && p.Status != "outstock")
-                .Take(10)
-                .ToListAsync();
-
             // Pass data to the view
             ViewBag.specs = specs;
             ViewBag.review_count = reviewCount;
@@ -211,7 +198,7 @@ namespace Tech_Store.Controllers
             ViewBag.ratingSummary = ratingSummary;
             ViewBag.averageRating = averageRating;
             ViewBag.comments = commentTree;
-            ViewBag.related_products = relatedProducts;
+
 
             return View(product);
         }
@@ -300,7 +287,7 @@ namespace Tech_Store.Controllers
         {
             var categories = _context.Categories
                 .AsNoTracking()
-                .Where(x => x.Visible == 1)
+                .Where(x => x.VisibleOnCategoryPage == 1)
                 .OrderBy(x => x.Name)
                 .Select(x => new Category
                 {
@@ -309,7 +296,9 @@ namespace Tech_Store.Controllers
                     EngTitle = x.EngTitle,
                     Image = x.Image,
                     Description = x.Description,
-                    Visible = x.Visible
+                    Visible = x.Visible,
+                    VisibleOnCategoryPage = x.VisibleOnCategoryPage,
+                    VisibleOnOtherPages = x.VisibleOnOtherPages
                 })
                 .ToList();
 
@@ -519,6 +508,7 @@ namespace Tech_Store.Controllers
 
             ViewBag.list_category = _context.Categories
                 .AsNoTracking()
+                .Where(c => c.VisibleOnOtherPages == 1)
                 .Select(c => new { c.CategoryId, c.Name })
                 .ToList();
 

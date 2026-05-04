@@ -13,5 +13,8 @@ namespace Tech_Store.Models
         public string? Device {  get; set; }
         public int? SortOrder { get; set; }
         public bool? isActive {  get; set; }
+        public DateTime? CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+
     }
 }

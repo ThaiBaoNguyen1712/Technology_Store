@@ -78,10 +78,26 @@
 
                 <div class="col-lg-4 border-start">
                     <div class="mb-4">
-                        <label class="form-label fw-semibold text-secondary">Trạng thái hiển thị</label>
+                        <label class="form-label fw-semibold text-secondary">Hiển thị ở trang chủ</label>
                         <select class="form-select" name="visible">
                             <option value="1" @(Model?.Visible == 1 ? "selected" : "")>Hiển thị công khai</option>
                             <option value="0" @(Model?.Visible == 0 ? "selected" : "")>Tạm ẩn</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-secondary">Hiển thị ở trang danh mục</label>
+                        <select class="form-select" name="VisibleOnCategoryPage">
+                            <option value="1" @(Model?.VisibleOnCategoryPage != 0 ? "selected" : "")>Hiển thị</option>
+                            <option value="0" @(Model?.VisibleOnCategoryPage == 0 ? "selected" : "")>Tạm ẩn</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-secondary">Hiển thị ở các trang khác</label>
+                        <select class="form-select" name="VisibleOnOtherPages">
+                            <option value="1" @(Model?.VisibleOnOtherPages != 0 ? "selected" : "")>Hiển thị</option>
+                            <option value="0" @(Model?.VisibleOnOtherPages == 0 ? "selected" : "")>Tạm ẩn</option>
                         </select>
                     </div>
 

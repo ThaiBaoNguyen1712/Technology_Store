@@ -1,6 +1,6 @@
 ﻿/*Thanh lọc sản phẩm (filter toolbar) */
 .filter-toolbar {
-    transition: all 0.3s ease;
+    transition: border-color 0.12s ease, background-color 0.12s ease;
     border: 1px solid #f1f1f1 !important;
 }
 
@@ -40,7 +40,7 @@
 
 .btn-white {
     background: white;
-    transition: all 0.2s;
+    transition: background-color 0.12s ease, border-color 0.12s ease;
 }
 
     .btn-white:hover {

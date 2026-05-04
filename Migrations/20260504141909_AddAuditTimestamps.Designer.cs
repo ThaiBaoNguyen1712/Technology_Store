@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tech_Store.Models;
 
@@ -11,9 +12,11 @@ using Tech_Store.Models;
 namespace Tech_Store.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260504141909_AddAuditTimestamps")]
+    partial class AddAuditTimestamps
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -399,18 +402,6 @@ namespace Tech_Store.Migrations
                     b.Property<int?>("Visible")
                         .HasColumnType("int")
                         .HasColumnName("visible");
-
-                    b.Property<int?>("VisibleOnCategoryPage")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1)
-                        .HasColumnName("visible_on_category_page");
-
-                    b.Property<int?>("VisibleOnOtherPages")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1)
-                        .HasColumnName("visible_on_other_pages");
 
                     b.HasKey("CategoryId")
                         .HasName("PK__Category__D54EE9B4A1BB5889");

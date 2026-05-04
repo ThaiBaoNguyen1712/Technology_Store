@@ -18,7 +18,7 @@ function loadNotifications() {
             data.forEach(n => {
                 const icon = getNotificationIcon(n.type);
                 const item = `
-                    <a href="${n.redirectUrl}" class="notification-item ${n.isRead ? 'bg-white' : 'bg-light mark-as-read'}" data-id="${n.userNotificationId}">
+                    <a href="${n.redirectUrl}" class="notification-item ${n.isRead ? 'is-read' : 'is-unread mark-as-read'}" data-id="${n.userNotificationId}">
                         <div class="notification-content">
                             <div class="notification-avatar">
                                 <div class="notif-icon ${icon.color}">
@@ -28,8 +28,8 @@ function loadNotifications() {
                             <div class="notification-info">
                                 <p class="notification-text">${n.title}</p>
                                 <span class="block">
-                                    <small class="text-truncated" style="max-width:400px" title="${n.message}">
-                                        ${n.message.length > 50 ? n.message.substring(0, 50) + "..." : n.message}
+                                    <small class="notification-message-preview" title="${n.message}">
+                                        ${n.message.length > 72 ? n.message.substring(0, 72) + "..." : n.message}
                                     </small>
                                 </span>
                                 <span class="notification-time">${timeAgo(n.createdAt)}</span>
@@ -41,10 +41,12 @@ function loadNotifications() {
         } else {
             // Nếu không có thông báo
             const noNotif = `
-                <div class="notification-content" style="min-height:40px">
-                    <span class="block d-flex text-center justify-content-center align-items-center">
-                        Không có thông báo
-                    </span>
+                <div class="notification-empty-state">
+                    <div class="notification-empty-state__icon">
+                        <i class="fa fa-bell-slash"></i>
+                    </div>
+                    <strong>Chưa có thông báo</strong>
+                    <span>Các cập nhật về đơn hàng và tài khoản sẽ xuất hiện tại đây.</span>
                 </div>`;
             notificationList.append(noNotif);
         }

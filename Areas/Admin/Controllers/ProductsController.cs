@@ -40,19 +40,22 @@ namespace Tech_Store.Areas.Admin.Controllers
         }
 
         [HttpPost("ImportExcel")]
-        public async Task<IActionResult> ImportExcel(IFormFile file)
+        public async Task<IActionResult> ImportExcel(IFormFile file, bool more)
         {
             if (file == null || file.Length == 0)
             {
-                ViewBag.Error = "Vui lòng chọn file có đuôi .xlsx hoặc .csv";
+                ViewBag.Error = "Vui lòng chọn file .xlsx hoặc .csv";
                 return View();
             }
 
-            await Task.Yield();
-            var result = _excelService.ImportExcel(file);
+            var result = more
+                ?  _excelService.ImportExcel_Specs(file)
+                :  _excelService.ImportExcel(file);
+
             ViewBag.SuccessCount = result.products.Count;
             ViewBag.ErrorCount = result.errors.Count;
             ViewBag.Errors = result.errors;
+
             return View();
         }
 

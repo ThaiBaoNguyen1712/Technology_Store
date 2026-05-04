@@ -13,6 +13,10 @@ public partial class InventoryTransactionsDetail
 
     public int Quantity { get; set; }
 
+    public DateTime? CreatedAt { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
+
     public virtual InventoryTransactions InventoryTransactions { get; set; } = null!;
 
     public virtual VarientProduct Varient { get; set; } = null!;

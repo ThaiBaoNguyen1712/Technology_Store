@@ -76,12 +76,12 @@ const RecommendationManager = {
                             <h6 class="card-title mb-2 product-title" style="font-size: 0.9rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
                                 ${p.name}
                             </h6>
-                            <div class="d-flex align-items-center text-center gap-1 mb-2 flex-wrap" style="min-height: 3rem;">
-                                <div class="text-danger fw-bold" style="font-size: 1rem;">${price}</div>
+                            <div class="price-wrapper d-flex align-items-center text-center gap-1 mb-2 flex-wrap" style="min-height: 3rem;">
+                                <div class="price-text text-danger fw-bold" style="font-size: 1rem;">${price}</div>
                                 ${oldPrice ? `<div class="text-decoration-line-through text-muted text-end" style="font-size: 0.85rem;">${oldPrice}</div>` : ''}
                             </div>
                             <button class="btn btn-outline-danger btn-sm w-100 mt-auto addToWishList" data-id="${p.productId}">
-                                <i class="far fa-heart pe-1"></i> Yêu thích
+                                <i class="far fa-heart pe-1"></i><span>Yêu thích</span>
                             </button>
                         </div>
                     </div>
@@ -111,7 +111,13 @@ const RecommendationManager = {
     // 7. Quản lý sự kiện (Click, Hover...)
     bindEvents: function () {
         // Sự kiện click chuyển trang
-        $('.product-link').off('click').on('click', function () {
+        $('.product-link').off('click').on('click', function (e) {
+            if ($(e.target).closest('.addToWishList').length) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+
             const slug = $(this).data('slug');
             window.location.href = `/view/${slug}`;
         });
@@ -124,5 +130,9 @@ const RecommendationManager = {
                 addToWishlist(id); // Gọi hàm global có sẵn của bạn
             }
         });
+
+        if (typeof window.syncWishlistCards === 'function') {
+            window.syncWishlistCards();
+        }
     }
 };

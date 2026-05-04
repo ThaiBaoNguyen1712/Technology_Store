@@ -11,6 +11,10 @@ public partial class VariantAttribute
 
     public int AttributeValueId { get; set; }
 
+    public DateTime? CreatedAt { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
+
     public virtual AttributeValue AttributeValue { get; set; } = null!;
 
     public virtual VarientProduct ProductVariant { get; set; } = null!;

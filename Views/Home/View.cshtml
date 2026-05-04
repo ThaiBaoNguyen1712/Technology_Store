@@ -22,6 +22,18 @@
         return string.Empty;
     }
 }
+@{
+    var productSpecs = ViewBag.specs as IEnumerable<Tech_Store.Models.Specs>;
+    List<(string Name, string? Value)> productSpecEntries = productSpecs?
+        .SelectMany(spec => (spec.SpecValues ?? Enumerable.Empty<Tech_Store.Models.SpecValue>())
+            .OrderBy(x => x.SortOrder)
+            .Select(v => (Name: spec.Name, Value: (string?)v.Value)))
+        .ToList() ?? new List<(string Name, string? Value)>();
+    var hasSpecs = productSpecEntries.Any();
+    var compactSpecLimit = 8;
+    var youtubeVideoId = extractVideoID(Model.UrlYoutube ?? string.Empty);
+    var hasYoutubeVideo = !string.IsNullOrWhiteSpace(youtubeVideoId);
+}
 
 <div class="container my-3">
     <!-- Breadcrumb -->
@@ -191,40 +203,27 @@
             <input type="hidden" id="selectedVariantId" value="" />
           
       
-            <div class="row g-3 py-3">
+            <div class="product-action-grid py-3">
                 <!-- Nút Mua ngay -->
-                <div class="col-7 col-md-8">
+                <div class="product-action-grid__buy">
                     <button type="button" id="ToCheckOutBtn" data-id="@Model.ProductId"
-                            class="btn btn-buy-now text-white w-100 py-3 fw-semibold text-uppercase shadow">
+                            class="btn btn-buy-now text-white w-100 product-action-btn fw-semibold text-uppercase shadow">
                         <i class="fas fa-bolt me-2"></i>
-                        Mua ngay
+                        <span>Mua ngay</span>
                     </button>
                 </div>
                 <!-- Nút Thêm vào giỏ -->
-                <div class="col-5 col-md-4">
+                <div class="product-action-grid__cart">
                     <button type="button" id="AddToCart"
-                            class="btn btn-cart btn-outline-danger w-100 py-3">
+                            class="btn btn-cart btn-outline-danger w-100 product-action-btn">
                         <i class="fa fa-cart-plus" aria-hidden="true"></i>
-                        Thêm vào giỏ
+                        <span>Thêm vào giỏ</span>
                     </button>
                 </div>
             </div>
 
         </div>
     </div>
-    @if (!string.IsNullOrEmpty(Model.UrlYoutube))
-    {
-        <div class="row pt-3">
-            <div class="col-12">
-                <div class="video-container">
-                    <iframe src="https://www.youtube.com/embed/@extractVideoID(@Model.UrlYoutube)"
-                            frameborder="0"
-                            allowfullscreen>
-                    </iframe>
-                </div>
-            </div>
-        </div>
-    }
     <div class="row pt-3">
         <div class="col-12">
                 <div class="product-detail">
@@ -234,38 +233,59 @@
                 </div>
               
 
-                @if (ViewBag.specs != null)
-                    {
-                    <div class="row">
-                        <div class="col-md-8 description-content">
-                            <p class="product-description">
-                                @Html.Raw(Model.Description)
-                            </p>
+                <div class="description-content">
+                    <div class="product-info-layout @((hasSpecs || hasYoutubeVideo) ? "" : "product-info-layout--single")">
+                        <div class="product-info-layout__description">
+                            <p class="product-description">@Html.Raw(Model.Description)</p>
                         </div>
 
-                        <div class="col-md-4 specification-section pt-4">
-                            <h5>Thông số kỹ thuật</h5>
-                            <table class="table table-bordered">
-                                @foreach (var spec in ViewBag.specs)
+                        @if (hasSpecs || hasYoutubeVideo)
+                        {
+                            <aside class="product-info-layout__aside">
+                                @if (hasSpecs)
                                 {
-                                    foreach (var v in spec.SpecValues)
-                                    {
-                                        <tr>
-                                            <td class="fw-bolder">@spec.Name</td>
-                                            <td style="font-size: 0.9rem;">@v.Value</td>
-                                        </tr>
-                                    }
+                                    <div class="product-spec-compact @(productSpecEntries.Count > compactSpecLimit ? "product-spec-compact--collapsed" : string.Empty)" id="productSpecCompact">
+                                        <div class="product-spec-compact__head">
+                                            <h5>Thông số kỹ thuật</h5>
+                                        </div>
+                                        <div class="product-spec-compact__grid">
+                                            @foreach (var specEntry in productSpecEntries)
+                                            {
+                                                <div class="product-spec-compact__item">
+                                                    <span>@specEntry.Name</span>
+                                                    <strong>@(string.IsNullOrWhiteSpace(specEntry.Value) ? "-" : specEntry.Value)</strong>
+                                                </div>
+                                            }
+                                        </div>
+                                        @if (productSpecEntries.Count > compactSpecLimit)
+                                        {
+                                            <button type="button" class="product-spec-compact__toggle" id="productSpecToggle">
+                                                Xem cấu hình chi tiết
+                                            </button>
+                                        }
+                                    </div>
                                 }
-                            </table>
-                        </div>
+
+                                @if (hasYoutubeVideo)
+                                {
+                                    <div class="product-video-compact">
+                                        <div class="product-video-compact__head">
+                                            <h5>Video sản phẩm</h5>
+                                        </div>
+                                        <div class="video-container">
+                                            <iframe src="https://www.youtube.com/embed/@youtubeVideoId"
+                                                    title="Video @Model.Name"
+                                                    loading="lazy"
+                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                    allowfullscreen>
+                                            </iframe>
+                                        </div>
+                                    </div>
+                                }
+                            </aside>
+                        }
                     </div>
-                }
-                else
-                {
-                    <div class="description-content">
-                        <p class="product-description">@Html.Raw(Model.Description)</p>
-                    </div>
-                }
+                </div>
                 
                   
                     <div class="fade-bottom"></div>
@@ -660,6 +680,8 @@
         const productDetail = document.querySelector('.product-detail');
         const seeMoreBtn = document.querySelector('.btn-see-more');
         const content = document.querySelector('.description-content');
+        const productSpecCompact = document.getElementById('productSpecCompact');
+        const productSpecToggle = document.getElementById('productSpecToggle');
 
         // Chỉ thực hiện nếu tìm thấy tất cả các element cần thiết
         if (productDetail && seeMoreBtn && content) {
@@ -709,6 +731,15 @@
             window.addEventListener('resize', checkContentHeight);
         } else {
             console.warn('Some elements are missing from the DOM');
+        }
+
+        if (productSpecCompact && productSpecToggle) {
+            productSpecToggle.addEventListener('click', function () {
+                productSpecCompact.classList.toggle('product-spec-compact--collapsed');
+                this.textContent = productSpecCompact.classList.contains('product-spec-compact--collapsed')
+                    ? 'Xem cấu hình chi tiết'
+                    : 'Thu gọn cấu hình';
+            });
         }
     });
 </script>

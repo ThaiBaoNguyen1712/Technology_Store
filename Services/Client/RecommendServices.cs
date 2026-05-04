@@ -20,7 +20,7 @@ namespace Tech_Store.Services.Client.RecommendServices
             //http://ml-api:8000/
             //http://127.0.0.1:8000/
             //_http.BaseAddress = new Uri("");
-            _http.BaseAddress = new Uri("https://techstore-ai-service.azurewebsites.net/");
+            _http.BaseAddress = new Uri("http://127.0.0.1:8000/");
             _http.Timeout = TimeSpan.FromSeconds(15);
             _productServices = productServices;
             _context = context;

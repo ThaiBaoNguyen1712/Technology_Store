@@ -15,7 +15,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800&display=swap&subset=vietnamese" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <!-- Bootstrap-select CSS -->
@@ -155,43 +155,6 @@
                             </div>
                         </a>
 
-                        <!-- Dropdown thông báo -->
-                        <div id="notificationDropdown" class="notification-dropdown">
-                            <div class="notification-header">
-                                <h6 class="mb-0">Thông báo</h6>
-                                <button class="btn btn-link text-muted p-0" id="markAllAsRead">
-                                    <small>Đánh dấu tất cả đã đọc</small>
-                                </button>
-                            </div>
-                            <div class="notification-body">
-                                <div class="notification-list">
-                                    @if(ViewBag.Notifications != null)
-                                    {
-                                        @foreach (var noti in ViewBag.Notifications)
-                                        {
-                                            <a href="@noti.RedirectUrl" class="notification-item @(noti.IsRead == false ? "bg-light mark-as-read" : "bg-white") " data-id="@noti.UserNotificationId">
-                                                <div class="notification-content">
-                                                    <div class="notification-info">
-                                                        <p class="notification-text">@noti.Title</p>
-                                                        <span class="block">
-                                                            <small class="text-truncated notification-message-preview" title="@noti.Message">
-                                                                @(noti.Message.Length > 30 ? noti.Message.Substring(0, Math.Min(50, noti.Message.Length)) + "..." : noti.Message)
-                                                            </small>
-                                                        </span>
-                                                        <span class="notification-time">@((noti.CreatedAt as DateTime?)?.TimeAgo() ?? "Không xác định")</span>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                        }
-                                    }
-                                    else
-                                    {
-                                        <span class="text-center text-muted">Hiện chưa có thông báo.</span>
-                                    }
-                                </div>
-                            </div>
-                            <div class="notification-footer"></div>
-                        </div>
                     </li>
 
                     <!-- Cart -->
@@ -254,6 +217,55 @@
             </div>
         </div>
     </nav>
+
+    @{
+        var clientNotifications = ViewBag.Notifications as IEnumerable<dynamic>;
+    }
+    <div id="notificationDropdown" class="notification-dropdown" aria-label="Bảng thông báo">
+        <div class="notification-header">
+            <div>
+                <span class="notification-header__eyebrow">Trung tâm</span>
+                <h6 class="mb-0">Thông báo</h6>
+            </div>
+            <button class="btn btn-link p-0" id="markAllAsRead">
+                Đánh dấu đã đọc
+            </button>
+        </div>
+        <div class="notification-body">
+            <div class="notification-list">
+                @if(clientNotifications != null && clientNotifications.Any())
+                {
+                    @foreach (var noti in clientNotifications)
+                    {
+                        <a href="@noti.RedirectUrl" class="notification-item @(noti.IsRead == false ? "mark-as-read is-unread" : "is-read")" data-id="@noti.UserNotificationId">
+                            <div class="notification-content">
+                                <div class="notification-avatar">
+                                    <i class="fa fa-bell"></i>
+                                </div>
+                                <div class="notification-info">
+                                    <p class="notification-text">@noti.Title</p>
+                                    <span class="notification-message-preview" title="@noti.Message">
+                                        @(noti.Message.Length > 50 ? noti.Message.Substring(0, Math.Min(72, noti.Message.Length)) + "..." : noti.Message)
+                                    </span>
+                                    <span class="notification-time">@((noti.CreatedAt as DateTime?)?.TimeAgo() ?? "Không xác định")</span>
+                                </div>
+                            </div>
+                        </a>
+                    }
+                }
+                else
+                {
+                    <div class="notification-empty-state">
+                        <div class="notification-empty-state__icon">
+                            <i class="fa fa-bell-slash"></i>
+                        </div>
+                        <strong>Chưa có thông báo</strong>
+                        <span>Các cập nhật về đơn hàng và tài khoản sẽ xuất hiện tại đây.</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
 
 
     <!-- Navbar -->
@@ -530,8 +542,47 @@
             });
 
 
+            const wishlistProductIds = new Set(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.WishlistProductIds ?? new System.Collections.Generic.List<int>())));
+
+            function markWishlistButton($button) {
+                $button.addClass('is-active').attr('aria-pressed', 'true');
+                $button.closest('.product-card, .card').addClass('is-wishlisted');
+                $button.find('i').removeClass('far').addClass('fas');
+                if ($button.find('span').length) {
+                    $button.find('span').text('Đã yêu thích');
+                } else {
+                    $button.contents().filter(function () {
+                        return this.nodeType === 3;
+                    }).remove();
+                    $button.append('<span>Đã yêu thích</span>');
+                }
+            }
+
+            window.syncWishlistCards = function () {
+                $('.addToWishList[data-id]').each(function () {
+                    const $button = $(this);
+                    const productId = Number($button.data('id'));
+                    if (wishlistProductIds.has(productId)) {
+                        markWishlistButton($button);
+                    }
+                });
+            };
+
+            window.markProductWishlisted = function (productId, button) {
+                wishlistProductIds.add(Number(productId));
+                markWishlistButton($(button));
+            };
+
+            window.syncWishlistCards();
+
             // Bắt sự kiện click trên phần nội dung sản phẩm
             $('.product-link').on('click', function (e) {
+                if ($(e.target).closest('.addToWishList').length) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
+
                 var slug = $(this).data('slug');
                 window.location.href = '/View/' + slug;
             });
@@ -539,6 +590,8 @@
             // Bắt sự kiện click trên nút yêu thích
           $(document).on('mousedown', '.addToWishList', function (e) {
                 e.stopPropagation(); // Ngăn sự kiện click lan ra ngoài
+                e.preventDefault();
+                var $button = $(this);
                 var productId = $(this).data('id');
 
                 $.ajax({
@@ -547,9 +600,13 @@
                     data: { productId: productId },
                     success: function (response) {
                         if (response.success) {
+                            window.markProductWishlisted(productId, $button);
                             notyf.success(response.message);
                             
                         } else {
+                            if (response.message && response.message.toLowerCase().includes('đã có')) {
+                                window.markProductWishlisted(productId, $button);
+                            }
                             notyf.error(response.message);
                         }
                     },
@@ -570,28 +627,31 @@
             const $notificationDropdown = $('#notificationDropdown');
             let isDropdownOpen = false;
 
+            function closeNotificationDropdown() {
+                $notificationDropdown.removeClass('show');
+                $notificationToggle.removeClass('active');
+                isDropdownOpen = false;
+            }
+
             // Toggle dropdown
             $notificationToggle.on('click', function (e) {
                 e.preventDefault();
                 e.stopPropagation();
 
-                isDropdownOpen = !isDropdownOpen;
-                $notificationDropdown.fadeToggle(200);
-
                 if (isDropdownOpen) {
-                    // Thêm class active cho nút khi dropdown mở
-                    $(this).addClass('active');
+                    closeNotificationDropdown();
                 } else {
-                    $(this).removeClass('active');
+                    $notificationDropdown.addClass('show');
+                    $notificationToggle.removeClass('active');
+                    $(this).addClass('active');
+                    isDropdownOpen = true;
                 }
             });
 
             // Đóng dropdown khi click ngoài
             $(document).on('click', function (e) {
-                if (!$(e.target).closest('.nav-item').length) {
-                    $notificationDropdown.fadeOut(200);
-                    $notificationToggle.removeClass('active');
-                    isDropdownOpen = false;
+                if (!$(e.target).closest('#notificationDropdown, #notificationToggle, #notificationToggleMobile').length) {
+                    closeNotificationDropdown();
                 }
             });
 
@@ -600,15 +660,11 @@
                 e.stopPropagation();
             });
 
-            // Xử lý hover state
-            $('.notification-item').hover(
-                function () {
-                    $(this).css('background-color', '#f8f9fa');
-                },
-                function () {
-                    $(this).css('background-color', '');
+            $(document).on('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    closeNotificationDropdown();
                 }
-            );
+            });
         });
     </script>
     @* Đánh dấu là đã đọc thông báo *@
@@ -626,9 +682,8 @@
                     data: { id: id },
                     success: function (response) {
                         if (response && response.success) {
-                            // Thay đổi giao diện: xóa lớp bg-light
-                            $this.removeClass("bg-light");
-                            $this.addClass("bg-white");
+                            $this.removeClass("is-unread mark-as-read");
+                            $this.addClass("is-read");
                             // Giảm số lượng thông báo chưa đọc
                             var $notificationBadge = $('.notification'); // Chọn phần tử hiển thị số thông báo
                             var currentCount = parseInt($notificationBadge.text(), 10); // Lấy số lượng hiện tại
@@ -658,8 +713,7 @@
                     url: '/notifications/mark-all-as-read',
                     success: function (response) {
                         if (response && response.success) {
-                            // Xóa lớp bg-light và thêm bg-white
-                            $(".notification-item").removeClass("bg-light").addClass("bg-white");
+                            $(".notification-item").removeClass("is-unread mark-as-read").addClass("is-read");
 
                             $(".notification").text(0);
                             $('.loading-container').hide()

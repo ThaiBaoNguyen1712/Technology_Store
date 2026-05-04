@@ -19,6 +19,7 @@ namespace Tech_Store.Controllers
                 .Where(un => un.UserId == userId)
                 .Include(un => un.Notification).ThenInclude(us=>us.UserNotifications)
                 .OrderByDescending(un => un.Notification.CreatedAt)
+                .Take(20)
                 .Select(un => new
                 {
                     un.UserId,
