@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Tech_Store.Models;
 using Tech_Store.Models.DTO;
+using Tech_Store.Models.ViewModel;
 
 namespace Tech_Store.Areas.Admin.Controllers
 {
@@ -10,13 +11,12 @@ namespace Tech_Store.Areas.Admin.Controllers
     public class SettingsController : BaseAdminController
     {
         private readonly IConfiguration _configuration;
+        private const int FallbackPageSize = 20;
 
         public SettingsController(ApplicationDbContext context, IConfiguration configuration) : base(context)
         {
             _configuration = configuration;
         }
-
-        private const int FallbackPageSize = 20;
 
         private int GetDefaultAdminPageSize()
         {
@@ -28,28 +28,22 @@ namespace Tech_Store.Areas.Admin.Controllers
         [Route("")]
         public IActionResult Index()
         {
-            var settings = _context.Settings.ToList();
-
-            // Tạo một DTO hoặc ViewModel chứa các giá trị cần thiết
-            var settingsReturn = new SettingDTo
+            var settings = _context.Settings.AsNoTracking().ToList();
+            var model = new AdminSettingsHubViewModel
             {
-                LogoUrl = settings.FirstOrDefault(s => s.Key == "LogoUrl")?.Value ?? "",
-                NameWebsite = settings.FirstOrDefault(s => s.Key == "NameWebsite")?.Value ?? "",
-                Slogan = settings.FirstOrDefault(s => s.Key == "Slogan")?.Value ?? "",
-                Description = settings.FirstOrDefault(s => s.Key == "Description")?.Value ?? "",
-                FacebookUrl = settings.FirstOrDefault(s => s.Key == "FacebookUrl")?.Value ?? "",
-                InstagramUrl = settings.FirstOrDefault(s => s.Key == "InstagramUrl")?.Value ?? "",
-                TwitterUrl = settings.FirstOrDefault(s => s.Key == "TwitterUrl")?.Value ?? "",
-                YouTubeUrl = settings.FirstOrDefault(s => s.Key == "YoutubeUrl")?.Value ?? "",
-                NameCompany = settings.FirstOrDefault(s => s.Key == "NameCompany")?.Value ?? "",
-                PhoneNumber = settings.FirstOrDefault(s => s.Key == "PhoneNumber")?.Value ?? "",
-                Email = settings.FirstOrDefault(s => s.Key == "Email")?.Value ?? "",
-                Address = settings.FirstOrDefault(s => s.Key == "Address")?.Value ?? "",
-                MoreInfo = settings.FirstOrDefault(s => s.Key == "MoreInfo")?.Value ?? ""
+                WebsiteName = settings.FirstOrDefault(s => s.Key == "NameWebsite")?.Value ?? string.Empty,
+                SupportEmail = settings.FirstOrDefault(s => s.Key == "Email")?.Value ?? string.Empty,
+                ProductSpecCount = _context.Species.Count(),
+                ProductAttributeCount = _context.Attributes.Count()
             };
 
-            // Truyền dữ liệu vào View
-            return View(settingsReturn);
+            return View(model);
+        }
+
+        [HttpGet("General")]
+        public IActionResult General()
+        {
+            return View(BuildGeneralSettingsModel());
         }
 
         [HttpGet("ProductSpecs")]
@@ -239,7 +233,6 @@ namespace Tech_Store.Areas.Admin.Controllers
             return Json(new { success = true, message = "Đã xóa thông số." });
         }
 
-
         [HttpPost("UpdateSettings")]
         public async Task<IActionResult> UpdateSettings([FromForm] SettingDTo setting, IFormFile? LogoImage)
         {
@@ -252,10 +245,8 @@ namespace Tech_Store.Areas.Admin.Controllers
             {
                 var settings = await _context.Settings.ToListAsync();
 
-                // Lưu hình ảnh mới nếu có
                 if (LogoImage != null && LogoImage.Length > 0)
                 {
-                    // Kiểm tra và xóa ảnh cũ nếu có
                     var oldLogoSetting = settings.FirstOrDefault(s => s.Key == "LogoUrl");
                     if (oldLogoSetting != null && !string.IsNullOrEmpty(oldLogoSetting.Value))
                     {
@@ -266,10 +257,9 @@ namespace Tech_Store.Areas.Admin.Controllers
                         }
                     }
 
-                    // Lưu hình ảnh mới
                     var fileName = $"Logo_{Guid.NewGuid()}.png";
                     var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload", "Logo");
-                    Directory.CreateDirectory(uploadPath); // Đảm bảo thư mục tồn tại
+                    Directory.CreateDirectory(uploadPath);
 
                     var filePath = Path.Combine(uploadPath, fileName);
                     using (var stream = new FileStream(filePath, FileMode.Create))
@@ -277,12 +267,10 @@ namespace Tech_Store.Areas.Admin.Controllers
                         await LogoImage.CopyToAsync(stream);
                     }
 
-                    // Cập nhật đường dẫn mới vào cơ sở dữ liệu
-                    setting.LogoUrl = Path.Combine("/","Upload", "Logo", fileName).Replace("\\", "/");
+                    setting.LogoUrl = Path.Combine("/", "Upload", "Logo", fileName).Replace("\\", "/");
                 }
 
-                // Cập nhật từng giá trị cài đặt nếu tồn tại
-                if (settings != null && settings.Any())
+                if (settings.Any())
                 {
                     var logoSetting = settings.FirstOrDefault(s => s.Key == "LogoUrl");
                     if (!string.IsNullOrEmpty(setting.LogoUrl))
@@ -303,9 +291,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                     settings.FirstOrDefault(s => s.Key == "Address")!.Value = setting.Address ?? "";
                     settings.FirstOrDefault(s => s.Key == "MoreInfo")!.Value = setting.MoreInfo ?? "";
 
-                    // Lưu các thay đổi vào cơ sở dữ liệu
                     await _context.SaveChangesAsync();
-
                     return Json(new { success = true, message = "Cập nhật thành công." });
                 }
 
@@ -313,11 +299,29 @@ namespace Tech_Store.Areas.Admin.Controllers
             }
             catch (Exception ex)
             {
-                // Xử lý lỗi
                 return Json(new { success = false, message = $"Đã xảy ra lỗi: {ex.Message}" });
             }
         }
 
-
+        private SettingDTo BuildGeneralSettingsModel()
+        {
+            var settings = _context.Settings.AsNoTracking().ToList();
+            return new SettingDTo
+            {
+                LogoUrl = settings.FirstOrDefault(s => s.Key == "LogoUrl")?.Value ?? "",
+                NameWebsite = settings.FirstOrDefault(s => s.Key == "NameWebsite")?.Value ?? "",
+                Slogan = settings.FirstOrDefault(s => s.Key == "Slogan")?.Value ?? "",
+                Description = settings.FirstOrDefault(s => s.Key == "Description")?.Value ?? "",
+                FacebookUrl = settings.FirstOrDefault(s => s.Key == "FacebookUrl")?.Value ?? "",
+                InstagramUrl = settings.FirstOrDefault(s => s.Key == "InstagramUrl")?.Value ?? "",
+                TwitterUrl = settings.FirstOrDefault(s => s.Key == "TwitterUrl")?.Value ?? "",
+                YouTubeUrl = settings.FirstOrDefault(s => s.Key == "YoutubeUrl")?.Value ?? "",
+                NameCompany = settings.FirstOrDefault(s => s.Key == "NameCompany")?.Value ?? "",
+                PhoneNumber = settings.FirstOrDefault(s => s.Key == "PhoneNumber")?.Value ?? "",
+                Email = settings.FirstOrDefault(s => s.Key == "Email")?.Value ?? "",
+                Address = settings.FirstOrDefault(s => s.Key == "Address")?.Value ?? "",
+                MoreInfo = settings.FirstOrDefault(s => s.Key == "MoreInfo")?.Value ?? ""
+            };
+        }
     }
 }

@@ -1,0 +1,192 @@
+@model Tech_Store.Models.ViewModel.AdminVoucherFormViewModel
+
+@{
+    bool isEdit = Model != null && Model.VoucherId > 0;
+    ViewData["Title"] = isEdit ? "Cập nhật mã khuyến mãi" : "Thêm mã khuyến mãi";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+}
+
+<div class="py-3 voucher-form-page">
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-0">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                <div>
+                    <h4 class="card-title mb-1">@(isEdit ? "Cập nhật mã khuyến mãi" : "Thêm mã khuyến mãi")</h4>
+                    <div class="text-muted">@(isEdit ? "Chỉnh sửa thông tin voucher hiện có" : "Tạo mới voucher để áp dụng cho đơn hàng")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" action="/Admin/Vouchers/Save" class="voucher-form-page__form">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="VoucherId" value="@Model.VoucherId" />
+        <input type="hidden" name="ReturnPage" value="@Model.ReturnPage" />
+        <input type="hidden" name="ReturnCode" value="@Model.ReturnCode" />
+        <input type="hidden" name="ReturnName" value="@Model.ReturnName" />
+        <input type="hidden" name="ReturnDateFrom" value="@(Model.ReturnDateFrom?.ToString("yyyy-MM-dd"))" />
+        <input type="hidden" name="ReturnDateTo" value="@(Model.ReturnDateTo?.ToString("yyyy-MM-dd"))" />
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger border-0 shadow-sm mb-4">
+                Vui lòng kiểm tra lại thông tin voucher trước khi lưu.
+            </div>
+        }
+
+        <div class="row g-4">
+            <div class="col-xl-8">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white border-0">
+                        <h5 class="mb-0">Thông tin cơ bản</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Tên voucher</label>
+                                <input type="text" class="form-control" name="Name" value="@Model.Name" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Mã khuyến mãi</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="Code" id="voucherCode" value="@Model.Code" required />
+                                    <button type="button" class="btn btn-light border" id="generateVoucherCode">Tạo mã</button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Giá trị khuyến mãi</label>
+                                <input type="number"
+                                       class="form-control"
+                                       name="PromotionValue"
+                                       value="@Model.PromotionValue"
+                                       min="0"
+                                       step="0.01"
+                                       required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Loại khuyến mãi</label>
+                                <select class="form-select" name="PromotionType">
+                                    @if (Model.PromotionType == "percent")
+                                    {
+                                        <option value="amount">Tiền mặt</option>
+                                        <option value="percent" selected>Phần trăm</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="amount" selected>Tiền mặt</option>
+                                        <option value="percent">Phần trăm</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Số lượng áp dụng</label>
+                                <input type="number"
+                                       class="form-control"
+                                       name="Quantity"
+                                       value="@Model.Quantity"
+                                       min="1"
+                                       required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Ngày bắt đầu</label>
+                                <input type="datetime-local"
+                                       class="form-control"
+                                       name="StartedAt"
+                                       value="@(Model.StartedAt?.ToString("yyyy-MM-ddTHH:mm"))"
+                                       required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Ngày kết thúc</label>
+                                <input type="datetime-local"
+                                       class="form-control"
+                                       name="ExpiredAt"
+                                       value="@(Model.ExpiredAt?.ToString("yyyy-MM-ddTHH:mm"))"
+                                       required />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold text-secondary">Mô tả</label>
+                                <textarea class="form-control"
+                                          name="Description"
+                                          rows="4"
+                                          required>@Model.Description</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white border-0">
+                        <h5 class="mb-0">Lưu ý áp dụng</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="order-drawer__info-list">
+                            <div class="order-drawer__info-row">
+                                <span>Tiền mặt</span>
+                                <strong>Nhập trực tiếp số tiền giảm</strong>
+                            </div>
+                            <div class="order-drawer__info-row">
+                                <span>Phần trăm</span>
+                                <strong>Giá trị tối đa 100</strong>
+                            </div>
+                            <div class="order-drawer__info-row">
+                                <span>Thời gian áp dụng</span>
+                                <strong>Ngày kết thúc phải sau ngày bắt đầu</strong>
+                            </div>
+                            <div class="order-drawer__info-row">
+                                <span>Mã voucher</span>
+                                <strong>Không được trùng với mã đã tồn tại</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <a href="@Url.Action("Index", "Vouchers", new
+               {
+                   area = "Admin",
+                   page = Model.ReturnPage,
+                   code = Model.ReturnCode,
+                   name = Model.ReturnName,
+                   dateFrom = Model.ReturnDateFrom?.ToString("yyyy-MM-dd"),
+                   dateTo = Model.ReturnDateTo?.ToString("yyyy-MM-dd")
+               })"
+               class="text-decoration-none text-secondary fw-medium">
+                <i class="fas fa-arrow-left me-1"></i> Quay lại danh sách
+            </a>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-light px-4 border" id="generateVoucherCodeSecondary">Tạo mã mới</button>
+                <button type="submit" class="btn btn-primary px-5">
+                    @(isEdit ? "Lưu thay đổi" : "Thêm mã khuyến mãi")
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    $(document).ready(function () {
+        function generateRandomCode(length) {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let code = '';
+
+            for (let i = 0; i < length; i++) {
+                const randomIndex = Math.floor(Math.random() * chars.length);
+                code += chars[randomIndex];
+            }
+
+            return code;
+        }
+
+        function applyGeneratedCode() {
+            $('#voucherCode').val(generateRandomCode(10));
+        }
+
+        $('#generateVoucherCode, #generateVoucherCodeSecondary').on('click', function () {
+            applyGeneratedCode();
+        });
+    });
+</script>

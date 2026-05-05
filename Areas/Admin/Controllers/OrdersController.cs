@@ -17,132 +17,165 @@ namespace Tech_Store.Areas.Admin.Controllers
     {
         private readonly NotificationService _notificationService;
         private readonly IEmailService _emailService;
+        private readonly IConfiguration _configuration;
+        private const int FallbackPageSize = 20;
 
-        public OrdersController(ApplicationDbContext context, NotificationService notificationService, IEmailService emailService) : base(context)
+        public OrdersController(ApplicationDbContext context, NotificationService notificationService, IEmailService emailService, IConfiguration configuration) : base(context)
         {
             _notificationService = notificationService;
             _emailService = emailService;
+            _configuration = configuration;
         }
 
-        [Route("{status}")]
-        [Route("Index/{status}")]
-        public async Task<IActionResult> Index(string? status)
+        private int GetDefaultAdminPageSize()
         {
+            var pageSize = _configuration.GetValue<int?>("AdminUi:DefaultPageSize");
+            return pageSize.GetValueOrDefault(FallbackPageSize) > 0 ? pageSize.Value : FallbackPageSize;
+        }
+
+        [HttpGet]
+        [Route("")]
+        [Route("Index")]
+        [Route("Index/{status?}")]
+        [Route("{status?}")]
+        public async Task<IActionResult> Index([FromRoute(Name = "status")] string? routeStatus, [FromQuery(Name = "status")] string? queryStatus, string? keyword, string? paymentStatus, DateTime? dateFrom, DateTime? dateTo, decimal? amountFrom, decimal? amountTo, int page = 1, int? pageSize = null)
+        {
+            var status = !string.IsNullOrWhiteSpace(queryStatus) ? queryStatus : routeStatus;
+            if (string.Equals(status, "all", StringComparison.OrdinalIgnoreCase))
+            {
+                status = null;
+            }
+
+            var resolvedPageSize = pageSize.GetValueOrDefault(GetDefaultAdminPageSize());
             var query = _context.Orders
+                .AsNoTracking()
                 .Include(x => x.OrderItems)
                     .ThenInclude(oi => oi.Product)
-                        .ThenInclude(p => p.VarientProducts)
                 .Include(x => x.Payments)
-                .Include(x => x.ShippingAddress)
                 .Include(x => x.User)
-                .OrderByDescending(x => x.OrderId)
                 .AsQueryable();
 
-            if (!string.IsNullOrEmpty(status) && status != "all")
+            if (!string.IsNullOrEmpty(status))
             {
                 query = query.Where(x => x.OrderStatus == status);
             }
 
-            var list_cate = _context.Categories.ToList();
-            ViewBag.cate = list_cate;
-            var list_brand = _context.Brands.ToList();
-            ViewBag.brand = list_brand;
-            var orders = await query.ToListAsync();
-            return View(orders);
-        }
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                var normalizedKeyword = keyword.Trim();
+                query = query.Where(x =>
+                    x.OrderId.ToString().Contains(normalizedKeyword) ||
+                    ((x.User.FirstName ?? string.Empty) + " " + (x.User.LastName ?? string.Empty)).Contains(normalizedKeyword) ||
+                    (x.User.PhoneNumber != null && x.User.PhoneNumber.Contains(normalizedKeyword)) ||
+                    x.OrderItems.Any(oi => oi.Product.Name.Contains(normalizedKeyword)) ||
+                    x.OrderItems.Any(oi => oi.VarientProduct.Sku.Contains(normalizedKeyword)));
+            }
 
-        [HttpPost]
-        [Route("Filter")]
-        public IActionResult Filter(int? orderId, string? nameCustomer, string? paymentStatus ,string? status,
-             DateTime? dateFrom, DateTime? dateTo, string? phoneNumber,decimal? amountFrom, decimal? amountTo)
-        {
-            var orders = _context.Orders
-                .Include(p => p.User)
-                .Include(p => p.OrderItems)
-                .ThenInclude(t => t.Product)
-                .Include(p => p.Payments)
-                .AsQueryable();
+            if (!string.IsNullOrWhiteSpace(paymentStatus))
+            {
+                query = query.Where(x => x.Payments.Any(p => p.Status == paymentStatus));
+            }
 
-            // Áp dụng các tiêu chí lọc
-            if (orderId.HasValue && orderId.Value != 0)
-                orders = orders.Where(p => p.OrderId == orderId.Value);
+            if (dateFrom.HasValue)
+            {
+                query = query.Where(x => x.OrderDate >= dateFrom.Value.Date);
+            }
 
-            if (!string.IsNullOrEmpty(nameCustomer))
-                orders = orders.Where(p => p.User.FirstName.Contains(nameCustomer) || p.User.LastName.Contains(nameCustomer));
+            if (dateTo.HasValue)
+            {
+                var inclusiveDateTo = dateTo.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(x => x.OrderDate <= inclusiveDateTo);
+            }
 
-            if (!string.IsNullOrEmpty(status))
-                orders = orders.Where(p => p.OrderStatus == status);
+            if (amountFrom.HasValue)
+            {
+                query = query.Where(x => x.TotalAmount >= amountFrom.Value);
+            }
 
-   
-            if (dateFrom.HasValue || dateTo.HasValue)
-                orders = orders.Where(p =>
-                    (!dateFrom.HasValue || p.OrderDate >= dateFrom.Value) &&
-                    (!dateTo.HasValue || p.OrderDate <= dateTo.Value)
-                );
-            if (amountFrom.HasValue || amountTo.HasValue)
-                orders = orders.Where(p =>
-                    (!amountFrom.HasValue || p.TotalAmount >= amountFrom.Value) &&
-                    (!amountTo.HasValue || p.TotalAmount <= amountTo.Value)
-                );
-            if (!string.IsNullOrEmpty(phoneNumber))
-                orders = orders.Where(p => p.User.PhoneNumber.Contains(phoneNumber));
+            if (amountTo.HasValue)
+            {
+                query = query.Where(x => x.TotalAmount <= amountTo.Value);
+            }
 
-            if (!string.IsNullOrEmpty(paymentStatus))
-                orders = orders.Where(p => p.Payments.Select(s=>s.Status).Contains(paymentStatus));
+            var totalItems = await query.CountAsync();
+            var totalPages = Math.Max(1, (int)Math.Ceiling(totalItems / (double)resolvedPageSize));
+            page = Math.Max(1, Math.Min(page, totalPages));
 
-            // Chuyển đổi sang view model để trả về JSON
-            var result = orders.OrderByDescending(p => p.OrderId)
-                .Take(100)
-                .Select(p => new OrderViewModel
+            var orders = await query
+                .OrderByDescending(x => x.OrderDate)
+                .ThenByDescending(x => x.OrderId)
+                .Skip((page - 1) * resolvedPageSize)
+                .Take(resolvedPageSize)
+                .ToListAsync();
+
+            var model = new AdminOrderIndexViewModel
+            {
+                Keyword = keyword,
+                Status = status,
+                PaymentStatus = paymentStatus,
+                DateFrom = dateFrom,
+                DateTo = dateTo,
+                AmountFrom = amountFrom,
+                AmountTo = amountTo,
+                Page = page,
+                PageSize = resolvedPageSize,
+                TotalItems = totalItems,
+                TotalPages = totalPages,
+                Orders = orders.Select(order =>
                 {
-                    OrderId = p.OrderId,
-                    NameCustomer = p.User.LastName + " " + p.User.FirstName,
-                    PhoneNumber = p.User.PhoneNumber,
-                    OrderStatus = p.OrderStatus,
-                    TotalAmount = p.TotalAmount,
-                    ListProducts = string.Join(", ", p.OrderItems.Select(s => s.Product.Name)),
-                    PaymentStatus = string.Join(",", p.Payments.Select(s=>s.Status)),
-                    OrderDate = p.OrderDate.Value // Đảm bảo OrderDate không null
-                })
-                .ToList();
+                    var payment = order.Payments
+                        .OrderByDescending(x => x.PaymentDate ?? x.CreatedAt)
+                        .FirstOrDefault();
+                    var (orderBadgeClass, orderLabel) = GetOrderStatusPresentation(order.OrderStatus);
+                    var (paymentBadgeClass, paymentLabel) = GetPaymentStatusPresentation(payment?.Status);
 
-            return Json(result);
+                    return new AdminOrderIndexItemViewModel
+                    {
+                        OrderId = order.OrderId,
+                        CustomerName = $"{order.User.LastName} {order.User.FirstName}".Trim(),
+                        PhoneNumber = order.User.PhoneNumber,
+                        Email = order.User.Email,
+                        OrderDate = order.OrderDate,
+                        OrderStatus = order.OrderStatus,
+                        OrderStatusLabel = orderLabel,
+                        OrderStatusBadgeClass = orderBadgeClass,
+                        PaymentStatus = payment?.Status ?? "Unpaid",
+                        PaymentStatusLabel = paymentLabel,
+                        PaymentStatusBadgeClass = paymentBadgeClass,
+                        PaymentMethod = payment?.PaymentMethod ?? "-",
+                        TotalAmount = order.TotalAmount,
+                        ItemCount = order.OrderItems.Sum(x => x.Quantity),
+                        ProductSummary = BuildProductSummary(order)
+                    };
+                }).ToList()
+            };
+
+            return View(model);
         }
 
         [Route("View/{id}")]
         [HttpGet]
-        public async  Task<IActionResult> View(int id)
+        public async Task<IActionResult> View(int id)
         {
-
-            var order = await _context.Orders
-              .Include(x => x.OrderItems)
-                  .ThenInclude(oi => oi.Product)
-                      .ThenInclude(p => p.VarientProducts) // Include VariantProduct from Product
-              .Include(x => x.Payments).Include(x => x.ShippingAddress)
-              .Include(x => x.User)
-              .FirstOrDefaultAsync(x => x.OrderId == id);
-
-            if (order == null)
+            var model = await BuildOrderDetailViewModelAsync(id);
+            if (model == null)
             {
                 return BadRequest("Không tìm thấy");
             }
 
-            var payment = await _context.Payments.FirstOrDefaultAsync(x => x.OrderId == id);
-            ViewBag.Payment = payment;
+            return View(model);
+        }
 
-            // Read the JSON file
-            var jsonString = await System.IO.File.ReadAllTextAsync("wwwroot/Province_VN.json");
-            var provinces = JsonConvert.DeserializeObject<List<Province>>(jsonString);
+        [HttpGet("QuickDrawer/{id}")]
+        public async Task<IActionResult> QuickDrawer(int id)
+        {
+            var model = await BuildOrderDetailViewModelAsync(id);
+            if (model == null)
+            {
+                return NotFound();
+            }
 
-            // Find the province, district, and ward by ID
-            var province = provinces?.FirstOrDefault(p => p.Code == int.Parse(order.ShippingAddress.Province));
-            var district = province?.Districts?.FirstOrDefault(d => d.Code == int.Parse(order.ShippingAddress.District));
-            var ward = district?.Wards?.FirstOrDefault(w => w.Code == int.Parse(order.ShippingAddress.Ward));
-
-            // Assign to ViewBag
-            ViewBag.Address = $"{order.ShippingAddress.AddressLine},{ward?.Name}, {district?.Name}, {province?.Name}";
-
-            return View(order);
+            return PartialView("_QuickDrawerContent", model);
         }
 
         [HttpPost("ChangeStatus")]
@@ -249,6 +282,178 @@ namespace Tech_Store.Areas.Admin.Controllers
             };
 
             await _emailService.SendEmailOrderCompleted(invoiceEmail);
+        }
+
+        private async Task<AdminOrderDetailViewModel?> BuildOrderDetailViewModelAsync(int id)
+        {
+            var order = await _context.Orders
+                .AsNoTracking()
+                .Include(x => x.OrderItems)
+                    .ThenInclude(oi => oi.Product)
+                .Include(x => x.OrderItems)
+                    .ThenInclude(oi => oi.VarientProduct)
+                        .ThenInclude(vp => vp.VariantAttributes)
+                            .ThenInclude(va => va.AttributeValue)
+                .Include(x => x.Payments)
+                .Include(x => x.ShippingAddress)
+                .Include(x => x.User)
+                .FirstOrDefaultAsync(x => x.OrderId == id);
+
+            if (order == null)
+            {
+                return null;
+            }
+
+            var payment = order.Payments
+                .OrderByDescending(x => x.PaymentDate ?? x.CreatedAt)
+                .FirstOrDefault();
+            var address = await BuildFullAddressAsync(order.ShippingAddress);
+            var (orderBadgeClass, orderLabel) = GetOrderStatusPresentation(order.OrderStatus);
+            var (paymentBadgeClass, paymentLabel) = GetPaymentStatusPresentation(payment?.Status);
+
+            return new AdminOrderDetailViewModel
+            {
+                OrderId = order.OrderId,
+                CustomerName = $"{order.User.LastName} {order.User.FirstName}".Trim(),
+                PhoneNumber = order.User.PhoneNumber,
+                Email = order.User.Email,
+                Address = address,
+                Note = order.Note,
+                OrderDate = order.OrderDate,
+                UpdatedAt = order.UpdatedAt,
+                OrderStatus = order.OrderStatus,
+                OrderStatusLabel = orderLabel,
+                OrderStatusBadgeClass = orderBadgeClass,
+                PaymentStatus = payment?.Status ?? "Unpaid",
+                PaymentStatusLabel = paymentLabel,
+                PaymentStatusBadgeClass = paymentBadgeClass,
+                PaymentMethod = payment?.PaymentMethod ?? "-",
+                PaymentDate = payment?.PaymentDate,
+                ItemCount = order.OrderItems.Sum(x => x.Quantity),
+                OriginAmount = order.OriginAmount ?? order.OrderItems.Sum(x => x.Price * x.Quantity),
+                DiscountAmount = order.DiscountAmount ?? 0,
+                DeductAmount = order.DeductAmount ?? 0,
+                ShippingAmount = order.ShippingAmount ?? 0,
+                TotalAmount = order.TotalAmount,
+                Items = order.OrderItems.Select(item => new AdminOrderDetailItemViewModel
+                {
+                    ProductId = item.ProductId,
+                    ProductName = item.Product.Name,
+                    ProductImage = item.Product.Image,
+                    VariantSku = item.VarientProduct.Sku,
+                    VariantDisplay = BuildVariantDisplay(item.VarientProduct),
+                    Quantity = item.Quantity,
+                    UnitPrice = item.Price,
+                    LineTotal = item.Price * item.Quantity
+                }).ToList()
+            };
+        }
+
+        private static (string badgeClass, string label) GetOrderStatusPresentation(string? status)
+        {
+            return status switch
+            {
+                "Pending" => ("badge-primary", "Đang chờ"),
+                "Confirmed" => ("badge-info", "Đã xác nhận"),
+                "Shipping" => ("badge-warning", "Đang giao hàng"),
+                "Delivered" => ("badge-success", "Đã giao hàng"),
+                "Completed" => ("badge-success", "Hoàn thành"),
+                "Cancelled" => ("badge-danger", "Đã hủy"),
+                "Refunded" => ("badge-secondary", "Đã hoàn tiền"),
+                _ => ("badge-light text-dark border", "Không xác định")
+            };
+        }
+
+        private static (string badgeClass, string label) GetPaymentStatusPresentation(string? status)
+        {
+            return status switch
+            {
+                "Paid" => ("badge-success", "Đã thanh toán"),
+                "Unpaid" => ("badge-danger", "Chưa thanh toán"),
+                _ => ("badge-light text-dark border", "Chưa cập nhật")
+            };
+        }
+
+        private static string BuildProductSummary(Order order)
+        {
+            var productNames = order.OrderItems
+                .Select(x => x.Product.Name)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct()
+                .ToList();
+
+            if (productNames.Count == 0)
+            {
+                return "-";
+            }
+
+            if (productNames.Count <= 2)
+            {
+                return string.Join(", ", productNames);
+            }
+
+            return $"{string.Join(", ", productNames.Take(2))} +{productNames.Count - 2}";
+        }
+
+        private static string BuildVariantDisplay(VarientProduct variant)
+        {
+            var values = variant.VariantAttributes
+                .OrderBy(x => x.VariantAttributeId)
+                .Select(x => x.AttributeValue.Value)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .ToList();
+
+            if (values.Count > 0)
+            {
+                return string.Join(" / ", values);
+            }
+
+            return string.IsNullOrWhiteSpace(variant.Attributes) ? "-" : variant.Attributes;
+        }
+
+        private async Task<string> BuildFullAddressAsync(Address? shippingAddress)
+        {
+            if (shippingAddress == null)
+            {
+                return "-";
+            }
+
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(shippingAddress.AddressLine))
+            {
+                parts.Add(shippingAddress.AddressLine.Trim());
+            }
+
+            if (string.IsNullOrWhiteSpace(shippingAddress.Province) ||
+                string.IsNullOrWhiteSpace(shippingAddress.District) ||
+                string.IsNullOrWhiteSpace(shippingAddress.Ward))
+            {
+                return parts.Count > 0 ? string.Join(", ", parts) : "-";
+            }
+
+            var jsonString = await System.IO.File.ReadAllTextAsync("wwwroot/Province_VN.json");
+            var provinces = JsonConvert.DeserializeObject<List<Province>>(jsonString);
+
+            var province = provinces?.FirstOrDefault(p => p.Code == int.Parse(shippingAddress.Province));
+            var district = province?.Districts?.FirstOrDefault(d => d.Code == int.Parse(shippingAddress.District));
+            var ward = district?.Wards?.FirstOrDefault(w => w.Code == int.Parse(shippingAddress.Ward));
+
+            if (!string.IsNullOrWhiteSpace(ward?.Name))
+            {
+                parts.Add(ward.Name);
+            }
+
+            if (!string.IsNullOrWhiteSpace(district?.Name))
+            {
+                parts.Add(district.Name);
+            }
+
+            if (!string.IsNullOrWhiteSpace(province?.Name))
+            {
+                parts.Add(province.Name);
+            }
+
+            return parts.Count > 0 ? string.Join(", ", parts) : "-";
         }
 
     }

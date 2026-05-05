@@ -70,6 +70,7 @@ Use these files as the first place to understand or extend shared behavior:
 - Put reusable CSS in:
   - `wwwroot/Client/asset/css/site.css` for storefront
   - `wwwroot/Admin/assets/css/site.css` for admin
+- Shared admin breadcrumb placement belongs in the admin layout, not redefined per page.
 
 ### CSS Naming
 
@@ -89,6 +90,10 @@ Use these files as the first place to understand or extend shared behavior:
 - Reuse existing admin table and pagination classes:
   - `reusable-admin-table`
   - `reusable-admin-pagination`
+- For admin list pages with thumbnails, keep the first column as a compact image column and reuse:
+  - `brand-admin__logo-shell`
+  - `brand-admin__logo`
+- For admin list pages with manual ordering, expose a compact `SortOrder` badge column and keep sorting stable in BE.
 - Reuse existing attribute tag display class:
   - `attribute-tag-list`
 - Reuse existing manual pagination partial:
@@ -106,6 +111,7 @@ Use these files as the first place to understand or extend shared behavior:
   - paginate server-side when possible
   - reuse `_ManualPagination.cshtml`
   - keep query params stable: `keyword`, `page`, `pageSize`
+  - after create/update, return to the same `page` and `pageSize` when the form came from a paginated list
   - do not render all page numbers if there are many pages; use a compact window with ellipsis
 
 ## Form Rules
@@ -123,6 +129,22 @@ Use these files as the first place to understand or extend shared behavior:
   - low decoration
   - clear grouping
   - strong information hierarchy
+- Breadcrumbs in admin should:
+  - live in their own strip below the top header
+  - stay separate from search, clock, notifications, and profile actions
+  - allow horizontal scrolling when the path is long instead of colliding with nearby header elements
+  - never overlay or visually wash out page body content or partial views
+- Order management pages should follow familiar Vietnamese ecommerce operations patterns:
+  - compact filter bar
+  - search actions such as `Tìm kiếm` and `Làm mới` stay in the last filter column and align to the end of the filter area on desktop
+  - server-side manual pagination
+  - obvious status/payment badges
+  - customer/payment/amount summary first
+  - quick order actions should use a reusable right drawer or side panel instead of placing raw update controls directly inside table cells
+  - order detail pages should prioritize operational data over invoice-like decoration
+- Product administration and stock administration are separate concerns:
+  - product list pages focus on CRUD, filters, visibility, and merchandising state
+  - stock actions such as import/export inventory and printing product codes belong under inventory/warehouse navigation, not mixed into the main product list action set
 - Avoid old-style tab strips when the content is large and multi-section.
 - Prefer:
   - left-side local navigation

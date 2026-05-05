@@ -1,222 +1,231 @@
-﻿
+@using System.Globalization
+@using Tech_Store.Helpers
 @{
-    ViewData["Title"] = "Trang chủ Admin";
+    ViewData["Title"] = "Dashboard";
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
 }
-@using System.Globalization;
-@using Tech_Store.Helpers
 
-    <div class="page-inner">
-        <div class="d-flex align-items-left align-items-md-center flex-column flex-md-row pt-2 pb-4">
-            <div>
-                <h3 class="fw-bold mb-3">Trang chủ</h3>
-            </div>
-           @*  <div class="ms-md-auto py-2 py-md-0">
-                <a href="#" class="btn btn-label-info btn-round me-2">Manage</a>
-                <a href="#" class="btn btn-primary btn-round">Add Customer</a>
-            </div> *@
+<div class="py-3 dashboard-page">
+    <div class="dashboard-page__hero">
+        <div>
+            <span class="settings-page__eyebrow">Admin Dashboard</span>
+            <h1 class="dashboard-page__title">Tổng quan vận hành</h1>
         </div>
-        <div class="row">
-            <div class="col-sm-6 col-md-3">
-                <div class="card card-stats card-round">
-                    <div class="card-body">
-                        <div class="row align-items-center">
-                            <div class="col-icon">
-                                <div class="icon-big text-center icon-primary bubble-shadow-small">
-                                    <i class="fas fa-users"></i>
-                                </div>
-                            </div>
-                            <div class="col col-stats ms-3 ms-sm-0">
-                                <div class="numbers">
-                                    <p class="card-category">Lượt Truy Cập</p>
-                                    <h4 class="card-title">1,294</h4>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <div class="dashboard-page__hero-meta">
+            <div class="settings-page__meta-card">
+                <span class="settings-page__meta-label">Doanh thu 30 ngày</span>
+                <strong>@ViewBag.Revenue.ToString("C0", new CultureInfo("vi-VN"))</strong>
             </div>
-            <div class="col-sm-6 col-md-3">
-                <div class="card card-stats card-round">
-                    <div class="card-body">
-                        <div class="row align-items-center">
-                            <div class="col-icon">
-                                <div class="icon-big text-center icon-info bubble-shadow-small">
-                                    <i class="fas fa-user-check"></i>
-                                </div>
-                            </div>
-                            <div class="col col-stats ms-3 ms-sm-0">
-                                <div class="numbers">
-                                    <p class="card-category">Người Đăng ký</p>
-                                <h4 class="card-title">@ViewBag.User_count</h4>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-sm-6 col-md-3">
-                <div class="card card-stats card-round">
-                    <div class="card-body">
-                        <div class="row align-items-center">
-                            <div class="col-icon">
-                                <div class="icon-big text-center icon-success bubble-shadow-small">
-                                <i class="fas fa-cube"></i>
-
-                                </div>
-                            </div>
-                            <div class="col col-stats ms-3 ms-sm-0">
-                                <div class="numbers">
-                                    <p class="card-category">Sản phẩm</p>
-                                    <h4 class="card-title">@ViewBag.Product_count</h4>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-sm-6 col-md-3">
-                <div class="card card-stats card-round">
-                    <div class="card-body">
-                        <div class="row align-items-center">
-                            <div class="col-icon">
-                                <div class="icon-big text-center icon-secondary bubble-shadow-small">
-                                    <i class="far fa-check-circle"></i>
-                                </div>
-                            </div>
-                            <div class="col col-stats ms-3 ms-sm-0">
-                                <div class="numbers">
-                                    <p class="card-category">Đơn Hàng</p>
-                                <h4 class="card-title">@ViewBag.Order_count</h4>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    <div class="card card-round">
-        <div class="card-header">
-            <div class="card-head-row card-tools-still-right">
-                <div class="card-title">Thống kê đơn hàng</div>
-                <div class="card-tools">
-                    <div class="dropdown">
-                        <button class="btn btn-icon btn-clean me-0"
-                                type="button"
-                                id="dropdownMenuButton"
-                                data-bs-toggle="dropdown"
-                                aria-haspopup="true"
-                                aria-expanded="false">
-                            <i class="fas fa-ellipsis-h"></i>
-                        </button>
-                        <div class="dropdown-menu"
-                             aria-labelledby="dropdownMenuButton">
-                            <a class="dropdown-item" href="/Admin/Orders/all">Xem thêm</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="card-body">
-            <div class="row mb-3">
-                <div class="col-md-3">
-                    <label for="monthFilter" class="form-label">Tháng</label>
-                    <select id="monthFilter" class="form-select">
-                        @for (int i = 1; i <= 12; i++)
-                        {
-                            <option value="@i" @(DateTime.Now.Month == i ? "selected" : "")>@i</option>
-                        }
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label for="yearFilter" class="form-label">Năm</label>
-                    <select id="yearFilter" class="form-select">
-                        @for (int year = DateTime.Now.Year - 5; year <= DateTime.Now.Year; year++)
-                        {
-                            <option value="@year" @(DateTime.Now.Year == year ? "selected" : "")>@year</option>
-                        }
-                    </select>
-                </div>
-                <div class="col-md-3 align-self-end">
-                    <button id="filterBtn" class="btn btn-primary w-100">Lọc</button>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-12">
-                    <canvas id="orderChart" width="200" height="50"></canvas>
-                </div>
+            <div class="settings-page__meta-card">
+                <span class="settings-page__meta-label">Sản phẩm đang bán</span>
+                <strong>@ViewBag.Product_count</strong>
             </div>
         </div>
     </div>
 
+    <div class="dashboard-page__stats">
+        <div class="dashboard-stat-card">
+            <div class="dashboard-stat-card__icon dashboard-stat-card__icon--sky">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="dashboard-stat-card__body">
+                <span>Lượt truy cập</span>
+                <strong>1,294</strong>
+            </div>
+        </div>
+        <div class="dashboard-stat-card">
+            <div class="dashboard-stat-card__icon dashboard-stat-card__icon--blue">
+                <i class="fas fa-user-check"></i>
+            </div>
+            <div class="dashboard-stat-card__body">
+                <span>Khách hàng</span>
+                <strong>@ViewBag.User_count</strong>
+            </div>
+        </div>
+        <div class="dashboard-stat-card">
+            <div class="dashboard-stat-card__icon dashboard-stat-card__icon--green">
+                <i class="fas fa-cube"></i>
+            </div>
+            <div class="dashboard-stat-card__body">
+                <span>Sản phẩm</span>
+                <strong>@ViewBag.Product_count</strong>
+            </div>
+        </div>
+        <div class="dashboard-stat-card">
+            <div class="dashboard-stat-card__icon dashboard-stat-card__icon--violet">
+                <i class="fas fa-shopping-bag"></i>
+            </div>
+            <div class="dashboard-stat-card__body">
+                <span>Đơn hàng</span>
+                <strong>@ViewBag.Order_count</strong>
+            </div>
+        </div>
+    </div>
 
-        <div class="row">
-        <div class="col-md-8">
-            <div class="card card-round">
-                <div class="card-header">
-                    <div class="card-head-row card-tools-still-right">
-                        <div class="card-title">Đơn hàng mới</div>
-                        <div class="card-tools">
-                            <div class="dropdown">
-                                <button class="btn btn-icon btn-clean me-0"
-                                        type="button"
-                                        id="dropdownMenuButton"
-                                        data-bs-toggle="dropdown"
-                                        aria-haspopup="true"
-                                        aria-expanded="false">
-                                    <i class="fas fa-ellipsis-h"></i>
-                                </button>
-                                <div class="dropdown-menu"
-                                     aria-labelledby="dropdownMenuButton">
-                                    <a class="dropdown-item" href="/Admin/Orders/all">Xem thêm</a>
-                                </div>
-                            </div>
-                        </div>
+    <div class="dashboard-page__layout">
+        <section class="dashboard-panel dashboard-panel--wide">
+            <div class="dashboard-panel__header">
+                <div>
+                    <h2>Thống kê đơn hàng</h2>
+                    <p>Biến động số đơn và doanh thu theo ngày trong tháng đã chọn.</p>
+                </div>
+                <a href="/Admin/Orders/all" class="btn btn-light border">Xem đơn hàng</a>
+            </div>
+
+            <form class="brand-admin__filters order-admin__filters row g-3 align-items-end mb-4 dashboard-page__chart-filters" onsubmit="return false;">
+                <div class="col-md-4 col-xl-3">
+                    <label for="monthFilter" class="form-label fw-semibold text-secondary">Tháng</label>
+                    <select id="monthFilter" class="form-select">
+                        @for (int i = 1; i <= 12; i++)
+                        {
+                            if (DateTime.Now.Month == i)
+                            {
+                                <option value="@i" selected>@i</option>
+                            }
+                            else
+                            {
+                                <option value="@i">@i</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4 col-xl-3">
+                    <label for="yearFilter" class="form-label fw-semibold text-secondary">Năm</label>
+                    <select id="yearFilter" class="form-select">
+                        @for (int year = DateTime.Now.Year - 5; year <= DateTime.Now.Year; year++)
+                        {
+                            if (DateTime.Now.Year == year)
+                            {
+                                <option value="@year" selected>@year</option>
+                            }
+                            else
+                            {
+                                <option value="@year">@year</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-12 col-xl-4 ms-xl-auto">
+                    <div class="order-admin__filter-actions">
+                        <button id="filterBtn" type="button" class="btn btn-primary">Lọc dữ liệu</button>
                     </div>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <!-- Projects table -->
-                        <table class="table align-items-center mb-0">
-                            <thead class="thead-light">
+            </form>
+
+            <div class="dashboard-page__chart-shell">
+                <canvas id="orderChart"></canvas>
+            </div>
+        </section>
+
+        <section class="dashboard-panel">
+            <div class="dashboard-panel__header">
+                <div>
+                    <h2>Doanh thu gần nhất</h2>
+                    <p>Từ @DateTime.Now.AddMonths(-1).ToString("dd/MM/yyyy") đến @DateTime.Now.ToString("dd/MM/yyyy")</p>
+                </div>
+            </div>
+
+            <div class="dashboard-revenue-card">
+                <span class="dashboard-revenue-card__label">Đã thanh toán</span>
+                <strong>@ViewBag.Revenue.ToString("C0", new CultureInfo("vi-VN"))</strong>
+            </div>
+
+            <div class="dashboard-mini-table">
+                <div class="dashboard-panel__header dashboard-panel__header--compact">
+                    <div>
+                        <h2>Top sản phẩm bán chạy</h2>
+                    </div>
+                    <a href="/Admin/Products/all" class="btn btn-light border btn-sm">Xem thêm</a>
+                </div>
+
+                <div class="table-responsive reusable-admin-table">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 72px;">Ảnh</th>
+                                <th>Tên sản phẩm</th>
+                                <th style="width: 120px;">SL bán</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in ViewBag.hotSaleProducts)
+                            {
                                 <tr>
-                                    <th scope="col">Mã đơn hàng</th>
-                                    <th scope="col" class="text-end">Sản phẩm</th>
-                                    <th scope="col" class="text-end">Người mua</th>
-                                    <th scope="col" class="text-end">Số tiền</th>
-                                    <th scope="col" class="text-end">Trạng thái</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var order in ViewBag.New_orders)
-                                {
-                                    <tr>
-                                        <th scope="row" style="white-space:nowrap">
-                                            <a href="/Admin/Orders/View/@order.OrderId">
-                                                Đơn hàng #@order.OrderId
-
-                                            </a>
-                                        </th>
-                                        <td class="text-end text-truncate" style="max-width: 250px;">
-                                            @order.TopProduct
-                                            @if (order.OtherProductsCount > 0)
+                                    <td>
+                                        <div class="brand-admin__logo-shell">
+                                            @if (item.Image != null && item.Image.Contains("http"))
                                             {
-                                                <span class="text-muted">và @order.OtherProductsCount sản phẩm khác</span>
+                                                <img src="@ResizeCDN.Cdn(item.Image,40,40)" width="40" height="40" alt="@item.Name" class="brand-admin__logo" />
                                             }
-                                        </td>
+                                            else if (item.Image == null)
+                                            {
+                                                <img src="~/Upload/Products/no-image.png" width="40" height="40" alt="@item.Name" class="brand-admin__logo" />
+                                            }
+                                            else
+                                            {
+                                                <img src="~/Upload/Products/@item.Image" width="40" height="40" alt="@item.Name" class="brand-admin__logo" />
+                                            }
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <a class="fw-semibold text-dark text-decoration-none" href="/Admin/Products/View/@item.ProductId">
+                                            @item.Name
+                                        </a>
+                                    </td>
+                                    <td>@item.OrderItems.Count</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
 
-                                        <td class="text-end text-truncate" style="max-width: 150px;">@order.Email</td>
-                                        <td class="text-end" style="white-space:nowrap">@order.TotalAmount.ToString("C0", new CultureInfo("vi-VN"))</td>
-                                        <td class="text-end">
-                                            <span class="badge
-                                                  @(order.OrderStatus == "Pending" ? "badge-primary" :
-                                                    order.OrderStatus == "Confirmed" ? "badge-info" :
-                                                    order.OrderStatus == "Shipping" ? "badge-warning" :
-                                                     order.OrderStatus == "Delivered" ? "badge-light" :
-                                                    order.OrderStatus == "Completed" ? "badge-success" :
-                                                    order.OrderStatus == "Cancelled" ? "badge-danger" :
-                                                    "badge-secondary")">
+        <section class="dashboard-panel dashboard-panel--wide">
+            <div class="dashboard-panel__header">
+                <div>
+                    <h2>Đơn hàng mới</h2>
+                    <p>Các đơn hàng mới nhất cần theo dõi.</p>
+                </div>
+                <a href="/Admin/Orders/all" class="btn btn-light border">Xem thêm</a>
+            </div>
+
+            <div class="table-responsive reusable-admin-table">
+                <table class="table table-hover align-middle order-admin__table mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 120px;">Mã đơn</th>
+                            <th>Sản phẩm</th>
+                            <th style="width: 200px;">Khách hàng</th>
+                            <th style="width: 160px;">Số tiền</th>
+                            <th style="width: 170px;">Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var order in ViewBag.New_orders)
+                        {
+                            <tr>
+                                <td>
+                                    <a class="fw-semibold text-decoration-none" href="/Admin/Orders/View/@order.OrderId">#@order.OrderId</a>
+                                </td>
+                                <td>
+                                    <div class="order-admin__product-summary">@order.TopProduct</div>
+                                    @if (order.OtherProductsCount > 0)
+                                    {
+                                        <div class="small text-muted">và @order.OtherProductsCount sản phẩm khác</div>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="fw-semibold text-dark">@order.Email</div>
+                                </td>
+                                <td>
+                                    <div class="order-admin__amount">@order.TotalAmount.ToString("C0", new CultureInfo("vi-VN"))</div>
+                                </td>
+                                <td>
+                                    <div class="order-admin__state">
+                                        <span class="order-admin__state-dot @($"order-admin__state-dot--{order.OrderStatus?.ToLowerInvariant()}")"></span>
+                                        <div class="order-admin__state-body">
+                                            <strong>
                                                 @(order.OrderStatus == "Pending" ? "Đang chờ" :
                                                     order.OrderStatus == "Confirmed" ? "Đã xác nhận" :
                                                     order.OrderStatus == "Shipping" ? "Đang giao hàng" :
@@ -225,317 +234,176 @@
                                                     order.OrderStatus == "Cancelled" ? "Đã hủy" :
                                                     order.OrderStatus == "Refunded" ? "Đã hoàn tiền" :
                                                     "Không xác định")
-                                            </span>
-                                        </td>
-                                    </tr>
-                                }
-
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-            <div class="col-md-4">
-                <div class="card card-primary card-round">
-                    <div class="card-header">
-                        <div class="card-head-row">
-                            <div class="card-title">Doanh thu gần nhất</div>
-                            <div class="card-tools">
-                                <div class="dropdown">
-                                    <button class="btn btn-sm btn-label-light dropdown-toggle"
-                                            type="button"
-                                            id="dropdownMenuButton"
-                                            data-bs-toggle="dropdown"
-                                            aria-haspopup="true"
-                                            aria-expanded="false">
-                                        Export
-                                    </button>
-                                    <div class="dropdown-menu"
-                                         aria-labelledby="dropdownMenuButton">
-                                        <a class="dropdown-item" href="#">Action</a>
-                                        <a class="dropdown-item" href="#">Another action</a>
-                                        <a class="dropdown-item" href="#">Something else here</a>
+                                            </strong>
+                                            <span>@order.OrderStatus</span>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                    <div class="card-category">
-                        @(DateTime.Now.AddMonths(-1).ToString("dd 'tháng' MM") + " - " + DateTime.Now.ToString("dd 'tháng' MM"))
-                    </div>
-
-                    </div>
-                    <div class="card-body pb-0">
-                        <div class="mb-4 mt-2">
-                        <h1>@ViewBag.Revenue.ToString("C0",new CultureInfo("vi-VN"))</h1>
-                        </div>
-                    </div>
-                </div>
-            <div class="card card-round">
-                <div class="card-header">
-                    <div class="card-head-row">
-                        <div class="card-title">TOP Sản phẩm bán chạy</div>
-                        <div class="card-tools">
-                            <div class="dropdown">
-                                <button class="btn btn-icon btn-clean me-0"
-                                        type="button"
-                                        id="dropdownMenuButton"
-                                        data-bs-toggle="dropdown"
-                                        aria-haspopup="true"
-                                        aria-expanded="false">
-                                    <i class="fas fa-ellipsis-h"></i>
-                                </button>
-                                <div class="dropdown-menu"
-                                     aria-labelledby="dropdownMenuButton">
-                                    <a class="dropdown-item" href="/Admin/Products/all">Xem thêm</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body pb-0">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Ảnh</th>
-                                <th>Tên</th>
-                                <th>Sl bán</th>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var item in ViewBag.hotSaleProducts)
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="dashboard-panel">
+            <div class="dashboard-panel__header">
+                <div>
+                    <h2>Khách hàng mới</h2>
+                    <p>Tài khoản đăng ký gần đây.</p>
+                </div>
+                <a href="/Admin/Users" class="btn btn-light border btn-sm">Xem thêm</a>
+            </div>
+
+            <div class="dashboard-user-list">
+                @foreach (var user in ViewBag.New_users)
+                {
+                    <div class="dashboard-user-list__item">
+                        <div class="dashboard-user-list__avatar">
+                            @if (user.Img != null)
                             {
-                                <tr>
-                                    <td>
-                                        @if(item.Image.Contains("http"))
-                                        {
-                                            <img src="@ResizeCDN.Cdn(item.Image,40,40)" width="40" height="40" alt="@item.Name" class="img-fluid" />
-                                        }
-                                        else if(item.Image == null)
-                                        {
-                                            <img src="~/Upload/Products/no-image.png" width="40" height="40" alt="@item.Name" class="img-fluid" />
-                                        }
-                                        else
-                                        {
-                                            <img src="~/Upload/Products/@item.Image" width="40" height="40" alt="@item.Name" class="img-fluid" />
-                                        }
-                                    </td>
-                                    <td class="text-truncate" style="max-width:200px">
-                                        <a href="/Admin/Products/View/@item.ProductId">
-                                            @item.Name
-                                        </a>
-                                        </td>
-                                    <td>@item.OrderItems.Count</td>
-                                </tr>
+                                <img src="/Upload/Avatar/@user.Img" alt="@user.LastName @user.FirstName" class="avatar-img rounded-circle" />
                             }
-                        </tbody>
-                    </table>
+                            else
+                            {
+                                <img src="/Upload/Avatar/none.png" alt="@user.LastName @user.FirstName" class="avatar-img rounded-circle" />
+                            }
+                        </div>
+                        <div class="dashboard-user-list__body">
+                            <strong>@user.LastName @user.FirstName</strong>
+                            <span>@user.CreatedAt</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <section class="dashboard-panel dashboard-panel--full">
+            <div class="dashboard-panel__header">
+                <div>
+                    <h2>Giao dịch gần đây</h2>
+                    <p>Các giao dịch thanh toán mới nhất.</p>
                 </div>
+                <a href="/Admin/Transactions" class="btn btn-light border">Xem thêm</a>
             </div>
 
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-md-4">
-                <div class="card card-round">
-                    <div class="card-body">
-                        <div class="card-head-row card-tools-still-right">
-                            <div class="card-title">Người dùng mới</div>
-                            <div class="card-tools">
-                                <div class="dropdown">
-                                    <button class="btn btn-icon btn-clean me-0"
-                                            type="button"
-                                            id="dropdownMenuButton"
-                                            data-bs-toggle="dropdown"
-                                            aria-haspopup="true"
-                                            aria-expanded="false">
-                                        <i class="fas fa-ellipsis-h"></i>
-                                    </button>
-                                    <div class="dropdown-menu"
-                                         aria-labelledby="dropdownMenuButton">
-                                        <a class="dropdown-item" href="/Admin/Users/Index">Xem thêm</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-list py-4">
-                        @foreach (var user in ViewBag.New_users)
+            <div class="table-responsive reusable-admin-table">
+                <table class="table table-hover align-middle order-admin__table dashboard-transaction-table mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mã giao dịch</th>
+                            <th>Thời gian</th>
+                            <th>Số tiền</th>
+                            <th>Phương thức</th>
+                            <th>Thanh toán</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var transaction in ViewBag.Payments)
                         {
-                            <div class="item-list">
-                                <div class="avatar">
-                                    @if(user.Img !=null)
-                                    {
-                                        <img src="/Upload/Avatar/@user.Img"
-                                             alt="..."
-                                        class="avatar-img rounded-circle" />
-                                    }
-                                    else
-                                    {
-                                        <img src="/Upload/Avatar/none.png"
-                                             alt="..."
-                                             class="avatar-img rounded-circle" />
-                                    }
-
-                                </div>
-                                <div class="info-user ms-3">
-                                    <div class="username">@user.LastName @user.FirstName</div>
-                                    <div class="status">@user.CreatedAt</div>
-                                </div>
-                                <button class="btn btn-icon btn-link op-8 me-1">
-                                    <i class="far fa-envelope"></i>
-                                </button>
-                                <button class="btn btn-icon btn-link btn-danger op-8">
-                                    <i class="fas fa-ban"></i>
-                                </button>
-                            </div>
-                        }
-                   
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-8">
-                <div class="card card-round">
-                    <div class="card-header">
-                        <div class="card-head-row card-tools-still-right">
-                            <div class="card-title">Lịch sử giao dịch</div>
-                            <div class="card-tools">
-                                <div class="dropdown">
-                                    <button class="btn btn-icon btn-clean me-0"
-                                            type="button"
-                                            id="dropdownMenuButton"
-                                            data-bs-toggle="dropdown"
-                                            aria-haspopup="true"
-                                            aria-expanded="false">
-                                        <i class="fas fa-ellipsis-h"></i>
-                                    </button>
-                                    <div class="dropdown-menu"
-                                         aria-labelledby="dropdownMenuButton">
-                                        <a class="dropdown-item" href="/Admin/Transactions/Index">Xem thêm</a>
+                            <tr>
+                                <td>
+                                    <a class="fw-semibold text-decoration-none" href="/Admin/Transactions/View/@transaction.PaymentId">#@transaction.PaymentId</a>
+                                </td>
+                                <td>
+                                    <div class="text-dark">@transaction.PaymentDate</div>
+                                </td>
+                                <td>
+                                    <div class="order-admin__amount">@transaction.Amount.ToString("C0", new CultureInfo("vi-VN"))</div>
+                                </td>
+                                <td>@transaction.PaymentMethod</td>
+                                <td>
+                                    <div class="order-admin__state">
+                                        <span class="order-admin__state-dot @(transaction.Status.ToLower() == "paid" ? "order-admin__state-dot--success" : "order-admin__state-dot--danger")"></span>
+                                        <div class="order-admin__state-body">
+                                            <strong>@(transaction.Status.ToLower() == "paid" ? "Đã thanh toán" : "Chưa thanh toán")</strong>
+                                            <span>@transaction.Status</span>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <!-- Projects table -->
-                            <table class="table align-items-center mb-0">
-                                <thead class="thead-light">
-                                    <tr>
-                                        <th scope="col">Mã Giao Dịch</th>
-                                        <th scope="col" class="text-end">Thời gian</th>
-                                        <th scope="col" class="text-end">Số tiền</th>
-                                    <th scope="col" class="text-end">Hình thức gd</th>
-                                        <th scope="col" class="text-end">Trạng thái</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach(var transaction in ViewBag.Payments)
-                                {
-                                    <tr>
-                                        <th scope="row" style="white-space:nowrap">
-                                            <a href="/Admin/Transactions/View/@transaction.PaymentId">
-                                                Giao dịch #@transaction.PaymentId
-
-                                            </a>
-                                        </th>
-                                        <td class="text-end" style="white-space:nowrap">@transaction.PaymentDate</td>
-                                        <td class="text-end" style="white-space:nowrap">@transaction.Amount.ToString("C0", new CultureInfo("vi-VN"))</td>
-                                        <td class="text-end">@transaction.PaymentMethod</td>
-
-                                        <td class="text-end">
-                                            @if (transaction.Status.ToLower() == "paid")
-                                            {
-                                                <span class="badge badge-success">Đã thanh toán</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="badge badge-danger">Chưa thanh toán</span>
-
-                                            }
-                                        </td>
-                                    </tr>
-                                }
-                                
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             </div>
-        </div>
+        </section>
     </div>
+</div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    $(document).ready(function () {
-        // Khởi tạo biểu đồ
-        var ctx = $('#orderChart');
-        var orderChart;
+@section Scripts {
+    <script>
+        $(function () {
+            const ctx = document.getElementById('orderChart');
+            let orderChart;
 
-        function renderChart(data) {
-            if (orderChart) {
-                orderChart.destroy(); // Xóa biểu đồ cũ trước khi vẽ biểu đồ mới
-            }
+            function renderChart(data) {
+                if (orderChart) {
+                    orderChart.destroy();
+                }
 
-            orderChart = new Chart(ctx, {
-                type: 'bar', // Loại biểu đồ
-                data: {
-                    labels: data.map(item => `Ngày ${item.day}`), // Dữ liệu trục X
-                    datasets: [
-                        {
-                            label: 'Số đơn hàng',
-                            data: data.map(item => item.orders), // Dữ liệu số đơn hàng
-                            backgroundColor: 'rgba(75, 192, 192, 0.6)',
-                            borderColor: 'rgba(75, 192, 192, 1)',
-                            borderWidth: 1,
+                orderChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.map(item => `Ngày ${item.day}`),
+                        datasets: [
+                            {
+                                label: 'Số đơn hàng',
+                                data: data.map(item => item.orders),
+                                backgroundColor: 'rgba(37, 99, 235, 0.72)',
+                                borderColor: 'rgba(37, 99, 235, 1)',
+                                borderWidth: 1,
+                                borderRadius: 8
+                            },
+                            {
+                                label: 'Doanh thu (VNĐ)',
+                                data: data.map(item => item.revenue),
+                                backgroundColor: 'rgba(14, 165, 233, 0.58)',
+                                borderColor: 'rgba(14, 165, 233, 1)',
+                                borderWidth: 1,
+                                borderRadius: 8
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
                         },
-                        {
-                            label: 'Doanh thu (VNĐ)',
-                            data: data.map(item => item.revenue), // Dữ liệu doanh thu
-                            backgroundColor: 'rgba(255, 99, 132, 0.6)',
-                            borderColor: 'rgba(255, 99, 132, 1)',
-                            borderWidth: 1,
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function (value) {
+                                        return value.toLocaleString('vi-VN');
+                                    }
+                                }
+                            }
                         }
                     }
-                }
-            });
-        }
+                });
+            }
 
-        function fetchData() {
-            var month = $('#monthFilter').val();
-            var year = $('#yearFilter').val();
+            function fetchData() {
+                $.ajax({
+                    url: '/Admin/GetOrderStarts',
+                    method: 'GET',
+                    data: {
+                        month: $('#monthFilter').val(),
+                        year: $('#yearFilter').val()
+                    },
+                    success: function (data) {
+                        renderChart(data || []);
+                    },
+                    error: function () {
+                        Swal.fire('Không thể tải dữ liệu', 'Vui lòng thử lại.', 'error');
+                    }
+                });
+            }
 
-            $.ajax({
-                url: '/Admin/GetOrderStarts',
-                method: 'GET',
-                data: { month: month, year: year },
-                success: function (data) {
-                    renderChart(data); // Vẽ biểu đồ
-                },
-                error: function () {
-                    alert('Không thể tải dữ liệu thống kê.');
-                }
-            });
-        }
-
-        // Lấy dữ liệu lần đầu khi load trang
-        fetchData();
-
-        // Lọc khi nhấn nút
-        $('#filterBtn').on('click', function () {
             fetchData();
+            $('#filterBtn').on('click', fetchData);
         });
-    });
-
-</script>
+    </script>
+}

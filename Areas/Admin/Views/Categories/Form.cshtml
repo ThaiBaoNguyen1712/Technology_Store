@@ -1,4 +1,4 @@
-﻿@model Tech_Store.Models.Category
+@model Tech_Store.Models.ViewModel.AdminCategoryFormViewModel
 
 @{
     bool isEdit = Model != null && Model.CategoryId > 0;
@@ -14,6 +14,10 @@
     <form id="CategoryForm" action="~/Admin/Categories/Save" method="post" enctype="multipart/form-data">
         <div class="shadow-sm border rounded bg-white p-4">
             <input type="hidden" name="CategoryId" value="@Model?.CategoryId" />
+            <input type="hidden" name="Image" value="@Model?.Image" />
+            <input type="hidden" name="ReturnPage" value="@Model.ReturnPage" />
+            <input type="hidden" name="ReturnPageSize" value="@Model.ReturnPageSize" />
+            <input type="hidden" name="ReturnKeyword" value="@Model.ReturnKeyword" />
 
             <div class="row g-4">
                 <div class="col-lg-8">
@@ -36,11 +40,22 @@
                                       placeholder="Nhập mô tả cho danh mục này...">@Model?.Description</textarea>
                         </div>
 
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-secondary">Thứ tự hiển thị</label>
+                            <input type="number"
+                                   class="form-control"
+                                   name="SortOrder"
+                                   value="@Model.SortOrder"
+                                   min="0"
+                                   step="1"
+                                   placeholder="0" />
+                        </div>
+
                         <div class="col-12 py-2">
                             <label class="form-label fw-semibold d-block text-secondary">Cấu trúc danh mục</label>
                             <div class="d-flex gap-4 border rounded p-3 bg-light-subtle">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="categoryType" id="typeRoot" value="root" @(Model?.ParentId == null ? "checked" : "") >
+                                    <input class="form-check-input" type="radio" name="categoryType" id="typeRoot" value="root" @(Model?.ParentId == null ? "checked" : "")>
                                     <label class="form-check-label fw-medium" for="typeRoot">Danh mục gốc</label>
                                 </div>
                                 <div class="form-check">
@@ -56,7 +71,7 @@
                                     Lựa chọn danh mục cha
                                 </label>
 
-                                <select class="form-control border selectpicker " data-live-search="true" name="ParentId">
+                                <select class="form-control border selectpicker" data-live-search="true" name="ParentId">
                                     <option value="">-- Chọn danh mục cha --</option>
 
                                     @if (ViewBag.ParentCategories != null)
@@ -67,7 +82,6 @@
                                                     @(Model?.ParentId != null && Model.ParentId.Value == item.CategoryId ? "selected" : "")>
                                                 @item.Name
                                             </option>
-
                                         }
                                     }
                                 </select>
@@ -117,7 +131,7 @@
         </div>
 
         <div class="mt-4 d-flex justify-content-between align-items-center">
-            <a href="~/Admin/Categories" class="text-decoration-none text-secondary fw-medium">
+            <a href="@Url.Action("Index", "Categories", new { area = "Admin", page = Model.ReturnPage, pageSize = Model.ReturnPageSize, keyword = Model.ReturnKeyword })" class="text-decoration-none text-secondary fw-medium">
                 <i class="fas fa-arrow-left me-1"></i> Quay lại danh sách
             </a>
             <div class="d-flex gap-2">
@@ -132,33 +146,6 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     $(document).ready(function () {
-
-        // $('#CategoryForm').on('submit', function (e) {
-        //     e.preventDefault();
-
-        //     const cateId = $("input[name='cate_id']").val();
-        //     const url = cateId
-        //         ? '/Categories/Edit'
-        //         : '/Categories/Create';
-
-        //     const formData = new FormData(this);
-
-        //     $.ajax({
-        //         url: url,
-        //         method: 'POST',
-        //         data: formData,
-        //         contentType: false,
-        //         processData: false,
-        //         success: function () {
-        //             window.location.href = '/Categories';
-        //         },
-        //         error: function () {
-        //             alert('Có lỗi xảy ra 😵');
-        //         }
-        //     });
-        // });
-
-        // auto replace space => "-"
         $("input[name='EngTitle']").on('keypress', function (e) {
             if (e.which === 32) {
                 e.preventDefault();
@@ -166,7 +153,6 @@
             }
         });
 
-        // preview image
         $("#imageFile").change(function (e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -175,7 +161,6 @@
             reader.onload = e => $("#previewImg").attr("src", e.target.result);
             reader.readAsDataURL(file);
         });
-
     });
 
     document.querySelectorAll('input[name="categoryType"]').forEach((radio) => {

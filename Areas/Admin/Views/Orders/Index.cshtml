@@ -1,415 +1,324 @@
-﻿@model IEnumerable<Tech_Store.Models.Order>
+@model Tech_Store.Models.ViewModel.AdminOrderIndexViewModel
+@using System.Globalization
 @{
-    ViewData["Title"] = "Đơn Hàng";
+    ViewData["Title"] = "Đơn hàng";
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
 }
-@using System.Globalization;
-<div class="Container-fluid">
-    <div class="pt-3"></div>
-    <div class="tableProduct">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header">
-                    <div class="d-flex align-items-center">
-                        <h4 class="card-title">DANH SÁCH ĐƠN HÀNG</h4>
-                    </div>
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <div class="row g-3">
-                                <!-- Hàng 1: Thông tin cơ bản -->
-                                <div class="col-md-3">
-                                    <label class="form-label fw-semibold">Mã đơn hàng</label>
-                                    <div class="input-group">
-                                        <input type="text" class="form-control" placeholder="Nhập mã đơn hàng" id="filterOrderId">
-                                    </div>
-                                </div>
-                                <div class="col-md-5">
-                                    <label class="form-label fw-semibold">Tên khách hàng</label>
-                                    <input type="text" class="form-control" placeholder="Nhập tên khách hàng cần tìm" id="filterCustomerName">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold">Trạng thái đơn hàng</label>
-                                    <select class="form-control border selectpicker" data-live-search="true" id="filterOrderStatus">
-                                        <option value="">Tất cả trạng thái</option>
-                                        <option value="Pending">Đang chờ</option>
-                                        <option value="Confirmed">Đã xác nhận</option>
-                                        <option value="Shipping">Đang giao hàng</option>
-                                        <option value="Delivered">Đã giao hàng</option>
-                                        <option value="Completed">Hoàn thành</option>
-                                        <option value="Cancelled">Đã hủy</option>
-                                        <option value="Refunded">Đã hoàn tiền</option>
-                                    </select>
-                                </div>
 
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold">Thanh toán</label>
-                                    <select class="form-control border selectpicker" data-live-search="true" id="filterPaymentStatus">
-                                        <option value="">Tất cả trạng thái</option>
-                                        <option value="Paid">Đã thanh toán</option>
-                                        <option value="Unpaid">Chưa thanh toán</option>
-                                    </select>
-                                </div>
-
-                                <!-- Hàng 2: Thời gian và khoảng giá -->
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold">Từ ngày</label>
-                                    <input type="date" class="form-control" id="filterDateFrom">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold">Đến ngày</label>
-                                    <input type="date" class="form-control" id="filterDateTo">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold">Khoảng giá trị đơn hàng</label>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control" placeholder="Từ" id="filterAmountFrom">
-                                        <span class="input-group-text">-</span>
-                                        <input type="number" class="form-control" placeholder="Đến" id="filterAmountTo">
-                                    </div>
-                                </div>
-
-                                <!-- Hàng 3: Số điện thoại -->
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold">Số điện thoại</label>
-                                    <input type="text" class="form-control" placeholder="Nhập số điện thoại khách hàng" id="filterPhone">
-                                </div>
-
-                                <!-- Nút tìm kiếm và reset -->
-                                <div class="col-12 mt-4">
-                                    <div class="d-flex gap-2 justify-content-end">
-                                        <button type="button" class="btn btn-light px-4" id="btnReset">
-                                            <i class="fas fa-redo me-1"></i> Đặt lại
-                                        </button>
-                                        <button type="button" class="btn btn-primary px-4" id="btnSearch">
-                                            <i class="fas fa-search me-1"></i> Tìm kiếm
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+<div class="py-3 order-admin-page">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0 pb-0">
+            <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
+                <div>
+                    <h4 class="card-title mb-1">Danh sách đơn hàng</h4>
                 </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table id="add-row" class="display table table-striped table-hover">
-                            <thead>
-                                <tr class="table-primary text-center align-middle">
-                                    <th class="fw-semibold">ID Đơn Hàng</th>
-                                    <th class="fw-semibold">Ngày Đặt</th>
-                                    <th class="fw-semibold"> Thông Tin Khách Hàng</th>
-                                    <th class="fw-semibold">Sản Phẩm</th>
-                                    <th class="fw-semibold">Tổng Số Tiền</th>
-                                    <th class="fw-semibold">Thanh toán</th>
-                                    <th class="fw-semibold">Trạng Thái Đơn Hàng</th>
-                                    <th class="fw-semibold">Chuyển TT Đơn Hàng</th>
-                                    <th class="fw-semibold" style="width:10%">Hành động</th>
-                                </tr>
-                            </thead>
-                            <tfoot>
-                                <tr>
-                                    <th>ID Đơn Hàng</th>
-                                    <th>Ngày Đặt</th>
-                                    <th>Thông Tin Khách Hàng</th>
-                                    <th>Sản Phẩm</th>
-                                    <th>Tổng Số Tiền</th>
-                                    <th>Thanh toán</th>
-                                    <th>Trạng Thái Đơn Hàng</th>
-                                    <th>Chuyển TT Đơn Hàng</th>
-                                    <th style="width:10%">Hành động</th>
-                                </tr>
-                            </tfoot>
-                            <tbody id="orderList">
-                                @if (Model != null)
-                                {
-                                    @foreach (var order in Model)
-                                    {
-                                        <tr>
-                                            <td>@order.OrderId</td>
-                                            <td>@order.OrderDate</td>
-                                            <td>
-                                                <p style="white-space:nowrap">@order.User.LastName @order.User.FirstName</p>
-                                                <p>@order.User.PhoneNumber</p>
-                                            </td>
-                                            <td>@(string.Join(", ", order.OrderItems.Select(item => item.Product?.Name ?? "Không có sản phẩm")))</td>
-
-
-                                            <td class="text-center">
-                                                <div style="background:#d1fae5;padding:8px 12px;border-radius:8px;color:#065f46;font-weight:bold; font-size:1.1rem; display:inline-block; box-shadow:0 0 3px rgba(0,0,0,0.1);">
-                                                    <p style="white-space:nowrap">@order.TotalAmount.ToString("C0", new CultureInfo("vi-VN"))</p>
-                                                </div>
-
-                                            </td>
-                                            <td>
-                                                @{
-                                                    var paymentStatus = string.Join(", ", order.Payments.Select(s => s.Status));
-                                                    var statusText = paymentStatus == "Unpaid" ? "Chưa thanh toán" : "Đã thanh toán";
-                                                    var statusClass = paymentStatus == "Unpaid" ? "badge-danger" : "badge-success";
-                                                }
-
-                                                <span class="badge @statusClass">@statusText</span>
-
-
-                                            </td>
-                                            <td class="text-center">
-                                                <span class="badge badge-statusOrder
-                                                  @(order.OrderStatus == "Pending" ? "badge-primary" :
-                                                    order.OrderStatus == "Confirmed" ? "badge-info" :
-                                                    order.OrderStatus == "Shipping" ? "badge-warning" :
-                                                     order.OrderStatus == "Delivered" ? "badge-success" :
-                                                    order.OrderStatus == "Completed" ? "badge-success" :
-                                                    order.OrderStatus == "Cancelled" ? "badge-danger" :
-                                                    "badge-secondary")">
-                                                    @(order.OrderStatus == "Pending" ? "Đang chờ" :
-                                                        order.OrderStatus == "Confirmed" ? "Đã xác nhận" :
-                                                        order.OrderStatus == "Shipping" ? "Đang giao hàng" :
-                                                        order.OrderStatus == "Delivered" ? "Đã giao hàng" :
-                                                        order.OrderStatus == "Completed" ? "Hoàn thành" :
-                                                        order.OrderStatus == "Cancelled" ? "Đã hủy" :
-                                                        order.OrderStatus == "Refunded" ? "Đã hoàn tiền" :
-                                                        "Không xác định")
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <select class="form-control border selectpicker changeStatus" data-id="@order.OrderId" data-current-status="@order.OrderStatus" data-live-search="true">
-                                                    <option value="Pending" @(order.OrderStatus == "Pending" ? "selected" : "")>Đang chờ</option>
-                                                    <option value="Confirmed" @(order.OrderStatus == "Confirmed" ? "selected" : "")>Đã xác nhận</option>
-                                                    <option value="Shipping" @(order.OrderStatus == "Shipping" ? "selected" : "")>Đang giao hàng</option>
-                                                    <option value="Delivered" @(order.OrderStatus == "Delivered" ? "selected" : "")>Đã giao hàng</option>
-                                                    <option value="Completed" @(order.OrderStatus == "Completed" ? "selected" : "")>Hoàn thành</option>
-                                                    <option value="Cancelled" @(order.OrderStatus == "Cancelled" ? "selected" : "")>Đã hủy</option>
-                                                    <option value="Refunded" @(order.OrderStatus == "Refunded" ? "selected" : "")>Đã Hoàn tiền</option>
-
-                                                </select>
-                                            </td>
-
-                                            <td>
-                                                <div class="form-button-action">
-                                                    <a 
-                                                            data-bs-toggle="tooltip" href="~/Admin/Orders/View/@order.OrderId"
-                                                            class="btn btn-link btn-primary btn-lg"
-                                                            title="Chi Tiết Hóa Đơn">
-                                                        <i class="fa fa-eye"></i>
-                                                    </a>
-                                                    <button type="button"
-                                                            data-bs-toggle="tooltip"
-                                                            title="Xuất Hóa Đơn PDF"
-                                                            class="btn btn-link btn-success print-pdf"
-                                                            data-id="@order.OrderId">
-                                                        <i class="fa fa-download"></i>
-                                                    </button>
-
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    }
-                                }
-                                else
-                                {
-                                    <tr>
-                                        <td class="text-center" colspan="6">
-                                            <span>Không có đơn hàng phù hợp</span>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="order-admin__header-meta">
+                    <span class="order-admin__header-pill">Tổng đơn: @Model.TotalItems</span>
+                    <span class="order-admin__header-pill">Trang @Model.Page/@Model.TotalPages</span>
                 </div>
             </div>
         </div>
+
+        <div class="card-body">
+            <form method="get" class="brand-admin__filters order-admin__filters row g-3 align-items-end mb-4">
+                <input type="hidden" name="pageSize" value="@Model.PageSize" />
+                <div class="col-xl-4">
+                    <label class="form-label fw-semibold text-secondary">Tìm kiếm</label>
+                    <input type="text"
+                           class="form-control"
+                           name="keyword"
+                           value="@Model.Keyword"
+                           placeholder="Mã đơn, khách hàng, SĐT, SKU hoặc tên sản phẩm..." />
+                </div>
+                <div class="col-md-4 col-xl-2">
+                    <label class="form-label fw-semibold text-secondary">Trạng thái đơn</label>
+                    <select class="form-select" name="status">
+                        <option value="">Tất cả trạng thái</option>
+                        @if (Model.Status == "Pending")
+                        {
+                            <option value="Pending" selected>Đang chờ</option>
+                        }
+                        else
+                        {
+                            <option value="Pending">Đang chờ</option>
+                        }
+                        @if (Model.Status == "Confirmed")
+                        {
+                            <option value="Confirmed" selected>Đã xác nhận</option>
+                        }
+                        else
+                        {
+                            <option value="Confirmed">Đã xác nhận</option>
+                        }
+                        @if (Model.Status == "Shipping")
+                        {
+                            <option value="Shipping" selected>Đang giao hàng</option>
+                        }
+                        else
+                        {
+                            <option value="Shipping">Đang giao hàng</option>
+                        }
+                        @if (Model.Status == "Delivered")
+                        {
+                            <option value="Delivered" selected>Đã giao hàng</option>
+                        }
+                        else
+                        {
+                            <option value="Delivered">Đã giao hàng</option>
+                        }
+                        @if (Model.Status == "Completed")
+                        {
+                            <option value="Completed" selected>Hoàn thành</option>
+                        }
+                        else
+                        {
+                            <option value="Completed">Hoàn thành</option>
+                        }
+                        @if (Model.Status == "Cancelled")
+                        {
+                            <option value="Cancelled" selected>Đã hủy</option>
+                        }
+                        else
+                        {
+                            <option value="Cancelled">Đã hủy</option>
+                        }
+                        @if (Model.Status == "Refunded")
+                        {
+                            <option value="Refunded" selected>Đã hoàn tiền</option>
+                        }
+                        else
+                        {
+                            <option value="Refunded">Đã hoàn tiền</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4 col-xl-2">
+                    <label class="form-label fw-semibold text-secondary">Thanh toán</label>
+                    <select class="form-select" name="paymentStatus">
+                        <option value="">Tất cả trạng thái</option>
+                        @if (Model.PaymentStatus == "Paid")
+                        {
+                            <option value="Paid" selected>Đã thanh toán</option>
+                        }
+                        else
+                        {
+                            <option value="Paid">Đã thanh toán</option>
+                        }
+                        @if (Model.PaymentStatus == "Unpaid")
+                        {
+                            <option value="Unpaid" selected>Chưa thanh toán</option>
+                        }
+                        else
+                        {
+                            <option value="Unpaid">Chưa thanh toán</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4 col-xl-2">
+                    <label class="form-label fw-semibold text-secondary">Từ ngày</label>
+                    <input type="date" class="form-control" name="dateFrom" value="@(Model.DateFrom?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="col-md-4 col-xl-2">
+                    <label class="form-label fw-semibold text-secondary">Đến ngày</label>
+                    <input type="date" class="form-control" name="dateTo" value="@(Model.DateTo?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="col-md-4 col-xl-2">
+                    <label class="form-label fw-semibold text-secondary">Từ giá trị</label>
+                    <input type="number" class="form-control" name="amountFrom" value="@Model.AmountFrom" placeholder="0" />
+                </div>
+                <div class="col-md-4 col-xl-2">
+                    <label class="form-label fw-semibold text-secondary">Đến giá trị</label>
+                    <input type="number" class="form-control" name="amountTo" value="@Model.AmountTo" placeholder="0" />
+                </div>
+                <div class="col-12 col-xl-4 ms-xl-auto">
+                    <div class="order-admin__filter-actions">
+                        <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+                        <a href="/Admin/Orders" class="btn btn-light border">Làm mới</a>
+                    </div>
+                </div>
+            </form>
+
+            <div class="table-responsive reusable-admin-table">
+                <table class="table table-hover align-middle order-admin__table">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 100px;">Mã đơn</th>
+                            <th style="width: 160px;">Ngày đặt</th>
+                            <th>Khách hàng</th>
+                            <th>Sản phẩm</th>
+                            <th style="width: 150px;">Thanh toán</th>
+                            <th style="width: 150px;">Trạng thái</th>
+                            <th style="width: 170px;">Tổng tiền</th>
+                            <th style="width: 160px;">Xử lý nhanh</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Orders.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-5">
+                                    Không có đơn hàng phù hợp với bộ lọc hiện tại.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var order in Model.Orders)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold text-dark">#@order.OrderId</div>
+                                    </td>
+                                    <td>
+                                        <div class="text-dark">@(order.OrderDate?.ToString("dd/MM/yyyy") ?? "-")</div>
+                                        <div class="small text-muted">@(order.OrderDate?.ToString("HH:mm:ss") ?? "-")</div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold text-dark">@order.CustomerName</div>
+                                        <div class="small text-muted">@order.PhoneNumber</div>
+                                        <div class="small text-muted">@order.Email</div>
+                                    </td>
+                                    <td>
+                                        <div class="order-admin__product-summary">@order.ProductSummary</div>
+                                        <div class="small text-muted">@order.ItemCount sản phẩm</div>
+                                    </td>
+                                    <td>
+                                        <div class="order-admin__state order-admin__state--payment">
+                                            <span class="order-admin__state-dot @(order.PaymentStatus == "Paid" ? "order-admin__state-dot--success" : "order-admin__state-dot--danger")"></span>
+                                            <div class="order-admin__state-body">
+                                                <strong>@order.PaymentStatusLabel</strong>
+                                                <span>@order.PaymentMethod</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="order-admin__state order-admin__state--order">
+                                            <span class="order-admin__state-dot @($"order-admin__state-dot--{order.OrderStatus?.ToLowerInvariant()}")"></span>
+                                            <div class="order-admin__state-body">
+                                                <strong>@order.OrderStatusLabel</strong>
+                                                <span>@order.OrderStatus</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="order-admin__amount">@order.TotalAmount.ToString("C0", new CultureInfo("vi-VN"))</div>
+                                    </td>
+                                    <td>
+                                        <button type="button"
+                                                class="btn btn-light border order-admin__quick-action open-order-drawer"
+                                                data-id="@order.OrderId">
+                                            Xử lý đơn
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @await Html.PartialAsync("~/Areas/Admin/Views/Shared/_ManualPagination.cshtml", new Tech_Store.Models.ViewModel.ManualPaginationViewModel
+            {
+                CurrentPage = Model.Page,
+                TotalPages = Model.TotalPages,
+                BaseUrl = "/Admin/Orders",
+                QueryString = string.Join("&", new[]
+                {
+                    !string.IsNullOrWhiteSpace(Model.Keyword) ? $"keyword={Uri.EscapeDataString(Model.Keyword)}" : null,
+                    !string.IsNullOrWhiteSpace(Model.Status) ? $"status={Uri.EscapeDataString(Model.Status)}" : null,
+                    !string.IsNullOrWhiteSpace(Model.PaymentStatus) ? $"paymentStatus={Uri.EscapeDataString(Model.PaymentStatus)}" : null,
+                    Model.DateFrom.HasValue ? $"dateFrom={Model.DateFrom.Value:yyyy-MM-dd}" : null,
+                    Model.DateTo.HasValue ? $"dateTo={Model.DateTo.Value:yyyy-MM-dd}" : null,
+                    Model.AmountFrom.HasValue ? $"amountFrom={Model.AmountFrom.Value}" : null,
+                    Model.AmountTo.HasValue ? $"amountTo={Model.AmountTo.Value}" : null,
+                    $"pageSize={Model.PageSize}"
+                }.Where(x => !string.IsNullOrWhiteSpace(x)))
+            })
+        </div>
     </div>
 </div>
+
+@await Html.PartialAsync("~/Areas/Admin/Views/Shared/_AdminRightDrawer.cshtml", new Tech_Store.Models.ViewModel.AdminRightDrawerViewModel
+{
+    DrawerId = "orderQuickDrawer",
+    Title = "Xử lý đơn hàng",
+    BodyId = "orderQuickDrawerBody",
+    WidthClass = "admin-right-drawer--lg"
+})
+
 <script src="~/Admin/assets/js/core/jquery-3.7.1.min.js"></script>
 <script>
     $(document).ready(function () {
+        $('[data-bs-toggle="tooltip"]').tooltip();
+        const drawerElement = document.getElementById('orderQuickDrawer');
+        const drawerBody = $('#orderQuickDrawerBody');
+        const orderDrawer = drawerElement ? bootstrap.Offcanvas.getOrCreateInstance(drawerElement) : null;
+        const processingFlags = {};
 
-        $('#btnSearch').on('click', function () {
-            var filterData = {
-                orderId: $('#filterOrderId').val(),
-                nameCustomer: $('#filterCustomerName').val(),
-                status: $('#filterOrderStatus').val(),
-                dateFrom: $('#filterDateFrom').val(),
-                dateTo: $('#filterDateTo').val(),
-                phoneNumber: $('#filterPhone').val(),
-                paymentStatus: $('#filterPaymentStatus').val(),
-                amountFrom: $('#filterAmountFrom').val(),
-                amountTo: $('#filterAmountTo').val()
-            };
+        $(document).on('click', '.open-order-drawer', function (e) {
+            e.preventDefault();
+            const id = $(this).data('id');
+
+            if (!orderDrawer) {
+                return;
+            }
+
+            drawerBody.html('<div class="admin-right-drawer__loading">Đang tải thông tin đơn hàng...</div>');
+            orderDrawer.show();
+            $('.loading-container').show();
 
             $.ajax({
-                url: '/Admin/Orders/Filter',
-                type: 'POST',
-                data: filterData,
-                success: function (response) {
-
-                    var tbody = $("#orderList");
-                    tbody.empty(); // Xóa dữ liệu cũ
-
-                    if (!response || response.length === 0) {
-                        tbody.append(`<tr><td class="text-center" colspan="9"><span>Không có đơn hàng phù hợp</span></td></tr>`);
-                        return;
-                    }
-
-                    var orderStatusMap = {
-                        "Pending": { class: "badge-primary", text: "Đang chờ" },
-                        "Confirmed": { class: "badge-info", text: "Đã xác nhận" },
-                        "Shipping": { class: "badge-warning", text: "Đang giao hàng" },
-                        "Delivered": { class: "badge-success", text: "Đã giao hàng" },
-                        "Completed": { class: "badge-success", text: "Hoàn thành" },
-                        "Cancelled": { class: "badge-danger", text: "Đã hủy" },
-                        "Refunded": { class: "badge-secondary", text: "Đã hoàn tiền" }
-                    };
-
-                    response.forEach(order => {
-                        var status = orderStatusMap[order.orderStatus] || { class: "badge-dark", text: "Không xác định" };
-
-                        var selectOptions = Object.keys(orderStatusMap).map(statusKey => {
-                            var selected = order.status === statusKey ? "selected" : "";
-                            return `<option value="${statusKey}" ${selected}>${orderStatusMap[statusKey].text}</option>`;
-                        }).join("");
-
-                        var row = `
-                        <tr>
-                            <td>${order.orderId}</td>
-                            <td>${order.orderDate}</td>
-                            <td>
-                                <p style="white-space:nowrap">${order.nameCustomer}</p>
-                                <p>${order.phoneNumber}</p>
-                            </td>
-                            <td>${order.listProducts}</td>
-                            <td><p style="white-space:nowrap">${order.totalAmount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</p></td>
-                                <td>
-                                    <span class="badge ${order.paymentStatus === 'Paid' ? 'badge-success' : 'badge-danger'}">
-                                        ${order.paymentStatus === 'Paid' ? 'Đã thanh toán' : 'Chưa thanh toán'}
-                                    </span>
-                                </td>
-                                <td class="text-center">
-                                  <span class="badge ${
-                                    order.orderStatus === 'Pending'   ? 'bg-primary'   :
-                                    order.orderStatus === 'Confirmed' ? 'bg-info'      :
-                                    order.orderStatus === 'Shipping'  ? 'bg-warning'   :
-                                    order.orderStatus === 'Delivered' ? 'bg-success'   :
-                                    order.orderStatus === 'Completed' ? 'bg-success'   :
-                                    order.orderStatus === 'Cancelled' ? 'bg-danger'    :
-                                    order.orderStatus === 'Refunded'  ? 'bg-secondary' :
-                                                                        'bg-dark'
-                                  }">
-                                    ${
-                                      order.orderStatus === 'Pending'   ? 'Đang chờ' :
-                                      order.orderStatus === 'Confirmed' ? 'Đã xác nhận' :
-                                      order.orderStatus === 'Shipping'  ? 'Đang giao hàng' :
-                                      order.orderStatus === 'Delivered' ? 'Đã giao hàng' :
-                                      order.orderStatus === 'Completed' ? 'Hoàn thành' :
-                                      order.orderStatus === 'Cancelled' ? 'Đã hủy' :
-                                      order.orderStatus === 'Refunded'  ? 'Đã hoàn tiền' :
-                                                                          'Không xác định'
-                                    }
-                                  </span>
-                                </td>
-                             <td>
-                                <select class="form-control border selectpicker changeStatus" data-id="${order.orderId}" data-current-status="${order.orderStatus}" data-live-search="true">
-                                        <option value="Pending" ${order.orderStatus === "Pending" ? "selected" : ""}>Đang chờ</option>
-                                        <option value="Confirmed" ${order.orderStatus === "Confirmed" ? "selected" : ""}>Đã xác nhận</option>
-                                        <option value="Shipping" ${order.orderStatus === "Shipping" ? "selected" : ""}>Đang giao hàng</option>
-                                        <option value="Delivered" ${order.orderStatus === "Delivered" ? "selected" : ""}>Đã giao hàng</option>
-                                        <option value="Completed" ${order.orderStatus === "Completed" ? "selected" : ""}>Hoàn thành</option>
-                                        <option value="Cancelled" ${order.orderStatus === "Cancelled" ? "selected" : ""}>Đã hủy</option>
-                                        <option value="Refunded" ${order.orderStatus === "Refunded" ? "selected" : ""}>Đã Hoàn tiền</option>
-                                </select>
-                            </td>
-                            <td>
-                                <div class="form-button-action">
-                                    <a data-bs-toggle="tooltip" href="/Admin/Orders/View/${order.orderId}" class="btn btn-link btn-primary btn-lg" title="Chi Tiết Hóa Đơn">
-                                        <i class="fa fa-eye"></i>
-                                    </a>
-                                    <button type="button" data-bs-toggle="tooltip" title="Xuất Hóa Đơn PDF" class="btn btn-link btn-success print-pdf" data-id="${order.orderId}">
-                                        <i class="fa fa-download"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-
-                        tbody.append(row);
-                    });
-
-                    // Làm mới selectpicker để Bootstrap cập nhật giao diện dropdown
-                    $(".selectpicker").selectpicker("refresh");
+                method: 'GET',
+                url: '/admin/Orders/QuickDrawer/' + id,
+                success: function (html) {
+                    drawerBody.html(html);
                 },
-                error: function (error) {
-                    console.error("Lỗi khi tải dữ liệu", error);
+                error: function () {
+                    drawerBody.html('<div class="alert alert-danger mb-0">Không thể tải thông tin đơn hàng.</div>');
+                },
+                complete: function () {
+                    $('.loading-container').hide();
                 }
             });
         });
-       
-        // Đặt lại các bộ lọc khi nhấn nút "Đặt lại"
-        $('#btnReset').on('click', function () {
-            $('#filterOrderId').val('');
-            $('#filterCustomerName').val('');
-            $('#filterOrderStatus').val('');
-            $('#filterDateFrom').val('');
-            $('#filterDateTo').val('');
-            $('#filterPhone').val('');
-            $('#filterPaymentStatus').val('');
-            $('#filterAmountFrom').val('');
-            $('#filterAmountTo').val('');
-        });
 
-        // Hiển thị tooltip khi di chuột qua nút
-        $('[data-bs-toggle="tooltip"]').tooltip();
+        $(document).on('click', '#applyDrawerOrderStatus', function (e) {
+            e.preventDefault();
 
-        // Xử lý tải PDF cho tất cả các nút
-        $('.print-pdf').click(function () {
-            $('.loading-container').show();
-            var id = $(this).data('id');
-            console.log("Exporting invoice for ID:", id);
-            window.location.href = '/Admin/POS/Print-Invoice?id=' + id;
-            setTimeout(function () {
-                $('.loading-container').hide();
-            }, 3000);
-        });
+            const $button = $(this);
+            const id = $button.data('id');
+            const $select = $('#drawerOrderStatus');
+            const newStatus = $select.val();
+            const currentStatus = $select.data('current-status');
 
-        // Xóa tất cả các event handler cũ trước khi đăng ký mới
-        $(document).off('change', '.changeStatus');
+            if (processingFlags[id]) {
+                return;
+            }
 
-        // Biến cờ riêng cho từng select
-        // Khai báo một đối tượng để theo dõi các ID đang được xử lý
-        var processingFlags = {};
+            if (newStatus === currentStatus) {
+                Swal.fire('Chưa có thay đổi', `Đơn #${id} chưa có thay đổi trạng thái.`, 'info');
+                return;
+            }
 
-        $(document).on('change', '.changeStatus', function (e) {
-            e.stopPropagation(); // Ngăn chặn sự kiện lan rộng
-
-            var $select = $(this);
-            var newStatus = $select.val();
-            var id = $select.data('id');
-            var currentStatus = $select.data('current-status');
-
-            // Nếu đã có cờ xử lý cho ID này, không làm gì cả
-            if (processingFlags[id]) return;
-
-            // Đánh dấu trạng thái đang xử lý
             processingFlags[id] = true;
-
-            // Hiển thị hộp thoại xác nhận với SweetAlert2
-            var confirmMessage = `Bạn có muốn đổi trạng thái từ "${currentStatus}" thành "${newStatus}" không?`;
+            $button.prop('disabled', true);
 
             Swal.fire({
                 title: 'Xác nhận thay đổi trạng thái',
-                text: confirmMessage,
+                text: `Bạn có muốn đổi trạng thái đơn #${id} sang "${newStatus}" không?`,
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#3085d6', // Màu nút xác nhận
-                cancelButtonColor: '#d33', // Màu nút hủy
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
                 confirmButtonText: 'Đổi trạng thái',
                 cancelButtonText: 'Hủy'
             }).then((result) => {
                 if (!result.isConfirmed) {
-                    $select.val(currentStatus); // Khôi phục giá trị cũ nếu từ chối
-                    processingFlags[id] = false; // Reset cờ
+                    processingFlags[id] = false;
+                    $button.prop('disabled', false);
                     return;
                 }
 
-                // Hiển thị biểu tượng loading
                 $('.loading-container').show();
 
                 $.ajax({
@@ -420,69 +329,26 @@
                         id: id
                     },
                     success: function (response) {
-                        if (response.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Thành công',
-                                text: response.message
-                            });
-
-                            // Cập nhật trạng thái mới
-                            $select.data('current-status', newStatus);
-
-                            // Cập nhật badge và nội dung trạng thái
-                            var badge = $select.closest('tr').find('.badge-statusOrder'); // Tìm badge trong cùng dòng tr
-                            badge.removeClass('badge-primary badge-info badge-warning badge-success badge-danger badge-secondary');
-
-                            // Thêm class mới và thay đổi nội dung badge
-                            switch (newStatus) {
-                                case 'Pending':
-                                    badge.addClass('badge-primary').text('Đang chờ');
-                                    break;
-                                case 'Confirmed':
-                                    badge.addClass('badge-info').text('Đã xác nhận');
-                                    break;
-                                case 'Shipping':
-                                    badge.addClass('badge-warning').text('Đang giao hàng');
-                                    break;
-                                case 'Delivered':
-                                    badge.addClass('badge-success').text('Đã giao hàng');
-                                    break;
-                                case 'Completed':
-                                    badge.addClass('badge-success').text('Hoàn thành');
-                                    break;
-                                case 'Cancelled':
-                                    badge.addClass('badge-danger').text('Đã hủy');
-                                    break;
-                                default:
-                                    badge.addClass('badge-secondary').text('Không xác định');
-                                    break;
-                            }
-
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Lỗi',
-                                text: response.message
-                            });
-                            $select.val(currentStatus); // Khôi phục trạng thái cũ nếu có lỗi
+                        if (!response.success) {
+                            Swal.fire('Lỗi', response.message, 'error');
+                            $select.val(currentStatus);
+                            return;
                         }
+
+                        Swal.fire('Thành công', response.message, 'success');
+                        location.reload();
                     },
-                    error: function (response) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Lỗi',
-                            text: 'Đã xảy ra lỗi: ' + response.message
-                        });
-                        $select.val(currentStatus); // Khôi phục trạng thái cũ nếu có lỗi
+                    error: function () {
+                        Swal.fire('Lỗi', 'Không thể cập nhật trạng thái đơn hàng.', 'error');
+                        $select.val(currentStatus);
                     },
                     complete: function () {
-                        processingFlags[id] = false; // Reset cờ xử lý
+                        processingFlags[id] = false;
+                        $button.prop('disabled', false);
                         $('.loading-container').hide();
                     }
                 });
             });
         });
-
     });
 </script>

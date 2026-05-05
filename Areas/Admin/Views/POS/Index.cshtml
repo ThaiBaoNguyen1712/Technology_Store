@@ -1,223 +1,223 @@
-﻿@using Tech_Store.Helpers
+@using System.Globalization
+@using Tech_Store.Helpers
 @{
     ViewData["Title"] = "POS";
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+    var products = ViewBag.product as IEnumerable<Tech_Store.Models.Product>;
+    var categories = ViewBag.category as IEnumerable<Tech_Store.Models.Category>;
+    var users = ViewBag.users as IEnumerable<Tech_Store.Models.User>;
 }
 
-<div class="pt-4"></div>
-<div class="container-fluid row">
-    <!-- Phần Sản phẩm -->
-    <div class="col-lg-7 mb-md-4 mb-lg-0 col-sm-12">
-        <div class="card h-100">
-            <div class="p-3 m-0 bg-light">
-                Mục sản phẩm
-            </div>
-
-            <div class="row gy-1">
-                <div class="col-sm-6">
-                    <div class="input form-control d-flex justify-content-end">
-                        <select class="form-control selectpicker" name="CateId" data-live-search="true">
-                            <option>Tất cả các danh mục</option>
-                            @foreach(var cate in ViewBag.category)
-                            {
-                                <option value="@cate.CategoryId">@cate.Name</option>
-                            }
-                        </select>
+<div class="pos-page py-4">
+    <div class="row g-4">
+        <div class="col-xl-7">
+            <section class="card pos-panel border-0 shadow-sm h-100">
+                <div class="pos-panel__header">
+                    <div>
+                        <h2>Danh mục sản phẩm</h2>
                     </div>
                 </div>
-                <div class="col-sm-6">
-                    <div class="input form-control d-flex justify-content-end">
-                        <input class="form form-control searchProducts" placeholder="Tìm kiếm sản phẩm" type="search" />
-                    </div>
-                </div>
-            </div>
 
-            <!-- Thêm tính năng cuộn dọc khi có nhiều sản phẩm -->
-            <div class="card-body pt-2" style="max-height: 75vh; overflow-y: auto;" id="CardProducts">
-                <div class="row">
-                    <!-- Card 1 -->
-                    @foreach (var product in ViewBag.product)
-                    {
-                        <div class="col-6 col-md-3 mb-3">
-                            <div class="card h-100">
-                                <a class="getProductInfo" type="button" data-id="@product.ProductId">
-                                    @if (product.Image == null)
-                                    {
-                                        <img src="~/Upload/Products/no-image.png" style="width:135px; height:135px; object-fit: cover; display: block; margin: 0 auto;" class="card-img-top" alt="...">
-                                    }
-                                    else if(product.Image.Contains("http"))
-                                    {
-                                        <img src="@ResizeCDN.Cdn(product.Image,135,135)" style="width:135px; height:135px; object-fit: cover; display: block; margin: 0 auto;" class="card-img-top" alt="...">
-                                    }
-                                    else
-                                    {
-                                        <img src="~/Upload/Products/@product.Image" style="width:135px; height:135px; object-fit: cover; display: block; margin: 0 auto;" class="card-img-top" alt="...">
-
-                                    }
-                                    <div class="card-body">
-                                        <p class="card-text text-truncate-2">@product.Name</p>
-                                    </div>
-                                </a>
+                <div class="pos-panel__body">
+                    <div class="row g-3 pos-filter-bar">
+                        <div class="col-md-6">
+                            <label class="form-label pos-field-label">Danh mục</label>
+                            <select class="form-control selectpicker" name="CateId" data-live-search="true">
+                                <option value="0">Tất cả danh mục</option>
+                                @foreach (var cate in categories ?? Enumerable.Empty<Tech_Store.Models.Category>())
+                                {
+                                    <option value="@cate.CategoryId">@cate.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label pos-field-label">Tìm sản phẩm</label>
+                            <div class="pos-search-input">
+                                <i class="fas fa-search"></i>
+                                <input class="form-control searchProducts" name="searchProducts" placeholder="Tên sản phẩm, SKU..." type="search" />
                             </div>
                         </div>
-                    }
-                   <!-- Thêm các sản phẩm khác tương tự -->
+                    </div>
+
+                    <div class="pos-catalog" id="CardProducts">
+                        <div class="row g-3">
+                            @foreach (var product in products ?? Enumerable.Empty<Tech_Store.Models.Product>())
+                            {
+                                var imageUrl = string.IsNullOrWhiteSpace(product.Image)
+                                    ? Url.Content("~/Upload/Products/no-image.png")
+                                    : product.Image.Contains("http")
+                                        ? ResizeCDN.Cdn(product.Image, 140, 140)
+                                        : Url.Content($"~/Upload/Products/{product.Image}");
+
+                                <div class="col-6 col-lg-4">
+                                    <button class="pos-product-card getProductInfo" type="button" data-id="@product.ProductId">
+                                        <span class="pos-product-card__image-shell">
+                                            <img src="@imageUrl" class="pos-product-card__image" alt="@product.Name">
+                                        </span>
+                                        <span class="pos-product-card__body">
+                                            <span class="pos-product-card__title">@product.Name</span>
+                                            <span class="pos-product-card__sku">@product.Sku</span>
+                                            <span class="pos-product-card__price">
+                                                @(product.SellPrice?.ToString("C0", new CultureInfo("vi-VN")) ?? "Liên hệ")
+                                            </span>
+                                        </span>
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    @Html.Partial("ViewProduct")
                 </div>
-            </div>
-            @Html.Partial("ViewProduct")
+            </section>
         </div>
-    </div>
 
-    <!-- Phần Hóa đơn -->
-    <div class="col-lg-5 col-sm-12 mb-md-5">
-        <div class="card h-100">
-            <div class="p-3 m-0 bg-light">
-                <h5 class="mb-0">Hóa đơn</h5>
-            </div>
+        <div class="col-xl-5">
+            <section class="card pos-panel border-0 shadow-sm h-100">
+                <div class="pos-panel__header">
+                    <div>
+                        <h2>Hóa đơn tạm</h2>
+                    </div>
+                </div>
 
-            <!-- Thêm tính năng cuộn dọc cho toàn bộ phần hóa đơn -->
-            <div class="card-body" style="max-height: 80vh; overflow-y: auto;">
-                <!-- Phần chọn và thêm khách hàng -->
-                <div class="">
-                    <div class="row w-100">
-                        <div class="col-7">
+                <div class="pos-panel__body pos-panel__body--invoice">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-7">
+                            <label class="form-label pos-field-label">Khách hàng</label>
                             <select class="form-control border selectpicker" name="selectCustomer" data-live-search="true" placeholder="Chọn khách hàng..." require>
                                 <option disabled selected>Chọn khách hàng...</option>
-                                @foreach (var cus in ViewBag.users)
+                                @foreach (var cus in users ?? Enumerable.Empty<Tech_Store.Models.User>())
                                 {
                                     <option value="@cus.UserId">@cus.LastName @cus.FirstName (@cus.PhoneNumber)</option>
                                 }
                             </select>
                         </div>
-                        <div class="col-5 justify-content-end">
-                            <button class="btn btn-success w-100 ms-auto"
+                        <div class="col-md-5">
+                            <button class="btn btn-success w-100"
                                     data-bs-toggle="modal"
                                     data-bs-target="#UserModal">
-                                <i class="fa fa-plus"></i>
+                                <i class="fa fa-plus me-1"></i>
                                 Thêm KH
                             </button>
                             @Html.Partial("ModalUser")
                         </div>
                     </div>
-                </div>
 
-                <!-- Thông tin khách hàng -->
-                <div class="mb-3">
-                    <h5 class="mx-2 mt-2">Thông tin khách hàng</h5>
-                    <div class="row form-group">
-                        <div class="col-3">Tên:</div>
-                        <div id="nameCustomer" class="col-9 fw-bold"></div>
-                        <div  class="col-3">SĐT:</div>
-                        <div id="phoneCustomer" class="col-9 fw-bold"></div>
-                        <div class="col-3">Địa chỉ:</div>
-                        <div id="addressCustomer" class="col-9 fw-bold"></div>
-                    </div>
-                </div>
-
-                <!-- Giỏ hàng -->
-                <div class="card mb-3">
-                    <div class="table-responsive">
-                        <table id="shopping-cart" class="table table-hover mb-0">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th>Sản phẩm</th>
-                                    <th>Biến thể</th>
-                                    <th>Số lượng</th>
-                                    <th>Giá</th>
-                                    <th>Xóa</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                          
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                @* Voucher *@
-                <div class="form-group">
-                    <div class="row">
-                        <div class="col-md-7">
-                            <input type="text" class="form-control" name="Voucher" placeholder="Nhập voucher"/>
-                            <p id="resultVoucher" class="text-danger text-sm mx-3" style="font-size:13px;display:none"></p>
-
+                    <div class="pos-customer-card">
+                        <div class="pos-customer-card__header">
+                            <h3>Thông tin khách hàng</h3>
                         </div>
-                        <div class="col-md-5">
-                            <button id="Checkvoucher" type="button" class="btn btn-outline-secondary">Kiểm tra Voucher</button>
+                        <div class="pos-customer-card__grid">
+                            <div class="pos-customer-card__row">
+                                <span>Tên khách</span>
+                                <strong id="nameCustomer"></strong>
+                            </div>
+                            <div class="pos-customer-card__row">
+                                <span>Số điện thoại</span>
+                                <strong id="phoneCustomer"></strong>
+                            </div>
+                            <div class="pos-customer-card__row pos-customer-card__row--full">
+                                <span>Địa chỉ</span>
+                                <strong id="addressCustomer"></strong>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <!-- Giá giỏ hàng -->
-                <div class="form-group">
-                    <!-- Tổng phụ -->
-                    <div class="row mb-2">
-                        <div class="col-5"><strong>Tổng phụ:</strong></div>
-                        <div class="col-7 text-end"><strong id="TotalPrice">0đ</strong></div>
+
+                    <div class="pos-cart-card">
+                        <div class="pos-cart-card__header">
+                            <h3>Giỏ hàng</h3>
+                        </div>
+                        <div class="table-responsive">
+                            <table id="shopping-cart" class="table table-hover mb-0 pos-cart-table">
+                                <thead>
+                                    <tr>
+                                        <th>Sản phẩm</th>
+                                        <th>Biến thể</th>
+                                        <th>Số lượng</th>
+                                        <th>Giá</th>
+                                        <th>Xóa</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
                     </div>
-                    <!-- Giảm giá -->
-                    <div class="row mb-2">
-                        <div class="col-5"><strong>Giảm Giá Khuyến Mãi:</strong></div>
-                        <div class="col-7 text-end" id="promotion">
-                            <a href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#ModalDiscount">
-                                <i class="fas fa-pencil-alt text-info"></i>
-                            </a>
-                            <strong id="Discount">0đ</strong>
+
+                    <div class="pos-inline-card">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-7">
+                                <label class="form-label pos-field-label">Voucher</label>
+                                <input type="text" class="form-control" name="Voucher" placeholder="Nhập mã voucher" />
+                                <p id="resultVoucher" class="text-danger small mt-2 mb-0" style="display:none"></p>
+                            </div>
+                            <div class="col-md-5">
+                                <button id="Checkvoucher" type="button" class="btn btn-outline-secondary w-100">Kiểm tra voucher</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pos-summary-card">
+                        <div class="pos-summary-card__row">
+                            <span>Tổng phụ</span>
+                            <strong id="TotalPrice">0đ</strong>
+                        </div>
+                        <div class="pos-summary-card__row">
+                            <span>Giảm giá khuyến mãi</span>
+                            <strong class="pos-summary-card__editable">
+                                <a href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#ModalDiscount">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </a>
+                                <span id="Discount">0đ</span>
+                            </strong>
                             @Html.Partial("ModalDiscount")
                         </div>
-                    </div>
-                    <!-- Giảm giá -->
-                    <div class="row mb-2">
-                        <div class="col-5"><strong>Giảm Giá Thêm:</strong></div>
-                        <div class="col-7 text-end" id="promotion">
-                            <a href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#ModalDeduct">
-                                <i class="fas fa-pencil-alt text-info"></i>
-                            </a>
-
-                            <strong id="Deduct">0đ</strong>
+                        <div class="pos-summary-card__row">
+                            <span>Giảm giá thêm</span>
+                            <strong class="pos-summary-card__editable">
+                                <a href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#ModalDeduct">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </a>
+                                <span id="Deduct">0đ</span>
+                            </strong>
                             @Html.Partial("ModalDeduct")
                         </div>
+                        <div class="pos-summary-card__divider"></div>
+                        <div class="pos-summary-card__row pos-summary-card__row--total">
+                            <span>Tổng cộng</span>
+                            <strong id="TotalPayment">0đ</strong>
+                        </div>
                     </div>
-                    <hr />
-                    <!-- Tổng cộng -->
-                    <div class="row">
-                        <div class="col-5"><strong>Tổng cộng:</strong></div>
-                        <div class="col-7 text-end"><strong id="TotalPayment">0đ</strong></div>
+
+                    <div class="pos-payment-card">
+                        <h3>Phương thức thanh toán</h3>
+                        <div class="pos-payment-toggle">
+                            <label class="pos-payment-toggle__option">
+                                <input type="radio" id="cash" value="cash" name="type" checked>
+                                <span>Tiền mặt</span>
+                            </label>
+                            <label class="pos-payment-toggle__option">
+                                <input type="radio" value="card" id="card" name="type">
+                                <span>Thẻ</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 pt-2">
+                        <div class="col-6">
+                            <button class="btn btn-outline-danger w-100" type="button" onclick="confirm('Bạn có chắc chắn muốn hủy đơn hàng?') ? cancelOrder() : '';">
+                                Hủy đơn hàng
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button class="btn btn-success w-100 btn-Order" type="button">
+                                Đặt đơn hàng
+                            </button>
+                        </div>
                     </div>
                 </div>
-
-                <!-- Thanh toán bằng -->
-                <div class="pt-3">
-                    <p><strong>Đã thanh toán bởi:</strong></p>
-                    <div class="d-flex justify-content-start align-items-center">
-                        <ul class="list-unstyled option-buttons d-flex m-0">
-                            <li class="mx-2">
-                                <input type="radio" id="cash" value="cash" name="type" hidden="" checked="">
-                                <label for="cash" class="btn btn-bordered btn-bordered-black px-4 mb-0">Tiền mặt</label>
-                            </li>
-                            <li class="mx-2">
-                                <input type="radio" value="card" id="card" name="type" hidden="">
-                                <label for="card" class="btn btn-bordered btn-bordered-black px-4 mb-0">Thẻ</label>
-                            </li>
-                        </ul>
-                    </div>
-                    <style>
-                     
-
-                    </style>
-                </div>
-
-                <!-- Các nút hành động -->
-                <div class="row d-flex justify-content-center pt-3">
-                    <div class="col-6">
-                        <button class="btn btn-danger form-control" type="button" onclick="confirm('Bạn có chắc chắn muốn hủy đơn hàng?') ? cancelOrder() : '';">Hủy đơn hàng</button>
-                    </div>
-                    <div class="col-6">
-                        <button class="btn btn-success form-control btn-Order" type="button">Đặt đơn hàng</button>
-                    </div>
-                </div>
-            </div>
+            </section>
         </div>
     </div>
-
 </div>
+
 <script src="~/Admin/assets/js/core/jquery-3.7.1.min.js"></script>
 <script src="~/Admin/assets/js/view/pos.js"></script>

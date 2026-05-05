@@ -1,15 +1,17 @@
 using Tech_Store.Models.ViewModel;
-using X.PagedList;
 
 namespace Tech_Store.Models.DTO
 {
     public class AdminProductIndexData
     {
-        public IPagedList<Product> Products { get; set; } = new StaticPagedList<Product>(new List<Product>(), 1, 1, 0);
+        public List<Product> Products { get; set; } = new();
         public List<Category> Categories { get; set; } = new();
         public List<Brand> Brands { get; set; } = new();
         public AdminProductFilterRequest Filters { get; set; } = new();
+        public int Page { get; set; } = 1;
         public int PageSize { get; set; }
+        public int TotalItems { get; set; }
+        public int TotalPages { get; set; } = 1;
     }
 
     public class AdminProductLookupData

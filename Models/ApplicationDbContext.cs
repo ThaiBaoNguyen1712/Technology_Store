@@ -20,6 +20,7 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<Banner> Banners { get; set; }
     public virtual DbSet<Brand> Brands { get; set; }
+    public virtual DbSet<BrandCategory> BrandCategories { get; set; }
 
     public virtual DbSet<Cart> Carts { get; set; }
 
@@ -93,14 +94,14 @@ public partial class ApplicationDbContext : DbContext
 
             if (entry.State == EntityState.Added)
             {
-                if (createdAt?.CurrentValue == null)
+                if (createdAt != null && createdAt.CurrentValue == null)
                 {
-                    createdAt!.CurrentValue = now;
+                    createdAt.CurrentValue = now;
                 }
 
-                if (updatedAt?.CurrentValue == null)
+                if (updatedAt != null && updatedAt.CurrentValue == null)
                 {
-                    updatedAt!.CurrentValue = now;
+                    updatedAt.CurrentValue = now;
                 }
             }
             else
@@ -227,10 +228,34 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.Name)
                 .HasMaxLength(155)
                 .HasColumnName("name");
+            entity.Property(e => e.SortOrder)
+                .HasDefaultValue(0)
+                .HasColumnName("sort_order");
 
             entity.HasOne(d => d.Category).WithMany(p => p.Brands)
                 .HasForeignKey(d => d.CategoryId)
                 .HasConstraintName("FK_Brand_Category");
+        });
+
+        modelBuilder.Entity<BrandCategory>(entity =>
+        {
+            entity.ToTable("BrandCategory");
+            entity.HasKey(e => new { e.BrandId, e.CategoryId });
+
+            entity.Property(e => e.BrandId).HasColumnName("brand_id");
+            entity.Property(e => e.CategoryId).HasColumnName("category_id");
+
+            entity.HasOne(d => d.Brand)
+                .WithMany(p => p.BrandCategories)
+                .HasForeignKey(d => d.BrandId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_BrandCategory_Brand");
+
+            entity.HasOne(d => d.Category)
+                .WithMany(p => p.BrandCategories)
+                .HasForeignKey(d => d.CategoryId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_BrandCategory_Category");
         });
 
         modelBuilder.Entity<Cart>(entity =>
@@ -309,6 +334,9 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.VisibleOnOtherPages)
                 .HasDefaultValue(1)
                 .HasColumnName("visible_on_other_pages");
+            entity.Property(e => e.SortOrder)
+                .HasDefaultValue(0)
+                .HasColumnName("sort_order");
         });
 
         modelBuilder.Entity<Comment>(entity =>

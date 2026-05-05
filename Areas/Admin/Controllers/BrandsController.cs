@@ -1,7 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Tech_Store.Models;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using Tech_Store.Models.ViewModel;
 using Tech_Store.Services.Admin.Interfaces;
 
 namespace Tech_Store.Areas.Admin.Controllers
@@ -11,68 +11,86 @@ namespace Tech_Store.Areas.Admin.Controllers
     public class BrandsController : BaseAdminController
     {
         private readonly IBrandService _brandService;
+        private readonly IConfiguration _configuration;
+        private const int FallbackPageSize = 20;
 
-        public BrandsController(ApplicationDbContext context, IBrandService brandService) : base(context)
+        public BrandsController(ApplicationDbContext context, IBrandService brandService, IConfiguration configuration) : base(context)
         {
             _brandService = brandService;
+            _configuration = configuration;
+        }
+
+        private int GetDefaultAdminPageSize()
+        {
+            var pageSize = _configuration.GetValue<int?>("AdminUi:DefaultPageSize");
+            return pageSize.GetValueOrDefault(FallbackPageSize) > 0 ? pageSize.Value : FallbackPageSize;
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? keyword, int? categoryId, int page = 1, int? pageSize = null)
         {
-            ViewBag.cate = _context.Categories.ToList();
-            var brands = await _brandService.GetAllBrandsAsync();
-            return View(brands);
+            var resolvedPageSize = pageSize.GetValueOrDefault(GetDefaultAdminPageSize());
+            var model = await _brandService.GetAdminBrandIndexAsync(keyword, categoryId, page, resolvedPageSize);
+            return View(model);
         }
 
-        [Route("Create")]
-        [HttpPost]
-        public async Task<IActionResult> Create([FromForm]Brand brand,IFormFile? imageFile)
-        {   
-            if (brand == null)
-            {
-                return BadRequest("Dữ liệu brand không được trống");
-            }
-            _brandService.CreateBrandAsync(brand, imageFile).Wait();
-            return Ok();
-        }
-        [HttpGet("Edit/{id}")]
-        public async Task<IActionResult> Edit(int id)
+        [HttpGet("Form")]
+        public async Task<IActionResult> Form(int? id, int page = 1, int? pageSize = null, string? keyword = null, int? categoryId = null)
         {
-            var brand = _brandService.GetBrandByIdAsync(id).Result;
-            if(brand == null)
+            var model = await _brandService.GetBrandFormAsync(id);
+            if (id.HasValue && model == null)
             {
                 return NotFound();
             }
-            return Json(brand);
+
+            var resolvedPageSize = pageSize.GetValueOrDefault(GetDefaultAdminPageSize());
+            var viewModel = model ?? new AdminBrandFormViewModel();
+            viewModel.ReturnPage = Math.Max(1, page);
+            viewModel.ReturnPageSize = resolvedPageSize;
+            viewModel.ReturnKeyword = keyword;
+            viewModel.ReturnCategoryId = categoryId;
+
+            ViewBag.Categories = await _context.Categories
+                .AsNoTracking()
+                .OrderBy(c => c.Name)
+                .ToListAsync();
+
+            return View(viewModel);
         }
-        [HttpPut("Update/{id}")]
-        public async Task<IActionResult> Update(int id, [FromForm] Brand _brand,IFormFile? imageFile)
+
+        [HttpPost("Save")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Save(AdminBrandFormViewModel model, IFormFile? imageFile)
         {
-           var result = await _brandService.UpdateBrandAsync(id, _brand, imageFile);
-            if (result)
+            if (!ModelState.IsValid)
             {
-                return Ok();
+                ViewBag.Categories = await _context.Categories
+                    .AsNoTracking()
+                    .OrderBy(c => c.Name)
+                    .ToListAsync();
+                return View("Form", model);
             }
-            else
+
+            await _brandService.SaveBrandAsync(model, imageFile);
+            return RedirectToAction(nameof(Index), new
             {
-                return NotFound("Không tìm thấy brand với ID đã cho");
-            }
+                page = model.ReturnPage,
+                pageSize = model.ReturnPageSize,
+                keyword = model.ReturnKeyword,
+                categoryId = model.ReturnCategoryId
+            });
         }
-        // Xóa brand theo ID
+
         [HttpDelete("Delete/{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-          var result = await _brandService.DeleteBrandAsync(id);
-            if (result)
-            {
-                return Ok();
-            }
-            else
+            var result = await _brandService.DeleteBrandAsync(id);
+            if (!result)
             {
                 return NotFound("Không tìm thấy brand với ID đã cho");
             }
 
+            return Ok();
         }
     }
 }

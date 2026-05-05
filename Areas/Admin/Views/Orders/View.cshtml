@@ -1,237 +1,222 @@
-﻿@model Tech_Store.Models.Order
+@model Tech_Store.Models.ViewModel.AdminOrderDetailViewModel
+@using System.Globalization
+@using Tech_Store.Helpers
 @{
-    ViewData["Title"] = "Hóa đơn " + Model.OrderId ;
+    ViewData["Title"] = "Đơn hàng #" + Model.OrderId;
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
 }
-@using System.Globalization;
-@using Tech_Store.Helpers
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-md-7 col-sm-12">
-            <div class="card p-3 mb-4">
-                <h4 class="card-title">Thông tin khách hàng</h4>
-                <hr />
-                <div class="row">
-                    <div class="col-6">
-                        <p><strong>Tên KH:</strong> @Model.User.LastName @Model.User.FirstName</p>
-                        <p><strong>SĐT:</strong> @Model.User.PhoneNumber</p>
-                    </div>
-                    <div class="col-6">
-                        <p><strong>Email:</strong> @Model.User.Email</p>
-                        <p><strong>Địa chỉ KH:</strong> @ViewBag.Address</p>
-                    </div>
-                </div>
-            </div>
 
-            <div class="card p-3">
-                <h4 class="card-title">Chi tiết đơn hàng</h4>
-                <hr />
-                <div class="table-responsive small">
-                    <table class="table table-hover table-sm align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>#</th>
-                                <th>Ảnh</th>
-                                <th>SKU</th>
-                                <th>Tên SP</th>
-                                <th>Biến Thể</th>
-                                <th>Số lượng</th>
-                                <th>Giá</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @{
-                                int i = 1;
-                            }
-                            @foreach (var item in Model.OrderItems)
-                            {
+<div class="py-3 order-admin-page">
+    <div class="settings-page__hero">
+        <div>
+            <span class="settings-page__eyebrow">Quản lý đơn hàng</span>
+            <h1 class="settings-page__title">Đơn hàng #@Model.OrderId</h1>
+        </div>
+        <div class="settings-page__hero-meta">
+            <div class="settings-page__meta-card">
+                <span class="settings-page__meta-label">Trạng thái đơn</span>
+                <strong>@Model.OrderStatusLabel</strong>
+            </div>
+            <div class="settings-page__meta-card">
+                <span class="settings-page__meta-label">Thanh toán</span>
+                <strong>@Model.PaymentStatusLabel</strong>
+            </div>
+            <div class="settings-page__meta-card">
+                <span class="settings-page__meta-label">Sản phẩm</span>
+                <strong>@Model.ItemCount</strong>
+            </div>
+            <div class="settings-page__meta-card">
+                <span class="settings-page__meta-label">Tổng thanh toán</span>
+                <strong>@Model.TotalAmount.ToString("C0", new CultureInfo("vi-VN"))</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-xl-8">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body p-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+                        <div>
+                            <h4 class="card-title mb-1">Sản phẩm trong đơn</h4>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-primary" id="ToFilePDF">
+                                <i class="far fa-file-pdf me-1"></i>
+                                Xuất PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="printSection" class="table-responsive reusable-admin-table">
+                        <table class="table table-hover align-middle order-admin__table mb-0">
+                            <thead class="table-light">
                                 <tr>
-                                    <td>@i</td>
-                                    <td>
-                                        @if(item.Product.Image == null)
-                                        {
-                                            <img src="/Upload/Products/no-image.png" style="width:40px;height:40px;object-fit:cover" alt="Ảnh sản phẩm" />
-                                        }
-                                        else if (item.Product.Image.Contains("http"))
-                                        {
-                                            <img src="@ResizeCDN.Cdn(item.Product.Image,40,40)" style="width:40px;height:40px;object-fit:cover" alt="Ảnh sản phẩm" />
-                                        }
-                                        else
-                                        {
-                                            <img src="/Upload/Products/@item.Product.Image" style="width:40px;height:40px;object-fit:cover" alt="Ảnh sản phẩm" />
-                                        }
-                                    </td>
-                                    <td class="text-muted text-nowrap" style="font-size:0.9rem">@item.VarientProduct.Sku</td>
-                                    <td style="font-size:0.9rem">@item.Product.Name</td>
-                                    <td>@item.VarientProduct.Attributes</td>
-                                    <td>@item.Quantity</td>
-                                    <td class="text-nowrap" style="font-size:0.9rem">@((item.VarientProduct.Price * item.Quantity)?.ToString("C0", new CultureInfo("vi-VN")))</td>
+                                    <th style="width: 84px;">Ảnh</th>
+                                    <th>Sản phẩm</th>
+                                    <th style="width: 160px;">Biến thể / SKU</th>
+                                    <th style="width: 90px;" class="text-center">SL</th>
+                                    <th style="width: 150px;" class="text-end">Đơn giá</th>
+                                    <th style="width: 160px;" class="text-end">Thành tiền</th>
                                 </tr>
-                                i++;
-                            }
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.Items)
+                                {
+                                    var imageUrl = string.IsNullOrWhiteSpace(item.ProductImage)
+                                        ? Url.Content("~/Upload/Products/no-image.png")
+                                        : item.ProductImage.Contains("http")
+                                            ? ResizeCDN.Cdn(item.ProductImage, 64, 64)
+                                            : Url.Content($"~/Upload/Products/{item.ProductImage}");
+
+                                    <tr>
+                                        <td>
+                                            <div class="brand-admin__logo-shell">
+                                                <img src="@imageUrl" alt="@item.ProductName" class="brand-admin__logo" />
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold text-dark">@item.ProductName</div>
+                                        </td>
+                                        <td>
+                                            <div class="small fw-semibold text-dark">@item.VariantDisplay</div>
+                                            <div class="small text-muted">@item.VariantSku</div>
+                                        </td>
+                                        <td class="text-center">@item.Quantity</td>
+                                        <td class="text-end">@item.UnitPrice.ToString("C0", new CultureInfo("vi-VN"))</td>
+                                        <td class="text-end fw-semibold">@item.LineTotal.ToString("C0", new CultureInfo("vi-VN"))</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-5 col-sm-12">
-            <div class="card">
-                <div class="card-body">
-                    <div class="container mb-5 mt-3">
-                        <div class="row d-flex align-items-baseline">
-                            <div class="col-xl-6">
-                                <p style="color: #7e8d9f;font-size: 20px;">Hóa Đơn >> <strong>ID: #@Model.OrderId</strong></p>
-                            </div>
-                            <div class="col-xl-6 float-end">
-                                <a data-mdb-ripple-init class="btn btn-light text-capitalize border-0" id="Print" data-mdb-ripple-color="dark">
-                                    <i class="fas fa-print text-primary"></i> In HĐ
-                                </a>
-                                <a data-mdb-ripple-init class="btn btn-light text-capitalize" id="ToFilePDF" data-mdb-ripple-color="dark">
-                                    <i class="far fa-file-pdf text-danger"></i> Xuất
-                                </a>
-                            </div>
-                            <hr>
+        <div class="col-xl-4">
+            <div class="settings-page__content">
+                <section class="settings-panel">
+                    <div class="settings-panel__header">
+                        <div>
+                            <span class="settings-panel__eyebrow">Khách hàng</span>
+                            <h2>Thông tin nhận hàng</h2>
                         </div>
-
-                        <div class="container" id="printSection">
-                            <!-- Header/Logo Section -->
-                            <div class="row mb-4">
-                                <div class="col-12 text-center">
-                                    <i class="fab fa-mdb fa-4x" style="color:#5d9fc5;"></i>
-                                    <h4 class="mt-2">TechStore.com</h4>
-                                </div>
+                    </div>
+                    <div class="settings-panel__body">
+                        <div class="order-admin__detail-list">
+                            <div class="order-admin__detail-row">
+                                <span>Khách hàng</span>
+                                <strong>@Model.CustomerName</strong>
                             </div>
-
-                            <!-- Info Section -->
-                            <div class="row mb-4">
-                                <!-- Customer Info -->
-                                <div class="col-md-6">
-                                    <h6 class="text-muted mb-3">Thông tin khách hàng</h6>
-                                    <ul class="list-unstyled">
-                                        <li class="mb-2">
-                                            <strong>Người nhận:</strong>
-                                            <span style="color:#5d9fc5;">@Model.User.LastName @Model.User.FirstName</span>
-                                        </li>
-                                        <li class="mb-2">
-                                            <i class="fas fa-map-marker-alt me-2"></i>
-                                            <strong>Địa chỉ:</strong> @ViewBag.Address
-                                        </li>
-                                        <li class="mb-2">
-                                            <i class="fas fa-phone me-2"></i>
-                                            <strong>SĐT:</strong> @Model.User.PhoneNumber
-                                        </li>
-                                    </ul>
-                                </div>
-
-                                <!-- Order Info -->
-                                <div class="col-md-6">
-                                    <h6 class="text-muted mb-3">Thông tin đơn hàng</h6>
-                                    <ul class="list-unstyled">
-                                        <li class="mb-2">
-                                            <i class="fas fa-circle me-2" style="color:#84B0CA;"></i>
-                                            <strong>Mã đơn hàng:</strong> #@Model.OrderId
-                                        </li>
-                                        <li class="mb-2">
-                                            <i class="fas fa-circle me-2" style="color:#84B0CA;"></i>
-                                            <strong>Ngày đặt:</strong> @Model.OrderDate
-                                        </li>
-                                        <li class="mb-2">
-                                            <i class="fas fa-circle me-2" style="color:#84B0CA;"></i>
-                                            <strong>Trạng thái:</strong>
-                                            <span class="badge bg-warning text-black ms-2">@Model.OrderStatus</span>
-                                        </li>
-                                    </ul>
-                                </div>
+                            <div class="order-admin__detail-row">
+                                <span>Số điện thoại</span>
+                                <strong>@(string.IsNullOrWhiteSpace(Model.PhoneNumber) ? "-" : Model.PhoneNumber)</strong>
                             </div>
-
-                            <!-- Products Table -->
-                            <div class="row mb-4">
-                                <div class="col-12">
-                                    <div class="table-responsive">
-                                        <table class="table table-striped table-bordered">
-                                            <thead style="background-color:#84B0CA;" class="text-white">
-                                                <tr>
-                                                    <th scope="col" class="text-center" width="5%">#</th>
-                                                    <th scope="col" width="55%">Sản phẩm</th>
-                                                    <th scope="col" class="text-center" width="15%">Số lượng</th>
-                                                    <th scope="col" class="text-end" width="25%">Đơn giá</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @{
-                                                    int index = 1;
-                                                }
-                                                @foreach (var item in Model.OrderItems)
-                                                {
-                                                    <tr>
-                                                        <td class="text-center">@(index++)</td>
-                                                        <td style="font-size:0.9rem">@item.Product.Name (@item.VarientProduct.Attributes)</td>
-                                                        <td class="text-center">@item.Quantity</td>
-                                                        <td class="text-end text-nowrap">@item.VarientProduct.Price?.ToString("C0", new CultureInfo("vi-VN"))</td>
-                                                    </tr>
-                                                }
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
+                            <div class="order-admin__detail-row">
+                                <span>Email</span>
+                                <strong>@Model.Email</strong>
                             </div>
-
-                            <!-- Total Section -->
-                            <div class="row">
-                                <div class="col-md-12 offset-md-12">
-                                    <ul class="list-unstyled">
-                                        <li class="d-flex justify-content-between mb-2">
-                                            <span class="fw-bold">Tổng tiền hàng:</span>
-                                            <span>@Model.OriginAmount?.ToString("C0", new CultureInfo("vi-VN"))</span>
-                                        </li>
-                                        <li class="d-flex justify-content-between mb-2">
-                                            <span class="fw-bold">Giảm giá khuyến mãi:</span>
-                                            <span>@Model.DiscountAmount?.ToString("C0", new CultureInfo("vi-VN"))</span>
-                                        </li>
-                                        <li class="d-flex justify-content-between mb-2">
-                                            <span class="fw-bold">Giảm giá thêm:</span>
-                                            <span>@Model.DeductAmount?.ToString("C0", new CultureInfo("vi-VN"))</span>
-                                        </li>
-                                        <li class="d-flex justify-content-between mt-3 pt-2 border-top">
-                                            <span class="fw-bold fs-5">Tổng thanh toán:</span>
-                                            <span class="fs-5">@Model.TotalAmount.ToString("C0", new CultureInfo("vi-VN"))</span>
-                                        </li>
-                                    </ul>
-                                </div>
+                            <div class="order-admin__detail-row">
+                                <span>Địa chỉ</span>
+                                <strong>@Model.Address</strong>
+                            </div>
+                            <div class="order-admin__detail-row">
+                                <span>Ghi chú</span>
+                                <strong>@(string.IsNullOrWhiteSpace(Model.Note) ? "-" : Model.Note)</strong>
                             </div>
                         </div>
                     </div>
-                </div>
+                </section>
+
+                <section class="settings-panel">
+                    <div class="settings-panel__header">
+                        <div>
+                            <span class="settings-panel__eyebrow">Thanh toán</span>
+                            <h2>Thông tin giao dịch</h2>
+                        </div>
+                    </div>
+                    <div class="settings-panel__body">
+                        <div class="order-admin__detail-list">
+                            <div class="order-admin__detail-row">
+                                <span>Mã đơn hàng</span>
+                                <strong>#@Model.OrderId</strong>
+                            </div>
+                            <div class="order-admin__detail-row">
+                                <span>Ngày đặt</span>
+                                <strong>@(Model.OrderDate?.ToString("dd/MM/yyyy HH:mm:ss") ?? "-")</strong>
+                            </div>
+                            <div class="order-admin__detail-row">
+                                <span>Cập nhật gần nhất</span>
+                                <strong>@(Model.UpdatedAt?.ToString("dd/MM/yyyy HH:mm:ss") ?? "-")</strong>
+                            </div>
+                            <div class="order-admin__detail-row">
+                                <span>Trạng thái đơn</span>
+                                <strong>@Model.OrderStatusLabel</strong>
+                            </div>
+                            <div class="order-admin__detail-row">
+                                <span>Trạng thái thanh toán</span>
+                                <strong>@Model.PaymentStatusLabel</strong>
+                            </div>
+                            <div class="order-admin__detail-row">
+                                <span>Phương thức</span>
+                                <strong>@Model.PaymentMethod</strong>
+                            </div>
+                            <div class="order-admin__detail-row">
+                                <span>Ngày thanh toán</span>
+                                <strong>@(Model.PaymentDate?.ToString("dd/MM/yyyy HH:mm:ss") ?? "-")</strong>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="settings-panel">
+                    <div class="settings-panel__header">
+                        <div>
+                            <span class="settings-panel__eyebrow">Tổng hợp</span>
+                            <h2>Giá trị đơn hàng</h2>
+                        </div>
+                    </div>
+                    <div class="settings-panel__body">
+                        <div class="order-admin__summary-list">
+                            <div class="order-admin__summary-row">
+                                <span>Tổng tiền hàng</span>
+                                <strong>@Model.OriginAmount.ToString("C0", new CultureInfo("vi-VN"))</strong>
+                            </div>
+                            <div class="order-admin__summary-row">
+                                <span>Giảm giá khuyến mãi</span>
+                                <strong>@Model.DiscountAmount.ToString("C0", new CultureInfo("vi-VN"))</strong>
+                            </div>
+                            <div class="order-admin__summary-row">
+                                <span>Giảm giá thêm</span>
+                                <strong>@Model.DeductAmount.ToString("C0", new CultureInfo("vi-VN"))</strong>
+                            </div>
+                            <div class="order-admin__summary-row">
+                                <span>Phí vận chuyển</span>
+                                <strong>@Model.ShippingAmount.ToString("C0", new CultureInfo("vi-VN"))</strong>
+                            </div>
+                            <div class="order-admin__summary-row order-admin__summary-row--total">
+                                <span>Tổng thanh toán</span>
+                                <strong>@Model.TotalAmount.ToString("C0", new CultureInfo("vi-VN"))</strong>
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </div>
         </div>
     </div>
 </div>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script type="text/javascript">
     $(document).ready(function () {
-        // Xử lý tải PDF
         $('#ToFilePDF').click(function () {
             $('.loading-container').show();
-            var id = '@Model.OrderId';
-
-            // Tải PDF từ URL và chờ quá trình tải xuống hoàn tất
+            const id = '@Model.OrderId';
             window.location.href = '/Admin/POS/Print-Invoice?id=' + id;
             setTimeout(function () {
                 $('.loading-container').hide();
-            }, 3000); // Đợi 3 giây
+            }, 3000);
         });
-        // Xử lý nút In
-        $('#Print').click(function () {
-            var printContent = $("#printSection").html();
-            var originalContent = $('body').html();
-
-            $('body').html(printContent);
-            window.print();
-            $('body').html(originalContent);
-
-            return false;
-        });
-
     });
 </script>

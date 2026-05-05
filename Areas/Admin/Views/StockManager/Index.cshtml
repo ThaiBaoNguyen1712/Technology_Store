@@ -8,7 +8,7 @@
 @using Tech_Store.Helpers
 
 <div class="container-fluid">
-    <h2 class="my-4">Quản lý Kho</h2>
+    <h2 class="my-4">Quản lý kho hàng</h2>
 
     <!-- Filter Section -->
     <div class="card mb-4">
@@ -97,6 +97,9 @@
         <a class="btn btn-light" href="~/Admin/StockManager/History">
             <i class="fas fa-history"></i> Lịch sử
         </a>
+        <span class="btn btn-outline-secondary disabled">
+            <i class="fas fa-barcode"></i> In mã theo từng sản phẩm ở bảng dưới
+        </span>
     </div>
 
     <!-- Table -->
@@ -114,7 +117,7 @@
                         <th class="fw-semibold">Giá</th>
                         <th class="fw-semibold">Số lượng</th>
                         <th class="fw-semibold">Tình trạng</th>
-                        <th class="fw-semibold" style="width:10%">Thao tác</th>
+                        <th class="fw-semibold" style="width:14%">Thao tác</th>
                     </tr>
                 </thead>
 
@@ -172,10 +175,13 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <div class="form-button-action">
-                                        <button type="button" class="btn btn-link btn-danger btn-get" data-itemid="@product.ProductId" data-bs-toggle="modal" data-bs-target="#ImExportModal">
+                                    <div class="form-button-action gap-1">
+                                        <button type="button" class="btn btn-link btn-danger btn-get" data-itemid="@product.ProductId" data-bs-toggle="modal" data-bs-target="#ImExportModal" title="Nhập/Xuất kho">
                                             <i class="fa fa-plus-circle"></i>
                                         </button>
+                                        <a href="/Admin/Products/GenerateCode/@product.ProductId" class="btn btn-link btn-primary" title="In mã sản phẩm">
+                                            <i class="fa fa-barcode"></i>
+                                        </a>
                                     </div>
                                 </td>
                             </tr>
@@ -240,10 +246,13 @@
                             product.sellPrice ? product.sellPrice.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' }) : '',
                             product.stock,
                             `<span class="badge ${statusClass}">${statusText}</span>`,
-                            `<div class="form-button-action">
-                                     <button type="button" class="btn btn-link btn-danger btn-get" data-itemid="${product.ProductId}" data-bs-toggle="modal" data-bs-target="#ImExportModal">
+                            `<div class="form-button-action gap-1">
+                                     <button type="button" class="btn btn-link btn-danger btn-get" data-itemid="${product.productId}" data-bs-toggle="modal" data-bs-target="#ImExportModal" title="Nhập/Xuất kho">
                                                 <i class="fa fa-plus-circle"></i>
                                             </button>
+                                     <a href="/Admin/Products/GenerateCode/${product.productId}" class="btn btn-link btn-primary" title="In mã sản phẩm">
+                                                <i class="fa fa-barcode"></i>
+                                     </a>
                             </div>`
                         ]);
                     });

@@ -1,0 +1,201 @@
+@model Tech_Store.Models.ViewModel.AdminUserCreateViewModel
+@{
+    ViewData["Title"] = "Thêm khách hàng";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+}
+
+<div class="py-3 user-detail-page">
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-0">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                <div>
+                    <h4 class="card-title mb-1">Thêm khách hàng</h4>
+                    <div class="text-muted">Tạo mới tài khoản khách hàng trong hệ thống</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" action="/Admin/Users/Create" enctype="multipart/form-data" class="user-detail-page__form">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="ReturnPage" value="@Model.ReturnPage" />
+        <input type="hidden" name="ReturnPageSize" value="@Model.ReturnPageSize" />
+        <input type="hidden" name="ReturnStatus" value="@Model.ReturnStatus" />
+        <input type="hidden" name="ReturnEmail" value="@Model.ReturnEmail" />
+        <input type="hidden" name="ReturnPhoneNumber" value="@Model.ReturnPhoneNumber" />
+        <input type="hidden" name="ReturnRevenueFrom" value="@Model.ReturnRevenueFrom" />
+        <input type="hidden" name="ReturnRevenueTo" value="@Model.ReturnRevenueTo" />
+        <input type="hidden" name="ReturnCreatedDateFrom" value="@(Model.ReturnCreatedDateFrom?.ToString("yyyy-MM-dd"))" />
+        <input type="hidden" name="ReturnCreatedDateTo" value="@(Model.ReturnCreatedDateTo?.ToString("yyyy-MM-dd"))" />
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger border-0 shadow-sm mb-4">
+                Vui lòng kiểm tra lại thông tin khách hàng trước khi tạo mới.
+            </div>
+        }
+
+        <div class="row g-4">
+            <div class="col-xl-8">
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white border-0">
+                        <h5 class="mb-0">Thông tin cơ bản</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <div class="row g-3">
+                                    <div class="col-md-7">
+                                        <label class="form-label fw-semibold text-secondary">Họ và tên lót</label>
+                                        <input type="text" class="form-control" name="LastName" value="@Model.LastName" required />
+                                    </div>
+                                    <div class="col-md-5">
+                                        <label class="form-label fw-semibold text-secondary">Tên</label>
+                                        <input type="text" class="form-control" name="FirstName" value="@Model.FirstName" required />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold text-secondary">Số điện thoại</label>
+                                        <input type="text" class="form-control" name="PhoneNumber" value="@Model.PhoneNumber" required />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold text-secondary">Email</label>
+                                        <input type="email" class="form-control" name="Email" value="@Model.Email" required />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold text-secondary">Kích hoạt tài khoản</label>
+                                        <select class="form-select" name="IsActive">
+                                            @if (Model.IsActive)
+                                            {
+                                                <option value="true" selected>Đã kích hoạt</option>
+                                                <option value="false">Chưa kích hoạt</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="true">Đã kích hoạt</option>
+                                                <option value="false" selected>Chưa kích hoạt</option>
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold text-secondary">Ảnh đại diện</label>
+                                <div class="brand-admin__preview-shell user-detail-page__avatar-preview mb-3">
+                                    <img id="avatarPreview"
+                                         src="/Upload/Avatar/none.png"
+                                         class="brand-admin__preview-image"
+                                         alt="Ảnh đại diện khách hàng" />
+                                </div>
+                                <input type="file" class="form-control form-control-sm" id="avatarInput" name="Image" accept="image/*" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white border-0">
+                        <h5 class="mb-0">Địa chỉ khách hàng</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold text-secondary">Số nhà, tên đường</label>
+                                <input type="text" class="form-control" name="AddressLine" value="@Model.AddressLine" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold text-secondary">Tỉnh / Thành phố</label>
+                                <select id="citySelect" class="form-control selectpicker" data-live-search="true" title="Chọn Tỉnh / Thành phố">
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold text-secondary">Quận / Huyện</label>
+                                <select id="districtSelect" class="form-control selectpicker" data-live-search="true" title="Chọn Quận / Huyện">
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold text-secondary">Phường / Xã</label>
+                                <select id="wardSelect" class="form-control selectpicker" data-live-search="true" title="Chọn Phường / Xã">
+                                </select>
+                            </div>
+                        </div>
+                        <input type="hidden" name="Province" id="provinceValue" value="@Model.Province" />
+                        <input type="hidden" name="District" id="districtValue" value="@Model.District" />
+                        <input type="hidden" name="Ward" id="wardValue" value="@Model.Ward" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white border-0">
+                        <h5 class="mb-0">Lưu ý</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="order-drawer__info-list">
+                            <div class="order-drawer__info-row">
+                                <span>Tài khoản kích hoạt</span>
+                                <strong>Đã kích hoạt</strong>
+                            </div>
+                            <div class="order-drawer__info-row">
+                                <span>Tài khoản chưa kích hoạt</span>
+                                <strong>Chưa kích hoạt</strong>
+                            </div>
+                            <div class="order-drawer__info-row">
+                                <span>Địa chỉ</span>
+                                <strong>Có thể bổ sung ngay khi tạo hoặc cập nhật sau</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <a href="@Url.Action("Index", "Users", new
+               {
+                   area = "Admin",
+                   page = Model.ReturnPage,
+                   status = Model.ReturnStatus,
+                   email = Model.ReturnEmail,
+                   phoneNumber = Model.ReturnPhoneNumber,
+                   revenueFrom = Model.ReturnRevenueFrom,
+                   revenueTo = Model.ReturnRevenueTo,
+                   createdDateFrom = Model.ReturnCreatedDateFrom?.ToString("yyyy-MM-dd"),
+                   createdDateTo = Model.ReturnCreatedDateTo?.ToString("yyyy-MM-dd")
+               })"
+               class="text-decoration-none text-secondary fw-medium">
+                <i class="fas fa-arrow-left me-1"></i> Quay lại danh sách
+            </a>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary px-5">Tạo khách hàng</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script src="~/js/provincevn.js"></script>
+<script>
+    $(document).ready(function () {
+        $('#avatarInput').on('change', function (event) {
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                $('#avatarPreview').attr('src', e.target.result);
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function syncAddressValues() {
+            $('#provinceValue').val($('#citySelect').val() || '');
+            $('#districtValue').val($('#districtSelect').val() || '');
+            $('#wardValue').val($('#wardSelect').val() || '');
+        }
+
+        $(document).on('change', '#citySelect, #districtSelect, #wardSelect', syncAddressValues);
+        $('form').on('submit', syncAddressValues);
+    });
+</script>

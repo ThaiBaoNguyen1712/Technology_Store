@@ -57,4 +57,22 @@ public class ProductDTo
 
     public virtual ICollection<ProductSpecValueDTo>? SpecValues { get; set; } = new List<ProductSpecValueDTo>();
 
+    public int ReturnPage { get; set; } = 1;
+
+    public int ReturnPageSize { get; set; } = 25;
+
+    public string? ReturnStatus { get; set; }
+
+    public string? ReturnSkuKeyword { get; set; }
+
+    public string? ReturnNameKeyword { get; set; }
+
+    public int? ReturnCategoryId { get; set; }
+
+    public int? ReturnBrandId { get; set; }
+
+    public int? ReturnStockFrom { get; set; }
+
+    public int? ReturnStockTo { get; set; }
+
 }

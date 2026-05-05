@@ -1,0 +1,293 @@
+@model Tech_Store.Models.DTO.SettingDTo
+
+@{
+    ViewData["Title"] = "Cài đặt chung";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+}
+
+<div class="page-inner settings-page">
+    <div class="settings-page__hero">
+        <div>
+            <span class="settings-page__eyebrow">Quản trị vận hành</span>
+            <h1 class="settings-page__title">Cài đặt chung</h1>
+            <p class="settings-page__subtitle">
+                Quản lý thông tin thương hiệu, liên hệ và các kênh hiển thị công khai trên storefront trong một màn hình thống nhất.
+            </p>
+        </div>
+        <div class="settings-page__hero-meta">
+            <div class="settings-page__meta-card">
+                <span class="settings-page__meta-label">Tên website</span>
+                <strong>@(string.IsNullOrWhiteSpace(Model.NameWebsite) ? "Chưa cấu hình" : Model.NameWebsite)</strong>
+            </div>
+            <div class="settings-page__meta-card">
+                <span class="settings-page__meta-label">Email hỗ trợ</span>
+                <strong>@(string.IsNullOrWhiteSpace(Model.Email) ? "Chưa cấu hình" : Model.Email)</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-page__layout">
+        <aside class="settings-page__nav">
+            <div class="settings-page__nav-card">
+                <h2>Nhóm cấu hình</h2>
+                <div class="settings-page__nav-list">
+                    <button type="button" class="settings-page__nav-link is-active" data-settings-target="#section-general">
+                        <i class="fas fa-store"></i>
+                        <span>Thông tin chung</span>
+                    </button>
+                    <button type="button" class="settings-page__nav-link" data-settings-target="#section-branding">
+                        <i class="fas fa-image"></i>
+                        <span>Logo và nhận diện</span>
+                    </button>
+                    <button type="button" class="settings-page__nav-link" data-settings-target="#section-contact">
+                        <i class="fas fa-address-card"></i>
+                        <span>Liên hệ doanh nghiệp</span>
+                    </button>
+                    <button type="button" class="settings-page__nav-link" data-settings-target="#section-social">
+                        <i class="fas fa-share-alt"></i>
+                        <span>Kênh mạng xã hội</span>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <div class="settings-page__content">
+            <form id="settingsForm" class="settings-page__form">
+                <section class="settings-panel" id="section-general">
+                    <div class="settings-panel__header">
+                        <div>
+                            <span class="settings-panel__eyebrow">Storefront</span>
+                            <h2>Thông tin chung</h2>
+                        </div>
+                        <p>Tên hiển thị, slogan và mô tả ngắn đang xuất hiện ở các vùng chính như header, footer và phần giới thiệu.</p>
+                    </div>
+                    <div class="settings-panel__body settings-grid settings-grid--2">
+                        <div class="settings-field">
+                            <label for="siteName" class="form-label">Tên website</label>
+                            <input type="text" value="@Model.NameWebsite" class="form-control form-control-lg" id="siteName" placeholder="Ví dụ: Tech Store">
+                        </div>
+                        <div class="settings-field">
+                            <label for="siteSlogan" class="form-label">Slogan</label>
+                            <input type="text" class="form-control form-control-lg" value="@Model.Slogan" id="siteSlogan" placeholder="Thông điệp ngắn về thương hiệu">
+                        </div>
+                        <div class="settings-field settings-field--full">
+                            <label for="siteDescription" class="form-label">Mô tả website</label>
+                            <textarea class="form-control" id="siteDescription" rows="4" placeholder="Mô tả ngắn dùng cho các khu vực giới thiệu và thông tin thương hiệu">@Model.Description</textarea>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="settings-panel" id="section-branding">
+                    <div class="settings-panel__header">
+                        <div>
+                            <span class="settings-panel__eyebrow">Branding</span>
+                            <h2>Logo và nhận diện</h2>
+                        </div>
+                        <p>Logo hiện tại được dùng ở cả trang bán hàng và trang quản trị. Nên dùng ảnh nền trong suốt, tỷ lệ vuông hoặc ngang gọn.</p>
+                    </div>
+                    <div class="settings-panel__body settings-branding">
+                        <div class="settings-branding__preview">
+                            <span class="settings-branding__label">Logo hiện tại</span>
+                            <div class="settings-branding__logo-frame">
+                                @if (!string.IsNullOrEmpty(Model.LogoUrl))
+                                {
+                                    <img id="logoPreviewCurrent" src="@Model.LogoUrl" class="settings-branding__logo" alt="Logo hiện tại">
+                                }
+                                else
+                                {
+                                    <div class="settings-branding__placeholder">
+                                        <i class="fas fa-image"></i>
+                                        <span>Chưa có logo</span>
+                                    </div>
+                                }
+                                <img id="logoPreviewUpload" src="#" class="settings-branding__logo d-none" alt="Logo xem trước">
+                            </div>
+                        </div>
+                        <div class="settings-branding__upload">
+                            <label for="logoUpload" class="form-label">Tải lên logo mới</label>
+                            <input class="form-control" type="file" id="logoUpload" accept="image/*">
+                            <p class="settings-field__hint">Khuyến nghị PNG hoặc WebP, nền trong suốt, dung lượng nhỏ để tải nhanh.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="settings-panel" id="section-contact">
+                    <div class="settings-panel__header">
+                        <div>
+                            <span class="settings-panel__eyebrow">Contact</span>
+                            <h2>Liên hệ doanh nghiệp</h2>
+                        </div>
+                        <p>Các trường này được hiển thị tại footer, phần hỗ trợ khách hàng và các khu vực thông tin liên hệ.</p>
+                    </div>
+                    <div class="settings-panel__body settings-grid settings-grid--2">
+                        <div class="settings-field">
+                            <label for="companyName" class="form-label">Tên công ty / đơn vị</label>
+                            <input type="text" class="form-control" value="@Model.NameCompany" id="companyName" placeholder="Công ty TNHH ...">
+                        </div>
+                        <div class="settings-field">
+                            <label for="phoneNumber" class="form-label">Số điện thoại</label>
+                            <input type="tel" class="form-control" value="@Model.PhoneNumber" id="phoneNumber" placeholder="1900 xxxx hoặc 0xxx xxx xxx">
+                        </div>
+                        <div class="settings-field">
+                            <label for="emailContact" class="form-label">Email liên hệ</label>
+                            <input type="email" class="form-control" value="@Model.Email" id="emailContact" placeholder="support@domain.com">
+                        </div>
+                        <div class="settings-field">
+                            <label for="address" class="form-label">Địa chỉ</label>
+                            <input type="text" class="form-control" value="@Model.Address" id="address" placeholder="Địa chỉ cửa hàng / văn phòng">
+                        </div>
+                        <div class="settings-field settings-field--full">
+                            <label for="additionalInfo" class="form-label">Thông tin bổ sung</label>
+                            <textarea class="form-control" id="additionalInfo" rows="4" placeholder="Giờ làm việc, khu vực hỗ trợ, chính sách liên hệ...">@Model.MoreInfo</textarea>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="settings-panel" id="section-social">
+                    <div class="settings-panel__header">
+                        <div>
+                            <span class="settings-panel__eyebrow">Social</span>
+                            <h2>Kênh mạng xã hội</h2>
+                        </div>
+                        <p>Nhập đầy đủ đường dẫn công khai để đồng bộ icon liên kết ở footer và các điểm điều hướng khác của website.</p>
+                    </div>
+                    <div class="settings-panel__body settings-grid settings-grid--2">
+                        <div class="settings-field">
+                            <label for="facebookLink" class="form-label"><i class="fab fa-facebook text-primary me-2"></i>Facebook</label>
+                            <input type="url" class="form-control" value="@Model.FacebookUrl" id="facebookLink" placeholder="https://facebook.com/ten-trang">
+                        </div>
+                        <div class="settings-field">
+                            <label for="instagramLink" class="form-label"><i class="fab fa-instagram text-danger me-2"></i>Instagram</label>
+                            <input type="url" class="form-control" value="@Model.InstagramUrl" id="instagramLink" placeholder="https://instagram.com/ten-trang">
+                        </div>
+                        <div class="settings-field">
+                            <label for="twitterLink" class="form-label"><i class="fab fa-twitter text-info me-2"></i>Twitter / X</label>
+                            <input type="url" class="form-control" id="twitterLink" value="@Model.TwitterUrl" placeholder="https://x.com/ten-trang">
+                        </div>
+                        <div class="settings-field">
+                            <label for="youtubeLink" class="form-label"><i class="fab fa-youtube text-danger me-2"></i>YouTube</label>
+                            <input type="url" class="form-control" id="youtubeLink" value="@Model.YouTubeUrl" placeholder="https://youtube.com/@@ten-kenh">
+                        </div>
+                    </div>
+                </section>
+            </form>
+
+            <div class="settings-page__actions">
+                <div class="settings-page__actions-copy">
+                    <strong>Kiểm tra lại logo, hotline và địa chỉ trước khi lưu.</strong>
+                    <span>Những thay đổi này ảnh hưởng trực tiếp tới trang bán hàng và footer.</span>
+                </div>
+                <button id="saveSettings" class="btn btn-primary btn-lg">
+                    <i class="fas fa-save me-2"></i>Lưu cài đặt
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            const $logoInput = $('#logoUpload');
+            const $currentLogo = $('#logoPreviewCurrent');
+            const $uploadLogo = $('#logoPreviewUpload');
+
+            $logoInput.on('change', function () {
+                const file = this.files[0];
+                if (!file) {
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    $currentLogo.addClass('d-none');
+                    $uploadLogo.attr('src', e.target.result).removeClass('d-none');
+                };
+                reader.readAsDataURL(file);
+            });
+
+            $('[data-settings-target]').on('click', function () {
+                const target = $(this).data('settings-target');
+                const $targetSection = $(target);
+
+                $('[data-settings-target]').removeClass('is-active');
+                $(this).addClass('is-active');
+
+                if ($targetSection.length) {
+                    $('html, body').animate({
+                        scrollTop: $targetSection.offset().top - 110
+                    }, 250);
+                }
+            });
+
+            $('#saveSettings').on('click', function (e) {
+                e.preventDefault();
+
+                Swal.fire({
+                    title: 'Lưu thay đổi?',
+                    text: 'Các thông tin hiển thị trên website sẽ được cập nhật ngay sau khi lưu.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#1572e8',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Lưu cài đặt',
+                    cancelButtonText: 'Hủy'
+                }).then((result) => {
+                    if (!result.isConfirmed) {
+                        return;
+                    }
+
+                    $('.loading-container').show();
+
+                    const formData = new FormData();
+                    const logoFile = $logoInput[0].files[0];
+
+                    if (logoFile) {
+                        formData.append('LogoImage', logoFile);
+                    }
+
+                    formData.append('NameWebsite', $('#siteName').val());
+                    formData.append('Slogan', $('#siteSlogan').val());
+                    formData.append('Description', $('#siteDescription').val());
+                    formData.append('FacebookUrl', $('#facebookLink').val());
+                    formData.append('InstagramUrl', $('#instagramLink').val());
+                    formData.append('TwitterUrl', $('#twitterLink').val());
+                    formData.append('YouTubeUrl', $('#youtubeLink').val());
+                    formData.append('NameCompany', $('#companyName').val());
+                    formData.append('PhoneNumber', $('#phoneNumber').val());
+                    formData.append('Email', $('#emailContact').val());
+                    formData.append('Address', $('#address').val());
+                    formData.append('MoreInfo', $('#additionalInfo').val());
+
+                    $.ajax({
+                        url: '/Admin/Settings/UpdateSettings',
+                        type: 'POST',
+                        data: formData,
+                        contentType: false,
+                        processData: false,
+                        success: function (response) {
+                            $('.loading-container').hide();
+
+                            Swal.fire({
+                                title: response.success ? 'Đã lưu cài đặt' : 'Không thể lưu',
+                                text: response.message,
+                                icon: response.success ? 'success' : 'error',
+                                confirmButtonText: 'Đóng'
+                            });
+                        },
+                        error: function () {
+                            $('.loading-container').hide();
+
+                            Swal.fire({
+                                title: 'Lỗi hệ thống',
+                                text: 'Không thể cập nhật cài đặt vào lúc này.',
+                                icon: 'error',
+                                confirmButtonText: 'Đóng'
+                            });
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+}

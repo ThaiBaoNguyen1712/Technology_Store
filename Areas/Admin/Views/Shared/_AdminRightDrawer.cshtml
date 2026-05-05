@@ -1,0 +1,19 @@
+@model Tech_Store.Models.ViewModel.AdminRightDrawerViewModel
+
+<div class="offcanvas offcanvas-end admin-right-drawer @Model.WidthClass"
+     tabindex="-1"
+     id="@Model.DrawerId"
+     aria-labelledby="@(Model.DrawerId)Label">
+    <div class="offcanvas-header admin-right-drawer__header">
+        <div>
+            <h5 class="offcanvas-title admin-right-drawer__title" id="@(Model.DrawerId)Label">@Model.Title</h5>
+            @if (!string.IsNullOrWhiteSpace(Model.Subtitle))
+            {
+                <div class="admin-right-drawer__subtitle">@Model.Subtitle</div>
+            }
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body admin-right-drawer__body" id="@Model.BodyId">
+    </div>
+</div>

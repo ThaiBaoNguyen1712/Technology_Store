@@ -56,7 +56,11 @@ namespace Tech_Store.Controllers
             var brandsByCategory = list_cate.ToDictionary(
                 category => category.CategoryId,
                 category => _context.Brands
-                    .Where(b => b.CategoryId == category.CategoryId || b.CategoryId == null)
+                    .Where(b =>
+                        !b.BrandCategories.Any() ||
+                        b.BrandCategories.Any(bc => bc.CategoryId == category.CategoryId))
+                    .OrderBy(b => b.SortOrder ?? 0)
+                    .ThenBy(_ => EF.Functions.Random())
                     .ToList()
             );
             ViewBag.BrandsByCategory = brandsByCategory;
@@ -276,7 +280,11 @@ namespace Tech_Store.Controllers
 
             ViewBag.list_brand = _context.Brands
                 .AsNoTracking()
-                .Where(b => b.CategoryId == cate.CategoryId || b.CategoryId == null)
+                .Where(b =>
+                    !b.BrandCategories.Any() ||
+                    b.BrandCategories.Any(bc => bc.CategoryId == cate.CategoryId))
+                .OrderBy(b => b.SortOrder ?? 0)
+                .ThenBy(_ => EF.Functions.Random())
                 .ToList();
 
             return View(products);
@@ -331,6 +339,7 @@ namespace Tech_Store.Controllers
 
             var currentBrand = _context.Brands
                 .Include(b => b.Category)
+                .Include(b => b.BrandCategories)
                 .FirstOrDefault(b => b.Name.Contains(brand_name));
 
             if (currentBrand == null)
@@ -405,7 +414,11 @@ namespace Tech_Store.Controllers
             ViewBag.Key = key;
 
             ViewBag.list_brand = _context.Brands
-                .Where(b => b.CategoryId == currentBrand.CategoryId || b.CategoryId == null)
+                .Where(b =>
+                    !b.BrandCategories.Any() ||
+                    (currentBrand.CategoryId != null && b.BrandCategories.Any(bc => bc.CategoryId == currentBrand.CategoryId)))
+                .OrderBy(b => b.SortOrder ?? 0)
+                .ThenBy(_ => EF.Functions.Random())
                 .ToList();
 
             return View(products);
@@ -503,6 +516,8 @@ namespace Tech_Store.Controllers
 
             ViewBag.list_brand = _context.Brands
                 .AsNoTracking()
+                .OrderBy(b => b.SortOrder ?? 0)
+                .ThenBy(_ => EF.Functions.Random())
                 .Select(b => new { b.BrandId, b.Name })
                 .ToList();
 

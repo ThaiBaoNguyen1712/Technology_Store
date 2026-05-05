@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Tech_Store.Models;
+using Tech_Store.Models.ViewModel;
 
 namespace Tech_Store.Areas.Admin.Controllers
 {
@@ -85,28 +86,67 @@ namespace Tech_Store.Areas.Admin.Controllers
 
         // Trang xem tất cả thông báo
         [Route("Index")]        
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int page = 1, int pageSize = 20)
         {
             int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
-            var notifications = await _context.UserNotifications
-                 .Where(x => x.UserId == userId)
-                 .Include(x => x.Notification)
-                .OrderBy(x =>
-                        x.IsRead == true ? 1 : 0
-                    )
-                    .ThenByDescending(x => x.Notification.CreatedAt)
-                 .ToListAsync();
+            page = page < 1 ? 1 : page;
+            pageSize = pageSize <= 0 ? 20 : pageSize;
 
+            var query = _context.UserNotifications
+                .Where(x => x.UserId == userId)
+                .Include(x => x.Notification)
+                .OrderBy(x => x.IsRead == true ? 1 : 0)
+                .ThenByDescending(x => x.Notification.CreatedAt);
 
-            return View("Index", notifications);
+            var totalItems = await query.CountAsync();
+            var totalPages = totalItems == 0 ? 1 : (int)Math.Ceiling(totalItems / (double)pageSize);
+
+            if (page > totalPages)
+            {
+                page = totalPages;
+            }
+
+            var notifications = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(x => new AdminNotificationIndexItemViewModel
+                {
+                    NotificationId = x.NotificationId,
+                    UserNotificationId = x.UserNotificationId,
+                    Type = x.Notification.Type ?? string.Empty,
+                    TypeLabel = x.Notification.Type == "success"
+                        ? "Thành công"
+                        : x.Notification.Type == "warning"
+                            ? "Cảnh báo"
+                            : x.Notification.Type == "error"
+                                ? "Lỗi"
+                                : "Thông tin",
+                    Title = x.Notification.Title ?? string.Empty,
+                    Message = x.Notification.Message ?? string.Empty,
+                    RedirectUrl = x.Notification.RedirectUrl ?? "#",
+                    CreatedAt = x.Notification.CreatedAt,
+                    IsRead = x.IsRead == true
+                })
+                .ToListAsync();
+
+            var model = new AdminNotificationIndexViewModel
+            {
+                Page = page,
+                PageSize = pageSize,
+                TotalItems = totalItems,
+                TotalPages = totalPages,
+                Notifications = notifications
+            };
+
+            return View("Index", model);
 
         }
 
 
         //Xóa thông báo
         [HttpGet("Delete")]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(int id, int page = 1, int pageSize = 20)
         {
             int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
@@ -121,13 +161,13 @@ namespace Tech_Store.Areas.Admin.Controllers
             _context.UserNotifications.Remove(userNoti);
             await _context.SaveChangesAsync();
 
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Index), new { page, pageSize });
 
         }
 
         //Xóa các thông báo đã đọc
         [HttpGet("Delete_Read")]
-        public async Task<IActionResult> Delete_Read()
+        public async Task<IActionResult> Delete_Read(int page = 1, int pageSize = 20)
         {
             int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
@@ -137,13 +177,13 @@ namespace Tech_Store.Areas.Admin.Controllers
                 .ToListAsync();
 
             if (!userNotis.Any())
-                return RedirectToAction("Index");
+                return RedirectToAction("Index", new { page, pageSize });
 
             _context.UserNotifications.RemoveRange(userNotis);
 
             await _context.SaveChangesAsync();
 
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Index), new { page, pageSize });
 
         }
 

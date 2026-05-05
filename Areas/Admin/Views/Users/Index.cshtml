@@ -1,622 +1,387 @@
-﻿@model IEnumerable<Tech_Store.Models.ViewModel.UserVM>
+@model Tech_Store.Models.ViewModel.AdminUserIndexViewModel
+@using System.Globalization
 @{
-    ViewData["Title"] = "Thông tin người dùng";
+    ViewData["Title"] = "Khách hàng";
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
 }
 
-<div class="Container">
+<div class="py-3 user-admin-page">
     @Html.AntiForgeryToken()
-    <div class="pt-3"></div>
-    <div class="tableProduct">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header">
-                    <div class="d-flex align-items-center">
-                        <h4 class="card-title">DANH SÁCH KHÁCH HÀNG</h4>
-                        <button class="btn btn-primary btn-round ms-auto"
-                                data-bs-toggle="modal"
-                                data-bs-target="#UserModal">
-                            <i class="fa fa-plus"></i>
-                            Thêm
-                        </button>
-                    </div>
 
-                    <!-- Filter Section -->
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <div class="row g-3">
-                                <!-- Hàng 1: Thông tin cơ bản -->
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold">Tên khách hàng</label>
-                                    <input type="text" class="form-control" placeholder="Nhập tên khách hàng cần tìm" id="filterCustomerName">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold">Tài khoản kích hoạt</label>
-                                    <select class="form-control border selectpicker" data-live-search="true" id="filterCustomerStatus">
-                                        <option value="">Tất cả</option>
-                                        <option value="true">Được kích hoạt</option>
-                                        <option value="false">Đã chặn</option>
-                                    </select>
-                                </div>
-                                <!-- Hàng 2: Thông tin liên hệ -->
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold">Số điện thoại</label>
-                                    <input type="text" class="form-control" placeholder="Nhập số điện thoại khách hàng" id="filterPhone">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold">Email</label>
-                                    <input type="email" class="form-control" placeholder="Nhập email khách hàng" id="filterEmail">
-                                </div>
-                                <!-- Hàng 3: Thời gian và doanh số -->
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold">Ngày tạo từ</label>
-                                    <input type="date" class="form-control" id="filterDateFrom">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold">Đến ngày</label>
-                                    <input type="date" class="form-control" id="filterDateTo">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold">Khoảng doanh số</label>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control" placeholder="Từ" id="filterRevenueFrom">
-                                        <span class="input-group-text">-</span>
-                                        <input type="number" class="form-control" placeholder="Đến" id="filterRevenueTo">
-                                    </div>
-                                </div>
-                                <!-- Nút tìm kiếm và reset -->
-                                <div class="col-12 mt-4">
-                                    <div class="d-flex gap-2 justify-content-end">
-                                        <button type="button" class="btn btn-light px-4" id="btnReset">
-                                            <i class="fas fa-redo me-1"></i> Đặt lại
-                                        </button>
-                                        <button type="button" class="btn btn-primary px-4" id="btnSearch">
-                                            <i class="fas fa-search me-1"></i> Tìm kiếm
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+    @if (TempData["UserAdminSuccess"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm">@TempData["UserAdminSuccess"]</div>
+    }
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0 pb-0">
+            <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
+                <div>
+                    <h4 class="card-title mb-1">Danh sách khách hàng</h4>
                 </div>
-                <div class="card-body">
-                    <!-- Modal -->
-                    @Html.Partial("ModalUser")
-                    <!--End Modal-->
-                    <div class="table-responsive">
-                        <table id="add-row" class="display table table-striped table-hover">
-                            <thead>
-                                <tr class="table-primary text-center align-middle">
-                                    <th class="fw-semibold">Ảnh</th>
-                                    <th class="fw-semibold">Họ & tên lót</th>
-                                    <th class="fw-semibold">Tên</th>
-                                    <th class="fw-semibold">Số điện thoại</th>
-                                    <th class="fw-semibold">Email</th>
-                                    <th class="fw-semibold">Đã mua</th>
-                                    <th class="fw-semibold">Kích hoạt</th>
-                                    <th class="fw-semibold" style="width: 10%">Hành động</th>
-                                </tr>
-                            </thead>
-                            <tfoot>
-                                <tr>
-                                    <th>Ảnh</th>
-                                    <th>Họ & tên lót</th>
-                                    <th>Tên</th>
-                                    <th>Số điện thoại</th>
-                                    <th>Email</th>
-                                    <th>Đã mua</th>
-                                      <th>Kích hoạt</th>
-                                    <th>Hành động</th>
-                                </tr>
-                            </tfoot>
-                            <tbody id="userList">
-
-                                @if (Model != null)
-                                {
-                                    @foreach (var us in Model)
-                                    {
-                                        <tr>
-                                            <td>
-                                                <div class="avatar">
-                                                    @if(us.ImageUrl !=null)
-                                                    {
-                                                        <img src="~/Upload/Avatar/@us.ImageUrl" alt="..." class="avatar-img rounded-circle">
-                                                    }
-                                                    else
-                                                    {
-                                                        <img src="~/Upload/Avatar/none.png" alt="..." class="avatar-img rounded-circle">
-                                                        
-                                                    }
-                                                </div>
-
-                                            </td>
-                                            <td>@us.LastName</td>
-                                            <td>@(us.FirstName ?? "Chưa cung cấp")</td>
-                                            <td>@(us.PhoneNumber ?? "Chưa cung cấp")</td>
-                                            <td>@(us.Email ?? "Chưa cung cấp")</td>
-                                            <td style="white-space:nowrap">@us.OrderCount đơn hàng</td>
-                                            <td>
-
-                                                <p class="badge badge-pill @(us.IsActive ==true ? "badge-success" : "badge-danger") text-center">
-                                                    @us.IsActive
-                                                </p>
-
-                                            </td>
-                                            <td>
-                                                <div class="form-button-action">
-                                                    <button type="button"
-                                                            data-bs-toggle="tooltip" data-id="@us.UserId"
-                                                            id="editUs"
-                                                            class="btn btn-link btn-primary btn-lg"
-                                                            data-original-title="Edit Task">
-                                                        <i class="fa fa-edit"></i>
-                                                    </button>
-
-                                                    @if (us.IsActive == false)
-                                                    {
-                                                        <button type="button"
-                                                                data-bs-toggle="tooltip" data-id="@us.UserId"
-                                                                id="UnbanUs"
-                                                                class="btn btn-link btn-success btn-lg"
-                                                                data-original-title="Chặn người dùng">
-                                                            <i class="fas fa-user-check"></i>
-                                                            <!-- Thêm icon "Unban" -->
-                                                        </button>
-                                                    }
-                                                    else
-                                                    {
-                                                        <button type="button"
-                                                                data-bs-toggle="tooltip" data-id="@us.UserId"
-                                                                id="banUs"
-                                                                class="btn btn-link btn-danger btn-lg"
-                                                                data-original-title="Chặn người dùng">
-                                                            <i class="fa fa-ban"></i> <!-- Thêm icon "Ban" -->
-                                                        </button>
-                                                    }
-                                                    <button type="button"
-                                                            data-bs-toggle="tooltip"
-                                                            title=""
-                                                            class="btn btn-link btn-danger"
-                                                            data-id="@us.UserId"
-                                                            id="removeUs"
-                                                            data-original-title="Remove">
-                                                        <i class="fa fa-times"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    }
-                                }
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="order-admin__header-meta">
+                    <span class="order-admin__header-pill">Tổng khách: @Model.TotalItems</span>
+                    <span class="order-admin__header-pill">Trang @Model.Page/@Model.TotalPages</span>
+                    <a class="btn btn-primary"
+                       href="@Url.Action("Create", "Users", new
+                       {
+                           area = "Admin",
+                           page = Model.Page,
+                           status = Model.Status,
+                           email = Model.Email,
+                           phoneNumber = Model.PhoneNumber,
+                           revenueFrom = Model.RevenueFrom,
+                           revenueTo = Model.RevenueTo,
+                           createdDateFrom = Model.CreatedDateFrom?.ToString("yyyy-MM-dd"),
+                           createdDateTo = Model.CreatedDateTo?.ToString("yyyy-MM-dd")
+                       })">
+                        <i class="fa fa-plus me-1"></i>
+                        Thêm khách hàng
+                    </a>
                 </div>
             </div>
+        </div>
+
+        <div class="card-body">
+            <form method="get" class="brand-admin__filters user-admin__filters row g-3 align-items-end mb-4">
+                <input type="hidden" name="page" value="1" />
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Kích hoạt tài khoản</label>
+                    <select class="form-select" name="status">
+                        <option value="">Tất cả</option>
+                        @if (Model.Status == "true")
+                        {
+                            <option value="true" selected>Đã kích hoạt</option>
+                        }
+                        else
+                        {
+                            <option value="true">Đã kích hoạt</option>
+                        }
+                        @if (Model.Status == "false")
+                        {
+                            <option value="false" selected>Chưa kích hoạt</option>
+                        }
+                        else
+                        {
+                            <option value="false">Chưa kích hoạt</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Số điện thoại</label>
+                    <input type="text"
+                           class="form-control"
+                           name="phoneNumber"
+                           value="@Model.PhoneNumber"
+                           placeholder="Nhập số điện thoại" />
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Email</label>
+                    <input type="text"
+                           class="form-control"
+                           name="email"
+                           value="@Model.Email"
+                           placeholder="Nhập email" />
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Từ ngày</label>
+                    <input type="date"
+                           class="form-control"
+                           name="createdDateFrom"
+                           value="@(Model.CreatedDateFrom?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Đến ngày</label>
+                    <input type="date"
+                           class="form-control"
+                           name="createdDateTo"
+                           value="@(Model.CreatedDateTo?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Doanh số từ</label>
+                    <input type="number"
+                           class="form-control"
+                           name="revenueFrom"
+                           value="@Model.RevenueFrom"
+                           min="0"
+                           placeholder="0" />
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Doanh số đến</label>
+                    <input type="number"
+                           class="form-control"
+                           name="revenueTo"
+                           value="@Model.RevenueTo"
+                           min="0"
+                           placeholder="0" />
+                </div>
+                <div class="col-12 admin-search-actions-row">
+                    <div class="admin-search-actions">
+                        <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+                        <a href="/Admin/Users" class="btn btn-light border">Làm mới</a>
+                    </div>
+                </div>
+            </form>
+
+            <div class="table-responsive reusable-admin-table">
+                <table class="table table-hover align-middle user-admin__table">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 64px;">Ảnh</th>
+                            <th>Khách hàng</th>
+                            <th style="width: 160px;">Liên hệ</th>
+                            <th style="width: 120px;">Đơn hàng</th>
+                            <th style="width: 170px;">Doanh số</th>
+                            <th style="width: 170px;">Kích hoạt</th>
+                            <th style="width: 150px;">Ngày tạo</th>
+                            <th style="width: 140px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Users.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-5">
+                                    Không có khách hàng phù hợp với bộ lọc hiện tại.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var user in Model.Users)
+                            {
+                                var detailUrl = Url.Action("ViewUser", "Users", new
+                                {
+                                    area = "Admin",
+                                    id = user.UserId,
+                                    page = Model.Page,
+                                    keyword = Model.Keyword,
+                                    status = Model.Status,
+                                    email = Model.Email,
+                                    phoneNumber = Model.PhoneNumber,
+                                    revenueFrom = Model.RevenueFrom,
+                                    revenueTo = Model.RevenueTo,
+                                    createdDateFrom = Model.CreatedDateFrom?.ToString("yyyy-MM-dd"),
+                                    createdDateTo = Model.CreatedDateTo?.ToString("yyyy-MM-dd")
+                                }) ?? $"/Admin/Users/View/{user.UserId}";
+
+                                var quickDrawerUrl = Url.Action("QuickDrawer", "Users", new
+                                {
+                                    area = "Admin",
+                                    id = user.UserId,
+                                    page = Model.Page,
+                                    keyword = Model.Keyword,
+                                    status = Model.Status,
+                                    email = Model.Email,
+                                    phoneNumber = Model.PhoneNumber,
+                                    revenueFrom = Model.RevenueFrom,
+                                    revenueTo = Model.RevenueTo,
+                                    createdDateFrom = Model.CreatedDateFrom?.ToString("yyyy-MM-dd"),
+                                    createdDateTo = Model.CreatedDateTo?.ToString("yyyy-MM-dd")
+                                }) ?? $"/Admin/Users/QuickDrawer/{user.UserId}";
+
+                                <tr>
+                                    <td>
+                                        <div class="brand-admin__logo-shell user-admin__avatar-shell">
+                                            <img src="/Upload/Avatar/@(string.IsNullOrWhiteSpace(user.ImageUrl) ? "none.png" : user.ImageUrl)"
+                                                 class="brand-admin__logo user-admin__avatar"
+                                                 alt="@($"{user.LastName} {user.FirstName}")" />
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="user-admin__customer">
+                                            <a href="@detailUrl" class="user-admin__name">
+                                                @($"{user.LastName} {user.FirstName}".Trim())
+                                            </a>
+                                            <div class="user-admin__meta">
+                                                <span>ID #@user.UserId</span>
+                                                <span>@(string.IsNullOrWhiteSpace(user.Email) ? "Chưa có email" : user.Email)</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="user-admin__contact">
+                                            <strong>@(string.IsNullOrWhiteSpace(user.PhoneNumber) ? "-" : user.PhoneNumber)</strong>
+                                            <span>@(string.IsNullOrWhiteSpace(user.Email) ? "-" : user.Email)</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold text-dark">@user.OrderCount</div>
+                                        <div class="small text-muted">đơn hàng</div>
+                                    </td>
+                                    <td>
+                                        <div class="user-admin__amount">@user.TotalSpent.ToString("C0", new CultureInfo("vi-VN"))</div>
+                                    </td>
+                                    <td>
+                                        <div class="order-admin__state">
+                                            <span class="order-admin__state-dot @(user.IsActive ? "order-admin__state-dot--success" : "order-admin__state-dot--danger")"></span>
+                                            <div class="order-admin__state-body">
+                                                <strong>@(user.IsActive ? "Đã kích hoạt" : "Chưa kích hoạt")</strong>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="text-dark">@(user.CreatedAt?.ToString("dd/MM/yyyy") ?? "-")</div>
+                                        <div class="small text-muted">@(user.CreatedAt?.ToString("HH:mm:ss") ?? "-")</div>
+                                    </td>
+                                    <td>
+                                        <button type="button"
+                                                class="btn btn-light border user-admin__action-button open-user-drawer"
+                                                data-url="@quickDrawerUrl">
+                                            Tác vụ
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @await Html.PartialAsync("~/Areas/Admin/Views/Shared/_ManualPagination.cshtml", new Tech_Store.Models.ViewModel.ManualPaginationViewModel
+            {
+                CurrentPage = Model.Page,
+                TotalPages = Model.TotalPages,
+                BaseUrl = "/Admin/Users",
+                QueryString = string.Join("&", new[]
+                {
+                    !string.IsNullOrWhiteSpace(Model.Status) ? $"status={Uri.EscapeDataString(Model.Status)}" : null,
+                    !string.IsNullOrWhiteSpace(Model.Email) ? $"email={Uri.EscapeDataString(Model.Email)}" : null,
+                    !string.IsNullOrWhiteSpace(Model.PhoneNumber) ? $"phoneNumber={Uri.EscapeDataString(Model.PhoneNumber)}" : null,
+                    Model.RevenueFrom.HasValue ? $"revenueFrom={Model.RevenueFrom.Value}" : null,
+                    Model.RevenueTo.HasValue ? $"revenueTo={Model.RevenueTo.Value}" : null,
+                    Model.CreatedDateFrom.HasValue ? $"createdDateFrom={Model.CreatedDateFrom.Value:yyyy-MM-dd}" : null,
+                    Model.CreatedDateTo.HasValue ? $"createdDateTo={Model.CreatedDateTo.Value:yyyy-MM-dd}" : null
+                }.Where(x => !string.IsNullOrWhiteSpace(x)))
+            })
         </div>
     </div>
 </div>
 
-
-<script type="text/javascript">
+@await Html.PartialAsync("~/Areas/Admin/Views/Shared/_AdminRightDrawer.cshtml", new Tech_Store.Models.ViewModel.AdminRightDrawerViewModel
+{
+    DrawerId = "userQuickDrawer",
+    Title = "Thao tác khách hàng",
+    BodyId = "userQuickDrawerBody",
+    WidthClass = "admin-right-drawer--lg"
+})
+<script>
     $(document).ready(function () {
-        $('#btnSearch').on('click', function () {
-            var filterData = {
-                nameCustomer: $('#filterCustomerName').val(),
-                status: $('#filterCustomerStatus').val(),
-                email: $('#filterEmail').val(),
-                revenueFrom: $('#filterRevenueFrom').val(),
-                revenueTo: $('#filterRevenueTo').val(),
-                CreatedDateFrom: $('#filterDateFrom').val(),
-                CreatedDateTo: $('#filterDateTo').val(),
-                phoneNumber: $('#filterPhone').val()
-            };
+        const drawerElement = document.getElementById('userQuickDrawer');
+        const drawerBody = $('#userQuickDrawerBody');
+        const userDrawer = drawerElement ? bootstrap.Offcanvas.getOrCreateInstance(drawerElement) : null;
+        const antiForgeryToken = $('input[name="__RequestVerificationToken"]').val();
 
-            var table = $("#add-row").DataTable();
+        $(document).on('click', '.open-user-drawer', function (e) {
+            e.preventDefault();
 
-            $.ajax({
-                url: '/Admin/Users/Filter',
-                type: 'POST',
-                data: filterData,
-                success: function (response) {
-                    $('#userList').empty();
-                    table.clear();
-
-                    response.forEach(function (user) {
-                      
-                        table.row.add([
-                            `<div class="avatar">
-                                <img src="/Upload/Avatar/${user.imageUrl ? user.imageUrl : 'none.png'}"
-                                     alt="..." class="avatar-img rounded-circle">
-                            </div>
-                            `,
-                            user.lastName,
-                            user.firstName,
-                            user.phoneNumber || 'Chưa cung cấp',
-                            user.email || 'Chưa cung cấp',
-                            user.orderCount + " đơn hàng",
-                            `<p class="badge badge-pill ${user.isActive ? 'badge-success' : 'badge-danger'} text-center">
-                                ${user.isActive}
-                            </p>
-                            `,
-                            `<div class="form-button-action">
-                            <button type="button"
-                                data-bs-toggle="tooltip" data-id="${user.userId}"
-                                id="editUs"
-                                class="btn btn-link btn-primary btn-lg"
-                                data-original-title="Edit Task">
-                                <i class="fa fa-edit"></i>
-                            </button>
-
-                            ${user.isActive
-                                ? `<button type="button"
-                                    data-bs-toggle="tooltip" data-id="${user.userId}"
-                                    id="banUs"
-                                    class="btn btn-link btn-danger btn-lg"
-                                    data-original-title="Chặn người dùng">
-                                    <i class="fa fa-ban"></i>
-                                </button>`
-                                : `<button type="button"
-                                    data-bs-toggle="tooltip" data-id="${user.userId}"
-                                    id="UnbanUs"
-                                    class="btn btn-link btn-success btn-lg"
-                                    data-original-title="Bỏ chặn người dùng">
-                                    <i class="fas fa-user-check"></i>
-                                </button>`
-                            }
-
-                            <button type="button"
-                                data-bs-toggle="tooltip"
-                                class="btn btn-link btn-danger"
-                                data-id="${user.userId}"
-                                id="removeUs"
-                                data-original-title="Xóa người dùng">
-                                <i class="fa fa-times"></i>
-                            </button>
-                        </div>`
-                        ]);
-                    });
-
-                    table.draw();
-                },
-                error: function (error) {
-                    console.error("Lỗi khi lấy dữ liệu", error);
-                }
-            });
-        });
-       
-        // Đặt lại các bộ lọc khi nhấn nút "Đặt lại"
-        $('#btnReset').on('click', function () {
-            $('#filterCustomerName').val('');
-            $('#filterCustomerStatus').val('');
-            $('#filterEmail').val('');
-            $('#filterRevenueFrom').val('');
-            $('#filterRevenueTo').val('');
-            $('#filterDateFrom').val('');
-            $('#filterDateTo').val('');
-            $('#filterPhone').val('');
-          
-        });
-
-        var token = $('input[name="__RequestVerificationToken"]').val();
-        //Xử lý sự kiện click nút chặn
-        $(document).on('click', '#banUs', function () {
-            var id_us = $(this).data('id'); // Lấy ID từ thuộc tính data-id
-
-            // Hiển thị hộp thoại xác nhận với SweetAlert
-            Swal.fire({
-                title: 'Bạn có chắc chắn muốn chặn người dùng này không?',
-                text: "Người dùng này không thể mua sắm ở cửa hàng bạn nữa!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Chặn',
-                cancelButtonText: 'Hủy',
-                reverseButtons: true
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Hiển thị biểu tượng loading
-                    $('.loading-container').show();
-
-                    // Gửi yêu cầu AJAX để xóa người dùng
-                    $.ajax({
-                        method: 'POST', // Sử dụng phương thức DELETE
-                        url: '/Admin/Users/BanUser',
-                        data: { id: id_us },
-                        headers: {
-                            "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() // Thêm token xác thực vào header
-                        },
-                        success: function (response) {
-                            $('.loading-container').hide(); // Ẩn biểu tượng loading
-
-                            // Kiểm tra phản hồi từ server
-                            if (response.success) {
-                                Swal.fire(
-                                    'Đã chặn người dùng!',
-                                    response.message,
-                                    'success'
-                                ).then(() => {
-                                    location.reload(); // Làm mới trang sau khi xóa thành công
-                                });
-                            } else {
-                                Swal.fire(
-                                    'Không thể chặn!',
-                                    response.message,
-                                    'error'
-                                );
-                            }
-                        },
-                        error: function (xhr, status, error) {
-                            $('.loading-container').hide(); // Ẩn biểu tượng loading
-                            Swal.fire(
-                                'Lỗi!',
-                                'Đã xảy ra lỗi khi chặn người dùng. Vui lòng thử lại.',
-                                'error'
-                            );
-                            console.error('Error details:', error);
-                        }
-                    });
-                } else {
-                    console.log('Hành động xóa đã bị hủy');
-                }
-            });
-        });
-
-
-        //Xử lý sự kiện click nút gỡ chặn
-        $(document).on('click', '#UnbanUs', function () {
-            var id_us = $(this).data('id'); // Lấy ID từ thuộc tính data-id
-
-            // Hiển thị hộp thoại xác nhận với SweetAlert
-            Swal.fire({
-                title: 'Bạn có chắc muốn bỏ chặn người dùng này không?',
-                text: "Người dùng này sẽ được phép mua sắm ở cửa hàng bạn",
-                icon: 'info',
-                showCancelButton: true,
-                confirmButtonText: 'Bỏ chặn',
-                cancelButtonText: 'Hủy',
-                reverseButtons: true
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Hiển thị biểu tượng loading
-                    $('.loading-container').show();
-
-                    // Gửi yêu cầu AJAX để xóa người dùng
-                    $.ajax({
-                        method: 'POST',
-                        url: '/Admin/Users/UnBanUser',
-                        data: { id: id_us },
-                        headers: {
-                            "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() // Thêm token xác thực vào header
-                        },
-                        success: function (response) {
-                            $('.loading-container').hide(); // Ẩn biểu tượng loading
-
-                            // Kiểm tra phản hồi từ server
-                            if (response.success) {
-                                Swal.fire(
-                                    'Đã gỡ chặn người dùng!',
-                                    response.message,
-                                    'success'
-                                ).then(() => {
-                                    location.reload(); // Làm mới trang sau khi xóa thành công
-                                });
-                            } else {
-                                Swal.fire(
-                                    'Không thể gỡ chặn!',
-                                    response.message,
-                                    'error'
-                                );
-                            }
-                        },
-                        error: function (xhr, status, error) {
-                            $('.loading-container').hide(); // Ẩn biểu tượng loading
-                            Swal.fire(
-                                'Lỗi!',
-                                'Đã xảy ra lỗi khi gỡ chặn người dùng. Vui lòng thử lại.',
-                                'error'
-                            );
-                            console.error('Error details:', error);
-                        }
-                    });
-                }
-            });
-        });
-        // Xử lý sự kiện click cho nút xóa
-        $(document).on('click', '#removeUs', function () {
-            var id_us = $(this).data('id'); // Lấy ID từ thuộc tính data-id
-
-            // Hiển thị hộp thoại xác nhận với SweetAlert
-            Swal.fire({
-                title: 'Bạn có chắc chắn muốn xóa người dùng này không?',
-                text: "Hành động này không thể hoàn tác!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Xóa',
-                cancelButtonText: 'Hủy',
-                reverseButtons: true
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Hiển thị biểu tượng loading
-                    $('.loading-container').show();
-
-                    // Gửi yêu cầu AJAX để xóa người dùng
-                    $.ajax({
-                        method: 'DELETE', // Sử dụng phương thức DELETE
-                        url: '/Admin/Users/Delete/' + id_us, // Cập nhật URL cho đúng
-                        headers: {
-                            "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() // Thêm token xác thực vào header
-                        },
-                        success: function (response) {
-                            $('.loading-container').hide(); // Ẩn biểu tượng loading
-
-                            // Kiểm tra phản hồi từ server
-                            if (response.success) {
-                                Swal.fire(
-                                    'Xóa thành công!',
-                                    response.message,
-                                    'success'
-                                ).then(() => {
-                                    location.reload(); // Làm mới trang sau khi xóa thành công
-                                });
-                            } else {
-                                Swal.fire(
-                                    'Không thể xóa!',
-                                    response.message,
-                                    'error'
-                                );
-                            }
-                        },
-                        error: function (xhr, status, error) {
-                            $('.loading-container').hide(); // Ẩn biểu tượng loading
-                            Swal.fire(
-                                'Lỗi!',
-                                'Đã xảy ra lỗi khi xóa. Vui lòng thử lại.',
-                                'error'
-                            );
-                            console.error('Error details:', error); // Log chi tiết lỗi
-                        }
-                    });
-                } else {
-                    console.log('Hành động xóa đã bị hủy');
-                }
-            });
-        });
-
-
-
-        async function fetchStaticData() {
-            const response = await fetch('/Province_VN.json');
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
+            if (!userDrawer) {
+                return;
             }
-            return await response.json(); // Chuyển đổi phản hồi thành JSON
-        }
 
-        async function getProvince(provinceId) {
-            const allData = await fetchStaticData();
-            return allData.find(province => province.code === provinceId);
-        }
-
-        async function getDistrict(districtId) {
-            const allData = await fetchStaticData();
-            for (const province of allData) {
-                const district = province.districts.find(d => d.code === districtId);
-                if (district) {
-                    return district;
-                }
-            }
-            return null;
-        }
-
-        async function getWard(wardId) {
-            const allData = await fetchStaticData();
-            for (const province of allData) {
-                for (const district of province.districts) {
-                    const ward = district.wards.find(w => w.code === wardId);
-                    if (ward) {
-                        return ward;
-                    }
-                }
-            }
-            return null;
-        }
-
-
-
-        // Xử lý sự kiện click cho nút chỉnh sửa
-        $(document).on('click', '#editUs', async function () {
-            var id_us = $(this).data('id'); // Lấy ID từ thuộc tính data-id
-            $('.loading-container').show(); // Hiển thị loading
+            const url = $(this).data('url');
+            drawerBody.html('<div class="admin-right-drawer__loading">Đang tải thông tin khách hàng...</div>');
+            userDrawer.show();
+            $('.loading-container').show();
 
             $.ajax({
                 method: 'GET',
-                url: '/Admin/Users/Edit/' + id_us, // Lấy dữ liệu từ server
-
-                success: async function (response) {
-                    // Đặt giá trị của các input và select
-                    $('input[name=us_id]').val(response.userId);
-                    $('input[name="LastName"]').val(response.lastName); // Đặt giá trị cho input name
-                    $('input[name="FirstName"]').val(response.firstName);
-                    $('input[name="PhoneNumber"]').val(response.phoneNumber); // Đặt giá trị cho input description
-                    $('input[name="Email"]').val(response.email);
-                    $('select[name="isActive"]').val(response.isActive.toString());
-                    $('input[name="street"]').val(response.addressLine);
-                    // Gán giá trị mới cho thuộc tính src
-                    $('#avatarPreview').attr('src', '/Upload/Avatar/' + response.imageUrl);
-
-                    // Khởi tạo biến cho province, district, ward
-                    let provinceFill, districtFill, wardFill;
-
-                    // Lấy dữ liệu địa chỉ từ API
-                    if (response.province !== '' && response.province !== null) {
-                        provinceFill = await getProvince(response.province); // Chờ API trả về dữ liệu tỉnh
-                    }
-                    if (response.district !== '' && response.district !== null) {
-                        districtFill = await getDistrict(response.district); // Chờ API trả về dữ liệu huyện
-                    }
-                    if (response.ward !== '' && response.ward !== null) { // Sửa ở đây
-                        wardFill = await getWard(response.ward); // Chờ API trả về dữ liệu xã/phường
-                    }
-
-                    // Điền dữ liệu vào dropdown Tỉnh/Thành phố
-                    // Gọi hàm fillAddressData
-                    if (provinceFill && provinceFill.code) {
-                        // Chỉ gọi hàm fillAddressData với các giá trị hợp lệ
-                        await fillAddressData(
-                            provinceFill.code,
-                            districtFill && districtFill.code ? districtFill.code : null,
-                            wardFill && wardFill.code ? wardFill.code : null
-                        );
-                    } else {
-                        console.error('Province data is missing or invalid:', { provinceFill, districtFill, wardFill });
-                    }
-
-                    // Hiển thị nút Lưu thay đổi và ẩn nút Thêm mới
-                    $('#update').show();
-                    $('#add').hide();
-
-                    // Ẩn biểu tượng loading
-                    $('.loading-container').hide();
-
-                    // Mở popup
-                    $('#UserModal').modal('show');
+                url: url,
+                success: function (html) {
+                    drawerBody.html(html);
                 },
-                error: function (xhr, status, error) {
-                    alert("Đã xảy ra lỗi: " + error);
-                    $('.loading-container').hide(); // Ẩn loading khi có lỗi
+                error: function () {
+                    drawerBody.html('<div class="alert alert-danger mb-0">Không thể tải thông tin khách hàng.</div>');
+                },
+                complete: function () {
+                    $('.loading-container').hide();
                 }
             });
         });
 
+        function executeUserAction(url, method, successTitle, successMessage) {
+            $('.loading-container').show();
 
+            $.ajax({
+                method: method,
+                url: url,
+                headers: {
+                    "RequestVerificationToken": antiForgeryToken
+                },
+                success: function (response) {
+                    if (response && response.success === false) {
+                        Swal.fire('Không thể thực hiện', response.message, 'error');
+                        return;
+                    }
 
+                    Swal.fire(successTitle, successMessage, 'success').then(() => {
+                        location.reload();
+                    });
+                },
+                error: function (xhr) {
+                    const message = xhr.responseJSON && xhr.responseJSON.message
+                        ? xhr.responseJSON.message
+                        : 'Đã xảy ra lỗi. Vui lòng thử lại.';
+                    Swal.fire('Lỗi', message, 'error');
+                },
+                complete: function () {
+                    $('.loading-container').hide();
+                }
+            });
+        }
 
-        // Sự kiện khi modal bị ẩn
-        $('#UserModal').on('hidden.bs.modal', function () {
-            // Đặt lại các trường trong modal khi ẩn
-            // Đặt giá trị của các input và select
-            $('input[name="LastName"]').val(''); // Đặt giá trị cho input name
-            $('input[name="FirstName"]').val(''); // Đặt giá trị cho input name
-            $('input[name="PhoneNumber"]').val(''); // Đặt giá trị cho input name
-            $('input[name="Email"]').val(''); // Đặt giá trị cho input description
-            $('select[name="isActive"]').val(''); // Đặt giá trị cho select visible
-            $('input[name="us_id"]').val('')
-            $('input[name="street"]').val('');
-            $('#citySelect').val('').selectpicker('refresh');
-            $('#districtSelect').val('').selectpicker('refresh');
-            $('#wardSelect').val('').selectpicker('refresh');
-            $('#avatarPreview').attr('src', '/Upload/Avatar/none.png');
+        $(document).on('click', '.js-user-ban', function (e) {
+            e.preventDefault();
+            const url = $(this).data('url');
 
-            //Tắt trạng thái load
-            $('.loading-container').hide();
+            Swal.fire({
+                title: 'Chặn khách hàng này?',
+                text: 'Khách hàng sẽ không thể tiếp tục mua hàng.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Chặn khách hàng',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    executeUserAction(url, 'POST', 'Đã chặn', 'Khách hàng đã được chuyển sang trạng thái bị chặn.');
+                }
+            });
+        });
 
-            // Ẩn nút Lưu thay đổi và hiển thị nút Thêm mới
-            $('#update').hide();
-            $('#add').show();
+        $(document).on('click', '.js-user-unban', function (e) {
+            e.preventDefault();
+            const url = $(this).data('url');
+
+            Swal.fire({
+                title: 'Bỏ chặn khách hàng này?',
+                text: 'Khách hàng sẽ được mua hàng trở lại.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Bỏ chặn',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    executeUserAction(url, 'POST', 'Đã bỏ chặn', 'Khách hàng đã được kích hoạt lại.');
+                }
+            });
+        });
+
+        $(document).on('click', '.js-user-delete', function (e) {
+            e.preventDefault();
+            const url = $(this).data('url');
+
+            Swal.fire({
+                title: 'Xóa khách hàng này?',
+                text: 'Hành động này không thể hoàn tác.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Xóa khách hàng',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    executeUserAction(url, 'DELETE', 'Đã xóa', 'Khách hàng đã được xóa khỏi hệ thống.');
+                }
+            });
         });
     });
-
-</script>
-
-<script type="text/javascript">
-
 </script>

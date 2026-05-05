@@ -1,336 +1,231 @@
-﻿@model IEnumerable<Tech_Store.Models.Voucher>
+@model Tech_Store.Models.ViewModel.AdminVoucherIndexViewModel
+
 @{
     ViewData["Title"] = "Mã khuyến mãi";
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
 }
 
-<div class="Container">
-    <div class="pt-3"></div>
-    <div class="tableProduct">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header">
-                    <div class="d-flex align-items-center">
-                        <h4 class="card-title">DANH SÁCH MÃ KHUYẾN MÃI</h4>
-                        <button class="btn btn-primary btn-round ms-auto"
-                                data-bs-toggle="modal"
-                                data-bs-target="#VoucherModal">
-                            <i class="fa fa-plus"></i>
-                            Thêm
-                        </button>
-                    </div>
+<div class="py-3 voucher-admin-page">
+    @Html.AntiForgeryToken()
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0 pb-0">
+            <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
+                <div>
+                    <h4 class="card-title mb-1">Danh sách mã khuyến mãi</h4>
                 </div>
-                <div class="card mb-6">
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <!-- Hàng 1: Thông tin cơ bản -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Mã khuyến mãi</label>
-                                <div class="input-group">
-                                    <input type="text" class="form-control" placeholder="Nhập mã khuyến mãi" id="filterCode">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Tên mã KM</label>
-                                <input type="text" class="form-control" placeholder="Nhập tên mã KM cần tìm" id="filterName">
-                            </div>
-                       
-                            <!-- Hàng 2: Thời gian và khoảng giá -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Ngày bắt đầu</label>
-                                <input type="date" class="form-control" id="filterDateFrom">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Ngày kết thúc</label>
-                                <input type="date" class="form-control" id="filterDateTo">
-                            </div>
-                            <!-- Nút tìm kiếm và reset -->
-                            <div class="col-12 mt-4">
-                                <div class="d-flex gap-2 justify-content-end">
-                                    <button type="button" class="btn btn-light px-4" id="btnReset">
-                                        <i class="fas fa-redo me-1"></i> Đặt lại
-                                    </button>
-                                    <button type="button" class="btn btn-primary px-4" id="btnSearch">
-                                        <i class="fas fa-search me-1"></i> Tìm kiếm
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <!-- Modal -->
-                    @Html.Partial("ModalVoucher")
-                    <!--End Modal-->
-                    <div class="table-responsive">
-                        <table id="add-row" class="display table table-striped table-hover">
-                            <thead>
-                                <tr class="table-primary text-center align-middle">
-                                    <th class="fw-semibold">Tên</th>
-                                    <th class="fw-semibold"> Mã KM</th>
-                                    <th class="fw-semibold">Mô tả</th>
-                                    <th class="fw-semibold">Bắt đầu</th>
-                                    <th class="fw-semibold">Hết hạn</th>
-                                    <th class="fw-semibold">Hành động</th>
-                                </tr>
-                            </thead>
-                            <tfoot>
-                                <tr>
-                                    <th>Tên</th>
-                                    <th>>Mã KM</th>
-                                    <th>Mô tả</th>
-                                    <th>Ngày bắt đầu</th>
-                                    <th>Ngày hết hạn</th>
-                                    <th>Hành động</th>
-
-                                </tr>
-                            </tfoot>
-                            <tbody id="VoucherList">
-                                @if (Model != null)
-                                {
-                                    @foreach (var vou in Model)
-                                    {
-                                        <tr>
-                                            <td>@vou.Name</td>
-                                            <td><span class="badge bg-warning text-dark text-bold">@vou.Code</span></td>
-                                            <td>@vou.Description</td>
-                                            <td class="text-center">
-                                                <div style="background:#e7f9ed;padding:5px 10px;border-radius:6px;color:#1a7f37;">
-                                                    @vou.StartedAt?.ToString("dd/MM/yyyy")
-                                                </div>
-                                            </td>
-                                            <td class="text-center">
-                                                <div style="background:#fdecea;padding:5px 10px;border-radius:6px;color:#b02a37;">
-                                                    @vou.ExpiredAt?.ToString("dd/MM/yyyy")
-                                                </div>
-                                            </td>
-                                          
-
-
-
-                                            <td>
-                                                <div class="form-button-action">
-                                                    <button type="button"
-                                                            data-bs-toggle="tooltip" data-id="@vou.VoucherId"
-                                                            id="editVou"
-                                                            class="btn btn-link btn-primary btn-lg"
-                                                            data-original-title="Edit Task">
-                                                        <i class="fa fa-edit"></i>
-                                                    </button>
-                                                    <button type="button"
-                                                            data-bs-toggle="tooltip"
-                                                            title=""
-                                                            class="btn btn-link btn-danger"
-                                                            data-id="@vou.VoucherId"
-                                                            id="removeVou"
-                                                            data-original-title="Remove">
-                                                        <i class="fa fa-times"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    }
-                                }
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="order-admin__header-meta">
+                    <span class="order-admin__header-pill">Tổng voucher: @Model.TotalItems</span>
+                    <span class="order-admin__header-pill">Trang @Model.Page/@Model.TotalPages</span>
+                    <a href="@Url.Action("Form", "Vouchers", new
+                       {
+                           area = "Admin",
+                           page = Model.Page,
+                           code = Model.Code,
+                           name = Model.Name,
+                           dateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"),
+                           dateTo = Model.DateTo?.ToString("yyyy-MM-dd")
+                       })"
+                       class="btn btn-primary">
+                        <i class="fa fa-plus me-1"></i>
+                        Thêm mã khuyến mãi
+                    </a>
                 </div>
             </div>
+        </div>
+
+        <div class="card-body">
+            <form method="get" class="brand-admin__filters voucher-admin__filters row g-3 align-items-end mb-4">
+                <input type="hidden" name="page" value="1" />
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Mã khuyến mãi</label>
+                    <input type="text"
+                           class="form-control"
+                           name="code"
+                           value="@Model.Code"
+                           placeholder="Nhập mã khuyến mãi" />
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Tên voucher</label>
+                    <input type="text"
+                           class="form-control"
+                           name="name"
+                           value="@Model.Name"
+                           placeholder="Nhập tên voucher" />
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Ngày bắt đầu</label>
+                    <input type="date"
+                           class="form-control"
+                           name="dateFrom"
+                           value="@(Model.DateFrom?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Ngày kết thúc</label>
+                    <input type="date"
+                           class="form-control"
+                           name="dateTo"
+                           value="@(Model.DateTo?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="col-12 admin-search-actions-row">
+                    <div class="admin-search-actions">
+                        <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+                        <a href="/Admin/Vouchers" class="btn btn-light border">Làm mới</a>
+                    </div>
+                </div>
+            </form>
+
+            <div class="table-responsive reusable-admin-table">
+                <table class="table table-hover align-middle voucher-admin__table">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Tên voucher</th>
+                            <th style="width: 150px;">Mã</th>
+                            <th style="width: 130px;">Khuyến mãi</th>
+                            <th>Mô tả</th>
+                            <th style="width: 120px;">Số lượng</th>
+                            <th style="width: 160px;">Hiệu lực</th>
+                            <th style="width: 160px;">Trạng thái</th>
+                            <th style="width: 140px;">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Vouchers.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-5">
+                                    Không có voucher phù hợp với bộ lọc hiện tại.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var voucher in Model.Vouchers)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold text-dark">@voucher.Name</div>
+                                        <div class="small text-muted">ID #@voucher.VoucherId</div>
+                                    </td>
+                                    <td>
+                                        <span class="badge text-bg-warning-subtle text-warning-emphasis border voucher-admin__code-badge">
+                                            @voucher.Code
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="voucher-admin__promotion">@voucher.Promotion</div>
+                                    </td>
+                                    <td class="text-muted">@(string.IsNullOrWhiteSpace(voucher.Description) ? "-" : voucher.Description)</td>
+                                    <td>
+                                        <div class="fw-semibold text-dark">@voucher.Quantity</div>
+                                        <div class="small text-muted">lượt áp dụng</div>
+                                    </td>
+                                    <td>
+                                        <div class="text-dark">@(voucher.StartedAt?.ToString("dd/MM/yyyy") ?? "-")</div>
+                                        <div class="small text-muted">đến @(voucher.ExpiredAt?.ToString("dd/MM/yyyy") ?? "-")</div>
+                                    </td>
+                                    <td>
+                                        <div class="order-admin__state">
+                                            <span class="order-admin__state-dot @($"order-admin__state-dot--{voucher.StatusTone}")"></span>
+                                            <div class="order-admin__state-body">
+                                                <strong>@voucher.StatusLabel</strong>
+                                                <span>@(voucher.StartedAt?.ToString("HH:mm:ss") ?? "-") - @(voucher.ExpiredAt?.ToString("HH:mm:ss") ?? "-")</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="form-button-action justify-content-center">
+                                            <a href="@Url.Action("Form", "Vouchers", new
+                                               {
+                                                   area = "Admin",
+                                                   id = voucher.VoucherId,
+                                                   page = Model.Page,
+                                                   code = Model.Code,
+                                                   name = Model.Name,
+                                                   dateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"),
+                                                   dateTo = Model.DateTo?.ToString("yyyy-MM-dd")
+                                               })"
+                                               class="btn btn-link btn-primary btn-lg"
+                                               data-bs-toggle="tooltip"
+                                               title="Cập nhật">
+                                                <i class="fa fa-edit"></i>
+                                            </a>
+                                            <button type="button"
+                                                    class="btn btn-link btn-danger"
+                                                    data-id="@voucher.VoucherId"
+                                                    data-name="@voucher.Name"
+                                                    data-role="remove-voucher"
+                                                    title="Xóa">
+                                                <i class="fa fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @await Html.PartialAsync("~/Areas/Admin/Views/Shared/_ManualPagination.cshtml", new Tech_Store.Models.ViewModel.ManualPaginationViewModel
+            {
+                CurrentPage = Model.Page,
+                TotalPages = Model.TotalPages,
+                BaseUrl = "/Admin/Vouchers",
+                QueryString = string.Join("&", new[]
+                {
+                    !string.IsNullOrWhiteSpace(Model.Code) ? $"code={Uri.EscapeDataString(Model.Code)}" : null,
+                    !string.IsNullOrWhiteSpace(Model.Name) ? $"name={Uri.EscapeDataString(Model.Name)}" : null,
+                    Model.DateFrom.HasValue ? $"dateFrom={Model.DateFrom.Value:yyyy-MM-dd}" : null,
+                    Model.DateTo.HasValue ? $"dateTo={Model.DateTo.Value:yyyy-MM-dd}" : null
+                }.Where(x => !string.IsNullOrWhiteSpace(x)))
+            })
         </div>
     </div>
 </div>
 
-<script type="text/javascript">
+<script>
     $(document).ready(function () {
-        // Xử lý sự kiện click cho nút xóa
-        $(document).on('click', '#removeVou', function () {
-            var id_vou = $(this).data('id'); // Lấy ID từ thuộc tính data-id
+        const antiForgeryToken = $('input[name="__RequestVerificationToken"]').val();
 
-            // Sử dụng SweetAlert2 để xác nhận
+        $(document).on('click', '[data-role="remove-voucher"]', function () {
+            const voucherId = $(this).data('id');
+            const voucherName = $(this).data('name');
+
             Swal.fire({
-                title: 'Bạn có chắc chắn muốn xóa mã khuyến mãi này không?',
-                text: "Hành động này không thể hoàn tác.",
-                icon: 'warning', // Biểu tượng cảnh báo
-                showCancelButton: true, // Hiển thị nút hủy
-                confirmButtonText: 'Có, xóa nó!',
+                title: 'Xóa mã khuyến mãi?',
+                text: `Bạn đang chuẩn bị xóa "${voucherName}". Hành động này không thể hoàn tác.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Xóa',
                 cancelButtonText: 'Hủy',
-                reverseButtons: true // Đảo ngược thứ tự nút
+                confirmButtonColor: '#d33'
             }).then((result) => {
-                if (result.isConfirmed) {
-                    // Hiển thị biểu tượng loading
-                    $('.loading-container').show();
-
-                    $.ajax({
-                        method: 'DELETE', // Sử dụng phương thức DELETE
-                        url: '/Admin/Vouchers/Delete',
-                        data: { id: id_vou },
-                        success: function (response) {
-                            location.reload(); // Làm mới trang sau khi xóa
-                            // Ẩn biểu tượng loading
-                            $('.loading-container').hide();
-                        },
-                        error: function (xhr, status, error) {
-                            alert("Đã xảy ra lỗi: " + error);
-                            $('.loading-container').hide();
-                        }
-                    });
+                if (!result.isConfirmed) {
+                    return;
                 }
-            });
-        });
 
+                $('.loading-container').show();
 
-        // Xử lý sự kiện click cho nút chỉnh sửa
-        $(document).on('click', '#editVou', function () {
-            var id_vou = $(this).data('id'); // Lấy ID từ thuộc tính data-id
-            $('.loading-container').show(); // Hiển thị loading
-
-            $.ajax({
-                method: 'GET',
-                url: '@Url.Action("Edit","Vouchers")',
-                data: { id: id_vou },// Lấy dữ liệu từ server
-                success: function (response) {
-                    // Đặt giá trị của các input và select
-                    $('input[name="name"]').val(response.name); // Đặt giá trị cho input name
-                    $('input[name="code"]').val(response.code);
-
-                    // Kiểm tra nếu response.promotion tồn tại
-                    if (response.promotion) {
-                        // Loại bỏ khoảng trắng ở đầu và cuối chuỗi
-                        var promotion = response.promotion.trim();
-
-                        // Kiểm tra ký tự cuối cùng
-                        if (promotion.endsWith("%")) {
-                            // Lấy giá trị số tiền giảm mà không có ký tự '%'
-                            var promotionValue = promotion.slice(0, -1).trim(); // Lấy tất cả trừ ký tự cuối và loại bỏ khoảng trắng
-                            $('input[name="promotion"]').val(promotionValue);
-                            $('select[name="selectPromotion"]').val(1); // Thiết lập select thành 1
-                        } else {
-                            //Nếu giảm tiền mặt thì đổi qua đ
-                            $('input[name="promotion"]').val(promotion);
-                            $('select[name="selectPromotion"]').val(0);
-                         
-                        }
+                $.ajax({
+                    method: 'DELETE',
+                    url: `/Admin/Vouchers/Delete/${voucherId}`,
+                    headers: {
+                        "RequestVerificationToken": antiForgeryToken
+                    },
+                    success: function () {
+                        $('.loading-container').hide();
+                        location.reload();
+                    },
+                    error: function (xhr) {
+                        $('.loading-container').hide();
+                        const message = xhr.responseJSON && xhr.responseJSON.message
+                            ? xhr.responseJSON.message
+                            : 'Không thể xóa mã khuyến mãi.';
+                        Swal.fire('Lỗi', message, 'error');
                     }
-                    $('input[name="description"]').val(response.description); // Đặt giá trị cho input description
-                    $('input[name="startedAt"]').val(response.startedAt);
-                    $('input[name="quantity"]').val(response.quantity);
-                    $('input[name="expiredAt"]').val(response.expiredAt);
-                    $('input[name=vou_id]').val(response.voucherId);
-                    // Hiển thị nút Lưu thay đổi và ẩn nút Thêm mới
-                    $('#update').show();
-                    $('#add').hide();
-
-                    // Ẩn biểu tượng loading
-                    $('.loading-container').hide();
-                    //Mở popup
-                    $('#VoucherModal').modal('show');
-                },
-                error: function (xhr, status, error) {
-                    alert("Đã xảy ra lỗi: " + error);
-                    $('.loading-container').hide(); // Ẩn loading khi có lỗi
-                }
+                });
             });
         });
-
-
-        // Sự kiện khi modal bị ẩn
-        $('#VoucherModal').on('hidden.bs.modal', function () {
-            // Đặt lại các trường trong modal khi ẩn
-            // Đặt giá trị của các input và select
-            $('input[name="name"]').val(''); // Đặt giá trị cho input name
-            $('input[name="code"]').val('');
-            $('input[name="quantity"]').val('');
-            $('input[name="promotion"]').val(''); 
-            $('input[name="description"]').val('');
-            $('select[name="startedAt"]').val('');
-            $('input[name="expiredAt"]').val('')
-            //Tắt trạng thái load
-            $('.loading-container').hide();
-
-            // Ẩn nút Lưu thay đổi và hiển thị nút Thêm mới
-            $('#update').hide();
-            $('#add').show();
-        });
-
-          $('#btnSearch').on('click', function () {
-        var filterData = {
-            code: $('#filterCode').val(),
-            name: $('#filterName').val(),
-            dateFrom: $('#filterDateFrom').val(),
-            dateTo: $('#filterDateTo').val()
-        };
-
-        $.ajax({
-            method: 'GET',
-            url: '@Url.Action("Filter", "Vouchers")',
-            data: filterData,
-            success: function (response) {
-                // Xóa dữ liệu cũ
-                var table = $('#add-row').DataTable();
-                table.clear();
-
-                // Thêm dữ liệu mới từ response (response là list voucher JSON)
-                $.each(response, function (i, vou) {
-                    const formatDate = (d) => {
-                    if (!d) return "";
-                    const date = new Date(d);
-                    return date.toLocaleDateString('vi-VN');
-                };
-
-                         table.row.add([
-                        `${vou.name}`,
-                        `<span class="badge bg-warning text-dark text-bold">${vou.code}</span>`,
-                        `${vou.description}`,
-                        `<div class="text-center">
-                            <div style="background:#e7f9ed;padding:5px 10px;border-radius:6px;color:#1a7f37;">
-                                ${formatDate(vou.startedAt)}
-                            </div>
-                        </div>`,
-                        `<div class="text-center">
-                            <div style="background:#fdecea;padding:5px 10px;border-radius:6px;color:#b02a37;">
-                                ${formatDate(vou.expiredAt)}
-                            </div>
-                        </div>`,
-                        `<div class="form-button-action">
-                            <button type="button"
-                                    data-bs-toggle="tooltip"
-                                    data-id="${vou.voucherId}"
-                                    id="editVou"
-                                    class="btn btn-link btn-primary btn-lg"
-                                    data-original-title="Edit Task">
-                                <i class="fa fa-edit"></i>
-                            </button>
-                            <button type="button"
-                                    data-bs-toggle="tooltip"
-                                    class="btn btn-link btn-danger"
-                                    data-id="${vou.voucherId}"
-                                    id="removeVou"
-                                    data-original-title="Remove">
-                                <i class="fa fa-times"></i>
-                            </button>
-                        </div>`
-                    ]);
-                });
-
-                // Cập nhật lại table hiển thị
-                table.draw();
-            },
-            error: function (xhr, status, error) {
-                alert("Đã xảy ra lỗi: " + error);
-            }
-        });
-        })
-
-        $('#btnReset').on('click', function () {
-            // Xóa giá trị trong các trường lọc
-            $('#filterCode').val('');
-            $('#filterName').val('');
-            $('#filterDateFrom').val('');
-            $('#filterDateTo').val('');
-            // Gọi lại hàm tìm kiếm để hiển thị tất cả dữ liệu
-            $('#btnSearch').click();
-
-        
-       })
     });
 </script>

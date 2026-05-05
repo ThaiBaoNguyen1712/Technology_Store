@@ -8,6 +8,15 @@
 </style>
 
 <form asp-action="CreateProduct" asp-controller="Product" method="post" enctype="multipart/form-data" id="ProductForm">
+    <input type="hidden" name="ReturnPage" value="@((int?)ViewBag.ReturnPage ?? 1)" />
+    <input type="hidden" name="ReturnPageSize" value="@((int?)ViewBag.ReturnPageSize ?? 25)" />
+    <input type="hidden" name="ReturnStatus" value="@ViewBag.ReturnStatus" />
+    <input type="hidden" name="ReturnSkuKeyword" value="@ViewBag.ReturnSkuKeyword" />
+    <input type="hidden" name="ReturnNameKeyword" value="@ViewBag.ReturnNameKeyword" />
+    <input type="hidden" name="ReturnCategoryId" value="@ViewBag.ReturnCategoryId" />
+    <input type="hidden" name="ReturnBrandId" value="@ViewBag.ReturnBrandId" />
+    <input type="hidden" name="ReturnStockFrom" value="@ViewBag.ReturnStockFrom" />
+    <input type="hidden" name="ReturnStockTo" value="@ViewBag.ReturnStockTo" />
 
     <div class="container-fluid">
         <h3 class="py-3 ms-3">
@@ -631,8 +640,28 @@ Ckeditor CDN*@
                         text: 'Sản phẩm đã được thêm thành công.',
                         confirmButtonText: 'OK'
                     }).then(function () {
-                        // Sau khi người dùng nhấn OK, chuyển hướng đến trang /Admin/Products
-                        window.location.href = '/Admin/Products';
+                        const params = new URLSearchParams();
+                        const returnStatus = $('input[name="ReturnStatus"]').val();
+                        const returnSku = $('input[name="ReturnSkuKeyword"]').val();
+                        const returnName = $('input[name="ReturnNameKeyword"]').val();
+                        const returnCategoryId = $('input[name="ReturnCategoryId"]').val();
+                        const returnBrandId = $('input[name="ReturnBrandId"]').val();
+                        const returnStockFrom = $('input[name="ReturnStockFrom"]').val();
+                        const returnStockTo = $('input[name="ReturnStockTo"]').val();
+                        const returnPage = $('input[name="ReturnPage"]').val();
+                        const returnPageSize = $('input[name="ReturnPageSize"]').val();
+
+                        if (returnStatus) params.set('status', returnStatus);
+                        if (returnSku) params.set('sku', returnSku);
+                        if (returnName) params.set('name', returnName);
+                        if (returnCategoryId) params.set('categoryId', returnCategoryId);
+                        if (returnBrandId) params.set('brandId', returnBrandId);
+                        if (returnStockFrom) params.set('stockFrom', returnStockFrom);
+                        if (returnStockTo) params.set('stockTo', returnStockTo);
+                        if (returnPage) params.set('page', returnPage);
+                        if (returnPageSize) params.set('pageSize', returnPageSize);
+
+                        window.location.href = '/Admin/Products' + (params.toString() ? '?' + params.toString() : '');
                     });
                 },
                 error: function (xhr, error, status) {

@@ -15,9 +15,13 @@ public partial class Brand
 
     public int? CategoryId { get; set; }
 
+    public int? SortOrder { get; set; }
+
     public DateTime? CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public virtual Category? Category { get; set; }
+
+    public virtual ICollection<BrandCategory> BrandCategories { get; set; } = new List<BrandCategory>();
 
     public virtual ICollection<Product> Products { get; set; } = new List<Product>();
 }

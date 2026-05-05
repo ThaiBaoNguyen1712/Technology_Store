@@ -1,6 +1,28 @@
 ﻿
 $(document).ready(function () {
     var ProductId = [];
+    function renderPosProductCard(product) {
+        const image = product.image?.startsWith('http')
+            ? product.image
+            : `/Upload/Products/${product.image || 'no-image.png'}`;
+        const price = product.sellPrice || 'Giá chưa cập nhật';
+        const sku = product.sku || 'SKU cập nhật sau';
+
+        return `
+            <div class="col-6 col-lg-4">
+                <button class="pos-product-card getProductInfo" type="button" data-id="${product.productId}">
+                    <span class="pos-product-card__image-shell">
+                        <img src="${image}" class="pos-product-card__image" alt="${product.name}">
+                    </span>
+                    <span class="pos-product-card__body">
+                        <span class="pos-product-card__title">${product.name}</span>
+                        <span class="pos-product-card__sku">${sku}</span>
+                        <span class="pos-product-card__price">${price}</span>
+                    </span>
+                </button>
+            </div>
+        `;
+    }
     // Sử dụng delegated events để đảm bảo sự kiện click hoạt động trên các phần tử mới
     $(document).ready(function () {
         // Sử dụng delegated events để đảm bảo sự kiện click hoạt động trên các phần tử mới
@@ -55,13 +77,17 @@ $(document).ready(function () {
                                     // Nếu một trong hai không có giá, giữ nguyên thứ tự
                                     return 0;
                                 }).forEach(function (variant, index) {
+                                    const variantLabel = Array.isArray(variant.values) && variant.values.length > 0
+                                        ? variant.values.join(' / ')
+                                        : (variant.sku || 'Mặc định');
                                     var variantCard = `
                                         <div class="variant-card ${variant.stock > 0 && variant.price != null ? '' : 'out-of-stock'}" data-id="${variant.varientId}">
-                                            <h6>${variant.sku}</h6>
-                                            <p>${variant.price != null ? variant.price.toLocaleString('vi-VN') + ' đ' : 'Giá chưa có'}</p>
+                                            <div class="variant-card__label">${variantLabel}</div>
+                                            <div class="variant-card__meta">${variant.sku || ''}</div>
+                                            <div class="variant-card__price">${variant.price != null ? variant.price.toLocaleString('vi-VN') + ' đ' : 'Giá chưa có'}</div>
                                             ${variant.stock > 0 ? `
-                                                <p class="text-success">Còn hàng</p>
-                                            ` : '<span class="text-danger">Hết hàng</span>'}
+                                                <div class="variant-card__stock variant-card__stock--available">Còn hàng</div>
+                                            ` : '<div class="variant-card__stock variant-card__stock--empty">Hết hàng</div>'}
                                         </div>
                                       `;
 
@@ -129,25 +155,7 @@ $(document).ready(function () {
                         let productsHtml = '';
                         if (res.products.length > 0) {
                             $.each(res.products, function (index, product) {
-                                productsHtml += `
-                                <div class="col-6 col-md-3 mb-3">
-                                    <div class="card h-100">
-                                        <a class="getProductInfo" type="button" data-id="${product.productId}">
-                                            <img
-                                                    src="${product.image?.startsWith('http')
-                                                                            ? product.image
-                                                                            : `/Upload/Products/${product.image}`}"
-                                                    style="width:135px; height:135px; object-fit: cover; display: block; margin: 0 auto;"
-                                                    class="card-img-top"
-                                                    alt="${product.name}" >
-                                            <div class="card-body">
-                                                <p class="card-text text-truncate-2">${product.name}</p>
-                                                <p class="card-text">${product.sellPrice || 'Giá chưa cập nhật'}</p>
-                                            </div>
-                                        </a>
-                                    </div>
-                                </div>
-                                `;
+                                productsHtml += renderPosProductCard(product);
                             });
                         } else {
                             productsHtml = '<div class="col-12"><p class="text-center">Không tìm thấy sản phẩm nào.</p></div>';
@@ -181,25 +189,7 @@ $(document).ready(function () {
                     let productsHtml = '';
                     // Duyệt qua từng sản phẩm và tạo HTML tương ứng
                     $.each(res.products, function (index, product) {
-                        productsHtml += `
-                    <div class="col-6 col-md-3 mb-3">
-                        <div class="card h-100">
-                            <a class="getProductInfo" type="button" data-id="${product.productId}">
-                                <img
-                                    src="${product.image?.startsWith('http')
-                                                    ? product.image
-                                                    : `/Upload/Products/${product.image}`}"
-                                    style="width:135px; height:135px; object-fit: cover; display: block; margin: 0 auto;"
-                                    class="card-img-top"
-                                    alt="${product.name}">
-                                <div class="card-body">
-                                    <p class="card-text text-truncate-2">${product.name}</p>
-                                    <p class="card-text">${product.sellPrice || 'Giá chưa cập nhật'}</p>
-                                </div>
-                            </a>
-                        </div>
-                    </div>
-                `;
+                        productsHtml += renderPosProductCard(product);
                     });
 
                     // Gán HTML mới vào phần tử CardProducts
@@ -371,66 +361,6 @@ $(document).ready(function () {
             });
         }
     });
-
-    //Xử lý sự kiện nút số lượng thay đổi
-    $(document).on('change', '.quantity-input', function () {
-        var row = $(this).closest('tr');
-        var variantId = row.data('varient-id');
-        var quantity = $(this).val();
-        var productId = $(this).data('product-id');
-        console.log(variantId)
-        // Kiểm tra số lượng có hợp lệ không
-        if (quantity < 1) {
-            alert("Số lượng phải lớn hơn hoặc bằng 1");
-            $(this).val(1); // Trả lại giá trị mặc định nếu số lượng không hợp lệ
-            return;
-        }
-        // Cập nhật mảng ProductId
-        var found = false;
-        for (var i = 0; i < ProductId.length; i++) {
-            if (ProductId[i].VarientProductId === variantId) {
-                // Nếu đã có variant này trong giỏ hàng, cập nhật số lượng
-                ProductId[i].Quantity = quantity;
-                found = true;
-                break;
-            }
-        }
-
-        if (!found) {
-            // Nếu chưa có variant này, thêm mới vào mảng ProductId
-            ProductId.push({
-                VarientProductId: variantId,
-                Quantity: quantity
-            });
-        }
-
-        console.log(ProductId); // Kiểm tra mảng ProductId sau khi cập nhật
-
-        // Gọi Ajax để cập nhật số lượng
-        $.ajax({
-            url: '/Admin/POS/Update-Quantity', // Đường dẫn đến API
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({
-                VarientProductId: variantId,
-                ProductId: productId,
-                Quantity: quantity
-            }),
-            success: function (response) {
-                if (response.success) {
-                    // Thay thế dòng với dữ liệu mới từ server
-                    row.replaceWith(response.result);
-                    updateTotalPrice(); // Hàm cập nhật tổng giá
-                } else {
-                    alert(response.message);
-                }
-            },
-            error: function () {
-                alert("Đã xảy ra lỗi khi cập nhật số lượng.");
-            }
-        });
-    });
-
 
     // Sự kiện xóa cho nút "Xóa" sử dụng event delegation
     $('#shopping-cart').on('click', '.btn-delete', function () {

@@ -1,0 +1,120 @@
+@model Tech_Store.Models.ViewModel.AdminBrandFormViewModel
+
+@{
+    bool isEdit = Model != null && Model.BrandId > 0;
+    ViewData["Title"] = isEdit ? "Cập nhật thương hiệu" : "Thêm thương hiệu";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+}
+
+<h5 class="card-title mb-0 fw-bold text-primary pt-3 ms-3">
+    @(isEdit ? "Cập nhật thương hiệu" : "Thêm thương hiệu mới")
+</h5>
+
+<div class="py-4">
+    <form action="~/Admin/Brands/Save" method="post" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+        <div class="shadow-sm border rounded bg-white p-4">
+            <input type="hidden" name="BrandId" value="@Model.BrandId" />
+            <input type="hidden" name="ReturnPage" value="@Model.ReturnPage" />
+            <input type="hidden" name="ReturnPageSize" value="@Model.ReturnPageSize" />
+            <input type="hidden" name="ReturnKeyword" value="@Model.ReturnKeyword" />
+            <input type="hidden" name="ReturnCategoryId" value="@Model.ReturnCategoryId" />
+
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Tên thương hiệu</label>
+                            <input type="text"
+                                   class="form-control"
+                                   name="Name"
+                                   value="@Model.Name"
+                                   placeholder="VD: Apple, Samsung..."
+                                   required />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Thứ tự hiển thị</label>
+                            <input type="number"
+                                   class="form-control"
+                                   name="SortOrder"
+                                   value="@Model.SortOrder"
+                                   min="0"
+                                   placeholder="0" />
+                            <div class="form-text">Số nhỏ hơn sẽ được ưu tiên trước. Nếu trùng nhau, storefront sẽ random trong cùng nhóm.</div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold text-secondary">Danh mục hiển thị</label>
+                            <select class="form-control border selectpicker"
+                                    name="CategoryIds"
+                                    multiple
+                                    data-live-search="true"
+                                    data-actions-box="true"
+                                    title="Chọn một hoặc nhiều danh mục">
+                                @foreach (var category in ViewBag.Categories)
+                                {
+                                    <option value="@category.CategoryId" @(Model.CategoryIds.Contains(category.CategoryId) ? "selected" : "")>
+                                        @category.Name
+                                    </option>
+                                }
+                            </select>
+                            <div class="form-text">Không chọn danh mục nào thì thương hiệu sẽ được xem là áp dụng chung.</div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold text-secondary">Mô tả ngắn</label>
+                            <textarea class="form-control"
+                                      name="Description"
+                                      rows="4"
+                                      placeholder="Mô tả ngắn cho thương hiệu...">@Model.Description</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 border-start">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary">Logo thương hiệu</label>
+                        <div class="brand-admin__preview-shell mb-3">
+                            <img id="previewImg"
+                                 src="/Upload/Logo/@(Model.ExistingImage ?? "none.jpg")"
+                                 class="brand-admin__preview-image"
+                                 alt="Preview logo" />
+                        </div>
+                        <input type="file" class="form-control form-control-sm" name="imageFile" id="imageFile" accept="image/*" />
+                        <div class="form-text mt-2">Nên dùng ảnh nền trong suốt hoặc nền sáng, tỷ lệ ngang cân đối.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 d-flex justify-content-between align-items-center">
+            <a href="@Url.Action("Index", "Brands", new { area = "Admin", page = Model.ReturnPage, pageSize = Model.ReturnPageSize, keyword = Model.ReturnKeyword, categoryId = Model.ReturnCategoryId })" class="text-decoration-none text-secondary fw-medium">
+                <i class="fas fa-arrow-left me-1"></i> Quay lại danh sách
+            </a>
+            <div class="d-flex gap-2">
+                <button type="reset" class="btn btn-light px-4 border">Làm mới</button>
+                <button type="submit" class="btn btn-primary px-5 shadow-sm fw-bold">
+                    @(isEdit ? "Lưu thay đổi" : "Thêm thương hiệu")
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    $(document).ready(function () {
+        $('#imageFile').on('change', function (event) {
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                $('#previewImg').attr('src', e.target.result);
+            };
+            reader.readAsDataURL(file);
+        });
+    });
+</script>

@@ -41,6 +41,7 @@
     <link rel="stylesheet" href="@Url.Content("~/Admin/assets/css/plugins.min.css")" asp-append-version="true" />
     <link rel="stylesheet" href="@Url.Content("~/Admin/assets/css/kaiadmin.min.css")" asp-append-version="true" />
     <link href="@Url.Content("~/Admin/assets/css/site.css")" rel="stylesheet" asp-append-version="true" />
+    <link href="@Url.Content("~/Admin/assets/css/right-drawer.css")" rel="stylesheet" asp-append-version="true" />
     @* Toast JS *@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -76,6 +77,37 @@
 <body>
     @* Lib support *@
     @using Tech_Store.Helpers
+    @{
+        var adminController = (ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty).Trim();
+        var adminAction = (ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty).Trim();
+        var pageTitle = (ViewData["Title"]?.ToString() ?? adminController).Trim();
+
+        string GetAdminSectionLabel(string controllerName)
+        {
+            return controllerName.ToLowerInvariant() switch
+            {
+                "index" => "Dashboard",
+                "pos" => "POS - Bán hàng",
+                "categories" => "Danh mục sản phẩm",
+                "brands" => "Thương hiệu",
+                "products" => "Sản phẩm",
+                "stockmanager" => "Quản lý kho hàng",
+                "orders" => "Đơn hàng",
+                "users" => "Khách hàng",
+                "transactions" => "Giao dịch",
+                "vouchers" => "Voucher",
+                "banner" => "Banner",
+                "campaign" => "Chiến dịch",
+                "settings" => "Cài đặt trang web",
+                "notifications" => "Thông báo",
+                _ => controllerName
+            };
+        }
+
+        var sectionLabel = GetAdminSectionLabel(adminController);
+        var showSectionCrumb = !string.IsNullOrWhiteSpace(sectionLabel)
+            && !string.Equals(sectionLabel, pageTitle, StringComparison.OrdinalIgnoreCase);
+    }
 
 
     <div class="wrapper">
@@ -109,7 +141,7 @@
                         <li class="nav-item">
                             <a href="/admin/index" class="nav-link">
                                 <i class="fas fa-home"></i>
-                                <p>Bảng điều khiển</p>
+                                <p>Dashboard</p>
                             </a>
                         </li>
 
@@ -194,9 +226,6 @@
                             <div class="collapse" id="products">
                                 <ul class="nav nav-collapse">
                                     <li>
-                                        <a href="/Admin/StockManager" class="nav-link">
-                                            <span class="sub-item">Nhập/Xuất hàng</span>
-                                        </a>
                                         <a href="/Admin/Products/all" class="nav-link">
                                             <span class="sub-item">Tổng sản phẩm <span class="badge badge-dark">@ViewBag.Product_all</span></span>
                                         </a>
@@ -211,6 +240,29 @@
                                         </a>
                                         <a href="/Admin/Products/discontinued" class="nav-link">
                                             <span class="sub-item">Sản phẩm ngừng bán <span class="badge badge-secondary">@ViewBag.Product_discontinued</span></span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+
+                        <li class="nav-item">
+                            <a data-bs-toggle="collapse" href="#inventory" class="nav-link">
+                                <i class="fas fa-warehouse me-2"></i>
+                                <p>Quản lý kho hàng</p>
+                                <span class="caret"></span>
+                            </a>
+                            <div class="collapse" id="inventory">
+                                <ul class="nav nav-collapse">
+                                    <li>
+                                        <a href="/Admin/StockManager" class="nav-link">
+                                            <span class="sub-item">Nhập/Xuất hàng</span>
+                                        </a>
+                                        <a href="/Admin/StockManager/History" class="nav-link">
+                                            <span class="sub-item">Lịch sử kho</span>
+                                        </a>
+                                        <a href="/Admin/StockManager?mode=code" class="nav-link">
+                                            <span class="sub-item">In mã sản phẩm</span>
                                         </a>
                                     </li>
                                 </ul>
@@ -370,40 +422,10 @@
 
                         <!-- Settings -->
                         <li class="nav-item">
-                            <a data-bs-toggle="collapse" href="#settings" class="nav-link">
+                            <a href="/Admin/Settings" class="nav-link">
                                 <i class="fas fa-cog me-2"></i>
-                                <p>Cài đặt</p>
-                                <span class="caret"></span>
+                                <p>Cài đặt trang web</p>
                             </a>
-                            <div class="collapse" id="settings">
-                                <ul class="nav nav-collapse">
-                                    <li>
-                                        <a href="/Admin/Settings/Index" class="nav-link">
-                                            <span class="sub-item">Cài đặt chung</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a data-bs-toggle="collapse" href="#productMetadata" class="nav-link">
-                                            <span class="sub-item">Thông tin sản phẩm</span>
-                                            <span class="caret"></span>
-                                        </a>
-                                        <div class="collapse" id="productMetadata">
-                                            <ul class="nav nav-collapse subnav">
-                                                <li>
-                                                    <a href="/Admin/Settings/ProductSpecs" class="nav-link">
-                                                        <span class="sub-item">Thông số sản phẩm</span>
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a href="/Admin/Settings/ProductAttributes" class="nav-link">
-                                                        <span class="sub-item">Thuộc tính biến thể</span>
-                                                    </a>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    </li>
-                                </ul>
-                            </div>
                         </li>
                     </ul>
                 </div>
@@ -439,24 +461,24 @@
                 <!-- Navbar Header -->
                 <nav class="navbar navbar-header navbar-header-transparent navbar-expand-lg border-bottom">
                     <div class="container-fluid">
-                        <nav class="navbar navbar-header-left navbar-expand-lg navbar-form nav-search p-0 d-none d-lg-flex">
-                            <div class="input-group">
-                                <div class="input-group-prepend">
-                                    <button type="submit" class="btn btn-search pe-1">
-                                        <i class="fa fa-search search-icon"></i>
-                                    </button>
+                        <div class="admin-header-tools d-none d-lg-flex">
+                            <nav class="navbar navbar-header-left navbar-expand-lg navbar-form nav-search p-0">
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <button type="submit" class="btn btn-search pe-1">
+                                            <i class="fa fa-search search-icon"></i>
+                                        </button>
+                                    </div>
+                                    <input type="text" id="searchInput" class="form-control" placeholder="Tìm kiếm sản phẩm nhanh...">
                                 </div>
-                                <input type="text" id="searchInput" class="form-control" placeholder="Tìm kiếm sản phẩm nhanh...">
 
-                               
-                            </div>
-
-                            <ul class="list-group position-absolute w-100 mt-1 shadow-sm d-none"
-                                id="searchSuggestions"
-                                style="max-height: 300px; overflow-y: auto; scrollbar-width: none;  top: 100%;">
-                                <!-- Suggestions will be dynamically added here -->
-                            </ul>
-                        </nav>
+                                <ul class="list-group position-absolute w-100 mt-1 shadow-sm d-none"
+                                    id="searchSuggestions"
+                                    style="max-height: 300px; overflow-y: auto; scrollbar-width: none;  top: 100%;">
+                                    <!-- Suggestions will be dynamically added here -->
+                                </ul>
+                            </nav>
+                        </div>
 
                         <ul class="navbar-nav topbar-nav ms-md-auto align-items-center">
                             <li class="nav-item topbar-icon dropdown hidden-caret d-flex d-lg-none">
@@ -770,7 +792,7 @@
                     </li>
                     </ul>
             </div>
-            </nav>
+                </nav>
             <!-- End Navbar -->
         </div>
         <div class="container">
@@ -782,13 +804,36 @@
             <span class="loader"></span>
         </div>
 
-
         <div class="footer">
             <div class="row justify-content-between align-items-center">
                 <div class="col-lg-4 mb-3 mb-lg-0">
-                    <p class="font-size-sm mb-0 title-color text-center text-lg-left">
-                        © Mua sắm online. <span class="d-none d-sm-inline-block">Thai Bao Nguyen</span>
-                    </p>
+                    @if (showSectionCrumb || !string.IsNullOrWhiteSpace(pageTitle))
+                    {
+                        <div class="admin-footer-breadcrumb-inline" aria-label="Điều hướng trang">
+                            <div class="admin-breadcrumb">
+                                <a class="admin-breadcrumb__link" href="/Admin/Index">
+                                    <i class="fas fa-home"></i>
+                                    <span>Admin</span>
+                                </a>
+
+                                @if (showSectionCrumb)
+                                {
+                                    <span class="admin-breadcrumb__separator">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </span>
+                                    <span class="admin-breadcrumb__item">@sectionLabel</span>
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(pageTitle))
+                                {
+                                    <span class="admin-breadcrumb__separator">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </span>
+                                    <span class="admin-breadcrumb__item admin-breadcrumb__item--current">@pageTitle</span>
+                                }
+                            </div>
+                        </div>
+                    }
                 </div>
                 <div class="col-lg-8">
                     <div class="d-flex justify-content-center justify-content-lg-end">
@@ -817,7 +862,7 @@
 
                             <li class="list-inline-item d-none d-md-inline-block">
                                 <label class="badge badge-soft-version text-capitalize">
-                                    Version 1.0
+                                    Version 2.0
                                 </label>
                             </li>
                         </ul>
@@ -831,7 +876,7 @@
                                 <li><a class="dropdown-item" href="https://santhuongmai.citgroup.vn/admin/business-settings/web-config"><i class="fas fa-cog"></i> Thiết lập website</a></li>
                                 <li><a class="dropdown-item" href="https://santhuongmai.citgroup.vn/admin/profile/update/1"><i class="fas fa-user"></i> Hồ sơ</a></li>
                                 <li><a class="dropdown-item" href="https://santhuongmai.citgroup.vn/admin/dashboard"><i class="fas fa-home"></i> Trang chủ</a></li>
-                                <li><a class="dropdown-item" href="#">Version 1.0</a></li>
+                                <li><a class="dropdown-item" href="#">Version 2.0</a></li>
                             </ul>
                         </div>
                     </div>
@@ -1082,7 +1127,7 @@
 
                         // Thêm item vào danh sách gợi ý
                         suggestionsBox.append(
-                            `<a href="/Admin/Products/View/${item.ProductId}" class="text-decoration-none text-dark">
+                            `<a href="/Admin/Products/Edit/${item.ProductId}" class="text-decoration-none text-dark">
                                         <li class="list-group-item search-suggestion-item d-flex align-items-center p-2 hover-bg-light">
                                             <img src="${image}" alt="${name}" class="me-3 rounded-2" style="width: 60px; height: 60px; object-fit: cover;">
                                             <div class="flex-grow-1">

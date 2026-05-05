@@ -1,10 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Tech_Store.Models;
-using Tech_Store.Models.DTO;
-using Tech_Store.Models.DTO.Payment.Client;
 using Tech_Store.Models.ViewModel;
-using static QRCoder.PayloadGenerator;
 
 namespace Tech_Store.Areas.Admin.Controllers
 {
@@ -12,94 +9,321 @@ namespace Tech_Store.Areas.Admin.Controllers
     [Route("Admin/[controller]")]
     public class TransactionsController : BaseAdminController
     {
-        public TransactionsController(ApplicationDbContext context): base(context) { }
-        [Route("")]
-        [Route("Index")]
-        public IActionResult Index()
+        private readonly IConfiguration _configuration;
+        private const int FallbackPageSize = 20;
+
+        public TransactionsController(ApplicationDbContext context, IConfiguration configuration) : base(context)
         {
-            var transactions = _context.Payments.Include(p=>p.Order).ThenInclude(pp=>pp.User)
-                    .OrderBy(p => p.Status.ToLower() == "paid")
-                .ThenByDescending(p => p.PaymentId).ToList();
-            return View(transactions);
+            _configuration = configuration;
         }
-        [Route("Detail")]
-        public IActionResult Detail()
+
+        private sealed class AdminTransactionQueryItem
         {
-            return View();
+            public int PaymentId { get; set; }
+            public int OrderId { get; set; }
+            public string PaymentMethod { get; set; } = string.Empty;
+            public decimal Amount { get; set; }
+            public string Status { get; set; } = string.Empty;
+            public DateTime? PaymentDate { get; set; }
+            public DateTime? CreatedAt { get; set; }
+            public string CustomerName { get; set; } = string.Empty;
+            public string PhoneNumber { get; set; } = string.Empty;
+            public string Email { get; set; } = string.Empty;
+            public string OrderStatus { get; set; } = string.Empty;
         }
+
+        private int GetDefaultAdminPageSize()
+        {
+            var pageSize = _configuration.GetValue<int?>("AdminUi:DefaultPageSize");
+            var resolvedPageSize = pageSize.GetValueOrDefault(FallbackPageSize);
+            return resolvedPageSize > 0 ? resolvedPageSize : FallbackPageSize;
+        }
+
+        private IQueryable<AdminTransactionQueryItem> BuildTransactionQuery()
+        {
+            return _context.Payments
+                .AsNoTracking()
+                .Select(x => new AdminTransactionQueryItem
+                {
+                    PaymentId = x.PaymentId,
+                    OrderId = x.OrderId ?? 0,
+                    PaymentMethod = x.PaymentMethod,
+                    Amount = x.Amount,
+                    Status = x.Status,
+                    PaymentDate = x.PaymentDate,
+                    CreatedAt = x.CreatedAt,
+                    CustomerName = x.Order != null && x.Order.User != null
+                        ? (((x.Order.User.LastName ?? string.Empty) + " " + (x.Order.User.FirstName ?? string.Empty)).Trim())
+                        : string.Empty,
+                    PhoneNumber = x.Order != null && x.Order.User != null
+                        ? (x.Order.User.PhoneNumber ?? string.Empty)
+                        : string.Empty,
+                    Email = x.Order != null && x.Order.User != null
+                        ? x.Order.User.Email
+                        : string.Empty,
+                    OrderStatus = x.Order != null ? x.Order.OrderStatus : string.Empty
+                });
+        }
+
+        private static IQueryable<AdminTransactionQueryItem> ApplyTransactionFilters(
+            IQueryable<AdminTransactionQueryItem> query,
+            int? transactionId,
+            int? orderId,
+            string? customerName,
+            string? phoneNumber,
+            string? paymentStatus,
+            string? paymentMethod,
+            DateTime? dateFrom,
+            DateTime? dateTo,
+            decimal? amountFrom,
+            decimal? amountTo)
+        {
+            if (transactionId.HasValue)
+            {
+                query = query.Where(x => x.PaymentId == transactionId.Value);
+            }
+
+            if (orderId.HasValue)
+            {
+                query = query.Where(x => x.OrderId == orderId.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(customerName))
+            {
+                var normalizedCustomerName = customerName.Trim();
+                query = query.Where(x => x.CustomerName.Contains(normalizedCustomerName));
+            }
+
+            if (!string.IsNullOrWhiteSpace(phoneNumber))
+            {
+                var normalizedPhoneNumber = phoneNumber.Trim();
+                query = query.Where(x => x.PhoneNumber.Contains(normalizedPhoneNumber));
+            }
+
+            if (!string.IsNullOrWhiteSpace(paymentStatus))
+            {
+                query = query.Where(x => x.Status == paymentStatus);
+            }
+
+            if (!string.IsNullOrWhiteSpace(paymentMethod))
+            {
+                query = query.Where(x => x.PaymentMethod == paymentMethod);
+            }
+
+            if (dateFrom.HasValue)
+            {
+                var fromDate = dateFrom.Value.Date;
+                query = query.Where(x => (x.PaymentDate ?? x.CreatedAt).HasValue && (x.PaymentDate ?? x.CreatedAt) >= fromDate);
+            }
+
+            if (dateTo.HasValue)
+            {
+                var toDateExclusive = dateTo.Value.Date.AddDays(1);
+                query = query.Where(x => (x.PaymentDate ?? x.CreatedAt).HasValue && (x.PaymentDate ?? x.CreatedAt) < toDateExclusive);
+            }
+
+            if (amountFrom.HasValue)
+            {
+                query = query.Where(x => x.Amount >= amountFrom.Value);
+            }
+
+            if (amountTo.HasValue)
+            {
+                query = query.Where(x => x.Amount <= amountTo.Value);
+            }
+
+            return query;
+        }
+
+        private static string GetPaymentMethodLabel(string paymentMethod)
+        {
+            return paymentMethod switch
+            {
+                "COD" => "TT khi nhận hàng (COD)",
+                "MoMo" => "Thanh toán qua MoMo",
+                "VNPay" => "Thanh toán qua VNPay",
+                "cash" => "Thanh toán tiền mặt",
+                _ => string.IsNullOrWhiteSpace(paymentMethod) ? "-" : paymentMethod
+            };
+        }
+
+        private static string GetPaymentMethodAsset(string paymentMethod)
+        {
+            return paymentMethod switch
+            {
+                "COD" => "/Upload/Logo/shipcod.png",
+                "MoMo" => "/Upload/Logo/LogoMoMo.webp",
+                "VNPay" => "/Upload/Logo/LogoVNPay.png",
+                _ => string.Empty
+            };
+        }
+
+        private static string GetPaymentStatusLabel(string status)
+        {
+            return string.Equals(status, "Paid", StringComparison.OrdinalIgnoreCase)
+                ? "Đã thanh toán"
+                : "Chưa thanh toán";
+        }
+
+        [HttpGet("")]
+        [HttpGet("Index")]
+        public async Task<IActionResult> Index(
+            int? transactionId,
+            int? orderId,
+            string? customerName,
+            string? phoneNumber,
+            string? paymentStatus,
+            string? paymentMethod,
+            DateTime? dateFrom,
+            DateTime? dateTo,
+            decimal? amountFrom,
+            decimal? amountTo,
+            int page = 1,
+            int? pageSize = null)
+        {
+            var resolvedPageSize = pageSize.GetValueOrDefault(GetDefaultAdminPageSize());
+            if (resolvedPageSize <= 0)
+            {
+                resolvedPageSize = GetDefaultAdminPageSize();
+            }
+
+            var query = ApplyTransactionFilters(
+                BuildTransactionQuery(),
+                transactionId,
+                orderId,
+                customerName,
+                phoneNumber,
+                paymentStatus,
+                paymentMethod,
+                dateFrom,
+                dateTo,
+                amountFrom,
+                amountTo);
+
+            var totalItems = await query.CountAsync();
+            var totalPages = totalItems == 0 ? 1 : (int)Math.Ceiling(totalItems / (double)resolvedPageSize);
+            var currentPage = Math.Min(Math.Max(1, page), totalPages);
+
+            var transactionRows = await query
+                .OrderBy(x => x.Status == "Paid")
+                .ThenByDescending(x => x.PaymentId)
+                .Skip((currentPage - 1) * resolvedPageSize)
+                .Take(resolvedPageSize)
+                .ToListAsync();
+
+            var transactions = transactionRows
+                .Select(x => new AdminTransactionListItemViewModel
+                {
+                    PaymentId = x.PaymentId,
+                    OrderId = x.OrderId,
+                    CustomerName = x.CustomerName,
+                    PhoneNumber = x.PhoneNumber,
+                    Email = x.Email,
+                    PaymentMethod = x.PaymentMethod,
+                    PaymentMethodLabel = GetPaymentMethodLabel(x.PaymentMethod),
+                    PaymentMethodAsset = GetPaymentMethodAsset(x.PaymentMethod),
+                    Status = x.Status,
+                    PaymentStatusLabel = GetPaymentStatusLabel(x.Status),
+                    Amount = x.Amount,
+                    PaymentDate = x.PaymentDate,
+                    CreatedAt = x.CreatedAt
+                })
+                .ToList();
+
+            var model = new AdminTransactionIndexViewModel
+            {
+                Transactions = transactions,
+                TransactionId = transactionId,
+                OrderId = orderId,
+                CustomerName = customerName,
+                PhoneNumber = phoneNumber,
+                PaymentStatus = paymentStatus,
+                PaymentMethod = paymentMethod,
+                DateFrom = dateFrom,
+                DateTo = dateTo,
+                AmountFrom = amountFrom,
+                AmountTo = amountTo,
+                Page = currentPage,
+                PageSize = resolvedPageSize,
+                TotalPages = totalPages,
+                TotalItems = totalItems
+            };
+
+            return View(model);
+        }
+
+        [HttpGet("QuickDrawer/{id}")]
+        public async Task<IActionResult> QuickDrawer(int id)
+        {
+            var payment = await _context.Payments
+                .AsNoTracking()
+                .Where(x => x.PaymentId == id)
+                .Select(x => new AdminTransactionQuickDrawerViewModel
+                {
+                    PaymentId = x.PaymentId,
+                    OrderId = x.OrderId ?? 0,
+                    CustomerName = x.Order != null && x.Order.User != null
+                        ? (((x.Order.User.LastName ?? string.Empty) + " " + (x.Order.User.FirstName ?? string.Empty)).Trim())
+                        : string.Empty,
+                    PhoneNumber = x.Order != null && x.Order.User != null ? x.Order.User.PhoneNumber ?? string.Empty : string.Empty,
+                    Email = x.Order != null && x.Order.User != null ? x.Order.User.Email : string.Empty,
+                    PaymentMethod = x.PaymentMethod,
+                    Status = x.Status,
+                    Amount = x.Amount,
+                    PaymentDate = x.PaymentDate,
+                    CreatedAt = x.CreatedAt,
+                    OrderStatus = x.Order != null ? x.Order.OrderStatus : string.Empty
+                })
+                .FirstOrDefaultAsync();
+
+            if (payment == null)
+            {
+                return NotFound();
+            }
+
+            payment.PaymentMethodLabel = GetPaymentMethodLabel(payment.PaymentMethod);
+            payment.PaymentMethodAsset = GetPaymentMethodAsset(payment.PaymentMethod);
+            payment.PaymentStatusLabel = GetPaymentStatusLabel(payment.Status);
+            payment.OrderDetailUrl = payment.OrderId > 0
+                ? $"/Admin/Orders/View/{payment.OrderId}"
+                : "/Admin/Orders";
+
+            return PartialView("_QuickDrawerContent", payment);
+        }
+
         [HttpPost("UpdateStatus")]
-        public IActionResult UpdateStatus(int paymentId)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateStatus(int paymentId)
         {
-            var payment = _context.Payments.FirstOrDefault(x => x.PaymentId == paymentId);
+            var payment = await _context.Payments.FirstOrDefaultAsync(x => x.PaymentId == paymentId);
             if (payment == null)
             {
                 return Json(new { success = false, message = "Không tìm thấy giao dịch." });
             }
 
-            payment.Status = "Paid";
-            _context.SaveChanges();
+            if (string.Equals(payment.Status, "Paid", StringComparison.OrdinalIgnoreCase))
+            {
+                return Json(new { success = false, message = "Giao dịch này đã được xác nhận thanh toán." });
+            }
 
-            return Json(new { success = true });
+            payment.Status = "Paid";
+            payment.PaymentDate ??= DateTime.Now;
+            payment.UpdatedAt = DateTime.Now;
+            await _context.SaveChangesAsync();
+
+            return Json(new
+            {
+                success = true,
+                message = "Đã xác nhận thanh toán.",
+                paymentStatusLabel = GetPaymentStatusLabel(payment.Status),
+                paymentDate = payment.PaymentDate?.ToString("dd/MM/yyyy HH:mm:ss")
+            });
         }
 
-        [HttpGet]
-        [Route("Filter")]
-        public IActionResult Filter(int? transactionId, string? nameCustomer, string? phoneNumber, string? paymentStatus,
-             DateTime? dateFrom, DateTime? dateTo, decimal? amountFrom, decimal? amountTo)
+        [HttpGet("Detail")]
+        public IActionResult Detail()
         {
-            var transactions = _context.Payments
-                .Include(x => x.Order)
-                .ThenInclude(o => o.User)
-                .AsQueryable();
-
-            // Áp dụng các tiêu chí lọc
-            if (transactionId.HasValue && transactionId.Value != 0)
-                transactions = transactions.Where(p => p.PaymentId == transactionId.Value);
-
-            if (!string.IsNullOrEmpty(nameCustomer))
-                transactions = transactions.Where(p => p.Order.User.FirstName.Contains(nameCustomer) || p.Order.User.LastName.Contains(nameCustomer));
-
-            if (!string.IsNullOrEmpty(paymentStatus))
-                transactions = transactions.Where(p => p.Status == paymentStatus);
-
-
-            if (dateFrom.HasValue || dateTo.HasValue)
-                transactions = transactions.Where(p =>
-                    (!dateFrom.HasValue || p.PaymentDate >= dateFrom.Value) &&
-                    (!dateTo.HasValue || p.PaymentDate <= dateTo.Value)
-                );
-            if (amountFrom.HasValue || amountTo.HasValue)
-                transactions = transactions.Where(p =>
-                    (!amountFrom.HasValue || p.Amount >= amountFrom.Value) &&
-                    (!amountTo.HasValue || p.Amount <= amountTo.Value)
-                );
-            if (!string.IsNullOrEmpty(phoneNumber))
-                transactions = transactions.Where(p => p.Order.User.PhoneNumber.Contains(phoneNumber));
-
-
-            // Chuyển đổi sang view model để trả về JSON
-            var result = transactions
-                .OrderBy(p => p.Status.ToLower() == "paid")
-                .ThenByDescending(p => p.PaymentId)
-                .Take(100)
-                .Select(p => new TransactionVM
-                {
-                    TransId = p.PaymentId,
-                    InvoiceId = p.OrderId ?? 0,
-                    PaymentMethod = p.PaymentMethod,
-                    CustomerName = p.Order != null && p.Order.User != null
-                        ? (p.Order.User.FirstName + " " + p.Order.User.LastName)
-                        : string.Empty,
-                    PhoneNumber = p.Order != null && p.Order.User != null
-                        ? p.Order.User.PhoneNumber
-                        : string.Empty,
-                    Status = p.Status,
-                    Amount = p.Amount,
-                    PaymentDate = p.PaymentDate
-                })
-                .ToList();
-
-            return Json(result);
+            return View();
         }
     }
 }

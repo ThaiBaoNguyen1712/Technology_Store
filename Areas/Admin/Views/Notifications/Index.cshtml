@@ -1,171 +1,163 @@
-﻿@model IEnumerable<Tech_Store.Models.UserNotification>
+@model Tech_Store.Models.ViewModel.AdminNotificationIndexViewModel
 
 @{
     ViewData["Title"] = "Tất cả thông báo";
     Layout = "/Areas/Admin/Views/Shared/Layout.cshtml";
 }
-<style>
-    table.dataTable tbody tr.noti-unread,
-    table.dataTable tbody tr.noti-unread td {
-        background-color: #e2e3e5 !important;
-    }
 
-        /* Hover */
-        table.dataTable tbody tr.noti-unread:hover,
-        table.dataTable tbody tr.noti-unread:hover td {
-            background-color: #d6d8db !important;
-        }
-
-    /* Khi DataTables add class odd/even */
-    table.dataTable tbody tr.odd.noti-unread td,
-    table.dataTable tbody tr.even.noti-unread td {
-        background-color: #e2e3e5 !important;
-    }
-    /* optional: pin icon */
-    .pin-icon {
-        color: #ffc107;
-        margin-right: 6px;
-    }
-</style>
-
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header">
-                    <div class="d-flex align-items-center">
-                        <h4 class="card-title">Danh sách thông báo</h4>
-                        <div class="ms-auto">
-                            <form action="/admin/Notifications/Delete_Read" method="get" class="d-inline"
-                                  onsubmit="return confirm('Xóa tất cả thông báo đã đọc?')">
-                                <button type="submit" class="btn btn-round btn-dark">
-                                    <i class="fa fa-trash"></i> Xóa các thông báo đã đọc
-                                </button>
-                            </form>
-
-                            <button class="btn btn-success btn-round" id="markAllAsRead">
-                                <i class="fa fa-check"></i> Đánh dấu tất cả là đã đọc
-                            </button>
-                           
-                        </div>
-                    </div>
+<div class="py-3 notification-admin-page">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0 pb-0">
+            <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
+                <div>
+                    <h4 class="card-title mb-1">Danh sách thông báo</h4>
                 </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table id="notificationTable" class="table align-middle table-hover">
-                            <thead>
-                                <tr class="table-primary text-center align-middle">
-                                    <th class="fw-semibold">Loại</th>
-                                    <th class="fw-semibold">Tiêu đề</th>
-                                    <th class="fw-semibold">Nội dung</th>
-                                    <th class="fw-semibold">Thời gian</th>
-                                    <th class="fw-semibold">Hành động</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @if (Model != null)
-                                {
-                                    foreach (var notification in Model)
-                                    {
-                                         
-                                        var isRead = notification != null && notification.IsRead == true;
-
-                                        <tr class="@(isRead ? "" : "noti-unread")" data-isread="@isRead">
-                                            <td>
-                                                <span class="badge @(notification.Notification.Type == "success" ? "bg-success" :
-                                                    notification.Notification.Type == "warning" ? "bg-warning" :
-                                                                                                          notification.Notification.Type == "error" ? "bg-danger" :
-                                                    "bg-secondary")">
-                                                    @(notification.Notification.Type == "success" ? "Thành công" :
-                                                                                                notification.Notification.Type == "warning" ? "Cảnh báo" :
-                                                                                                notification.Notification.Type == "error" ? "Lỗi" :
-                                                        "Thông tin")
-                                                </span>
-                                            </td>
-                                            <td>
-                                                @if (!isRead)
-                                                        {
-                                                            <i class="fa fa-thumbtack pin-icon"></i>
-                                                        }
-                                                        @notification.Notification.Title
-                                            </td>
-
-                                            <td>@notification.Notification.Message</td>
-                                            <td>@notification.Notification.CreatedAt?.ToString("dd/MM/yyyy HH:mm")</td>
-                                            <td>
-                                                <div class="form-action">
-                                                    <a href="@notification.Notification.RedirectUrl"
-                                                       class="btn btn-link btn-primary btn-view-noti"
-                                                       data-id="@notification.UserNotificationId">
-                                                        <i class="fa fa-eye"></i> Xem
-                                                    </a>
-
-                                                   
-                                                    <form action="/admin/Notifications/Delete"
-                                                          method="get" class="d-inline"
-                                                          onsubmit="return confirm('Xóa thông báo này?')">
-                                                        <input type="hidden" name="id" value="@notification.NotificationId" />
-                                                        <button type="submit" class="btn btn-link btn-danger">
-                                                            <i class="fa fa-trash"></i> Xóa
-                                                        </button>
-                                                    </form>
-                                            @if (!isRead)
-                                                    {
-                                                        <button class="btn btn-link btn-success mark-as-read" data-id="@notification.UserNotificationId">
-                                                            <i class="fa fa-check"></i> Đánh dấu đã đọc
-                                                        </button>
-                                                    }
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    }
-                                }
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="order-admin__header-meta">
+                    <span class="order-admin__header-pill">Tổng thông báo: @Model.TotalItems</span>
+                    <span class="order-admin__header-pill">Trang @Model.Page/@Model.TotalPages</span>
                 </div>
             </div>
+        </div>
+
+        <div class="card-body">
+            <div class="d-flex flex-wrap gap-2 justify-content-end mb-4">
+                <form action="/Admin/Notifications/Delete_Read" method="get" class="d-inline"
+                      onsubmit="return confirm('Xóa tất cả thông báo đã đọc?')">
+                    <input type="hidden" name="page" value="@Model.Page" />
+                    <input type="hidden" name="pageSize" value="@Model.PageSize" />
+                    <button type="submit" class="btn btn-dark">
+                        <i class="fa fa-trash"></i> Xóa thông báo đã đọc
+                    </button>
+                </form>
+
+                <button class="btn btn-success" id="markAllAsRead">
+                    <i class="fa fa-check"></i> Đánh dấu tất cả đã đọc
+                </button>
+            </div>
+
+            <div class="table-responsive reusable-admin-table">
+                <table class="table table-hover align-middle notification-admin__table">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 150px;">Trạng thái</th>
+                            <th style="width: 280px;">Tiêu đề</th>
+                            <th>Nội dung</th>
+                            <th style="width: 170px;">Thời gian</th>
+                            <th style="width: 220px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Notifications.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-5">
+                                    Không có thông báo nào.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var notification in Model.Notifications)
+                            {
+                                <tr class="@(notification.IsRead ? string.Empty : "notification-admin__row--unread")">
+                                    <td>
+                                        <div class="notification-admin__state">
+                                            <span class="notification-admin__state-dot @(notification.IsRead ? "notification-admin__state-dot--read" : "notification-admin__state-dot--unread")"></span>
+                                            <div class="notification-admin__state-body">
+                                                <strong>@(notification.IsRead ? "Đã đọc" : "Chưa đọc")</strong>
+                                                <span>@notification.TypeLabel</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="notification-admin__title-wrap">
+                                            @if (!notification.IsRead)
+                                            {
+                                                <i class="fa fa-thumbtack notification-admin__pin"></i>
+                                            }
+                                            <span class="fw-semibold text-dark">@notification.Title</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="notification-admin__message">@notification.Message</div>
+                                    </td>
+                                    <td>
+                                        <div class="text-dark">@(notification.CreatedAt?.ToString("dd/MM/yyyy") ?? "-")</div>
+                                        <div class="small text-muted">@(notification.CreatedAt?.ToString("HH:mm:ss") ?? "-")</div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <a href="@notification.RedirectUrl"
+                                               class="btn btn-light border btn-sm btn-view-noti"
+                                               data-id="@notification.UserNotificationId">
+                                                <i class="fa fa-eye"></i> Xem
+                                            </a>
+
+                                            @if (!notification.IsRead)
+                                            {
+                                                <button type="button"
+                                                        class="btn btn-success btn-sm mark-as-read"
+                                                        data-id="@notification.UserNotificationId">
+                                                    <i class="fa fa-check"></i> Đã đọc
+                                                </button>
+                                            }
+
+                                            <form action="/Admin/Notifications/Delete"
+                                                  method="get"
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('Xóa thông báo này?')">
+                                                <input type="hidden" name="id" value="@notification.NotificationId" />
+                                                <input type="hidden" name="page" value="@Model.Page" />
+                                                <input type="hidden" name="pageSize" value="@Model.PageSize" />
+                                                <button type="submit" class="btn btn-danger btn-sm">
+                                                    <i class="fa fa-trash"></i> Xóa
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @await Html.PartialAsync("~/Areas/Admin/Views/Shared/_ManualPagination.cshtml", new Tech_Store.Models.ViewModel.ManualPaginationViewModel
+            {
+                CurrentPage = Model.Page,
+                TotalPages = Model.TotalPages,
+                BaseUrl = "/Admin/Notifications/Index",
+                QueryString = $"pageSize={Model.PageSize}"
+            })
         </div>
     </div>
 </div>
 
+<script src="~/Admin/assets/js/core/jquery-3.7.1.min.js"></script>
 <script>
     $(document).ready(function () {
-         $('#notificationTable').DataTable({
-                order: [],
-                rowCallback: function (row, data) {
-                    var isRead = $(row).data('isread');
-                    if (isRead === false || isRead === "False") {
-                        $(row).prependTo('#notificationTable tbody');
-                    }
-                }
-            });
-
-
-        // Đánh dấu thông báo là đã đọc
         $('.mark-as-read').on('click', function () {
-            var id = $(this).data('id');
+            const id = $(this).data('id');
             $.post('/admin/notifications/mark-as-read', { id: id }, function (response) {
                 if (response.success) {
-                    location.reload();
+                    window.location.reload();
                 } else {
                     alert('Không thể đánh dấu thông báo. Vui lòng thử lại.');
                 }
             });
         });
 
-        // Đánh dấu tất cả thông báo là đã đọc
         $('#markAllAsRead').on('click', function () {
             $.post('/admin/notifications/mark-all-as-read', function (response) {
                 if (response.success) {
-                    location.reload();
+                    window.location.reload();
                 } else {
                     alert('Không thể đánh dấu tất cả thông báo. Vui lòng thử lại.');
                 }
             });
         });
 
-        $('.btn-view-noti').on('click', function(){
+        $('.btn-view-noti').on('click', function (e) {
             e.preventDefault();
 
             const url = $(this).attr('href');
@@ -173,9 +165,8 @@
 
             $.post('/admin/notifications/mark-as-read', { id: id })
                 .always(function () {
-                    // Dù success hay fail vẫn redirect
                     window.location.href = url;
                 });
-        })
+        });
     });
 </script>

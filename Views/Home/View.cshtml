@@ -50,7 +50,6 @@
     <div class="row">
         <div class="col-md-6">
             <div class="gallery-wrapper">
-                <!-- Thumbnails Section -->
                 <div class="thumbnail-container-wrapper">
                     <button class="thumbnail-control prev">
                         <i class="fas fa-chevron-up"></i>
@@ -58,12 +57,12 @@
                     <div class="thumbnail-container">
                         @if(Model.Image.Contains("http"))
                         {
-                            <div class="thumbnail active)" data-src="@ResizeCDN.Cdn(Model.Image,0,358)"
+                            <div class="thumbnail active" data-src="@ResizeCDN.Cdn(Model.Image,0,358)"
                                  style="background-image: url('@ResizeCDN.Cdn(Model.Image,0,358)')"></div>
                         }
                         else
                         {
-                        <div class="thumbnail active)" data-src="~/Upload/Products/@Model.Image"
+                            <div class="thumbnail active" data-src="~/Upload/Products/@Model.Image"
                                  style="background-image: url('~/Upload/Products/@Model.Image')"></div>
                         }
                         @foreach (var img in Model.Galleries)
@@ -78,16 +77,13 @@
                                 <div class="thumbnail" data-src="@img.Path"
                                      style="background-image: url('@img.Path')"></div>
                             }
-                           
                         }
                     </div>
-
                     <button class="thumbnail-control next">
                         <i class="fas fa-chevron-down"></i>
                     </button>
                 </div>
 
-                <!-- Main Image Gallery -->
                 <div class="product-gallery">
                     @if(Model.Image.Contains("http"))
                     {
@@ -96,10 +92,8 @@
                     else
                     {
                         <img id="mainImage" src="~/Upload/Products/@Model.Image" alt="Product Image" onclick="openFullscreen(this)">
-
                     }
-            
-                </div>  
+                </div>
             </div>
 
         </div>
@@ -226,24 +220,17 @@
     </div>
     <div class="row pt-3">
         <div class="col-12">
-                <div class="product-detail">
-              
                 <div class="title-container">
                     <h4 class="text-center">Thông tin sản phẩm</h4>
                 </div>
-              
 
-                <div class="description-content">
-                    <div class="product-info-layout @((hasSpecs || hasYoutubeVideo) ? "" : "product-info-layout--single")">
-                        <div class="product-info-layout__description">
-                            <p class="product-description">@Html.Raw(Model.Description)</p>
-                        </div>
-
-                        @if (hasSpecs || hasYoutubeVideo)
+                @if (hasSpecs || hasYoutubeVideo)
+                {
+                    <div class="product-detail-top row g-3 mb-3">
+                        @if (hasSpecs)
                         {
-                            <aside class="product-info-layout__aside">
-                                @if (hasSpecs)
-                                {
+                            <div class="col-12 @(hasYoutubeVideo ? "col-lg-5" : "col-lg-12")">
+                                <aside class="product-detail-top__specs">
                                     <div class="product-spec-compact @(productSpecEntries.Count > compactSpecLimit ? "product-spec-compact--collapsed" : string.Empty)" id="productSpecCompact">
                                         <div class="product-spec-compact__head">
                                             <h5>Thông số kỹ thuật</h5>
@@ -264,10 +251,14 @@
                                             </button>
                                         }
                                     </div>
-                                }
+                                </aside>
+                            </div>
+                        }
 
-                                @if (hasYoutubeVideo)
-                                {
+                        @if (hasYoutubeVideo)
+                        {
+                            <div class="col-12 @(hasSpecs ? "col-lg-7" : "col-lg-12")">
+                                <div class="product-detail-top__video">
                                     <div class="product-video-compact">
                                         <div class="product-video-compact__head">
                                             <h5>Video sản phẩm</h5>
@@ -281,11 +272,16 @@
                                             </iframe>
                                         </div>
                                     </div>
-                                }
-                            </aside>
+                                </div>
+                            </div>
                         }
                     </div>
-                </div>
+                }
+
+                <div class="product-detail">
+                    <div class="description-content">
+                        <div class="product-description">@Html.Raw(Model.Description)</div>
+                    </div>
                 
                   
                     <div class="fade-bottom"></div>
@@ -572,8 +568,6 @@
         // Gọi API render 
         RecommendationManager.init('detail', '@Model.ProductSysId', 12);
 
-
-
         // Cập nhật ảnh chính khi click vào thumbnail
         $('.thumbnail').click(function () {
             $('.thumbnail').removeClass('active');
@@ -582,31 +576,22 @@
             $('#mainImage').attr('src', newSrc);
         });
 
-            $('.varient-card').on('click', function () {
-            // 1. Tìm thẻ img có class 'variant-thumb' nằm bên trong thẻ card vừa click
+        $('.varient-card').on('click', function () {
             const $thumbImg = $(this).find('.variant-thumb');
-
-            // 2. Lấy giá trị data-full từ thẻ img đó
-            // Sử dụng .attr('data-full') sẽ chính xác hơn .data('full') trong một số trường hợp load động
             const newFullSrc = $thumbImg.attr('data-full');
 
             if (newFullSrc) {
-                // 3. Cập nhật ảnh chính
                 const $mainImg = $('#mainImage');
-
-                // Hiệu ứng đổi ảnh mượt mà
-                $mainImg.stop().animate({ opacity: 0.5 }, 150, function() {
+                $mainImg.stop().animate({ opacity: 0.5 }, 150, function () {
                     $(this).attr('src', newFullSrc).animate({ opacity: 1 }, 150);
                 });
             }
 
-            // 4. Cập nhật class selected (Tùy chọn nhưng nên có để đồng bộ UI)
             $('.varient-card').removeClass('selected');
             $(this).addClass('selected');
-        }); // Đóng hàm on('click')
+        });
 
 
-        // Điều khiển nút prev và next
         const scrollAmount = 150;
 
         $('.thumbnail-control.prev').click(function () {
@@ -621,7 +606,6 @@
             }, 1);
         });
 
-        // Kiểm tra và ẩn/hiện nút điều hướng
         function checkScrollPosition() {
             const container = $('.thumbnail-container');
             const scrollTop = container.scrollTop();
@@ -630,7 +614,6 @@
             $('.thumbnail-control.prev').toggle(scrollTop > 0);
             $('.thumbnail-control.next').toggle(scrollTop < maxScroll);
 
-            // Xử lý cho mobile view
             if (window.innerWidth <= 768) {
                 const scrollLeft = container.scrollLeft();
                 const maxScrollLeft = container[0].scrollWidth - container.width();
@@ -640,11 +623,8 @@
             }
         }
 
-        // Gọi hàm kiểm tra khi tải trang và khi cuộn
         checkScrollPosition();
         $('.thumbnail-container').scroll(checkScrollPosition);
-
-        // Kiểm tra khi resize window
         $(window).resize(checkScrollPosition);
     });
 </script>
@@ -664,13 +644,22 @@
         overlay.appendChild(imgClone);
         overlay.classList.add('active');
 
-        // Đóng khi click
+        imgClone.onclick = function (e) {
+            e.stopPropagation();
+            imgClone.classList.toggle('is-zoomed');
+        };
+
         overlay.onclick = function (e) {
-            // Chỉ đóng khi click ngoài ảnh
             if (e.target === overlay) {
                 overlay.classList.remove('active');
             }
-        }
+        };
+
+        document.onkeydown = function (e) {
+            if (e.key === 'Escape') {
+                overlay.classList.remove('active');
+            }
+        };
     }
 </script>
 <script>

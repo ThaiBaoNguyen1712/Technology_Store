@@ -17,7 +17,10 @@ namespace Tech_Store.Services.Admin.CategoryServices
         // Truy vấn tất cả danh mục
         public async Task<List<Category>> GetAllCategoriesAsync()
         {
-            return await _context.Categories.OrderByDescending(x=>x.CategoryId).ToListAsync();
+            return await _context.Categories
+                .OrderBy(x => x.SortOrder)
+                .ThenBy(x => x.Name)
+                .ToListAsync();
         }
         // Truy vấn danh mục theo ID
         public async Task<Category?> GetCategoryByIdAsync(int id)
@@ -52,6 +55,7 @@ namespace Tech_Store.Services.Admin.CategoryServices
             category.Visible = updatedCategory.Visible;
             category.VisibleOnCategoryPage = updatedCategory.VisibleOnCategoryPage ?? 1;
             category.VisibleOnOtherPages = updatedCategory.VisibleOnOtherPages ?? 1;
+            category.SortOrder = updatedCategory.SortOrder;
             category.ParentId = updatedCategory.ParentId;
 
             await _context.SaveChangesAsync();

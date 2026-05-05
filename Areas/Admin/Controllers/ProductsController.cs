@@ -13,14 +13,24 @@ namespace Tech_Store.Areas.Admin.Controllers
     {
         private readonly ExcelService _excelService;
         private readonly IAdminProductService _adminProductService;
+        private readonly IConfiguration _configuration;
+        private const int FallbackPageSize = 25;
 
         public ProductsController(
             ApplicationDbContext context,
             IAdminProductService adminProductService,
-            ExcelService excelService) : base(context)
+            ExcelService excelService,
+            IConfiguration configuration) : base(context)
         {
             _adminProductService = adminProductService;
             _excelService = excelService;
+            _configuration = configuration;
+        }
+
+        private int GetDefaultAdminPageSize()
+        {
+            var pageSize = _configuration.GetValue<int?>("AdminUi:DefaultPageSize");
+            return pageSize.GetValueOrDefault(FallbackPageSize) > 0 ? pageSize.Value : FallbackPageSize;
         }
 
         [Route("View/{id}")]
@@ -61,7 +71,7 @@ namespace Tech_Store.Areas.Admin.Controllers
 
         [Route("{status?}")]
         [Route("Index/{status?}")]
-        public async Task<IActionResult> Index(string? status, string? sku, string? name, int? categoryId, int? brandId, int? stockFrom, int? stockTo, int page = 1, int pageSize = 25)
+        public async Task<IActionResult> Index(string? status, string? sku, string? name, int? categoryId, int? brandId, int? stockFrom, int? stockTo, int page = 1, int? pageSize = null)
         {
             var data = await _adminProductService.GetIndexDataAsync(new AdminProductFilterRequest
             {
@@ -73,13 +83,9 @@ namespace Tech_Store.Areas.Admin.Controllers
                 StockFrom = stockFrom,
                 StockTo = stockTo,
                 Page = page,
-                PageSize = pageSize
+                PageSize = pageSize.GetValueOrDefault(GetDefaultAdminPageSize())
             });
-            ViewBag.cate = data.Categories;
-            ViewBag.brand = data.Brands;
-            ViewBag.Filters = data.Filters;
-            ViewBag.PageSize = data.PageSize;
-            return View(data.Products);
+            return View(data);
         }
 
         [HttpPost]
@@ -101,13 +107,22 @@ namespace Tech_Store.Areas.Admin.Controllers
         }
 
         [Route("Create")]
-        public async Task<IActionResult> Create()
+        public async Task<IActionResult> Create(int page = 1, int? pageSize = null, string? status = null, string? sku = null, string? name = null, int? categoryId = null, int? brandId = null, int? stockFrom = null, int? stockTo = null)
         {
             var lookup = await _adminProductService.GetLookupDataAsync();
             ViewBag.Categories = lookup.Categories;
             ViewBag.Brands = lookup.Brands;
             ViewBag.Attributes = lookup.Attributes;
             ViewBag.Specs = lookup.Specs;
+            ViewBag.ReturnPage = Math.Max(1, page);
+            ViewBag.ReturnPageSize = pageSize.GetValueOrDefault(GetDefaultAdminPageSize());
+            ViewBag.ReturnStatus = status;
+            ViewBag.ReturnSkuKeyword = sku;
+            ViewBag.ReturnNameKeyword = name;
+            ViewBag.ReturnCategoryId = categoryId;
+            ViewBag.ReturnBrandId = brandId;
+            ViewBag.ReturnStockFrom = stockFrom;
+            ViewBag.ReturnStockTo = stockTo;
             return View();
         }
 
@@ -124,7 +139,18 @@ namespace Tech_Store.Areas.Admin.Controllers
             var result = await _adminProductService.CreateAsync(productDto);
             if (result.Success)
             {
-                return RedirectToAction("Index");
+                return RedirectToAction("Index", new
+                {
+                    status = productDto.ReturnStatus,
+                    sku = productDto.ReturnSkuKeyword,
+                    name = productDto.ReturnNameKeyword,
+                    categoryId = productDto.ReturnCategoryId,
+                    brandId = productDto.ReturnBrandId,
+                    stockFrom = productDto.ReturnStockFrom,
+                    stockTo = productDto.ReturnStockTo,
+                    page = productDto.ReturnPage,
+                    pageSize = productDto.ReturnPageSize
+                });
             }
 
             ModelState.AddModelError("", result.Message);
@@ -132,7 +158,7 @@ namespace Tech_Store.Areas.Admin.Controllers
         }
 
         [HttpGet("Edit/{id}")]
-        public async Task<IActionResult> Edit(int id)
+        public async Task<IActionResult> Edit(int id, int page = 1, int? pageSize = null, string? status = null, string? sku = null, string? name = null, int? categoryId = null, int? brandId = null, int? stockFrom = null, int? stockTo = null)
         {
             var data = await _adminProductService.GetEditDataAsync(id);
             if (data?.Product == null)
@@ -146,6 +172,15 @@ namespace Tech_Store.Areas.Admin.Controllers
             ViewBag.Attributes = data.Attributes;
             ViewBag.Specs = data.Specs;
             ViewBag.ProductSpecValues = data.ProductSpecValues;
+            ViewBag.ReturnPage = Math.Max(1, page);
+            ViewBag.ReturnPageSize = pageSize.GetValueOrDefault(GetDefaultAdminPageSize());
+            ViewBag.ReturnStatus = status;
+            ViewBag.ReturnSkuKeyword = sku;
+            ViewBag.ReturnNameKeyword = name;
+            ViewBag.ReturnCategoryId = categoryId;
+            ViewBag.ReturnBrandId = brandId;
+            ViewBag.ReturnStockFrom = stockFrom;
+            ViewBag.ReturnStockTo = stockTo;
             return View(data.Product);
         }
 
@@ -166,7 +201,18 @@ namespace Tech_Store.Areas.Admin.Controllers
                 return StatusCode(500, result.Message);
             }
 
-            return RedirectToAction("Index");
+            return RedirectToAction("Index", new
+            {
+                status = productDto.ReturnStatus,
+                sku = productDto.ReturnSkuKeyword,
+                name = productDto.ReturnNameKeyword,
+                categoryId = productDto.ReturnCategoryId,
+                brandId = productDto.ReturnBrandId,
+                stockFrom = productDto.ReturnStockFrom,
+                stockTo = productDto.ReturnStockTo,
+                page = productDto.ReturnPage,
+                pageSize = productDto.ReturnPageSize
+            });
         }
 
         [HttpPost("ChangeVisible")]

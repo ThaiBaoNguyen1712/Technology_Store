@@ -1,0 +1,179 @@
+@model Tech_Store.Models.ViewModel.AdminOrderDetailViewModel
+@using System.Globalization
+
+<div class="order-drawer">
+    <div class="order-drawer__summary">
+        <div class="order-drawer__summary-card">
+            <span>Mã đơn</span>
+            <strong>#@Model.OrderId</strong>
+        </div>
+        <div class="order-drawer__summary-card">
+            <span>Trạng thái</span>
+            <strong>@Model.OrderStatusLabel</strong>
+        </div>
+        <div class="order-drawer__summary-card">
+            <span>Thanh toán</span>
+            <strong>@Model.PaymentStatusLabel</strong>
+        </div>
+        <div class="order-drawer__summary-card">
+            <span>Tổng tiền</span>
+            <strong>@Model.TotalAmount.ToString("C0", new CultureInfo("vi-VN"))</strong>
+        </div>
+    </div>
+
+    <section class="order-drawer__section">
+        <div class="order-drawer__section-head">
+            <h6>Xử lý đơn hàng</h6>
+        </div>
+        <div class="order-drawer__status-form">
+            <div>
+                <label class="form-label fw-semibold text-secondary">Trạng thái mới</label>
+                <select class="form-select" id="drawerOrderStatus" data-current-status="@Model.OrderStatus">
+                    @if (Model.OrderStatus == "Pending")
+                    {
+                        <option value="Pending" selected>Đang chờ</option>
+                    }
+                    else
+                    {
+                        <option value="Pending">Đang chờ</option>
+                    }
+                    @if (Model.OrderStatus == "Confirmed")
+                    {
+                        <option value="Confirmed" selected>Đã xác nhận</option>
+                    }
+                    else
+                    {
+                        <option value="Confirmed">Đã xác nhận</option>
+                    }
+                    @if (Model.OrderStatus == "Shipping")
+                    {
+                        <option value="Shipping" selected>Đang giao hàng</option>
+                    }
+                    else
+                    {
+                        <option value="Shipping">Đang giao hàng</option>
+                    }
+                    @if (Model.OrderStatus == "Delivered")
+                    {
+                        <option value="Delivered" selected>Đã giao hàng</option>
+                    }
+                    else
+                    {
+                        <option value="Delivered">Đã giao hàng</option>
+                    }
+                    @if (Model.OrderStatus == "Completed")
+                    {
+                        <option value="Completed" selected>Hoàn thành</option>
+                    }
+                    else
+                    {
+                        <option value="Completed">Hoàn thành</option>
+                    }
+                    @if (Model.OrderStatus == "Cancelled")
+                    {
+                        <option value="Cancelled" selected>Đã hủy</option>
+                    }
+                    else
+                    {
+                        <option value="Cancelled">Đã hủy</option>
+                    }
+                    @if (Model.OrderStatus == "Refunded")
+                    {
+                        <option value="Refunded" selected>Đã hoàn tiền</option>
+                    }
+                    else
+                    {
+                        <option value="Refunded">Đã hoàn tiền</option>
+                    }
+                </select>
+            </div>
+            <div class="order-drawer__actions">
+                <a href="/Admin/Orders/View/@Model.OrderId" class="btn btn-light border">Chi tiết đơn</a>
+                <button type="button"
+                        class="btn btn-primary"
+                        id="applyDrawerOrderStatus"
+                        data-id="@Model.OrderId">
+                    Cập nhật trạng thái
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <section class="order-drawer__section">
+        <div class="order-drawer__section-head">
+            <h6>Khách hàng</h6>
+        </div>
+        <div class="order-drawer__info-list">
+            <div class="order-drawer__info-row">
+                <span>Họ tên</span>
+                <strong>@Model.CustomerName</strong>
+            </div>
+            <div class="order-drawer__info-row">
+                <span>Số điện thoại</span>
+                <strong>@(string.IsNullOrWhiteSpace(Model.PhoneNumber) ? "-" : Model.PhoneNumber)</strong>
+            </div>
+            <div class="order-drawer__info-row">
+                <span>Email</span>
+                <strong>@(string.IsNullOrWhiteSpace(Model.Email) ? "-" : Model.Email)</strong>
+            </div>
+            <div class="order-drawer__info-row">
+                <span>Địa chỉ</span>
+                <strong>@Model.Address</strong>
+            </div>
+            <div class="order-drawer__info-row">
+                <span>Ghi chú</span>
+                <strong>@(string.IsNullOrWhiteSpace(Model.Note) ? "-" : Model.Note)</strong>
+            </div>
+        </div>
+    </section>
+
+    <section class="order-drawer__section">
+        <div class="order-drawer__section-head">
+            <h6>Giao dịch</h6>
+        </div>
+        <div class="order-drawer__info-list">
+            <div class="order-drawer__info-row">
+                <span>Ngày đặt</span>
+                <strong>@(Model.OrderDate?.ToString("dd/MM/yyyy HH:mm:ss") ?? "-")</strong>
+            </div>
+            <div class="order-drawer__info-row">
+                <span>Phương thức</span>
+                <strong>@Model.PaymentMethod</strong>
+            </div>
+            <div class="order-drawer__info-row">
+                <span>Ngày thanh toán</span>
+                <strong>@(Model.PaymentDate?.ToString("dd/MM/yyyy HH:mm:ss") ?? "-")</strong>
+            </div>
+            <div class="order-drawer__info-row">
+                <span>Số lượng sản phẩm</span>
+                <strong>@Model.ItemCount</strong>
+            </div>
+        </div>
+    </section>
+
+    <section class="order-drawer__section">
+        <div class="order-drawer__section-head">
+            <h6>Sản phẩm trong đơn</h6>
+        </div>
+        <div class="order-drawer__item-list">
+            @foreach (var item in Model.Items.Take(4))
+            {
+                <div class="order-drawer__item">
+                    <div class="order-drawer__item-head">
+                        <strong>@item.ProductName</strong>
+                        <span class="order-drawer__item-qty">SL @item.Quantity</span>
+                    </div>
+                    <div class="order-drawer__item-meta">@item.VariantDisplay</div>
+                    <div class="order-drawer__item-foot">
+                        <span>@item.UnitPrice.ToString("C0", new CultureInfo("vi-VN"))</span>
+                        <strong>@item.LineTotal.ToString("C0", new CultureInfo("vi-VN"))</strong>
+                    </div>
+                </div>
+            }
+            @if (Model.Items.Count > 4)
+            {
+                <div class="order-drawer__more">+@(Model.Items.Count - 4) sản phẩm khác</div>
+            }
+        </div>
+    </section>
+</div>

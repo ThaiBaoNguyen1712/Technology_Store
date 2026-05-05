@@ -1,0 +1,102 @@
+@model Tech_Store.Models.ViewModel.AdminTransactionQuickDrawerViewModel
+@using System.Globalization
+
+<div class="transaction-drawer">
+    <div class="transaction-drawer__summary">
+        <div class="transaction-drawer__summary-card">
+            <span>Mã giao dịch</span>
+            <strong>#@Model.PaymentId</strong>
+        </div>
+        <div class="transaction-drawer__summary-card">
+            <span>Thanh toán</span>
+            <strong>@Model.PaymentStatusLabel</strong>
+        </div>
+        <div class="transaction-drawer__summary-card">
+            <span>Phương thức</span>
+            <strong>@Model.PaymentMethod</strong>
+        </div>
+        <div class="transaction-drawer__summary-card">
+            <span>Giá trị</span>
+            <strong>@Model.Amount.ToString("C0", new CultureInfo("vi-VN"))</strong>
+        </div>
+    </div>
+
+    <section class="transaction-drawer__section">
+        <div class="transaction-drawer__section-head">
+            <h6>Xác nhận thanh toán</h6>
+        </div>
+        <div class="transaction-drawer__actions">
+            <a href="@Model.OrderDetailUrl" class="btn btn-light border">Chi tiết đơn hàng</a>
+            @if (string.Equals(Model.Status, "Paid", StringComparison.OrdinalIgnoreCase))
+            {
+                <button type="button" class="btn btn-success" disabled>Đã xác nhận</button>
+            }
+            else
+            {
+                <button type="button"
+                        class="btn btn-primary"
+                        id="confirmDrawerPayment"
+                        data-id="@Model.PaymentId">
+                    Xác nhận thanh toán
+                </button>
+            }
+        </div>
+    </section>
+
+    <section class="transaction-drawer__section">
+        <div class="transaction-drawer__section-head">
+            <h6>Khách hàng</h6>
+        </div>
+        <div class="transaction-drawer__info-list">
+            <div class="transaction-drawer__info-row">
+                <span>Họ tên</span>
+                <strong>@(string.IsNullOrWhiteSpace(Model.CustomerName) ? "-" : Model.CustomerName)</strong>
+            </div>
+            <div class="transaction-drawer__info-row">
+                <span>Số điện thoại</span>
+                <strong>@(string.IsNullOrWhiteSpace(Model.PhoneNumber) ? "-" : Model.PhoneNumber)</strong>
+            </div>
+            <div class="transaction-drawer__info-row">
+                <span>Email</span>
+                <strong>@(string.IsNullOrWhiteSpace(Model.Email) ? "-" : Model.Email)</strong>
+            </div>
+        </div>
+    </section>
+
+    <section class="transaction-drawer__section">
+        <div class="transaction-drawer__section-head">
+            <h6>Thông tin giao dịch</h6>
+        </div>
+        <div class="transaction-drawer__info-list">
+            <div class="transaction-drawer__info-row">
+                <span>Mã đơn hàng</span>
+                <strong>
+                    @if (Model.OrderId > 0)
+                    {
+                        <a href="@Model.OrderDetailUrl" class="transaction-drawer__order-link">#@Model.OrderId</a>
+                    }
+                    else
+                    {
+                        @:-
+                    }
+                </strong>
+            </div>
+            <div class="transaction-drawer__info-row">
+                <span>Phương thức</span>
+                <strong>@Model.PaymentMethodLabel</strong>
+            </div>
+            <div class="transaction-drawer__info-row">
+                <span>Trạng thái đơn</span>
+                <strong>@(string.IsNullOrWhiteSpace(Model.OrderStatus) ? "-" : Model.OrderStatus)</strong>
+            </div>
+            <div class="transaction-drawer__info-row">
+                <span>Ngày giao dịch</span>
+                <strong>@(Model.PaymentDate?.ToString("dd/MM/yyyy HH:mm:ss") ?? "-")</strong>
+            </div>
+            <div class="transaction-drawer__info-row">
+                <span>Ngày tạo</span>
+                <strong>@(Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm:ss") ?? "-")</strong>
+            </div>
+        </div>
+    </section>
+</div>

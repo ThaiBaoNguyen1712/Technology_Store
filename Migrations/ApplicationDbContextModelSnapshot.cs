@@ -253,6 +253,12 @@ namespace Tech_Store.Migrations
                         .HasColumnType("nvarchar(155)")
                         .HasColumnName("name");
 
+                    b.Property<int?>("SortOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0)
+                        .HasColumnName("sort_order");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
@@ -264,6 +270,23 @@ namespace Tech_Store.Migrations
                     b.HasIndex("CategoryId");
 
                     b.ToTable("Brand", (string)null);
+                });
+
+            modelBuilder.Entity("Tech_Store.Models.BrandCategory", b =>
+                {
+                    b.Property<int>("BrandId")
+                        .HasColumnType("int")
+                        .HasColumnName("brand_id");
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int")
+                        .HasColumnName("category_id");
+
+                    b.HasKey("BrandId", "CategoryId");
+
+                    b.HasIndex("CategoryId");
+
+                    b.ToTable("BrandCategory", (string)null);
                 });
 
             modelBuilder.Entity("Tech_Store.Models.Cart", b =>
@@ -389,6 +412,12 @@ namespace Tech_Store.Migrations
                     b.Property<int?>("ParentId")
                         .HasColumnType("int")
                         .HasColumnName("parent_id");
+
+                    b.Property<int>("SortOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0)
+                        .HasColumnName("sort_order");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .ValueGeneratedOnAdd()
@@ -1574,6 +1603,27 @@ namespace Tech_Store.Migrations
                     b.Navigation("Category");
                 });
 
+            modelBuilder.Entity("Tech_Store.Models.BrandCategory", b =>
+                {
+                    b.HasOne("Tech_Store.Models.Brand", "Brand")
+                        .WithMany("BrandCategories")
+                        .HasForeignKey("BrandId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_BrandCategory_Brand");
+
+                    b.HasOne("Tech_Store.Models.Category", "Category")
+                        .WithMany("BrandCategories")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_BrandCategory_Category");
+
+                    b.Navigation("Brand");
+
+                    b.Navigation("Category");
+                });
+
             modelBuilder.Entity("Tech_Store.Models.Cart", b =>
                 {
                     b.HasOne("Tech_Store.Models.User", "User")
@@ -1899,6 +1949,8 @@ namespace Tech_Store.Migrations
 
             modelBuilder.Entity("Tech_Store.Models.Brand", b =>
                 {
+                    b.Navigation("BrandCategories");
+
                     b.Navigation("Products");
                 });
 
@@ -1909,6 +1961,8 @@ namespace Tech_Store.Migrations
 
             modelBuilder.Entity("Tech_Store.Models.Category", b =>
                 {
+                    b.Navigation("BrandCategories");
+
                     b.Navigation("Brands");
 
                     b.Navigation("ParentCategory");

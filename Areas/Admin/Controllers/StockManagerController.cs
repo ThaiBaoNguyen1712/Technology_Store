@@ -10,6 +10,8 @@ using OfficeOpenXml;
 using System.Linq;
 using OfficeOpenXml.Style;
 using System.Drawing;
+using System.Text;
+using Tech_Store.Models.ViewModel;
 namespace Tech_Store.Areas.Admin.Controllers
 {
     [Area("Admin")]
@@ -182,16 +184,48 @@ namespace Tech_Store.Areas.Admin.Controllers
         }
 
         [Route("History")]
-        public IActionResult History(int? page)
+        public IActionResult History(DateOnly? startDate, DateOnly? endDate, string? filterType, string? filterCode, int page = 1)
         {
-            int pageSize = 5; // Số lượng bản ghi trên mỗi trang
-            int pageNumber = page ?? 1; // Trang hiện tại, mặc định là 1
+            const int pageSize = 20;
 
-            var history = _context.InventoryTransactions
+            var query = _context.InventoryTransactions
                 .Include(p => p.Product)
-                .Include(p => p.InventoryTransactionsDetail) // Bao gồm chi tiết lịch sử sản phẩm
+                .Include(p => p.InventoryTransactionsDetail)
                 .Include(p => p.User)
                 .ThenInclude(p => p.Roles)
+                .AsQueryable();
+
+            if (startDate.HasValue)
+            {
+                query = query.Where(ph => ph.CreatedAt >= startDate.Value.ToDateTime(TimeOnly.MinValue));
+            }
+
+            if (endDate.HasValue)
+            {
+                query = query.Where(ph => ph.CreatedAt <= endDate.Value.ToDateTime(TimeOnly.MaxValue));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filterType))
+            {
+                query = query.Where(ph => ph.Type.ToLower() == filterType.ToLower());
+            }
+
+            if (!string.IsNullOrWhiteSpace(filterCode))
+            {
+                query = query.Where(ph =>
+                    ph.Product.Sku.Contains(filterCode) ||
+                    ph.Product.Name.Contains(filterCode) ||
+                    ph.InventoryTransId.ToString().Contains(filterCode));
+            }
+
+            var totalItems = query.Count();
+            var totalPages = totalItems == 0 ? 1 : (int)Math.Ceiling(totalItems / (double)pageSize);
+            var currentPage = Math.Min(Math.Max(page, 1), totalPages);
+
+            var history = query
+                .OrderByDescending(ph => ph.InventoryTransId)
+                .Skip((currentPage - 1) * pageSize)
+                .Take(pageSize)
                 .Select(ph => new InventoryTransactionsVM
                 {
                     Id = ph.InventoryTransId,
@@ -199,19 +233,34 @@ namespace Tech_Store.Areas.Admin.Controllers
                     InventoryTransId = ph.InventoryTransId,
                     Type = ph.Type,
                     Note = ph.Note,
+                    CreatedAt = ph.CreatedAt ?? DateTime.MinValue,
                     UserName = ph.User.LastName + " " + ph.User.FirstName,
                     UserRole = ph.User.Roles.FirstOrDefault().RoleName,
                     InventoryTransactionDetail = ph.InventoryTransactionsDetail
-                        .Select(d => new InventorTransactionDetailViewModel // Ánh xạ từng ProductHistoryDetail thành ProductHistoryDetailViewModel
+                        .Select(d => new InventorTransactionDetailViewModel
                         {
                             Quantity = d.Quantity
                         })
-                        .ToList() // Chuyển đổi thành danh sách
+                        .ToList()
                 })
-                .OrderByDescending(ph => ph.Id) // Sắp xếp giảm dần theo ID
-                .ToPagedList(pageNumber, pageSize); // Áp dụng phân trang
+                .ToList();
 
-            return View(history);
+            var model = new AdminStockHistoryIndexViewModel
+            {
+                Items = history,
+                FilterCode = filterCode,
+                FilterType = filterType,
+                StartDate = startDate,
+                EndDate = endDate,
+                Page = currentPage,
+                TotalPages = totalPages,
+                TotalItems = totalItems,
+                ImportCount = history.Count(x => x.Type == "Import"),
+                ExportCount = history.Count(x => x.Type == "Export"),
+                QueryString = BuildHistoryQueryString(startDate, endDate, filterType, filterCode)
+            };
+
+            return View(model);
         }
 
 
@@ -254,63 +303,41 @@ namespace Tech_Store.Areas.Admin.Controllers
         [HttpPost("FilterHistoryDetail")]
         public IActionResult FilterHistoryDetail(DateOnly? startDate, DateOnly? endDate, string? filterType, string? filterCode, int page = 1)
         {
-            int pageSize = 5; // Số lượng bản ghi mỗi trang
+            return RedirectToAction(nameof(History), new
+            {
+                startDate,
+                endDate,
+                filterType,
+                filterCode,
+                page
+            });
+        }
 
-            // Truy vấn cơ bản từ ProductHistories
-            var query = _context.InventoryTransactions
-                .Include(ph => ph.InventoryTransactionsDetail)
-                .Include(ph => ph.Product)
-                .Include(ph => ph.User)
-                .ThenInclude(u => u.Roles)
-                .AsQueryable();
+        private static string BuildHistoryQueryString(DateOnly? startDate, DateOnly? endDate, string? filterType, string? filterCode)
+        {
+            var values = new List<string>();
 
-            // Áp dụng bộ lọc
             if (startDate.HasValue)
             {
-                query = query.Where(ph => ph.CreatedAt >= startDate.Value.ToDateTime(TimeOnly.MinValue));
+                values.Add($"startDate={startDate.Value:yyyy-MM-dd}");
             }
 
             if (endDate.HasValue)
             {
-                query = query.Where(ph => ph.CreatedAt <= endDate.Value.ToDateTime(TimeOnly.MinValue));
+                values.Add($"endDate={endDate.Value:yyyy-MM-dd}");
             }
 
-            if (!string.IsNullOrEmpty(filterType))
+            if (!string.IsNullOrWhiteSpace(filterType))
             {
-                query = query.Where(ph => ph.Type.ToLower() == filterType.ToLower());
+                values.Add($"filterType={Uri.EscapeDataString(filterType)}");
             }
 
-            if (!string.IsNullOrEmpty(filterCode))
+            if (!string.IsNullOrWhiteSpace(filterCode))
             {
-                query = query.Where(ph => ph.Product.Sku.Contains(filterCode) || ph.InventoryTransId.ToString().Contains(filterCode));
+                values.Add($"filterCode={Uri.EscapeDataString(filterCode)}");
             }
 
-            // Áp dụng phân trang và ánh xạ sang ProductHistoryViewModel
-            var result = query
-                .OrderByDescending(ph => ph.InventoryTransId) // Sắp xếp giảm dần theo ID
-                .ToPagedList(page, pageSize)
-                .Select(ph => new InventoryTransactionsVM
-                {
-                    Id = ph.InventoryTransId,
-                    Product = ph.Product,
-                    InventoryTransId = ph.InventoryTransId,
-                    Type = ph.Type,
-                    Note = ph.Note,
-                    UserName = ph.User.LastName + " " + ph.User.FirstName,
-                    UserRole = ph.User.Roles.FirstOrDefault()?.RoleName,
-                    InventoryTransactionDetail = ph.InventoryTransactionsDetail  
-                        .Select(d => new InventorTransactionDetailViewModel
-                        {
-                            Quantity = d.Quantity
-                        })
-                        .ToList()
-                });
-            ViewBag.FilterCode = filterCode;
-            ViewBag.FilterType = filterType; 
-            ViewBag.StartDate = startDate;
-            ViewBag.EndDate = endDate;
-            // Trả về view "History" với kết quả phân trang
-            return View("History", result);
+            return string.Join("&", values);
         }
 
         [HttpGet("GetVariantProduct")]

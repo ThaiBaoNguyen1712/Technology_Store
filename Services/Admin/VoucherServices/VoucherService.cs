@@ -39,6 +39,8 @@ namespace Tech_Store.Services.Admin.VoucherServices
             voucher.StartedAt = updatedVoucher.StartedAt;
             voucher.ExpiredAt = updatedVoucher.ExpiredAt;
             voucher.Promotion = updatedVoucher.Promotion;
+            voucher.Description = updatedVoucher.Description;
+            voucher.UpdatedAt = updatedVoucher.UpdatedAt;
 
             await _context.SaveChangesAsync();
             return true;

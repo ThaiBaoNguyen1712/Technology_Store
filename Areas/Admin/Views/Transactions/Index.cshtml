@@ -1,342 +1,385 @@
-﻿@model IEnumerable<Tech_Store.Models.Payment>
+@model Tech_Store.Models.ViewModel.AdminTransactionIndexViewModel
+@using System.Globalization
 @{
     ViewData["Title"] = "Giao dịch";
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
 }
-<style>
 
-    .payment-icon {
-        width: 40px;
-        height: auto;
-        border-radius: 5px;
-    }
-</style>
-
-
-<div class="Container">
+<div class="py-3 transaction-admin-page">
     @Html.AntiForgeryToken()
 
-    <div class="pt-3"></div>
-    <div class="tableProduct">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header">
-                    <div class="d-flex align-items-center">
-                        <h4 class="card-title">LỊCH SỬ GIAO DỊCH</h4>
-                    </div>
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0 pb-0">
+            <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
+                <div>
+                    <h4 class="card-title mb-1">Danh sách giao dịch</h4>
                 </div>
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <!-- Hàng 1: Thông tin cơ bản -->
-                            <div class="col-md-3">
-                                <label class="form-label fw-semibold">Mã giao dịch</label>
-                                <div class="input-group">
-                                    <input type="text" class="form-control" placeholder="Nhập mã đơn hàng" id="filterOrderId">
-                                </div>
-                            </div>
-                            <div class="col-md-5">
-                                <label class="form-label fw-semibold">Tên khách hàng</label>
-                                <input type="text" class="form-control" placeholder="Nhập tên khách hàng cần tìm" id="filterCustomerName">
-                            </div>
-                            <!-- Hàng 3: Số điện thoại -->
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Số điện thoại</label>
-                                <input type="text" class="form-control" placeholder="Nhập số điện thoại khách hàng" id="filterPhone">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Thanh toán</label>
-                                <select class="form-control border selectpicker" data-live-search="true" id="filterPaymentStatus">
-                                    <option value="">Tất cả trạng thái</option>
-                                    <option value="Paid">Đã thanh toán</option>
-                                    <option value="Unpaid">Chưa thanh toán</option>
-                                </select>
-                            </div>
-
-                            <!-- Hàng 2: Thời gian và khoảng giá -->
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Từ ngày</label>
-                                <input type="date" class="form-control" id="filterDateFrom">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Đến ngày</label>
-                                <input type="date" class="form-control" id="filterDateTo">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Khoảng giá trị đơn hàng</label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control" placeholder="Từ" id="filterAmountFrom">
-                                    <span class="input-group-text">-</span>
-                                    <input type="number" class="form-control" placeholder="Đến" id="filterAmountTo">
-                                </div>
-                            </div>
-
-                       
-
-                            <!-- Nút tìm kiếm và reset -->
-                            <div class="col-12 mt-4">
-                                <div class="d-flex gap-2 justify-content-end">
-                                    <button type="button" class="btn btn-light px-4" id="btnReset">
-                                        <i class="fas fa-redo me-1"></i> Đặt lại
-                                    </button>
-                                    <button type="button" class="btn btn-primary px-4" id="btnSearch">
-                                        <i class="fas fa-search me-1"></i> Tìm kiếm
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table id="add-row" class="display table table-striped table-hover">
-                            <thead>
-                                <tr class="table-primary text-center align-middle">
-                                    <th class="fw-semibold">Mã giao dịch</th>
-                                    <th class="fw-semibold">Mã hóa đơn</th>
-                                    <th class="fw-semibold">Người thanh toán</th>
-                                    <th class="fw-semibold">Phương thức thanh toán</th>
-                                    <th class="fw-semibold">Giá trị đơn hàng</th>
-                                    <th class="fw-semibold">Tình trạng</th>
-                                    <th class="fw-semibold">Ngày tạo</th>
-
-                                </tr>
-                            </thead>
-                            <tfoot>
-                                <tr>
-                                    <th>Mã giao dịch</th>
-                                    <th>Mã hóa đơn</th>
-                                    <th>Người thanh toán</th>
-                                    <th>Phương thức thanh toán</th>
-                                    <th>Giá trị đơn hàng</th>
-                                    <th>Tình trạng</th>
-                                    <th>Ngày tạo</th>
-
-                                </tr>
-                            </tfoot>
-                            <tbody id="TransactionList">
-
-                                @if (Model != null)
-                                {
-                                    @foreach (var trans in Model)
-                                    {
-                                        <tr>
-                                            <td>Giao dịch #@trans.PaymentId</td>
-                                            <td>
-                                                <a href="/Admin/Orders/View/@trans.Order.OrderId">
-                                                    Hóa đơn #@trans.Order.OrderId
-                                                </a>
-                                            </td>
-                                            <td>@trans.Order.User.LastName @trans.Order.User.FirstName </td>
-                                            <td>
-                                                @if (trans.PaymentMethod == "COD")
-                                                {
-                                                    <img src="/Upload/Logo/shipcod.png" class="payment-icon me-2" alt="COD" />
-                                                }
-                                                else if (trans.PaymentMethod == "MoMo")
-                                                {
-                                                    <img src="/Upload/Logo/LogoMoMo.webp" class="payment-icon me-2" alt="MoMo" />
-                                                }
-                                                else if (trans.PaymentMethod == "VNPay")
-                                                {
-                                                    <img src="/Upload/Logo/LogoVNPay.png" class="payment-icon me-2" alt="VNPay" />
-                                                }
-                                                else if (trans.PaymentMethod == "cash")
-                                                {
-                                                    <i class="fas fa-money-bill-wave text-success me-2"></i>
-                                                }
-                                                <span>
-                                                    @(trans.PaymentMethod == "COD" ? "TT khi nhận hàng (COD)" :
-                                                        trans.PaymentMethod == "MoMo" ? "TT qua ví MoMo" :
-                                                        trans.PaymentMethod == "VNPay" ? "TT qua ví VNPay" :
-                                                        trans.PaymentMethod == "cash" ? "TT tiền mặt" : "Không xác định")
-                                                </span>
-                                            </td>
-                                            <td class="text-center">
-                                        @trans.Amount.ToString("C0", System.Globalization.CultureInfo.GetCultureInfo("vi-VN"))
-                                            </td>
-                                            <td class="text-center">
-
-                                                @if (trans.Status.ToLower() == "paid")
-                                                {
-                                                    <span class="badge badge-success">Đã thanh toán</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="badge badge-danger">Chưa thanh toán</span>
-                                                    <br />
-                                                    <button class="btn btn-sm btn-primary btn-update-payment"
-                                                            data-id="@trans.PaymentId">
-                                                        Xác nhận thanh toán
-                                                    </button>
-                                                }
-
-                                            </td>
-                                            <td style="white-space:nowrap">@trans.PaymentDate</td>
-
-                                        </tr>
-                                    }
-                                }
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="order-admin__header-meta">
+                    <span class="order-admin__header-pill">Tổng giao dịch: @Model.TotalItems</span>
+                    <span class="order-admin__header-pill">Trang @Model.Page/@Model.TotalPages</span>
                 </div>
             </div>
         </div>
+
+        <div class="card-body">
+            <form method="get" class="brand-admin__filters transaction-admin__filters row g-3 align-items-end mb-4">
+                <input type="hidden" name="page" value="1" />
+
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Mã giao dịch</label>
+                    <input type="number"
+                           class="form-control"
+                           name="transactionId"
+                           value="@Model.TransactionId"
+                           min="1"
+                           placeholder="Nhập mã giao dịch" />
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Mã đơn hàng</label>
+                    <input type="number"
+                           class="form-control"
+                           name="orderId"
+                           value="@Model.OrderId"
+                           min="1"
+                           placeholder="Nhập mã đơn hàng" />
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Khách hàng</label>
+                    <input type="text"
+                           class="form-control"
+                           name="customerName"
+                           value="@Model.CustomerName"
+                           placeholder="Nhập tên khách hàng" />
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Số điện thoại</label>
+                    <input type="text"
+                           class="form-control"
+                           name="phoneNumber"
+                           value="@Model.PhoneNumber"
+                           placeholder="Nhập số điện thoại" />
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Thanh toán</label>
+                    <select class="form-select" name="paymentStatus">
+                        <option value="">Tất cả trạng thái</option>
+                        @if (Model.PaymentStatus == "Paid")
+                        {
+                            <option value="Paid" selected>Đã thanh toán</option>
+                        }
+                        else
+                        {
+                            <option value="Paid">Đã thanh toán</option>
+                        }
+                        @if (Model.PaymentStatus == "Unpaid")
+                        {
+                            <option value="Unpaid" selected>Chưa thanh toán</option>
+                        }
+                        else
+                        {
+                            <option value="Unpaid">Chưa thanh toán</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Phương thức</label>
+                    <select class="form-select" name="paymentMethod">
+                        <option value="">Tất cả phương thức</option>
+                        @if (Model.PaymentMethod == "COD")
+                        {
+                            <option value="COD" selected>COD</option>
+                        }
+                        else
+                        {
+                            <option value="COD">COD</option>
+                        }
+                        @if (Model.PaymentMethod == "MoMo")
+                        {
+                            <option value="MoMo" selected>MoMo</option>
+                        }
+                        else
+                        {
+                            <option value="MoMo">MoMo</option>
+                        }
+                        @if (Model.PaymentMethod == "VNPay")
+                        {
+                            <option value="VNPay" selected>VNPay</option>
+                        }
+                        else
+                        {
+                            <option value="VNPay">VNPay</option>
+                        }
+                        @if (Model.PaymentMethod == "cash")
+                        {
+                            <option value="cash" selected>Tiền mặt</option>
+                        }
+                        else
+                        {
+                            <option value="cash">Tiền mặt</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Từ ngày</label>
+                    <input type="date"
+                           class="form-control"
+                           name="dateFrom"
+                           value="@(Model.DateFrom?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Đến ngày</label>
+                    <input type="date"
+                           class="form-control"
+                           name="dateTo"
+                           value="@(Model.DateTo?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Giá trị từ</label>
+                    <input type="number"
+                           class="form-control"
+                           name="amountFrom"
+                           value="@Model.AmountFrom"
+                           min="0"
+                           placeholder="0" />
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Giá trị đến</label>
+                    <input type="number"
+                           class="form-control"
+                           name="amountTo"
+                           value="@Model.AmountTo"
+                           min="0"
+                           placeholder="0" />
+                </div>
+                <div class="col-12 admin-search-actions-row">
+                    <div class="admin-search-actions">
+                        <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+                        <a href="/Admin/Transactions" class="btn btn-light border">Làm mới</a>
+                    </div>
+                </div>
+            </form>
+
+            <div class="table-responsive reusable-admin-table">
+                <table class="table table-hover align-middle transaction-admin__table">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 110px;">Mã GD</th>
+                            <th style="width: 110px;">Mã đơn</th>
+                            <th>Khách hàng</th>
+                            <th style="width: 240px;">Phương thức</th>
+                            <th style="width: 170px;">Giá trị</th>
+                            <th style="width: 170px;">Thanh toán</th>
+                            <th style="width: 170px;">Ngày tạo</th>
+                            <th style="width: 140px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Transactions.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-5">
+                                    Không có giao dịch phù hợp với bộ lọc hiện tại.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var transaction in Model.Transactions)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold text-dark">#@transaction.PaymentId</div>
+                                    </td>
+                                    <td>
+                                        @if (transaction.OrderId > 0)
+                                        {
+                                            <a href="/Admin/Orders/View/@transaction.OrderId" class="transaction-admin__order-link">
+                                                #@transaction.OrderId
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="user-admin__customer">
+                                            <div class="fw-semibold text-dark">@(string.IsNullOrWhiteSpace(transaction.CustomerName) ? "-" : transaction.CustomerName)</div>
+                                            <div class="user-admin__meta">
+                                                <span>@(string.IsNullOrWhiteSpace(transaction.PhoneNumber) ? "-" : transaction.PhoneNumber)</span>
+                                                <span>@(string.IsNullOrWhiteSpace(transaction.Email) ? "Chưa có email" : transaction.Email)</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="transaction-admin__payment">
+                                            @if (!string.IsNullOrWhiteSpace(transaction.PaymentMethodAsset))
+                                            {
+                                                <div class="transaction-admin__payment-icon-shell">
+                                                    <img src="@transaction.PaymentMethodAsset"
+                                                         class="transaction-admin__payment-icon"
+                                                         alt="@transaction.PaymentMethod" />
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="transaction-admin__payment-icon-shell transaction-admin__payment-icon-shell--fallback">
+                                                    <i class="fas fa-wallet"></i>
+                                                </div>
+                                            }
+                                            <div class="order-admin__state-body">
+                                                <strong>@transaction.PaymentMethodLabel</strong>
+                                                <span>@transaction.PaymentMethod</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="transaction-admin__amount">@transaction.Amount.ToString("C0", new CultureInfo("vi-VN"))</div>
+                                    </td>
+                                    <td>
+                                        <div class="order-admin__state">
+                                            <span class="order-admin__state-dot @(string.Equals(transaction.Status, "Paid", StringComparison.OrdinalIgnoreCase) ? "order-admin__state-dot--success" : "order-admin__state-dot--danger")"></span>
+                                            <div class="order-admin__state-body">
+                                                <strong>@transaction.PaymentStatusLabel</strong>
+                                                <span>@((transaction.PaymentDate ?? transaction.CreatedAt)?.ToString("dd/MM/yyyy HH:mm:ss") ?? "-")</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="text-dark">@((transaction.CreatedAt ?? transaction.PaymentDate)?.ToString("dd/MM/yyyy") ?? "-")</div>
+                                        <div class="small text-muted">@((transaction.CreatedAt ?? transaction.PaymentDate)?.ToString("HH:mm:ss") ?? "-")</div>
+                                    </td>
+                                    <td>
+                                        <button type="button"
+                                                class="btn btn-light border transaction-admin__action-button open-transaction-drawer"
+                                                data-id="@transaction.PaymentId">
+                                            Tác vụ
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @await Html.PartialAsync("~/Areas/Admin/Views/Shared/_ManualPagination.cshtml", new Tech_Store.Models.ViewModel.ManualPaginationViewModel
+            {
+                CurrentPage = Model.Page,
+                TotalPages = Model.TotalPages,
+                BaseUrl = "/Admin/Transactions",
+                QueryString = string.Join("&", new[]
+                {
+                    Model.TransactionId.HasValue ? $"transactionId={Model.TransactionId.Value}" : null,
+                    Model.OrderId.HasValue ? $"orderId={Model.OrderId.Value}" : null,
+                    !string.IsNullOrWhiteSpace(Model.CustomerName) ? $"customerName={Uri.EscapeDataString(Model.CustomerName)}" : null,
+                    !string.IsNullOrWhiteSpace(Model.PhoneNumber) ? $"phoneNumber={Uri.EscapeDataString(Model.PhoneNumber)}" : null,
+                    !string.IsNullOrWhiteSpace(Model.PaymentStatus) ? $"paymentStatus={Uri.EscapeDataString(Model.PaymentStatus)}" : null,
+                    !string.IsNullOrWhiteSpace(Model.PaymentMethod) ? $"paymentMethod={Uri.EscapeDataString(Model.PaymentMethod)}" : null,
+                    Model.DateFrom.HasValue ? $"dateFrom={Model.DateFrom.Value:yyyy-MM-dd}" : null,
+                    Model.DateTo.HasValue ? $"dateTo={Model.DateTo.Value:yyyy-MM-dd}" : null,
+                    Model.AmountFrom.HasValue ? $"amountFrom={Model.AmountFrom.Value}" : null,
+                    Model.AmountTo.HasValue ? $"amountTo={Model.AmountTo.Value}" : null
+                }.Where(x => !string.IsNullOrWhiteSpace(x)))
+            })
+        </div>
     </div>
 </div>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+@await Html.PartialAsync("~/Areas/Admin/Views/Shared/_AdminRightDrawer.cshtml", new Tech_Store.Models.ViewModel.AdminRightDrawerViewModel
+{
+    DrawerId = "transactionQuickDrawer",
+    Title = "Xử lý giao dịch",
+    BodyId = "transactionQuickDrawerBody",
+    WidthClass = "admin-right-drawer--lg"
+})
+
 <script>
-    $(document).on('click', '.btn-update-payment', function () {
-        const button = $(this);
-        const paymentId = button.data('id');
+    $(document).ready(function () {
+        const drawerElement = document.getElementById('transactionQuickDrawer');
+        const drawerBody = $('#transactionQuickDrawerBody');
+        const transactionDrawer = drawerElement ? bootstrap.Offcanvas.getOrCreateInstance(drawerElement) : null;
+        const antiForgeryToken = $('input[name="__RequestVerificationToken"]').val();
 
-        // Hiển thị hộp thoại xác nhận
-        Swal.fire({
-            title: 'Xác nhận',
-            text: 'Bạn có chắc chắn muốn xác nhận thanh toán giao dịch #'+paymentId+'?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Đồng ý',
-            cancelButtonText: 'Hủy'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Gửi yêu cầu AJAX để cập nhật trạng thái
-                $.ajax({
-                    url: '/Admin/Transactions/UpdateStatus', // Đường dẫn API xử lý
-                    type: 'POST',
-                    data: { paymentId: paymentId },
-                    success: function (response) {
-                        if (response.success) {
-                            // Cập nhật giao diện
-                            button.closest('td').html('<span class="badge badge-success">Đã thanh toán</span>');
+        $(document).on('click', '.open-transaction-drawer', function (e) {
+            e.preventDefault();
 
-                            // Hiển thị thông báo toast thành công
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Thành công!',
-                                text: 'Thanh toán đã được xác nhận.',
-                                toast: true,
-                                position: 'top-end',
-                                showConfirmButton: false,
-                                timer: 3000,
-                                timerProgressBar: true
-                            });
-                        } else {
-                            // Thông báo lỗi
-                            Swal.fire('Lỗi', response.message, 'error');
-                        }
-                    },
-                    error: function () {
-                        // Thông báo lỗi kết nối
-                        Swal.fire('Lỗi', 'Có lỗi xảy ra. Vui lòng thử lại.', 'error');
-                    }
-                });
+            if (!transactionDrawer) {
+                return;
             }
-        });
 
-    $('#btnReset').on('click', function () {
-        $('#filterOrderId').val('');
-        $('#filterCustomerName').val('');
-        $('#filterPhone').val('');
-        $('#filterPaymentStatus').val('');
-        $('#filterDateFrom').val('');
-        $('#filterDateTo').val('');
-        $('#filterAmountFrom').val('');
-        $('#filterAmountTo').val('');
-        $('#btnSearch').click();
-    });
-
-
-
- });
-
-</script>
-<script>
-        $(document).ready(function () {
-        $(document).on('click', '#btnSearch', function () {
-            var filter = {
-                transactionId: $('#filterOrderId').val(),
-                nameCustomer: $('#filterCustomerName').val(),
-                phoneNumber: $('#filterPhone').val(),
-                paymentStatus: $('#filterPaymentStatus').val(),
-                dateFrom: $('#filterDateFrom').val(),
-                dateTo: $('#filterDateTo').val(),
-                amountFrom: $('#filterAmountFrom').val(),
-                amountTo: $('#filterAmountTo').val()
-            };
+            const id = $(this).data('id');
+            drawerBody.html('<div class="admin-right-drawer__loading">Đang tải thông tin giao dịch...</div>');
+            transactionDrawer.show();
+            $('.loading-container').show();
 
             $.ajax({
                 method: 'GET',
-                url: '@Url.Action("Filter", "Transactions")',
-                data: filter,
-                success: function (response) {
-                    var table = $('#add-row').DataTable();
-                    table.clear();
-
-                    $.each(response, function (i, trans) {
-                        const formatCurrency = (num) => num
-                            ? num.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })
-                            : '0 ₫';
-
-                        const formatDate = (d) => {
-                            if (!d) return "";
-                            const date = new Date(d);
-                            return date.toLocaleDateString('vi-VN', {
-                                day: '2-digit', month: '2-digit', year: 'numeric',
-                                hour: '2-digit', minute: '2-digit'
-                            });
-                        };
-
-                        let paymentIcon = '';
-                        switch (trans.paymentMethod) {
-                            case 'COD': paymentIcon = `<img src="/Upload/Logo/shipcod.png" class="payment-icon me-2" alt="COD"/>`; break;
-                            case 'MoMo': paymentIcon = `<img src="/Upload/Logo/LogoMoMo.webp" class="payment-icon me-2" alt="MoMo"/>`; break;
-                            case 'VNPay': paymentIcon = `<img src="/Upload/Logo/LogoVNPay.png" class="payment-icon me-2" alt="VNPay"/>`; break;
-                            case 'cash': paymentIcon = `<i class="fas fa-money-bill-wave text-success me-2"></i>`; break;
-                            default: paymentIcon = `<i class="fa fa-question-circle text-muted me-2"></i>`; break;
-                        }
-
-                        let paymentText = '';
-                        switch (trans.paymentMethod) {
-                            case 'COD': paymentText = 'TT khi nhận hàng (COD)'; break;
-                            case 'MoMo': paymentText = 'TT qua ví MoMo'; break;
-                            case 'VNPay': paymentText = 'TT qua ví VNPay'; break;
-                            case 'cash': paymentText = 'TT tiền mặt'; break;
-                            default: paymentText = 'Không xác định'; break;
-                        }
-
-                        let statusHtml = '';
-                        if (trans.status?.toLowerCase() === 'paid') {
-                            statusHtml = `<span class="badge bg-success">Đã thanh toán</span>`;
-                        } else {
-                            statusHtml = `
-                                <span class="badge bg-danger">Chưa thanh toán</span><br>
-                                <button class="btn btn-sm btn-primary btn-update-payment" data-id="${trans.transId}">
-                                    Xác nhận thanh toán
-                                </button>`;
-                        }
-
-                        table.row.add([
-                            `Giao dịch #${trans.transId}`,
-                            `<a href="/Admin/Orders/View/${trans.invoiceId}">Hóa đơn #${trans.invoiceId}</a>`,
-                            `${trans.customerName || ''}`,
-                            `${paymentIcon}<span>${paymentText}</span>`,
-                            `<div class="text-center">${formatCurrency(trans.amount)}</div>`,
-                            `<div class="text-center">${statusHtml}</div>`,
-                            `<div style="white-space:nowrap;">${formatDate(trans.paymentDate)}</div>`
-                        ]);
-                    });
-
-                    table.draw();
+                url: '/Admin/Transactions/QuickDrawer/' + id,
+                success: function (html) {
+                    drawerBody.html(html);
                 },
-                error: function (xhr, status, error) {
-                    alert("Đã xảy ra lỗi: " + error);
+                error: function () {
+                    drawerBody.html('<div class="alert alert-danger mb-0">Không thể tải thông tin giao dịch.</div>');
+                },
+                complete: function () {
+                    $('.loading-container').hide();
                 }
             });
         });
-    });
 
+        $(document).on('click', '#confirmDrawerPayment', function (e) {
+            e.preventDefault();
+
+            const button = $(this);
+            const paymentId = button.data('id');
+
+            if (button.prop('disabled')) {
+                return;
+            }
+
+            Swal.fire({
+                title: 'Xác nhận thanh toán',
+                text: 'Bạn có chắc muốn xác nhận giao dịch #' + paymentId + ' đã thanh toán?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Xác nhận',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (!result.isConfirmed) {
+                    return;
+                }
+
+                button.prop('disabled', true);
+                $('.loading-container').show();
+
+                $.ajax({
+                    method: 'POST',
+                    url: '/Admin/Transactions/UpdateStatus',
+                    data: {
+                        paymentId: paymentId,
+                        __RequestVerificationToken: antiForgeryToken
+                    },
+                    success: function (response) {
+                        if (!response.success) {
+                            Swal.fire('Không thể thực hiện', response.message, 'error');
+                            button.prop('disabled', false);
+                            return;
+                        }
+
+                        Swal.fire('Thành công', response.message, 'success').then(() => {
+                            location.reload();
+                        });
+                    },
+                    error: function () {
+                        Swal.fire('Lỗi', 'Không thể xác nhận thanh toán giao dịch này.', 'error');
+                        button.prop('disabled', false);
+                    },
+                    complete: function () {
+                        $('.loading-container').hide();
+                    }
+                });
+            });
+        });
+    });
 </script>

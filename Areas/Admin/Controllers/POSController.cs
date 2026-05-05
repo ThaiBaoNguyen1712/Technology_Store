@@ -170,7 +170,11 @@ namespace Tech_Store.Areas.Admin.Controllers
                             v.VarientId,
                             v.Sku,
                             v.Stock,
-                            v.Price
+                            v.Price,
+                            Values = v.VariantAttributes
+                                .OrderBy(va => va.VariantAttributeId)
+                                .Select(va => va.AttributeValue.Value)
+                                .ToList()
                         })
                         .ToList()
                 })
@@ -285,6 +289,8 @@ namespace Tech_Store.Areas.Admin.Controllers
 
             var varient = await _context.VarientProducts
                 .Include(v => v.Product) // Bao gồm thông tin sản phẩm
+                .Include(v => v.VariantAttributes)
+                    .ThenInclude(va => va.AttributeValue)
                 .FirstOrDefaultAsync(x => x.VarientId == cart.VarientProductId);
 
             if (varient == null)
@@ -299,18 +305,26 @@ namespace Tech_Store.Areas.Admin.Controllers
 
             var price = varient.Price * cart.Quantity;
             var formattedPrice = Math.Round((decimal)price, 0).ToString("N0");
+            var variantValues = varient.VariantAttributes
+                .OrderBy(va => va.VariantAttributeId)
+                .Select(va => va.AttributeValue.Value)
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .ToList();
+            var variantDisplay = variantValues.Count > 0
+                ? string.Join(" / ", variantValues)
+                : (string.IsNullOrWhiteSpace(varient.Attributes) ? varient.Sku : varient.Attributes);
             // Tạo HTML cho một dòng mới trong bảng
             var newRow = $@"
             <tr data-varient-id='{varient.VarientId}'>
-               <td class='align-items-center'>
-                       <span class='text-truncate'>{varient.Product.Name}</span> 
-                </td>
-                </td>
-
-                <td><span class='text-truncate'>{varient.Attributes}</span></td>
                 <td>
-                   <input min=""1"" max=""{varient.Stock}"" type=""number"" class=""form-control quantity-input"" data-product-id=""{cart.ProductId}"" value=""{cart.Quantity}"" />
-
+                    <div class='pos-cart-product'>
+                        <span class='pos-cart-product__name'>{varient.Product.Name}</span>
+                        <span class='pos-cart-product__sku'>{varient.Sku}</span>
+                    </div>
+                </td>
+                <td><span class='pos-cart-variant'>{variantDisplay}</span></td>
+                <td>
+                    <span class='pos-cart-quantity'>{cart.Quantity}</span>
                 </td>
                 <td class='price-cell' data-price='{varient.Price}'>{formattedPrice}đ</td>
                 <td>
@@ -334,6 +348,8 @@ namespace Tech_Store.Areas.Admin.Controllers
 
             var varient = await _context.VarientProducts
                 .Include(v => v.Product) // Bao gồm thông tin sản phẩm
+                .Include(v => v.VariantAttributes)
+                    .ThenInclude(va => va.AttributeValue)
                 .FirstOrDefaultAsync(x => x.VarientId == cart.VarientProductId);
 
             if (varient == null)
@@ -350,20 +366,27 @@ namespace Tech_Store.Areas.Admin.Controllers
             // Tính lại giá dựa trên số lượng mới
             var price = varient.Price * cart.Quantity;
             var formattedPrice = Math.Round((decimal)price, 0).ToString("N0");
+            var variantValues = varient.VariantAttributes
+                .OrderBy(va => va.VariantAttributeId)
+                .Select(va => va.AttributeValue.Value)
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .ToList();
+            var variantDisplay = variantValues.Count > 0
+                ? string.Join(" / ", variantValues)
+                : (string.IsNullOrWhiteSpace(varient.Attributes) ? varient.Sku : varient.Attributes);
 
             // Tạo HTML cho dòng sản phẩm với số lượng cập nhật
             var newRow = $@"
             <tr data-varient-id='{varient.VarientId}'>
-               <td class='align-items-center'>
-                      <img src=""/Upload/Products/{varient.Product.Image}""  class=""img-thumbnail""  style=""height:35px;width:35px;object-fit: cover;"" />
-                       <span class='text-truncate'>{varient.Product.Name}</span> 
-                </td>
-                </td>
-
-                <td><span class='text-truncate'>{varient.Attributes}</span></td>
                 <td>
-                   <input min=""1"" max=""{varient.Stock}"" type=""number"" class=""form-control quantity-input"" data-product-id=""{cart.ProductId}"" value=""{cart.Quantity}"" />
-
+                    <div class='pos-cart-product'>
+                        <span class='pos-cart-product__name'>{varient.Product.Name}</span>
+                        <span class='pos-cart-product__sku'>{varient.Sku}</span>
+                    </div>
+                </td>
+                <td><span class='pos-cart-variant'>{variantDisplay}</span></td>
+                <td>
+                    <span class='pos-cart-quantity'>{cart.Quantity}</span>
                 </td>
                 <td class='price-cell' data-price='{varient.Price}'>{formattedPrice}đ</td>
                 <td>

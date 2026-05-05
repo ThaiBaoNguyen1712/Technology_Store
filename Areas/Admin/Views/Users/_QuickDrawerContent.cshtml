@@ -1,0 +1,89 @@
+@model Tech_Store.Models.ViewModel.AdminUserQuickDrawerViewModel
+@using System.Globalization
+
+<div class="user-drawer">
+    <div class="user-drawer__summary">
+        <div class="user-drawer__summary-card">
+            <span>Khách hàng</span>
+            <strong>@Model.FullName</strong>
+        </div>
+        <div class="user-drawer__summary-card">
+            <span>Trạng thái</span>
+            <strong>@(Model.IsActive ? "Đã kích hoạt" : "Chưa kích hoạt")</strong>
+        </div>
+        <div class="user-drawer__summary-card">
+            <span>Đơn hàng</span>
+            <strong>@Model.OrderCount</strong>
+        </div>
+        <div class="user-drawer__summary-card">
+            <span>Doanh số</span>
+            <strong>@Model.TotalSpent.ToString("C0", new CultureInfo("vi-VN"))</strong>
+        </div>
+    </div>
+
+    <section class="user-drawer__section">
+        <div class="user-drawer__section-head">
+            <h6>Thông tin cơ bản</h6>
+        </div>
+        <div class="user-drawer__profile">
+            <div class="brand-admin__logo-shell user-admin__avatar-shell">
+                <img src="/Upload/Avatar/@(string.IsNullOrWhiteSpace(Model.ImageUrl) ? "none.png" : Model.ImageUrl)"
+                     class="brand-admin__logo user-admin__avatar"
+                     alt="@Model.FullName" />
+            </div>
+            <div class="user-drawer__profile-body">
+                <strong>@Model.FullName</strong>
+                <span>@(string.IsNullOrWhiteSpace(Model.Email) ? "-" : Model.Email)</span>
+                <span>@(string.IsNullOrWhiteSpace(Model.PhoneNumber) ? "-" : Model.PhoneNumber)</span>
+            </div>
+        </div>
+        <div class="order-drawer__info-list mt-3">
+            <div class="order-drawer__info-row">
+                <span>Địa chỉ</span>
+                <strong>@(string.IsNullOrWhiteSpace(Model.Address) ? "-" : Model.Address)</strong>
+            </div>
+            <div class="order-drawer__info-row">
+                <span>Xác minh email</span>
+                <strong>@(Model.IsVerified ? "Đã xác minh" : "Chưa xác minh")</strong>
+            </div>
+            <div class="order-drawer__info-row">
+                <span>Ngày tạo</span>
+                <strong>@(Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "-")</strong>
+            </div>
+            <div class="order-drawer__info-row">
+                <span>Đăng nhập gần nhất</span>
+                <strong>@(Model.LastLogin?.ToString("dd/MM/yyyy HH:mm") ?? "-")</strong>
+            </div>
+        </div>
+    </section>
+
+    <section class="user-drawer__section">
+        <div class="user-drawer__section-head">
+            <h6>Hành động</h6>
+        </div>
+        <div class="user-drawer__actions">
+            <a href="@Model.DetailUrl" class="btn btn-primary">Mở trang chi tiết</a>
+            @if (Model.IsActive)
+            {
+                <button type="button"
+                        class="btn btn-light border js-user-ban"
+                        data-url="/Admin/Users/BanUser?id=@Model.UserId">
+                    Chặn khách hàng
+                </button>
+            }
+            else
+            {
+                <button type="button"
+                        class="btn btn-light border js-user-unban"
+                        data-url="/Admin/Users/UnBanUser?id=@Model.UserId">
+                    Bỏ chặn khách hàng
+                </button>
+            }
+            <button type="button"
+                    class="btn btn-outline-danger js-user-delete"
+                    data-url="/Admin/Users/Delete/@Model.UserId">
+                Xóa khách hàng
+            </button>
+        </div>
+    </section>
+</div>

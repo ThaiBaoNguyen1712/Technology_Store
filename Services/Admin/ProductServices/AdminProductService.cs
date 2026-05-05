@@ -11,7 +11,6 @@ using Tech_Store.Models.ViewModel;
 using Tech_Store.Services.Admin.Interfaces;
 using Tech_Store.Services.Admin.NotificationServices;
 using Product = Tech_Store.Models.Product;
-using X.PagedList;
 
 namespace Tech_Store.Services.Admin.ProductServices
 {
@@ -98,20 +97,24 @@ namespace Tech_Store.Services.Admin.ProductServices
             var page = request.Page < 1 ? 1 : request.Page;
             var pageSize = request.PageSize <= 0 ? 25 : Math.Min(request.PageSize, 100);
             var orderedQuery = query.OrderByDescending(p => p.ProductId);
-            var totalCount = await orderedQuery.CountAsync();
+            var totalItems = await orderedQuery.CountAsync();
+            var totalPages = Math.Max(1, (int)Math.Ceiling(totalItems / (double)pageSize));
+            page = Math.Min(page, totalPages);
             var products = await orderedQuery
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
-            var pagedProducts = new StaticPagedList<Product>(products, page, pageSize, totalCount);
 
             return new AdminProductIndexData
             {
-                Products = pagedProducts,
+                Products = products,
                 Categories = await _context.Categories.ToListAsync(),
                 Brands = await _context.Brands.ToListAsync(),
                 Filters = request,
-                PageSize = pageSize
+                Page = page,
+                PageSize = pageSize,
+                TotalItems = totalItems,
+                TotalPages = totalPages
             };
         }
 
