@@ -1,330 +1,217 @@
-﻿@using Tech_Store.Helpers
+@using System.Globalization
+@using Tech_Store.Helpers
+@model Tech_Store.Models.ViewModel.OrderDetailVM
 
 @{
     ViewData["Title"] = "Chi tiết đơn hàng";
     Layout = "~/Views/Shared/_Layout.cshtml";
-}
-@model Tech_Store.Models.ViewModel.OrderDetailVM
 
-<style>
-    .order-progress {
-        display: flex;
-        justify-content: space-between;
-        position: relative;
-        padding-top: 10px;
-    }
-
-        /* Tạo thanh nền xám chạy ngang phía sau */
-        .order-progress::before {
-            content: '';
-            position: absolute;
-            top: 2rem; /* Căn giữa theo icon */
-            left: 10%;
-            right: 10%;
-            height: 4px;
-            background: #e9ecef;
-            z-index: 0;
-        }
-
-        .order-progress .step {
-            position: relative;
-            z-index: 1;
-            flex: 1;
-            text-align: center;
-        }
-
-        .order-progress .step-icon {
-            width: 2.5rem;
-            height: 2.5rem;
-            border-radius: 50%;
-            background: #fff;
-            border: 3px solid #dee2e6;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto;
-            transition: all 0.3s ease;
-        }
-
-        /* Trạng thái Active (Đang ở bước này) */
-        .order-progress .step.active .step-icon {
-            border-color: #dc3545; /* Màu đỏ */
-            background: #fff;
-            color: #dc3545;
-            font-weight: bold;
-            transform: scale(1.1);
-        }
-
-        /* Trạng thái Completed (Đã đi qua) */
-        .order-progress .step.completed .step-icon {
-            border-color: #dc3545;
-            background: #dc3545;
-            color: white;
-        }
-
-        /* Hiệu ứng thanh nối màu đỏ khi hoàn thành */
-        .order-progress .step.completed::after {
-            content: '';
-            position: absolute;
-            top: 1rem; /* Khớp với vị trí ::before của cha */
-            left: -50%;
-            width: 100%;
-            height: 4px;
-            background: #dc3545;
-            z-index: -1;
-        }
-
-        /* Loại bỏ thanh nối cho bước đầu tiên */
-        .order-progress .step:first-child::after {
-            display: none;
-        }
-
-    .step-text {
-        font-size: 0.85rem;
-        font-weight: 500;
-        color: #6c757d;
-        margin-top: 0.5rem;
-    }
-
-    .step.active .step-text, .step.completed .step-text {
-        color: #212529;
-
-    }
-
-    .payment-icon {
-        width: 40px;
-        height: auto;
-        border-radius: 5px;
-    }
-
-
-
-    .text-success {
-        font-size: 1.5rem;
-</style>
-    <div class="container py-5">
-        <!-- Header -->
-        <div class="d-flex align-items-center mb-4">
-            <a href="/User/MyOrders" class="text-decoration-none text-dark me-3">
-                <i class="fas fa-arrow-left"></i>
-            </a>
-            <h4 class="mb-0">Chi tiết đơn hàng #@Model.OrderId</h4>
-        </div>
-    @if (Model.OrderStatus != "Cancelled" && Model.OrderStatus != "Refunded")
+    string statusKey = Model.OrderStatus switch
     {
-        <!-- Order Progress -->
-        <div class="card mb-4">
-            <div class="card-body">
-                <div class="order-progress row text-center">
-                    <!-- Đã đặt hàng -->
-                    <div class="step col @(Model.OrderStatus == "Pending" || Model.OrderStatus == "Confirmed" || Model.OrderStatus == "Shipping" || Model.OrderStatus == "Delivered" || Model.OrderStatus == "Completed" ? "completed" : "active")">
-                        <div class="step-icon">
-                            <i class="fas fa-check"></i>
-                        </div>
-                        <div class="mt-2">
-                            Đã đặt hàng
-                        </div>
+        "Completed" => "completed",
+        "Processing" => "processing",
+        "Shipping" => "shipping",
+        "Delivered" => "delivered",
+        "Pending" => "pending",
+        "Confirmed" => "confirmed",
+        "Cancelled" => "cancelled",
+        "Refunded" => "refunded",
+        _ => "pending"
+    };
+
+    string statusLabel = Model.OrderStatus switch
+    {
+        "Completed" => "Đã hoàn thành",
+        "Processing" => "Đang xử lý",
+        "Shipping" => "Đang giao hàng",
+        "Delivered" => "Đã giao hàng",
+        "Pending" => "Đang chờ xử lý",
+        "Confirmed" => "Đã xác nhận",
+        "Cancelled" => "Đã hủy",
+        "Refunded" => "Đã hoàn tiền",
+        _ => "Đang xử lý"
+    };
+
+    string paymentLabel = Model.PaymentMethod switch
+    {
+        "COD" => "Thanh toán khi nhận hàng (COD)",
+        "MoMo" => "Thanh toán qua ví MoMo",
+        "VNPay" => "Thanh toán qua VNPay",
+        "cash" => "Thanh toán tiền mặt",
+        _ => "Không xác định"
+    };
+}
+
+<link rel="stylesheet" href="~/client/asset/css/ordersview.css" asp-append-version="true" />
+
+<div class="orders-detail-page">
+    <div class="container">
+        <div class="orders-shell">
+            <a href="/User/MyOrders" class="orders-detail-back">
+                <i class="fas fa-arrow-left"></i>
+                <span>Quay lại danh sách đơn hàng</span>
+            </a>
+
+            <div class="orders-detail-hero">
+                <div>
+                    <h1>Chi tiết đơn hàng #@Model.OrderId</h1>
+                    <div class="orders-detail-hero__meta">Theo dõi tiến độ xử lý, danh sách sản phẩm và tổng thanh toán của đơn hàng này.</div>
+                </div>
+                <span class="order-status status-@statusKey">
+                    <span class="timeline-dot dot-@statusKey"></span>
+                    @statusLabel
+                </span>
+            </div>
+
+            @if (Model.OrderStatus != "Cancelled" && Model.OrderStatus != "Refunded")
+            {
+                <div class="order-detail-card mb-3">
+                    <div class="order-detail-card__header">
+                        <h5>Tiến trình đơn hàng</h5>
                     </div>
-                    <!-- Đã xác nhận -->
-                    <div class="step col @(Model.OrderStatus == "Confirmed" || Model.OrderStatus == "Shipping" || Model.OrderStatus == "Delivered" || Model.OrderStatus == "Completed" ? "completed active" : "")">
-                        <div class="step-icon">
-                            <i class="fas fa-check"></i>
-                        </div>
-                        <div class="mt-2">
-                            Đã xác nhận
-                        </div>
-                    </div>
-                    <!-- Đang giao hàng -->
-                    <div class="step col @(Model.OrderStatus == "Shipping" || Model.OrderStatus == "Delivered" || Model.OrderStatus == "Completed" ? "completed active" : "")">
-                        <div class="step-icon">
-                            <i class="fas fa-truck"></i>
-                        </div>
-                        <div class="mt-2">
-                            Đang giao hàng
-                        </div>
-                    </div>
-                    <!-- Đã giao hàng -->
-                    <div class="step col @(Model.OrderStatus == "Delivered" || Model.OrderStatus == "Completed" ? "completed active" : "")">
-                        <div class="step-icon">
-                            <i class="fas fa-box"></i>
-                        </div>
-                        <div class="mt-2">
-                            Đã giao hàng
-                        </div>
-                    </div>
-                    <!-- Hoàn tất -->
-                    <div class="step col @(Model.OrderStatus == "Completed" ? "completed" : Model.OrderStatus == "Delivered" ? "active" : "")">
-                        <div class="step-icon">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
-                        <div class="mt-2">
-                            Hoàn tất
+                    <div class="order-detail-card__body">
+                        <div class="order-progress">
+                            <div class="step @(Model.OrderStatus == "Pending" || Model.OrderStatus == "Confirmed" || Model.OrderStatus == "Shipping" || Model.OrderStatus == "Delivered" || Model.OrderStatus == "Completed" ? "completed" : "active")">
+                                <div class="step-icon"><i class="fas fa-check"></i></div>
+                                <div class="step-label">Đã đặt hàng</div>
+                            </div>
+                            <div class="step @(Model.OrderStatus == "Confirmed" || Model.OrderStatus == "Shipping" || Model.OrderStatus == "Delivered" || Model.OrderStatus == "Completed" ? "completed active" : "")">
+                                <div class="step-icon"><i class="fas fa-clipboard-check"></i></div>
+                                <div class="step-label">Đã xác nhận</div>
+                            </div>
+                            <div class="step @(Model.OrderStatus == "Shipping" || Model.OrderStatus == "Delivered" || Model.OrderStatus == "Completed" ? "completed active" : "")">
+                                <div class="step-icon"><i class="fas fa-truck"></i></div>
+                                <div class="step-label">Đang giao hàng</div>
+                            </div>
+                            <div class="step @(Model.OrderStatus == "Delivered" || Model.OrderStatus == "Completed" ? "completed active" : "")">
+                                <div class="step-icon"><i class="fas fa-box-open"></i></div>
+                                <div class="step-label">Đã giao hàng</div>
+                            </div>
+                            <div class="step @(Model.OrderStatus == "Completed" ? "completed" : Model.OrderStatus == "Delivered" ? "active" : "")">
+                                <div class="step-icon"><i class="fas fa-check-circle"></i></div>
+                                <div class="step-label">Hoàn tất</div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    }
+            }
 
-   
-
-        <div class="row">
-            <!-- Order Details -->
-            <div class="col-md-8">
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Sản phẩm đã đặt</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="order-items">
-                            @foreach(var item in Model.ListVarientProduct)
-                                {
-                                    <!-- Item -->
-                                    <div class="d-flex mb-3">
-                                        @if(item.ImageUrl.Contains("http"))
+            <div class="orders-detail-grid">
+                <div>
+                    <div class="order-detail-card">
+                        <div class="order-detail-card__header">
+                            <h5>Sản phẩm đã đặt</h5>
+                        </div>
+                        <div class="order-detail-card__body">
+                            @foreach (var item in Model.ListVarientProduct)
+                            {
+                                <div class="order-line-item">
+                                    <div class="order-line-item__image">
+                                        @if (!string.IsNullOrWhiteSpace(item.ImageUrl) && item.ImageUrl.Contains("http"))
                                         {
-                                    <img src="@ResizeCDN.Cdn(item.ImageUrl)" class="rounded" alt="@item.NameProduct" width="80" height="80">
-
-                                }
-                                else if(string.IsNullOrEmpty(item.ImageUrl))
-                                {
-                                    <img src="/Upload/Products/no-image.png" class="rounded" alt="@item.NameProduct" width="80" height="80">
-
-                                }
-                                else
-                                {
-                                    <img src="/Upload/Products/@item.ImageUrl" class="rounded" alt="@item.NameProduct" width="80" height="80">
-
-                                }
-                                        <div class="ms-3 flex-grow-1">
-                                            <a style="text-decoration:none" href="/View/@item.Slug">
-                                                <h6 class="mb-1">@item.NameProduct</h6>
-                                            </a>
-                                            <div class="text-muted small mb-1">@item.Attributes</div>
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <span class="text-danger">@item.Price</span>
-                                                <span class="text-muted">x @item.Quantity</span>
-                                            </div>
-                                        </div>
+                                            <img src="@ResizeCDN.Cdn(item.ImageUrl)" alt="@item.NameProduct">
+                                        }
+                                        else if (string.IsNullOrWhiteSpace(item.ImageUrl))
+                                        {
+                                            <img src="/Upload/Products/no-image.png" alt="@item.NameProduct">
+                                        }
+                                        else
+                                        {
+                                            <img src="/Upload/Products/@item.ImageUrl" alt="@item.NameProduct">
+                                        }
                                     </div>
-                                }
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Order Summary -->
-            <div class="col-md-4">
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Tổng quan đơn hàng</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Tổng tiền hàng</span>
-                            <span>@Model.OriginTotalPrice</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Phí vận chuyển</span>
-                            <span>@Model.ShippingPrice</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Giảm giá</span>
-                            <span class="text-danger">@Model.DiscountPrice</span>
-                        </div>
-                        <hr>
-                        <div class="d-flex justify-content-between fw-bold">
-                            <span>Tổng thanh toán</span>
-                            <span class="text-danger">@Model.TotalPrice</span>
+                                    <div class="order-line-item__body">
+                                        <h6 class="order-line-item__title">
+                                            <a href="/View/@item.Slug">@item.NameProduct</a>
+                                        </h6>
+                                        <div class="order-line-item__meta">@item.Attributes</div>
+                                    </div>
+
+                                    <div class="order-line-item__price">
+                                        <strong>@item.Price</strong>
+                                        <span>Số lượng x @item.Quantity</span>
+                                    </div>
+                                </div>
+                            }
                         </div>
                     </div>
                 </div>
 
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Thông tin giao hàng</h5>
+                <aside>
+                    <div class="order-detail-sidebar-card mb-3">
+                        <div class="order-detail-sidebar-card__header">
+                            <h5>Tổng quan đơn hàng</h5>
+                        </div>
+                        <div class="order-detail-sidebar-card__body">
+                            <div class="order-summary-list">
+                                <div class="order-summary-row">
+                                    <span>Tổng tiền hàng</span>
+                                    <strong>@Model.OriginTotalPrice.ToString("C0", new CultureInfo("vi-VN"))</strong>
+                                </div>
+                                <div class="order-summary-row">
+                                    <span>Phí vận chuyển</span>
+                                    <strong>@(string.IsNullOrWhiteSpace(Model.ShippingPrice) ? "0 đ" : Model.ShippingPrice)</strong>
+                                </div>
+                                <div class="order-summary-row">
+                                    <span>Giảm giá</span>
+                                    <strong class="text-danger">@(string.IsNullOrWhiteSpace(Model.DiscountPrice) ? "0 đ" : Model.DiscountPrice)</strong>
+                                </div>
+                                <div class="order-summary-row order-summary-row--total">
+                                    <strong>Tổng thanh toán</strong>
+                                    <strong>@Model.TotalPrice</strong>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <p class="fw-bold mb-1">@Model.User.FullName</p>
-                        <p class="mb-1">@Model.User.PhoneNumber</p>
-                        <p class="mb-0">@Model.User.Address</p>
-                    </div>
-                </div>
 
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Phương thức thanh toán</h5>
+                    <div class="order-detail-sidebar-card mb-3">
+                        <div class="order-detail-sidebar-card__header">
+                            <h5>Thông tin giao hàng</h5>
+                        </div>
+                        <div class="order-detail-sidebar-card__body">
+                            <div class="order-contact-block">
+                                <strong>@Model.User.FullName</strong>
+                                <span>@Model.User.PhoneNumber</span>
+                                <span>@Model.User.Address</span>
+                            </div>
+                        </div>
                     </div>
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <!-- Hiển thị icon hoặc hình tương ứng -->
-                        @if (Model.PaymentMethod == "COD")
-                        {
-                            <img src="/Upload/Logo/shipcod.png" class="payment-icon me-2" alt="COD" />
-                        }
-                        else if (Model.PaymentMethod == "MoMo")
-                        {
-                            <img src="/Upload/Logo/LogoMoMo.webp" class="payment-icon me-2" alt="MoMo" />
-                        }
-                        else if (Model.PaymentMethod == "VNPay")
-                        {
-                            <img src="/Upload/Logo/LogoVNPay.png" class="payment-icon me-2" alt="VNPay" />
-                        }
-                        else if (Model.PaymentMethod == "cash")
-                        {
-                            <i class="fas fa-money-bill-wave text-success me-2"></i>
-                        }
 
-                        <span>
-                            @(Model.PaymentMethod == "COD" ? "Thanh toán khi nhận hàng (COD)" :
-                                Model.PaymentMethod == "MoMo" ? "Thanh toán qua ví MoMo" :
-                                Model.PaymentMethod == "VNPay" ? "Thanh toán qua ví VNPay" :
-                                Model.PaymentMethod == "cash" ? "Thanh toán tiền mặt" : "Không xác định")
-                        </span>
+                    <div class="order-detail-sidebar-card">
+                        <div class="order-detail-sidebar-card__header">
+                            <h5>Phương thức thanh toán</h5>
+                        </div>
+                        <div class="order-detail-sidebar-card__body">
+                            <div class="payment-method">
+                                <div class="payment-method__icon">
+                                    @if (Model.PaymentMethod == "COD")
+                                    {
+                                        <img src="/Upload/Logo/shipcod.png" alt="COD" />
+                                    }
+                                    else if (Model.PaymentMethod == "MoMo")
+                                    {
+                                        <img src="/Upload/Logo/LogoMoMo.webp" alt="MoMo" />
+                                    }
+                                    else if (Model.PaymentMethod == "VNPay")
+                                    {
+                                        <img src="/Upload/Logo/LogoVNPay.png" alt="VNPay" />
+                                    }
+                                    else if (Model.PaymentMethod == "cash")
+                                    {
+                                        <i class="fas fa-money-bill-wave"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="fas fa-wallet"></i>
+                                    }
+                                </div>
+                                <div class="payment-method__text">@paymentLabel</div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-
+                </aside>
             </div>
         </div>
     </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-   
-    <script>
-        $(document).ready(function () {
-            // Hàm cập nhật trạng thái đơn hàng
-            function updateOrderStatus(status) {
-                const steps = $('.order-progress .step');
-                steps.removeClass('completed active');
-
-                let found = false;
-                steps.each(function (index) {
-                    if (!found) {
-                        if ($(this).find('.step-text').text() === status) {
-                            $(this).addClass('active');
-                            found = true;
-                        } else {
-                            $(this).addClass('completed');
-                        }
-                    }
-                });
-            }
-
-            // Xử lý khi click vào nút quay lại
-            $('.back-button').click(function (e) {
-                e.preventDefault();
-                window.history.back();
-            });
-
-            // Format tiền tệ
-            function formatCurrency(amount) {
-                return new Intl.NumberFormat('vi-VN', {
-                    style: 'currency',
-                    currency: 'VND'
-                }).format(amount);
-            }
-        });
-    </script>
-
-
-            </div>
+</div>

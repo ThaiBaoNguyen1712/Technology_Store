@@ -1,109 +1,145 @@
-﻿@model Tech_Store.Models.Cart
+@model Tech_Store.Models.Cart
+@using System.Globalization
+@using Tech_Store.Helpers
+
 @{
     ViewData["Title"] = "Giỏ hàng của tôi";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    const decimal shippingFee = 30000;
 }
-@using System.Globalization
-@using Tech_Store.Helpers
-<section class="client-list-page client-list-page--cart">
+
+<section class="cart-page">
     <div class="container">
-        <div class="client-list-page__header">
+        <div class="cart-page__head">
             <div>
-                <span class="client-list-page__eyebrow">Tech Store</span>
-                <h1>Giỏ hàng của tôi</h1>
+                <p class="cart-page__eyebrow">Giỏ hàng</p>
+                <h1 class="cart-page__title">Giỏ hàng của tôi</h1>
             </div>
-            <a href="~/" class="client-list-page__back-link">
-                <i class="fa fa-arrow-left"></i>
-                Tiếp tục mua sắm
-            </a>
+            @if (Model != null && Model.CartItems != null && Model.CartItems.Any())
+            {
+                <div class="cart-page__count">@Model.CartItems.Count sản phẩm</div>
+            }
         </div>
 
-        <div class="client-list-page__content">
         @if (Model != null && Model.CartItems != null && Model.CartItems.Any())
         {
-            <div class="client-list-toolbar">
-                <div>
-                    <strong>@Model.CartItems.Count</strong>
-                    <span>sản phẩm trong giỏ hàng</span>
-                </div>
-                <div class="form-check m-0">
-                    <input class="form-check-input" type="checkbox" id="selectAll">
-                    <label class="form-check-label ms-2" for="selectAll">
-                        Chọn tất cả
-                    </label>
-                </div>
-            </div>
+            <div class="cart-page__shell">
+                <div class="cart-page__main">
+                    <div class="cart-page__toolbar">
+                        <label class="cart-page__select-all" for="selectAll">
+                            <input class="form-check-input" type="checkbox" id="selectAll">
+                            <span>Chọn tất cả</span>
+                        </label>
+                    </div>
 
+                    <div class="cart-page__desktop-head" aria-hidden="true">
+                        <span>Sản phẩm</span>
+                        <span>Đơn giá</span>
+                        <span>Số lượng</span>
+                        <span>Thành tiền</span>
+                    </div>
 
-            <div id="cartItemsContainer">
-                @foreach (var item in Model.CartItems)
-                {
-                    <article class="client-list-card cart-item" data-item-id="@item.VarientProductId">
-                        <div class="client-list-card__select">
-                            <input type="checkbox" class="form-check-input product-checkbox"
-                                   data-price="@item.VarientProduct.Price"
-                                   data-VarientId="@item.VarientProduct.VarientId"
-                                   data-productId="@item.ProductId">
-                        </div>
+                    <div id="cartItemsContainer" class="cart-page__list">
+                        @foreach (var item in Model.CartItems)
+                        {
+                            var unitPrice = item.VarientProduct.Price ?? 0;
+                            var lineTotal = unitPrice * item.Quantity;
 
-                        <div class="client-list-card__image">
-                            @if(item.VarientProduct.ImageUrl == null)
-                            {
-                                <img src="/Upload/Products/no-image.png"
-                                     alt="No Image">
-                            }
-                            else if(item.VarientProduct.ImageUrl.Contains("http"))
-                            {
-                                <img src="@ResizeCDN.Cdn(item.VarientProduct.ImageUrl, 358,358)"
-                                     alt="Product Image">
-                            }
-                            else
-                            {
-                                <img src="/Upload/Products/@item.VarientProduct.ImageUrl"
-                                     alt="Product Image">
-                            }
-                        </div>
+                            <article class="cart-page__item cart-item" data-item-id="@item.VarientProductId">
+                                <div class="cart-page__item-main">
+                                    <div class="cart-page__item-check">
+                                        <input type="checkbox"
+                                               class="form-check-input product-checkbox"
+                                               data-price="@unitPrice"
+                                               data-varientid="@item.VarientProduct.VarientId"
+                                               data-productid="@item.ProductId">
+                                    </div>
 
-                        <div class="client-list-card__body">
-                            <input type="hidden" name="ProductId" value="@item.ProductId"/>
-                            <h2 class="client-list-card__title">@item.Product.Name</h2>
-                            @if (!string.IsNullOrWhiteSpace(item.VarientProduct.Attributes))
-                            {
-                                <p class="client-list-card__meta">@item.VarientProduct.Attributes</p>
-                            }
-                        </div>
+                                    <a class="cart-page__item-image" href="/view/@item.Product.Slug">
+                                        @if (string.IsNullOrWhiteSpace(item.VarientProduct.ImageUrl))
+                                        {
+                                            <img src="/Upload/Products/no-image.png" alt="@item.Product.Name">
+                                        }
+                                        else if (item.VarientProduct.ImageUrl.Contains("http"))
+                                        {
+                                            <img src="@ResizeCDN.Cdn(item.VarientProduct.ImageUrl, 358, 358)" alt="@item.Product.Name">
+                                        }
+                                        else
+                                        {
+                                            <img src="/Upload/Products/@item.VarientProduct.ImageUrl" alt="@item.Product.Name">
+                                        }
+                                    </a>
 
-                        <div class="client-list-card__actions">
-                            <div class="client-list-card__price">
-                                @((item.VarientProduct.Price ?? 0).ToString("C0", new CultureInfo("vi-VN")))
-                            </div>
-                            <div class="client-list-card__control-row">
-                                <div class="input-group input-group-sm qty-control">
-                                    <button class="btn btn-outline-secondary minus-btn" type="button">-</button>
-                                    <input type="number" class="form-control text-center qty-input"
-                                           value="@item.Quantity" min="1" data-price="@item.VarientProduct.Price">
-                                    <button class="btn btn-outline-secondary plus-btn" type="button">+</button>
+                                    <div class="cart-page__item-info">
+                                        <input type="hidden" name="ProductId" value="@item.ProductId" />
+                                        <a class="cart-page__item-name" href="/view/@item.Product.Slug">@item.Product.Name</a>
+                                        @if (!string.IsNullOrWhiteSpace(item.VarientProduct.Attributes))
+                                        {
+                                            <p class="cart-page__item-variant">@item.VarientProduct.Attributes</p>
+                                        }
+                                    </div>
                                 </div>
-                                <button class="btn client-list-card__delete delete-item" type="button" data-item-id="@item.ProductId" aria-label="Xóa sản phẩm">
-                                    <i class="fa fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </article>
-                }
-            </div>
 
-            <div class="client-checkout-bar" id="checkout-form">
-                <div>
-                    <span>Tổng giá tạm tính</span>
-                    <strong id="subtotal">0₫</strong>
+                                <div class="cart-page__item-meta">
+                                    <div class="cart-page__item-block">
+                                        <span class="cart-page__item-label">Đơn giá</span>
+                                        <strong class="cart-page__item-price">@unitPrice.ToString("C0", new CultureInfo("vi-VN"))</strong>
+                                    </div>
+
+                                    <div class="cart-page__item-block">
+                                        <span class="cart-page__item-label">Số lượng</span>
+                                        <div class="input-group input-group-sm qty-control cart-page__qty">
+                                            <button class="btn btn-outline-secondary minus-btn" type="button">-</button>
+                                            <input type="number"
+                                                   class="form-control text-center qty-input"
+                                                   value="@item.Quantity"
+                                                   min="1"
+                                                   data-price="@unitPrice">
+                                            <button class="btn btn-outline-secondary plus-btn" type="button">+</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="cart-page__item-block">
+                                        <span class="cart-page__item-label">Thành tiền</span>
+                                        <strong class="cart-page__item-total js-line-total">@lineTotal.ToString("C0", new CultureInfo("vi-VN"))</strong>
+                                    </div>
+
+                                    <button class="cart-page__remove delete-item"
+                                            type="button"
+                                            data-item-id="@item.ProductId"
+                                            aria-label="Xóa sản phẩm">
+                                        Xóa
+                                    </button>
+                                </div>
+                            </article>
+                        }
+                    </div>
                 </div>
-                <button type="button" id="PayBtn" class="btn btn-danger">
-                    Thanh toán
-                    <i class="fa fa-arrow-right"></i>
-                </button>
-            </div>
 
+                <aside class="cart-page__summary" id="checkout-form">
+                    <div class="cart-page__summary-card">
+                        <div class="cart-page__summary-row">
+                            <span>Đã chọn</span>
+                            <strong id="selectedCount">0 sản phẩm</strong>
+                        </div>
+                        <div class="cart-page__summary-row">
+                            <span>Tạm tính</span>
+                            <strong id="subtotal">0₫</strong>
+                        </div>
+                        <div class="cart-page__summary-row">
+                            <span>Phí vận chuyển</span>
+                            <strong id="shipFee">0₫</strong>
+                        </div>
+                        <div class="cart-page__summary-total">
+                            <span>Tổng cộng</span>
+                            <strong id="totalPrice">0₫</strong>
+                        </div>
+                        <button type="button" id="PayBtn" class="btn btn-danger cart-page__checkout-btn">
+                            Mua hàng
+                        </button>
+                    </div>
+                </aside>
+            </div>
         }
         else
         {
@@ -112,13 +148,13 @@
                     <i class="fa fa-shopping-cart"></i>
                 </div>
                 <h2>Giỏ hàng đang trống</h2>
-                <p>Thêm sản phẩm yêu thích vào giỏ để bắt đầu thanh toán nhanh hơn.</p>
+                <p>Thêm sản phẩm yêu thích vào giỏ để tiếp tục mua sắm.</p>
                 <a href="~/" class="btn btn-danger">Khám phá sản phẩm</a>
             </div>
         }
-        </div>
     </div>
 </section>
+
 <section class="products">
     <div class="container">
         <div class="product-section">
@@ -126,7 +162,7 @@
                 <h3 class="text-dark mb-0">Gợi ý cho bạn</h3>
             </div>
 
-            <button class="btn-scroll btn-prev" data-target="suggestion">
+                        <button class="btn-scroll btn-prev" data-target="suggestion">
                 <i class="fa fa-chevron-left"></i>
             </button>
             <button class="btn-scroll btn-next" data-target="suggestion">
@@ -143,25 +179,29 @@
         </div>
     </div>
 </section>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
 <script>
     $(document).ready(function () {
-
         RecommendationManager.init('cart', 10);
 
-        // Chọn tất cả sản phẩm
         $("#selectAll").change(function () {
             $(".product-checkbox").prop('checked', $(this).prop('checked'));
             calculateSubtotal();
         });
 
-        // Sự kiện checkbox riêng lẻ
-        $(document).on('change', '.product-checkbox', calculateSubtotal);
+        $(document).on('change', '.product-checkbox', function () {
+            syncSelectAllState();
+            calculateSubtotal();
+        });
 
-        // Sự kiện thay đổi số lượng
-        $(document).on('input', '.qty-input', calculateSubtotal);
+        $(document).on('input', '.qty-input', function () {
+            const value = parseInt($(this).val()) || 1;
+            $(this).val(value < 1 ? 1 : value);
+            updateLineTotal($(this).closest('.cart-item'));
+            calculateSubtotal();
+        });
 
-        // Xử lý nút xóa
         $(document).on('click', '.delete-item', function () {
             const itemId = $(this).data('item-id');
             const cartItem = $(this).closest('.cart-item');
@@ -172,91 +212,120 @@
                 data: { itemId: itemId },
                 success: function (response) {
                     if (response.success) {
-                        let currentCartNumb = parseInt($('#Cart_numb').text()) || 0; // Nếu không có giá trị, gán mặc định là 0
-                        $('#Cart_numb').text(currentCartNumb - 1);
-                        cartItem.fadeOut(300, function () {
+                        let currentCartNumb = parseInt($('#Cart_numb').text()) || 0;
+                        $('#Cart_numb').text(Math.max(0, currentCartNumb - 1));
+
+                        cartItem.fadeOut(220, function () {
                             $(this).remove();
+
                             if ($('.cart-item').length === 0) {
-                                $('#checkout-form').addClass('d-none');
-                                $('#cartItemsContainer').html(
+                                $('.cart-page__shell').remove();
+                                $('.cart-page .container').append(
                                     '<div class="client-empty-state">' +
                                     '<div class="client-empty-state__icon"><i class="fa fa-shopping-cart"></i></div>' +
                                     '<h2>Giỏ hàng đang trống</h2>' +
-                                    '<p>Thêm sản phẩm yêu thích vào giỏ để bắt đầu thanh toán nhanh hơn.</p>' +
+                                    '<p>Thêm sản phẩm yêu thích vào giỏ để tiếp tục mua sắm.</p>' +
                                     '<a href="/" class="btn btn-danger">Khám phá sản phẩm</a>' +
                                     '</div>'
                                 );
                             }
+
+                            syncSelectAllState();
                             calculateSubtotal();
                         });
                     }
-                },
-                error: function () {
-                    console.error('Lỗi khi xóa sản phẩm');
                 }
             });
         });
 
-        // Nút giảm số lượng
         $(document).on('click', '.minus-btn', function () {
             const input = $(this).siblings('.qty-input');
             const currentValue = parseInt(input.val()) || 1;
             if (currentValue > 1) {
-                input.val(currentValue - 1);
-                calculateSubtotal();
+                input.val(currentValue - 1).trigger('input');
             }
         });
 
-        // Nút tăng số lượng
         $(document).on('click', '.plus-btn', function () {
             const input = $(this).siblings('.qty-input');
             const currentValue = parseInt(input.val()) || 1;
-            input.val(currentValue + 1);
-            calculateSubtotal();
+            input.val(currentValue + 1).trigger('input');
         });
 
-        // Tính tổng giá
+        function updateLineTotal($row) {
+            const checkbox = $row.find('.product-checkbox');
+            const price = parseFloat(checkbox.data('price')) || 0;
+            const quantity = parseInt($row.find('.qty-input').val()) || 1;
+            const total = price * quantity;
+
+            $row.find('.js-line-total').text(new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND'
+            }).format(total));
+        }
+
+        function syncSelectAllState() {
+            const total = $('.product-checkbox').length;
+            const checked = $('.product-checkbox:checked').length;
+            $('#selectAll').prop('checked', total > 0 && total === checked);
+        }
+
         function calculateSubtotal() {
             let subtotal = 0;
+            let selectedCount = 0;
+
             $('.product-checkbox:checked').each(function () {
                 const row = $(this).closest('.cart-item');
                 const price = parseFloat($(this).data('price')) || 0;
                 const quantity = parseInt(row.find('.qty-input').val()) || 1;
                 subtotal += price * quantity;
+                selectedCount += quantity;
             });
+
+            const appliedShippingFee = selectedCount > 0 ? @shippingFee : 0;
+            const total = subtotal + appliedShippingFee;
+
+            $('#selectedCount').text(selectedCount + ' sản phẩm');
             $('#subtotal').text(new Intl.NumberFormat('vi-VN', {
                 style: 'currency',
                 currency: 'VND'
             }).format(subtotal));
+            $('#shipFee').text(new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND'
+            }).format(appliedShippingFee));
+            $('#totalPrice').text(new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND'
+            }).format(total));
         }
 
-        // Khởi tạo tổng giá ban đầu khi trang được tải lại
+        $('.cart-item').each(function () {
+            updateLineTotal($(this));
+        });
+
         calculateSubtotal();
     });
-
 </script>
 <script>
     $(document).ready(function () {
         const notyf = new Notyf({
             position: {
-                x: 'right', // Căn phải
-                y: 'top'    // Căn trên
+                x: 'right',
+                y: 'bottom'
             }
         });
 
         $('#PayBtn').on('click', function () {
             var cartItems = [];
-        
+
             $('#cartItemsContainer .cart-item').each(function () {
                 var item = $(this);
-
-                // Lấy các giá trị cần thiết từ các thuộc tính của phần tử
                 var varientId = item.find('.product-checkbox').data('varientid');
                 var productId = item.find('input[name="ProductId"]').val();
                 var quantity = item.find('.qty-input').val();
-                var isChecked = item.find('.product-checkbox').prop('checked');  
+                var isChecked = item.find('.product-checkbox').prop('checked');
 
-                // Chỉ thêm sản phẩm vào mảng nếu checkbox được chọn
                 if (isChecked) {
                     cartItems.push({
                         VarientProductId: varientId,
@@ -264,25 +333,26 @@
                         Quantity: quantity
                     });
                 }
-
             });
+
             if (cartItems.length === 0) {
                 notyf.error("Vui lòng chọn ít nhất 1 sản phẩm trước khi đến thanh toán");
                 return;
             }
+
             $.ajax({
                 method: 'POST',
                 url: '@Url.Action("ToCheckout", "User")',
-                contentType: 'application/json', // Đặt Content-Type cho JSON
-                data: JSON.stringify({ cartDTos: cartItems }), // Chuyển đổi mảng thành chuỗi JSON
+                contentType: 'application/json',
+                data: JSON.stringify({ cartDTos: cartItems }),
                 dataType: 'json',
                 success: function (response) {
                     $('.loading-container').hide();
 
                     if (response.success) {
-                        window.location.href = response.redirectUrl; // Chuyển hướng đến trang thanh toán
+                        window.location.href = response.redirectUrl;
                     } else {
-                        notyf.error(response.message); // Hiển thị lỗi từ server
+                        notyf.error(response.message);
                         var additionalInfoUserModal = new bootstrap.Modal(document.getElementById('infoRequiredModal'));
                         additionalInfoUserModal.show();
                     }
@@ -296,4 +366,3 @@
         });
     });
 </script>
-

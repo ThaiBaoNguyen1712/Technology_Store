@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["Title"] = "Yêu thích của tôi";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
@@ -7,17 +7,6 @@
 @using Tech_Store.Helpers
 <section class="client-list-page client-list-page--wishlist">
     <div class="container">
-        <div class="client-list-page__header">
-            <div>
-                <span class="client-list-page__eyebrow">Tech Store</span>
-                <h1>Danh sách yêu thích</h1>
-            </div>
-            <a href="~/" class="client-list-page__back-link">
-                <i class="fa fa-arrow-left"></i>
-                Tiếp tục mua sắm
-            </a>
-        </div>
-
         <div class="client-list-page__content">
             @if (Model != null && Model.Any())
             {
@@ -117,7 +106,7 @@
             </div>
         </div>
     </section>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
 <script type="text/javascript">
     $(document).ready(function () {
 
@@ -126,7 +115,7 @@
         const notyf = new Notyf({
             position: {
                 x: 'right', // Căn phải
-                y: 'top'    // Căn trên
+                y: 'bottom' // Căn dưới
             }
         });
 

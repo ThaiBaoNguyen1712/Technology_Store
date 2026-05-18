@@ -1,358 +1,317 @@
-﻿@{
-    ViewData["Title"] = "Thông tin người dùng";
+@model Tech_Store.Models.DTO.UserDTo
+@{
+    ViewData["Title"] = "Thông tin tài khoản";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    var avatarUrl = string.IsNullOrWhiteSpace(Model?.ImageUrl) ? Url.Content("~/Upload/Avatar/none.png") : Url.Content($"~/Upload/Avatar/{Model.ImageUrl}");
 }
-<style>
-    .profile-nav .nav-link {
-        color: #495057;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin-bottom: 0.5rem;
-        transition: all 0.3s;
-    }
 
-        .profile-nav .nav-link:hover {
-            background-color: #e9ecef;
-        }
-
-        .profile-nav .nav-link.active {
-            background-color: #ff0000;
-            color: white;
-        }
-
-    .card {
-        border: none;
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-        margin-bottom: 1rem;
-    }
-
-    .form-control:focus {
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
-    }
-
-    media (max-width: 768px) {
-        .profile-nav
-
-    {
-        flex-direction: row !important;
-        overflow-x: auto;
-        padding-bottom: 1rem;
-    }
-
-    .profile-nav .nav-link {
-        white-space: nowrap;
-        padding: 0.5rem 1rem;
-    }
-
-    }
-</style>
-
-<div class="container py-4">
-    <!-- Header -->
-    <div class="row mb-4">
-        <div class="col">
-            <h2 class="mb-0">Thông tin tài khoản</h2>
-            <p class="text-muted">Quản lý thông tin cá nhân của bạn</p>
-        </div>
-    </div>
-
-    <div class="row">
-        <!-- Navigation -->
-        <div class="col-md-3 mb-4">
-            <nav class="nav flex-column profile-nav" id="profileTabs">
-                <a class="nav-link active" data-bs-toggle="pill" href="#info">
-                    <i class="fas fa-user me-2"></i>Thông tin cá nhân
-                </a>
-                <a class="nav-link" data-bs-toggle="pill" href="#address">
-                    <i class="fas fa-map-marker-alt me-2"></i>Địa chỉ
-                </a>
-                <a class="nav-link" data-bs-toggle="pill" href="#password">
-                    <i class="fas fa-lock me-2"></i>Đổi mật khẩu
-                </a>
-            </nav>
+<section class="account-shell user-information-page user-information-page--simple">
+    <div class="container">
+        <div class="account-page-header">
+            <h1 class="account-page-header__title mb-1">Thông tin tài khoản</h1>
+            <p class="account-page-header__subtitle mb-0">Cập nhật thông tin cá nhân, địa chỉ và mật khẩu của bạn.</p>
         </div>
 
-        <!-- Content -->
-        <div class="col-md-9">
-            <div class="tab-content">
-                <!-- Thông tin cá nhân -->
-                <div class="tab-pane fade show active" id="info">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title mb-4">Thông tin cá nhân</h5>
-                            <form id="personalInfoForm">
-                                @Html.AntiForgeryToken()
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Họ & Tên Lót</label>
-                                        <input type="text" class="form-control" name="LastName" value="@Model.LastName" required>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Tên</label>
-                                        <input type="text" class="form-control" name="FirstName" value="@Model.FirstName" required>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Email</label>
-                                        <input type="email" class="form-control" name="Email" value="@Model.Email" required>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Số điện thoại</label>
-                                        <input type="tel" class="form-control" name="PhoneNumber" value="@Model.PhoneNumber">
-                                    </div>
-                                </div>
-                                <div class="form-group row mb-2">
-                                    <label class="col-sm-4 col-form-label">Ảnh đại diện:</label>
-                                    <div class="col-sm-9">
-                                        <div class="preview-container">
-                                            <img src="~/Upload/Avatar/@Model.ImageUrl" alt="Avatar Preview" id="avatarPreview"  style="height:80px" class="avatar-preview avatar-img rounded-circle" />
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="avatarInput" class="form-label">Chọn ảnh đại diện</label>
-                                            <input type="file" class="form-control" id="avatarInput" name="ImageAvatar" accept="image/*" />
-                                            <p>Vui lòng chọn ảnh có định dạng(.jpg .png .jpeg)</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <p class="text-success" id="resultChangePersonalInfo"></p>
-                                <button type="submit" class="btn btn-danger">
-                                    <i class="fas fa-save me-2"></i>Lưu thông tin
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Địa chỉ -->
-                <div class="tab-pane fade" id="address">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title mb-4">Địa chỉ</h5>
-                            @if (ViewBag.Address_User != null)
+        <div class="account-layout">
+            <aside class="account-sidebar">
+                <div class="account-profile-card">
+                    <div class="account-profile-card__top">
+                        <img src="@avatarUrl" alt="Ảnh đại diện" id="avatarPreview" class="account-profile-card__avatar" />
+                        <div class="account-profile-card__meta">
+                            <strong>@($"{Model?.LastName} {Model?.FirstName}".Trim())</strong>
+                            <span>@Model?.Email</span>
+                            @if (!string.IsNullOrWhiteSpace(Model?.PhoneNumber))
                             {
-                                <div id="addressLoad">
-                                    <p>@ViewBag.Address_User</p>
-                                    <a id="showAddressForm" href="javascript:void(0)">Tôi muốn thay đổi địa chỉ</a>
-                                </div>
+                                <span>@Model.PhoneNumber</span>
                             }
-                            <form id="addressForm" style="@(ViewBag.Address_User != null ? "display: none;" : "")">
-                                @Html.AntiForgeryToken()
-                                <div class="mb-3">
-                                    <label class="form-label">Số nhà, Đường</label>
-                                    <input type="text" class="form-control" name="AddressLine" value="@Model.AddressLine" required>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-4 mb-3">
-                                        <label class="form-label">Tỉnh/Thành phố</label>
-                                        <select id="citySelect" class="form-control selectpicker" name="Province" value="@Model.Province" data-live-search="true" title="Chọn Thành phố" required>
-                                            <!-- Tùy chọn sẽ được thêm vào đây -->
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4 mb-3">
-                                        <label class="form-label">Quận/Huyện</label>
-                                        <select id="districtSelect" class="form-control selectpicker" name="District" value="@Model.District" data-live-search="true" title="Chọn Quận/Huyện" required>
-                                            <!-- Tùy chọn sẽ được thêm vào đây -->
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4 mb-3">
-                                        <label class="form-label">Phường/Xã</label>
-                                        <select id="wardSelect" class="form-control selectpicker" name="Ward" value="@Model.Ward" data-live-search="true" title="Chọn Phường/Xã" required>
-                                            <!-- Tùy chọn sẽ được thêm vào đây -->
-                                        </select>
-                                    </div>
-                                </div>
-                                <p class="text-success" id="resultChangeAddress"></p>
-                                <button type="submit" class="btn btn-danger">
-                                    <i class="fas fa-save me-2"></i>Lưu địa chỉ
-                                </button>
-                            </form>
                         </div>
                     </div>
+
                 </div>
 
-                <!-- Đổi mật khẩu -->
-                <div class="tab-pane fade" id="password">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title mb-4">Đổi mật khẩu</h5>
-                            <form id="passwordForm">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="Email" value="@Model.Email"/>
-                                <div class="mb-3">
-                                    <label class="form-label">Mật khẩu hiện tại</label>
-                                    <input type="password" name="OldPassword" placeholder="Nhập mật khẩu cũ" class="form-control" required minlength="8">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Mật khẩu mới</label>
-                                    <input type="password" name="Password" class="form-control" placeholder="Nhập mật khẩu mới" required minlength="8">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Xác nhận mật khẩu mới</label>
-                                    <input type="password" name="ConfirmPassword" placeholder="Nhập lại mật khẩu mới" class="form-control" required minlength="8">
-                                </div>
-                                <p class="text-success" id="resultChangePassword"></p>
-                                <button type="submit" class="btn btn-danger">
-                                    <i class="fas fa-key me-2"></i>Đổi mật khẩu
-                                </button>
-                            </form>
+                <nav class="account-nav" id="profileTabs" aria-label="Điều hướng tài khoản">
+                    <button type="button" class="account-nav__item active" data-account-tab="info">
+                        <i class="fa fa-user"></i>
+                        <span>Thông tin cá nhân</span>
+                    </button>
+                    <button type="button" class="account-nav__item" data-account-tab="address">
+                        <i class="fa fa-location-dot"></i>
+                        <span>Địa chỉ nhận hàng</span>
+                    </button>
+                    <button type="button" class="account-nav__item" data-account-tab="password">
+                        <i class="fa fa-lock"></i>
+                        <span>Đổi mật khẩu</span>
+                    </button>
+                </nav>
+            </aside>
+
+            <div class="account-content">
+                <section class="account-panel active" id="panel-info" data-account-panel="info">
+                    <div class="account-panel__header">
+                        <div>
+                            <h2>Thông tin cá nhân</h2>
+                            <p>Giữ thông tin của bạn luôn chính xác để đặt hàng nhanh hơn.</p>
                         </div>
                     </div>
-                </div>
+
+                    <form id="personalInfoForm" class="account-form" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
+                        <div class="account-avatar-editor">
+                            <img src="@avatarUrl" alt="Ảnh đại diện" class="account-avatar-editor__preview" id="avatarPreviewCard" />
+                            <div class="account-avatar-editor__content">
+                                <label for="avatarInput" class="account-upload__label">Chọn ảnh đại diện</label>
+                                <input type="file" class="form-control account-upload__input" id="avatarInput" name="ImageAvatar" accept="image/*" />
+                                <small>Định dạng hỗ trợ: `.jpg`, `.jpeg`, `.png`.</small>
+                            </div>
+                        </div>
+
+                        <div class="account-form__grid">
+                            <div class="account-field">
+                                <label for="LastName">Họ và tên đệm</label>
+                                <input id="LastName" type="text" class="form-control" name="LastName" value="@Model?.LastName" required>
+                            </div>
+                            <div class="account-field">
+                                <label for="FirstName">Tên</label>
+                                <input id="FirstName" type="text" class="form-control" name="FirstName" value="@Model?.FirstName" required>
+                            </div>
+                            <div class="account-field">
+                                <label for="Email">Email</label>
+                                <input id="Email" type="email" class="form-control" name="Email" value="@Model?.Email" required>
+                            </div>
+                            <div class="account-field">
+                                <label for="PhoneNumber">Số điện thoại</label>
+                                <input id="PhoneNumber" type="tel" class="form-control" name="PhoneNumber" value="@Model?.PhoneNumber">
+                            </div>
+                        </div>
+
+                        <p class="account-form__result" id="resultChangePersonalInfo"></p>
+
+                        <div class="account-form__actions">
+                            <button type="submit" class="btn btn-danger account-primary-btn">
+                                <i class="fa fa-save me-2"></i>Lưu thay đổi
+                            </button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="account-panel" id="panel-address" data-account-panel="address">
+                    <div class="account-panel__header">
+                        <div>
+                            <h2>Địa chỉ nhận hàng</h2>
+                        </div>
+                    </div>
+
+                    <div class="account-address-card">
+                        @if (ViewBag.Address_User != null)
+                        {
+                            <div id="addressLoad" class="account-address-card__summary">
+                                <div>
+                                    <div class="account-section-title">Địa chỉ hiện tại</div>
+                                    <p class="mb-0">@ViewBag.Address_User</p>
+                                </div>
+                                <button type="button" id="showAddressForm" class="btn btn-outline-danger account-outline-btn">Thay đổi địa chỉ</button>
+                            </div>
+                        }
+
+                        <form id="addressForm" class="account-form @(ViewBag.Address_User != null ? "d-none" : string.Empty)">
+                            @Html.AntiForgeryToken()
+                            <div class="account-field">
+                                <label for="AddressLine">Số nhà, tên đường</label>
+                                <input id="AddressLine" type="text" class="form-control" name="AddressLine" value="@Model?.AddressLine" required>
+                            </div>
+
+                            <div class="account-form__grid account-form__grid--triple">
+                                <div class="account-field">
+                                    <label for="citySelect">Tỉnh/Thành phố</label>
+                                    <select id="citySelect" class="form-control selectpicker" name="Province" value="@Model?.Province" data-live-search="true" title="Chọn Tỉnh/Thành phố" required></select>
+                                </div>
+                                <div class="account-field">
+                                    <label for="districtSelect">Quận/Huyện</label>
+                                    <select id="districtSelect" class="form-control selectpicker" name="District" value="@Model?.District" data-live-search="true" title="Chọn Quận/Huyện" required></select>
+                                </div>
+                                <div class="account-field">
+                                    <label for="wardSelect">Phường/Xã</label>
+                                    <select id="wardSelect" class="form-control selectpicker" name="Ward" value="@Model?.Ward" data-live-search="true" title="Chọn Phường/Xã" required></select>
+                                </div>
+                            </div>
+
+                            <p class="account-form__result" id="resultChangeAddress"></p>
+
+                            <div class="account-form__actions">
+                                <button type="submit" class="btn btn-danger account-primary-btn">
+                                    <i class="fa fa-save me-2"></i>Lưu địa chỉ
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <section class="account-panel" id="panel-password" data-account-panel="password">
+                    <div class="account-panel__header">
+                        <div>
+                            <h2>Đổi mật khẩu</h2>
+                        </div>
+                    </div>
+
+                    <form id="passwordForm" class="account-form">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="Email" value="@Model?.Email" />
+
+                        <div class="account-field">
+                            <label for="OldPassword">Mật khẩu hiện tại</label>
+                            <input id="OldPassword" type="password" name="OldPassword" placeholder="Nhập mật khẩu hiện tại" class="form-control" required minlength="8">
+                        </div>
+                        <div class="account-field">
+                            <label for="Password">Mật khẩu mới</label>
+                            <input id="Password" type="password" name="Password" class="form-control" placeholder="Nhập mật khẩu mới" required minlength="8">
+                        </div>
+                        <div class="account-field">
+                            <label for="ConfirmPassword">Xác nhận mật khẩu mới</label>
+                            <input id="ConfirmPassword" type="password" name="ConfirmPassword" placeholder="Nhập lại mật khẩu mới" class="form-control" required minlength="8">
+                        </div>
+
+                        <p class="account-form__result" id="resultChangePassword"></p>
+
+                        <div class="account-form__actions">
+                            <button type="submit" class="btn btn-danger account-primary-btn">
+                                <i class="fa fa-key me-2"></i>Cập nhật mật khẩu
+                            </button>
+                        </div>
+                    </form>
+                </section>
             </div>
         </div>
     </div>
-</div>
+</section>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
 <script src="~/js/provincevn.js"></script>
 <script>
     $(document).ready(function () {
-        $('#avatarInput').on('change', function (e) {
-            var reader = new FileReader();
-            reader.onload = function (event) {
-                $('#avatarPreview').attr('src', event.target.result); // Cập nhật ảnh xem trước
+        function setResult($el, success, message) {
+            $el.removeClass('text-success text-danger')
+                .addClass(success ? 'text-success' : 'text-danger')
+                .text(message || '');
+        }
+
+        function switchTab(tabName) {
+            $('[data-account-tab]').removeClass('active');
+            $('[data-account-panel]').removeClass('active');
+            $('[data-account-tab="' + tabName + '"]').addClass('active');
+            $('[data-account-panel="' + tabName + '"]').addClass('active');
+        }
+
+        $('[data-account-tab]').on('click', function () {
+            switchTab($(this).data('account-tab'));
+        });
+
+        $('[data-account-tab-target]').on('click', function (event) {
+            event.preventDefault();
+            switchTab($(this).data('account-tab-target'));
+            const targetId = $(this).attr('href');
+            if (targetId) {
+                document.querySelector(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
-            reader.readAsDataURL(e.target.files[0]); // Đọc file ảnh
         });
 
-        // Sự kiện để phóng to ảnh khi bấm vào
-        $('#avatarPreview').on('click', function () {
-            var modal = $('<div class="image-modal"><span class="close">&times;</span><img class="modal-image" id="img01" /></div>');
-            $('body').append(modal); // Thêm modal vào body
-            $('#img01').attr('src', $(this).attr('src')); // Đặt ảnh phóng to
-            modal.fadeIn(); // Hiện modal
+        $('#avatarInput').on('change', function (e) {
+            const file = e.target.files && e.target.files[0];
+            if (!file) {
+                return;
+            }
 
-            // Xóa modal khi bấm vào nút đóng
-            $('.close').on('click', function () {
-                modal.fadeOut(function () {
-                    $(this).remove(); // Xóa modal khỏi DOM
-                });
-            });
-
-            // Đóng modal khi bấm ra ngoài
-            modal.on('click', function () {
-                $(this).fadeOut(function () {
-                    $(this).remove(); // Xóa modal khỏi DOM
-                });
-            });
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                $('#avatarPreview, #avatarPreviewCard').attr('src', event.target.result);
+            };
+            reader.readAsDataURL(file);
         });
-
 
         $('#passwordForm').on('submit', function (event) {
             event.preventDefault();
             $('.loading-container').show();
 
-            // Tạo FormData từ form
-            var formData = new FormData(this);
+            const formData = new FormData(this);
 
             $.ajax({
                 method: 'POST',
                 url: '@Url.Action("ChangePassword2", "Authentication")',
                 data: formData,
-                contentType: false, // Sử dụng `false` để gửi dữ liệu dạng FormData
-                processData: false, // Không xử lý dữ liệu theo cách mặc định
+                contentType: false,
+                processData: false,
                 headers: {
-                    'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() // Thêm token vào header
+                    'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').first().val()
                 },
                 success: function (response) {
+                    setResult($('#resultChangePassword'), response.success, response.message);
                     if (response.success) {
-                        $('#resultChangePassword').removeClass('text-danger').addClass('text-success').text(response.message);
-                        $('#passwordForm')[0].reset(); // Reset form sau khi thành công
-                    } else {
-                        $('#resultChangePassword').removeClass('text-success').addClass('text-danger').text(response.message);
+                        $('#passwordForm')[0].reset();
                     }
                     $('.loading-container').hide();
-
                 },
                 error: function () {
-                    $('#resultChangePassword').removeClass('text-success').addClass('text-danger').text('Có lỗi xảy ra. Vui lòng thử lại.');
+                    setResult($('#resultChangePassword'), false, 'Có lỗi xảy ra. Vui lòng thử lại.');
                     $('.loading-container').hide();
-
                 }
             });
         });
 
         $('#showAddressForm').on('click', function () {
-            $('#addressForm').show();
+            $('#addressForm').removeClass('d-none');
             $('#addressLoad').addClass('d-none');
-        })
+        });
 
         $('#addressForm').on('submit', function (event) {
             event.preventDefault();
-
             $('.loading-container').show();
-            var addressLine = $('input[name="AddressLine"]').val();
-            var ward = $('select[name="Ward"]').val();
-            var district = $('select[name="District"]').val();
-            var province = $('select[name="Province"]').val();
-
 
             $.ajax({
                 method: 'POST',
-                url: '@Url.Action("ChangeAddress","User")',
+                url: '@Url.Action("ChangeAddress", "User")',
                 headers: {
-                    'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() // Thêm token vào header
+                    'RequestVerificationToken': $(this).find('input[name="__RequestVerificationToken"]').val()
                 },
                 data: {
-                   addressLine : addressLine,
-                   ward:ward,
-                   district:district,
-                   province:province
+                    addressLine: $('input[name="AddressLine"]').val(),
+                    ward: $('select[name="Ward"]').val(),
+                    district: $('select[name="District"]').val(),
+                    province: $('select[name="Province"]').val()
                 },
                 success: function (response) {
-                    if (response.success) {
-                        $('#resultChangeAddress').removeClass('text-danger').addClass('text-success').text(response.message);
-                        $('#passwordForm')[0].reset(); // Reset form sau khi thành công
-                    } else {
-                        $('#resultChangeAddress').removeClass('text-success').addClass('text-danger').text(response.message);
-                    }
+                    setResult($('#resultChangeAddress'), response.success, response.message);
                     $('.loading-container').hide();
-
                 },
                 error: function () {
-
-                    $('#resultChangeAddress').removeClass('text-success').addClass('text-danger').text('Có lỗi xảy ra. Vui lòng thử lại.');
+                    setResult($('#resultChangeAddress'), false, 'Có lỗi xảy ra. Vui lòng thử lại.');
                     $('.loading-container').hide();
-
                 }
-            })
+            });
         });
 
-        $('#personalInfoForm').on('submit', function (event) { 
+        $('#personalInfoForm').on('submit', function (event) {
             event.preventDefault();
+            $('.loading-container').show();
 
-            var formData = new FormData(this);
+            const formData = new FormData(this);
+
             $.ajax({
-                method:'POST',
-                url:'@Url.Action("ChangePersonalInfo","User")',
+                method: 'POST',
+                url: '@Url.Action("ChangePersonalInfo", "User")',
                 headers: {
-                    'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() // Thêm token vào header
+                    'RequestVerificationToken': $(this).find('input[name="__RequestVerificationToken"]').val()
                 },
                 data: formData,
-                contentType: false,  // Quan trọng: Không đặt contentType
-                processData: false,  // Quan trọng: Không xử lý dữ liệu
+                contentType: false,
+                processData: false,
                 success: function (response) {
-                    if (response.success) {
-                        $('#resultChangePersonalInfo').removeClass('text-danger').addClass('text-success').text(response.message);
-                        $('#passwordForm')[0].reset(); // Reset form sau khi thành công
-                    } else {
-                        $('#resultChangePersonalInfo').removeClass('text-success').addClass('text-danger').text(response.message);
-                    }
+                    setResult($('#resultChangePersonalInfo'), response.success, response.message);
                     $('.loading-container').hide();
-
                 },
                 error: function () {
-
-                    $('#resultChangePersonalInfo').removeClass('text-success').addClass('text-danger').text('Có lỗi xảy ra. Vui lòng thử lại.');
+                    setResult($('#resultChangePersonalInfo'), false, 'Có lỗi xảy ra. Vui lòng thử lại.');
                     $('.loading-container').hide();
-
                 }
-            })
-        })
+            });
+        });
     });
-
-</script>
-<script>
-    
 </script>

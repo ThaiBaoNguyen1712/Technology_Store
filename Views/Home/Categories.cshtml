@@ -5,6 +5,8 @@
 @using System.Globalization;
 @using Tech_Store.Helpers
 
+<link href="~/client/asset/css/searchview.css" rel="stylesheet" />
+
 <div class="container mt-3">
     <nav aria-label="breadcrumb" class="mb-3" style="font-size:0.9rem">
         <ol class="breadcrumb">
@@ -65,12 +67,12 @@
         }
         else
         {
-            <div class="row g-2">
+            <div class="row g-3 search-product-grid">
                 @foreach (var item in ViewBag.FeaturedProducts)
                 {
                     <div class="col-6 col-lg-3 product-card-ct" data-id="@item.ProductId">
                         <div class="product-link" data-slug="@item.Slug">
-                            <div class="card h-100">
+                            <div class="card h-100 search-product-card">
                                 <div class="position-absolute d-flex flex-column gap-1 d-md-block" style="top: 5px; left: 5px; z-index: 2;">
                                     @if (item.SellPrice != item.OriginalPrice)
                                     {
@@ -85,7 +87,7 @@
                                     }
                                 </div>
 
-                                <div class="image-container" style="overflow: hidden;">
+                                <div class="image-container">
                                     @if (item.Image == null)
                                     {
                                         <img src="/Upload/Products/no-image.png" class="product-image" alt="No Image Available" />

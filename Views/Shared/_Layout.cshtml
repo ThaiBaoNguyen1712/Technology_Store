@@ -13,17 +13,13 @@
     <link rel="stylesheet" href="@Url.Content("~/Client/asset/css/categoryview.css")" asp-append-version="true" />
     <link rel="stylesheet" href="@Url.Content("~/Client/asset/css/pagination.css")" asp-append-version="true" />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800&display=swap&subset=vietnamese" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <!-- Bootstrap-select CSS -->
-    <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta2/dist/css/bootstrap-select.min.css">
+    <link rel="stylesheet" href="~/vendor/fonts/roboto/roboto.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/vendor/fontawesome/css/all.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/vendor/bootstrap-select/css/bootstrap-select.min.css" asp-append-version="true" />
      @* Notyf *@
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
+    <link rel="stylesheet" href="~/vendor/notyf/notyf.min.css" asp-append-version="true" />
+    <script src="~/vendor/notyf/notyf.min.js" asp-append-version="true"></script>
 
 </head>
    @using Tech_Store.Helpers
@@ -72,6 +68,16 @@
                             </div>
                         </a>
                     </li>
+                    <li class="nav-item position-relative">
+                        <a class="nav-link text-white d-flex align-items-center" href="~/User/Cart">
+                            <div class="position-relative">
+                                <i class="fa fa-shopping-cart" aria-hidden="true"></i>
+                                <span id="Cart_numb_mobile" class="badge bg-danger position-absolute top-0 start-100 translate-middle rounded-circle p-1 badge-counter-compact">
+                                    @ViewBag.cart_numb
+                                </span>
+                            </div>
+                        </a>
+                    </li>
                     @if (ViewBag.User != null)
                     {
                         <li class="nav-item dropdown">
@@ -108,16 +114,6 @@
                             </a>
                         </li>
                     }
-                    <li class="nav-item position-relative">
-                        <a class="nav-link text-white d-flex align-items-center" href="~/User/Cart">
-                            <div class="position-relative">
-                                <i class="fa fa-shopping-cart" aria-hidden="true"></i>
-                                <span id="Cart_numb_mobile" class="badge bg-danger position-absolute top-0 start-100 translate-middle rounded-circle p-1 badge-counter-compact">
-                                    @ViewBag.cart_numb
-                                </span>
-                            </div>
-                        </a>
-                    </li>
                     <li class="nav-item">
                         <button class="navbar-toggler navbar-toggler-header" type="button" data-bs-toggle="collapse" data-bs-target="#navbarTogglerDemo01" aria-controls="navbarTogglerDemo01" aria-expanded="false" aria-label="Toggle navigation">
                             <span class="navbar-toggler-icon"></span>
@@ -472,14 +468,14 @@
     </footer>
     <!-- Footer -->
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="~/lib/jquery/dist/jquery.min.js" asp-append-version="true"></script>
+    <script src="~/Client/asset/js/interaction-tracker.js"></script>
     <script src="~/Client/asset/js/index.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Bootstrap-select JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/js/bootstrap-select.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js" asp-append-version="true"></script>
+    <script src="~/vendor/bootstrap-select/js/bootstrap-select.min.js" asp-append-version="true"></script>
 
     @* JS Thông báo *@
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.js"></script>
+    <script src="~/vendor/signalr/signalr.min.js" asp-append-version="true"></script>
     <script src="~/js/notificationclientside.js"></script>
     <script src="~/Client/asset/js/recommendation.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
@@ -489,7 +485,7 @@
             const notyf = new Notyf({
                 position: {
                     x: 'right', // Căn phải
-                    y: 'top'    // Căn trên
+                    y: 'bottom' // Căn dưới
                 }
             });
 
@@ -543,7 +539,7 @@
 
                         $suggestionsBox.append(
                             `<li class="search-suggestion-row">
-                                <a href="/View/${item.Slug}" class="search-suggestion-item text-decoration-none text-dark">
+                                <a href="/View/${item.Slug}" class="search-suggestion-item text-decoration-none text-dark" data-product-id="${item.ProductId ?? ''}" data-product-sys-id="${item.ProductSysId ?? ''}" data-track-event="search_click" data-track-source="search_suggestion" data-track-query="${$('<div>').text(queryText || '').html()}">
                                     <div class="search-suggestion-media">
                                         <img src="${image}" alt="${name}" class="search-suggestion-thumb">
                                     </div>
@@ -599,9 +595,18 @@
                 });
 
                 $suggestionsBox.on("click", ".search-suggestion-item", function () {
+                    if (window.UserInteractionTracker) {
+                        window.UserInteractionTracker.trackElement(this);
+                    }
                     const selectedName = $(this).find(".fw-bold").text();
                     $searchInput.val(selectedName);
                     $suggestionsBox.addClass("d-none");
+                });
+
+                $searchInput.on("blur", function () {
+                    setTimeout(function () {
+                        $suggestionsBox.addClass("d-none");
+                    }, 180);
                 });
             });
 
@@ -609,6 +614,10 @@
                 if (!$(e.target).closest(".search-form").length) {
                     $(".js-search-suggestions").addClass("d-none");
                 }
+            });
+
+            $(window).on("scroll resize", function () {
+                $(".js-search-suggestions").addClass("d-none");
             });
 
 
@@ -651,6 +660,10 @@
                     e.preventDefault();
                     e.stopPropagation();
                     return;
+                }
+
+                if (window.UserInteractionTracker) {
+                    window.UserInteractionTracker.trackElement(this);
                 }
 
                 var slug = $(this).data('slug');
@@ -697,6 +710,42 @@
             const $notificationDropdown = $('#notificationDropdown');
             let isDropdownOpen = false;
 
+            function positionNotificationDropdown($trigger) {
+                const triggerElement = $trigger && $trigger.length ? $trigger[0] : null;
+                if (!triggerElement) {
+                    return;
+                }
+
+                const rect = triggerElement.getBoundingClientRect();
+                const isMobile = window.innerWidth < 768;
+                const top = rect.bottom + 8;
+
+                $notificationDropdown.css({
+                    top: `${top}px`,
+                    left: 'auto',
+                    transform: 'none'
+                });
+
+                if (isMobile) {
+                    $notificationDropdown.css({
+                        right: '12px',
+                        width: 'min(360px, calc(100vw - 24px))',
+                        maxHeight: `calc(100vh - ${Math.ceil(top + 12)}px)`
+                    });
+                    return;
+                }
+
+                const dropdownWidth = Math.min(420, window.innerWidth - 32);
+                const desiredLeft = rect.right - dropdownWidth + 16;
+                const clampedLeft = Math.max(16, Math.min(desiredLeft, window.innerWidth - dropdownWidth - 16));
+                $notificationDropdown.css({
+                    left: `${clampedLeft}px`,
+                    right: 'auto',
+                    width: `${dropdownWidth}px`,
+                    maxHeight: `calc(100vh - ${Math.ceil(top + 18)}px)`
+                });
+            }
+
             function closeNotificationDropdown() {
                 $notificationDropdown.removeClass('show');
                 $notificationToggle.removeClass('active');
@@ -711,6 +760,7 @@
                 if (isDropdownOpen) {
                     closeNotificationDropdown();
                 } else {
+                    positionNotificationDropdown($(this));
                     $notificationDropdown.addClass('show');
                     $notificationToggle.removeClass('active');
                     $(this).addClass('active');
@@ -723,6 +773,25 @@
                 if (!$(e.target).closest('#notificationDropdown, #notificationToggle, #notificationToggleMobile').length) {
                     closeNotificationDropdown();
                 }
+            });
+
+            $(window).on('scroll resize', function () {
+                if (!isDropdownOpen) {
+                    return;
+                }
+
+                const $activeToggle = $('#notificationToggle.active, #notificationToggleMobile.active').first();
+                if (!$activeToggle.length) {
+                    closeNotificationDropdown();
+                    return;
+                }
+
+                if (window.innerWidth < 768) {
+                    closeNotificationDropdown();
+                    return;
+                }
+
+                positionNotificationDropdown($activeToggle);
             });
 
             // Ngăn dropdown đóng khi click vào nội dung

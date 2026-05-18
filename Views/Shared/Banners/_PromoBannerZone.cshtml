@@ -1,0 +1,19 @@
+@model IReadOnlyList<Tech_Store.Models.ViewModel.BannerRenderItemViewModel>
+
+@if (Model != null && Model.Count > 0)
+{
+    foreach (var banner in Model)
+    {
+        <a href="@banner.NavigateUrl"
+           class="home-hero__promo banner-slot__promo-link banner-slot__promo-surface"
+           target="@(banner.OpenInNewTab ? "_blank" : "_self")">
+            <picture class="banner-slot__picture">
+                @if (!string.IsNullOrWhiteSpace(banner.MobileImageUrl))
+                {
+                    <source media="(max-width: 767.98px)" srcset="@banner.MobileImageUrl" />
+                }
+                <img src="@banner.DesktopImageUrl" alt="@banner.AltText" class="banner-slot__promo-image" loading="lazy" />
+            </picture>
+        </a>
+    }
+}

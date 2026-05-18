@@ -1,4 +1,4 @@
-﻿
+
 @{
     ViewData["Title"] = $"Danh mục - {(ViewBag.Category?.Name ?? "")}";
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -21,6 +21,8 @@
 
         </ol>
     </nav>
+
+    @await Html.PartialAsync("~/Views/Shared/Banners/_CatalogHeroBanner.cshtml", ViewBag.CategoryHeroBanners as IReadOnlyList<Tech_Store.Models.ViewModel.BannerRenderItemViewModel> ?? [])
 
     <!-- Filter Section -->
     <div class="filter-toolbar mb-4 p-3 bg-white rounded-4 shadow-sm border">
@@ -90,7 +92,7 @@
         <div class="d-none d-md-block d-flex flex-wrap align-items-center gap-3 pb-3">
             @foreach (var item in ViewBag.list_HotSearch)
             {
-                <a href="/Search/Filter?key=@Uri.EscapeDataString(@item)"
+                <a href="/Search?key=@Uri.EscapeDataString(@item)"
                    class="badge bg-light text-dark border border-secondary px-3 py-2"
                    style="font-weight: 500;text-decoration:none">
                     @item
@@ -122,12 +124,12 @@
     }
     else
     {
-       <div class="row g-2">
+       <div class="row g-3 search-product-grid">
             @foreach (var item in Model)
             {
                 <div class="col-6 col-lg-3 product-card-ct" data-id="@item.ProductId">
                     <div class="product-link" data-slug="@item.Slug">
-                        <div class="card h-100">
+                        <div class="card h-100 search-product-card">
                             <!-- Sale Badge -->
                             <div class="position-absolute d-flex flex-column gap-1 d-md-block" style="top: 5px; left: 5px; z-index: 2;">
                                 @if (item.SellPrice != item.OriginalPrice)
@@ -143,7 +145,7 @@
                                 }
                             </div>
 
-                            <div class="image-container" style="overflow: hidden;">
+                            <div class="image-container">
                                 @if (item.Image == null)
                                 {
                                     <img src="/Upload/Products/no-image.png" class="product-image" alt="No Image Available" />
@@ -160,7 +162,7 @@
                             </div>
 
                             <div class="card-body p-3 d-flex flex-column">
-                                <h6 class="card-title mb-2 product-title" style="font-size: 0.9rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">@item.Name</h6>
+                                <h6 class="card-title mb-2 product-title" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">@item.Name</h6>
                                 <div class="price-wrapper d-flex align-items-center gap-1 mb-2 flex-wrap">
                                     <span class="price-text text-danger fw-bold">
                                         @item.SellPrice?.ToString("C0", new CultureInfo("vi-VN"))
@@ -212,7 +214,7 @@
    
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
 <script>
     $(document).ready(function () {
 

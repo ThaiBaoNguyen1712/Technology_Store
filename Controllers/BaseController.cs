@@ -31,7 +31,9 @@ namespace Tech_Store.Controllers
         protected virtual void LoadProductsAndCategories()
         {
             var categories = _context.Categories
-                .Where(x => x.VisibleOnOtherPages == 1)
+                .Where(x => x.Visible == 1)
+                .OrderBy(x => x.SortOrder)
+                .ThenBy(x => x.Name)
                 .ToList();
             var smartphone_products = _context.Products.Where(x => x.CategoryId == 1).OrderByDescending(x => x.CreatedAt).Take(10).ToList();
             var laptop_products = _context.Products.Where(x => x.CategoryId == 2).OrderByDescending(x => x.CreatedAt).Take(10).ToList();

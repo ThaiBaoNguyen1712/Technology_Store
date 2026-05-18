@@ -3,145 +3,111 @@
 }
 @using System.Globalization;
 @using Tech_Store.Helpers
+@using Tech_Store.Models.ViewModel
 <!-- carousel -->
 <section class="home-hero">
     <div class="container">
         <div class="home-hero__grid">
-        <aside class="home-hero__categories">
-            <div class="categories-menu">
-                <ul class="list-group list-group-flush">
-                    @foreach (var item in ViewBag.list_cate)
-                    {
-                        <li class="list-group-item category-item"
-                            data-name="@item.Name">
-                            <a href="~/Category/@item.EngTitle"
-                               class="category-link text-decoration-none text-dark d-flex justify-content-between align-items-center">
-                                <div class="d-flex align-items-center gap-2">
-                                    <img src="~/Upload/Logo/@item.Image" width="30" height="30" />
-                                    <span>@item.Name</span>
-                                </div>
-                                <i class="fa fa-angle-right"></i>
-                            </a>
-                            <div class="category-data-source d-none p-3">
+            <aside class="home-hero__categories">
+                <div class="categories-menu">
+                    <ul class="list-group list-group-flush">
+                        @foreach (var item in ViewBag.list_cate)
+                        {
+                            <li class="list-group-item category-item"
+                                data-name="@item.Name">
+                                <a href="~/Category/@item.EngTitle"
+                                   class="category-link text-decoration-none text-dark d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img src="~/Upload/Logo/@item.Image" width="30" height="30" />
+                                        <span>@item.Name</span>
+                                    </div>
+                                    <i class="fa fa-angle-right"></i>
+                                </a>
+                                <div class="category-data-source d-none p-3">
 
-                                <!-- HOT SEARCH -->
-                                <div class="mb-4">
-                                    <h6 class="fw-bold mb-3 text-uppercase text-danger">
-                                        <i class="fa fa-fire me-2"></i>
-                                        Tìm kiếm phổ biến cho @item.Name
-                                    </h6>
-
-                                    @{
-                                        var hotKeywords =
-                                        ViewBag.HotSearchByCategory != null &&
-                                        ViewBag.HotSearchByCategory.ContainsKey(item.EngTitle)
-                                        ? ViewBag.HotSearchByCategory[item.EngTitle] as List<string>
-                                        : new List<string>();
-                                    }
-
-                                    @if (hotKeywords.Any())
-                                    {
-                                        <div class="row g-2">
-                                            @foreach (var keyword in hotKeywords)
-                                            {
-                                                <div class="col-6 col-lg-4">
-                                                    <a href="~/Search?q=@keyword"
-                                                       class="keyword-tag d-block text-decoration-none">
-                                                        @keyword
-                                                    </a>
-                                                </div>
-                                            }
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <div class="text-muted small">Chưa có xu hướng tìm kiếm</div>
-                                    }
-                                </div>
-
-                                <!-- BRANDS -->
-                                @if (ViewBag.BrandsByCategory != null && ViewBag.BrandsByCategory.ContainsKey(item.CategoryId))
-                                {
-                                    <div class="brand-section">
-                                        <h6 class="fw-bold mb-3 text-uppercase">
-                                            Thương hiệu nổi bật
+                                    <!-- HOT SEARCH -->
+                                    <div class="mb-4">
+                                        <h6 class="fw-bold mb-3 text-uppercase text-danger">
+                                            <i class="fa fa-fire me-2"></i>
+                                            Tìm kiếm phổ biến cho @item.Name
                                         </h6>
 
-                                        <div class="row g-2">
-                                            @foreach (var brand in ViewBag.BrandsByCategory[item.CategoryId])
-                                            {
-                                                <div class="col-6 col-lg-4">
-                                                    <a 
-                                                       class="brand-item d-block text-decoration-none">
-                                                        @brand.Name
-                                                    </a>
-                                                </div>
-                                            }
-                                        </div>
+                                        @{
+                                            var hotKeywords =
+                                            ViewBag.HotSearchByCategory != null &&
+                                            ViewBag.HotSearchByCategory.ContainsKey(item.EngTitle)
+                                            ? ViewBag.HotSearchByCategory[item.EngTitle] as List<string>
+                                            : new List<string>();
+                                        }
+
+                                        @if (hotKeywords.Any())
+                                        {
+                                            <div class="row g-2">
+                                                @foreach (var keyword in hotKeywords)
+                                                {
+                                                    <div class="col-6 col-lg-4">
+                                                        <a href="/Search?key=@Uri.EscapeDataString(keyword)"
+                                                           class="keyword-tag d-block text-decoration-none">
+                                                            @keyword
+                                                        </a>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="text-muted small">Chưa có xu hướng tìm kiếm</div>
+                                        }
                                     </div>
-                                }
 
-                            </div>
+                                    <!-- BRANDS -->
+                                    @if (ViewBag.BrandsByCategory != null && ViewBag.BrandsByCategory.ContainsKey(item.CategoryId))
+                                    {
+                                        <div class="brand-section">
+                                            <h6 class="fw-bold mb-3 text-uppercase">
+                                                Thương hiệu nổi bật
+                                            </h6>
 
-                        </li>
-                    }
-                </ul>
-            </div>
+                                            <div class="row g-2">
+                                                @foreach (var brand in ViewBag.BrandsByCategory[item.CategoryId])
+                                                {
+                                                    <div class="col-6 col-lg-4">
+                                                        <a href="@Url.Action("Brand", "Home", new { brand_name = brand.Name })"
+                                                           class="brand-item d-block text-decoration-none">
+                                                            @brand.Name
+                                                        </a>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
 
-            <!-- EXPAND -->
-            <div class="category-expand">
-                <h6 class="fw-bold mb-2">Danh mục</h6>
-                <div class="expand-content">
-                    Hover để xem nội dung
+                                </div>
+
+                            </li>
+                        }
+                    </ul>
+                </div>
+
+                <!-- EXPAND -->
+                <div class="category-expand">
+                    <div class="expand-content"></div>
+                </div>
+            </aside>
+
+            <div class="home-hero__main">
+                <div class="home-hero__slider">
+                    @await Html.PartialAsync(
+                        "~/Views/Shared/Banners/_CarouselBannerZone.cshtml",
+                        ViewBag.HomeHeroMainBanners as IReadOnlyList<BannerRenderItemViewModel> ?? [])
                 </div>
             </div>
-        </aside>
 
-        <div class="home-hero__main">
-            <div class="home-hero__slider">
-                <div id="carouselExampleCaptions" class="carousel slide" data-bs-ride="carousel">
-                    <div class="carousel-indicators">
-                        <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
-                        <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="1" aria-label="Slide 2"></button>
-                        <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="2" aria-label="Slide 3"></button>
-                    </div>
-                    <div class="carousel-inner">
-                        <div class="carousel-item active">
-                            <img src="https://images.macrumors.com/t/H0wescJV-Z32v37P2JxpOBsFX8c=/2500x0/filters:no_upscale()/article-new/2024/11/iPhone-17-Pro-Dual-Tone-Rectangle-Feature-1.jpg" class="d-block w-100" alt="...">
-                            <div class="carousel-caption d-none d-md-block">
-                            </div>
-                        </div>
-                        <div class="carousel-item">
-                            <img src="https://i.gadgets360cdn.com/large/samsung_galaxy_s25_ultra_technizoconcept_inline_1731133022562.jpg" class="d-block w-100" alt="...">
-                            <div class="carousel-caption d-none d-md-block">
-                            </div>
-                        </div>
-                        <div class="carousel-item">
-                            <img src="https://cdn.mos.cms.futurecdn.net/hyKSYAeHLcrRtExozn7EBA-1200-80.jpg" class="d-block w-100" alt="...">
-                            <div class="carousel-caption d-none d-md-block">
-                            </div>
-                        </div>
-                    </div>
-                    <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide="prev">
-                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                        <span class="visually-hidden">Previous</span>
-                    </button>
-                    <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide="next">
-                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                        <span class="visually-hidden">Next</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <aside class="home-hero__promos" aria-label="Khuyến mãi nổi bật">
-            <a href="~/Search?q=iphone" class="home-hero__promo">
-                <img src="~/Client/asset/img/R.png" alt="Khuyến mãi điện thoại">
-            </a>
-            <a href="~/Search?q=samsung" class="home-hero__promo">
-                <img src="~/Client/asset/img/right-banner-14-10.webp" alt="Khuyến mãi phụ kiện">
-            </a>
-        </aside>
+            <aside class="home-hero__promos" aria-label="Khuyến mãi nổi bật">
+                @await Html.PartialAsync(
+                    "~/Views/Shared/Banners/_PromoBannerZone.cshtml",
+                    ViewBag.HomeHeroPromoBanners as IReadOnlyList<BannerRenderItemViewModel> ?? [])
+            </aside>
         </div>
     </div>
 </section>
@@ -181,7 +147,7 @@
                 <h3>Hot sale tháng này</h3>
                 <p>Giá tốt cho các sản phẩm đang được quan tâm nhiều.</p>
             </div>
-            <a href="~/Search/Filter?key=hot%20sale" class="home-hot-sale__link">
+            <a href="/Search?key=hot%20sale" class="home-hot-sale__link">
                 Xem tất cả
                 <i class="fa fa-angle-right"></i>
             </a>
@@ -218,12 +184,12 @@
                                 <span class="product-promo-badge product-promo-badge--installment">Trả góp 0%</span>
                             </div>
 
-                            <div class="product-link" data-slug="@hot.Slug">
+                            <div class="product-link" data-slug="@hot.Slug" data-product-id="@hot.ProductId" data-product-sys-id="@hot.ProductSysId" data-track-event="homepage_click" data-track-source="homepage_hot_sale" data-track-placement="hot-sale">
                                 <div class="image-container">
                                     @if (hot.Image.Contains("http"))
                                     {
-                                     <img src="@hot.Image" alt="Product Image" class="product-image-csl-hotSale" alt="@hot.Name">
-                                                                
+                                        <img src="@hot.Image" alt="Product Image" class="product-image-csl-hotSale" alt="@hot.Name">
+
                                     }
                                     else
                                     {
@@ -272,37 +238,37 @@
                     <div class="d-flex flex-wrap align-items-center gap-2">
                         @{
                             var keywords = new List<string>();
-                            if(ViewBag.List_TopHotSearch != null)
+                            if (ViewBag.List_TopHotSearch != null)
                             {
                                 var hotSearchDict = ViewBag.List_TopHotSearch as Dictionary<string, List<string>>;
                                 var slug = item.Category.EngTitle;
                                 keywords = (hotSearchDict != null && hotSearchDict.ContainsKey(slug))
                                 ? hotSearchDict[slug]
                                 : null;
-                                
+
                             }
                         }
 
                         @if (keywords != null)
                         {
-                              <div class="d-none d-md-block"> 
-                                    @foreach (var keyword in keywords)
-                                    {
-                                       <a href="/Search/Filter?key=@Uri.EscapeDataString(keyword)"
+                            <div class="d-none d-md-block">
+                                @foreach (var keyword in keywords)
+                                {
+                                    <a href="/Search?key=@Uri.EscapeDataString(keyword)"
                                        class="badge bg-light text-dark border px-3 py-2"
                                        style="font-weight: 500;text-decoration:none">
-                                       @(keyword.Length > 20 ? keyword.Substring(0, 20) + "..." : keyword)
+                                        @(keyword.Length > 20 ? keyword.Substring(0, 20) + "..." : keyword)
                                     </a>
 
-                                    }
+                                }
                             </div>
                         }
 
-                      <a href="~/Category/@item.Category.EngTitle"
+                        <a href="~/Category/@item.Category.EngTitle"
                            class="badge bg-light text-danger border border-danger px-3 py-2"
                            style="font-weight: 500; text-decoration: none;">
                             <span>Xem thêm</span>
-                         
+
                         </a>
 
                     </div>
@@ -337,14 +303,14 @@
                                     }
                                 </div>
                                 <!-- Installment Badge -->
-                             @*    <div class="position-absolute" style="top: 10px; right: 10px; z-index: 2;">
+                                @*    <div class="position-absolute" style="top: 10px; right: 10px; z-index: 2;">
                                     <span class="badge bg-white text-primary border border-primary p-2">Trả góp 0%</span>
                                 </div> *@
-                                <div class="product-link" data-slug="@product.Slug">
+                                <div class="product-link" data-slug="@product.Slug" data-product-id="@product.ProductId" data-product-sys-id="@product.ProductSysId" data-track-event="homepage_click" data-track-source="homepage_category" data-track-placement="@item.Category.EngTitle">
                                     <div class="image-container">
                                         @if (product.Image.Contains("http"))
                                         {
-                                            <img src="@ResizeCDN.Cdn(product.Image,358,358)" class="product-image-csl-hotSale" alt="@product.Name"> 
+                                            <img src="@ResizeCDN.Cdn(product.Image, 358, 358)" class="product-image-csl-hotSale" alt="@product.Name">
                                         }
                                         else
                                         {
@@ -372,7 +338,7 @@
                                     </div>
                                 </div>
                             </div>
-                           
+
                         }
                     </div>
                 </div>
@@ -383,7 +349,7 @@
 
 
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         // Lấy tất cả các liên kết danh mục

@@ -1,87 +1,167 @@
-document.querySelectorAll('.btn-scroll').forEach(button => {
-    button.addEventListener('click', function() {
-      const section = this.dataset.target;
-      const wrapper = document.querySelector(`[data-wrapper="${section}"]`);
-      const scrollAmount = wrapper.clientWidth / 2;
-
-      if (this.classList.contains('btn-next')) {
-        wrapper.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-      } else {
-        wrapper.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-      }
-    });
-});
-  
-document.addEventListener('DOMContentLoaded', function () {
-    const sliders = document.querySelectorAll('.scrolling-wrapper');
-
-    sliders.forEach(slider => {
-        // Lấy key từ data-wrapper theo đúng rule của bạn
+(function () {
+    function getScrollButtons(slider) {
         const key = slider.getAttribute('data-wrapper');
+        const section = slider.closest('.product-section') || document;
 
-        // Tìm nút có data-target khớp với data-wrapper
-        const btnPrev = document.querySelector(`.btn-prev[data-target="${key}"]`);
-        const btnNext = document.querySelector(`.btn-next[data-target="${key}"]`);
+        let btnPrev = section.querySelector(`.btn-prev[data-target="${key}"]`);
+        let btnNext = section.querySelector(`.btn-next[data-target="${key}"]`);
 
-        if (!btnPrev || !btnNext) return;
+        if (!btnPrev || !btnNext) {
+            btnPrev = document.querySelector(`.btn-prev[data-target="${key}"]`);
+            btnNext = document.querySelector(`.btn-next[data-target="${key}"]`);
+        }
 
-        function updateButtons() {
+        return { btnPrev, btnNext };
+    }
 
-            if (window.innerWidth < 768) {
-                btnPrev.classList.remove('show');
-                btnNext.classList.remove('show');
-                return;
-            }
+    function updateButtons(slider) {
+        if (!slider) {
+            return;
+        }
 
-            const scrollWidth = slider.scrollWidth;
-            const clientWidth = slider.clientWidth;
-            const scrollLeft = Math.ceil(slider.scrollLeft);
-            const maxScrollLeft = scrollWidth - clientWidth;
+        const { btnPrev, btnNext } = getScrollButtons(slider);
+        if (!btnPrev || !btnNext) {
+            return;
+        }
 
-            // Hiện nút quay lại khi đã cuộn đi một chút
-            if (scrollLeft > 5) {
-                btnPrev.classList.add('show');
-            } else {
-                btnPrev.classList.remove('show');
-            }
+        if (window.innerWidth < 768) {
+            btnPrev.classList.remove('show');
+            btnNext.classList.remove('show');
+            return;
+        }
 
-            // Hiện nút tiếp theo nếu nội dung còn dài và chưa cuộn hết
-            if (scrollWidth > clientWidth && scrollLeft < maxScrollLeft - 5) {
-                btnNext.classList.add('show');
-            } else {
-                btnNext.classList.remove('show');
+        const cards = slider.querySelectorAll('.product-card');
+        const sliderRect = slider.getBoundingClientRect();
+        const scrollWidth = slider.scrollWidth;
+        const clientWidth = slider.clientWidth;
+        const scrollLeft = Math.ceil(slider.scrollLeft);
+        const maxScrollLeft = Math.max(0, scrollWidth - clientWidth);
+
+        let hasHiddenLeft = scrollLeft > 5;
+        let hasHiddenRight = scrollLeft < maxScrollLeft - 5;
+
+        if (cards.length > 0) {
+            const firstCardRect = cards[0].getBoundingClientRect();
+            const lastCardRect = cards[cards.length - 1].getBoundingClientRect();
+
+            hasHiddenLeft = hasHiddenLeft || firstCardRect.left < sliderRect.left - 4;
+            hasHiddenRight = hasHiddenRight || lastCardRect.right > sliderRect.right + 4;
+        }
+
+        const hasOverflow = hasHiddenLeft || hasHiddenRight || scrollWidth > clientWidth + 8;
+
+        btnPrev.classList.toggle('show', hasOverflow && hasHiddenLeft);
+        btnNext.classList.toggle('show', hasOverflow && hasHiddenRight);
+    }
+
+    function bindSlider(slider) {
+        if (!slider) {
+            return;
+        }
+
+        if (slider.dataset.scrollBound === 'true') {
+            updateButtons(slider);
+            return;
+        }
+
+        const { btnPrev, btnNext } = getScrollButtons(slider);
+        slider.dataset.scrollBound = 'true';
+
+        slider.addEventListener('scroll', function () {
+            updateButtons(slider);
+        });
+
+        if (btnPrev) {
+            btnPrev.addEventListener('click', function () {
+                slider.scrollBy({ left: -slider.clientWidth * 0.7, behavior: 'smooth' });
+            });
+        }
+
+        if (btnNext) {
+            btnNext.addEventListener('click', function () {
+                slider.scrollBy({ left: slider.clientWidth * 0.7, behavior: 'smooth' });
+            });
+        }
+
+        if (typeof ResizeObserver !== 'undefined') {
+            const observer = new ResizeObserver(function () {
+                updateButtons(slider);
+            });
+
+            observer.observe(slider);
+            if (slider.firstElementChild) {
+                observer.observe(slider.firstElementChild);
             }
         }
 
-        slider.addEventListener('scroll', updateButtons);
-        window.addEventListener('resize', updateButtons);
-
-        // Kiểm tra ngay khi trang tải xong
-        setTimeout(updateButtons, 500);
-
-        btnPrev.addEventListener('click', () => {
-            slider.scrollBy({ left: -slider.clientWidth * 0.7, behavior: 'smooth' });
+        requestAnimationFrame(function () {
+            updateButtons(slider);
         });
 
-        btnNext.addEventListener('click', () => {
-            slider.scrollBy({ left: slider.clientWidth * 0.7, behavior: 'smooth' });
-        });
+        setTimeout(function () {
+            updateButtons(slider);
+        }, 200);
+    }
+
+    function initScrollableSections(root) {
+        const scope = root instanceof Element || root instanceof Document ? root : document;
+        scope.querySelectorAll('.scrolling-wrapper').forEach(bindSlider);
+    }
+
+    function refreshScrollableSections(root) {
+        const scope = root instanceof Element || root instanceof Document ? root : document;
+        scope.querySelectorAll('.scrolling-wrapper').forEach(updateButtons);
+    }
+
+    window.ScrollSectionManager = {
+        init: initScrollableSections,
+        refresh: refreshScrollableSections
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        initScrollableSections(document);
     });
-});
+
+    window.addEventListener('resize', function () {
+        refreshScrollableSections(document);
+    });
+
+    window.addEventListener('recommendation:rendered', function (event) {
+        const wrapperKey = event.detail && event.detail.wrapper;
+        if (!wrapperKey) {
+            refreshScrollableSections(document);
+            return;
+        }
+
+        const wrapper = document.querySelector(`.scrolling-wrapper[data-wrapper="${wrapperKey}"]`);
+        if (wrapper) {
+            bindSlider(wrapper);
+            updateButtons(wrapper);
+        }
+    });
+})();
 
 // Script để hiển thị/ẩn nút
 window.onscroll = function () {
+    const button = document.getElementById('back-to-top');
+    if (!button) {
+        return;
+    }
+
     if (document.body.scrollTop > 60 || document.documentElement.scrollTop > 60) {
-        document.getElementById("back-to-top").style.display = "block";
+        button.style.display = 'block';
     } else {
-        document.getElementById("back-to-top").style.display = "none";
+        button.style.display = 'none';
     }
 };
 
 // Xử lý sự kiện click
-document.getElementById('back-to-top').addEventListener('click', function () {
-    window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
+const backToTopButton = document.getElementById('back-to-top');
+if (backToTopButton) {
+    backToTopButton.addEventListener('click', function () {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
     });
-});
+}

@@ -4,24 +4,35 @@
 const RecommendationManager = {
     // 1. Cấu hình chung
     config: {
-        apiUrl: '/api/v1/recommendations/scene',
         currencyLocale: 'vi-VN',
         uploadPath: '/Upload/Products/',
         defaultContainer: '#recommendation-container'
     },
 
     // 2. Hàm khởi tạo chính cho từng Scene
-    init: function (scene, productSysId = null, topN = 10) {
+    init: function (scene, productSysId = null, topN = 15) {
+        if (typeof productSysId === 'number' && topN === 15 && scene !== 'detail') {
+            topN = productSysId;
+            productSysId = null;
+        }
         this.loadData(scene, productSysId, topN);
     },
 
     // 3. Xử lý gọi API
     loadData: function (scene, productSysId, topN) {
         const _self = this;
+        const request = this.helper.buildRequest(scene, productSysId, topN);
+
+        if (!request) {
+            console.error("Recommend Error: unsupported scene", scene);
+            $(_self.config.defaultContainer).hide();
+            return;
+        }
+
         $.ajax({
-            url: this.config.apiUrl,
+            url: request.url,
             type: 'GET',
-            data: { scene, productSysId, topN },
+            data: request.data,
             beforeSend: function () {
                 $(_self.config.defaultContainer).html(_self.helper.getSpinner());
             },
@@ -49,9 +60,86 @@ const RecommendationManager = {
 
         const html = products.map(p => this.template.productCard(p)).join('');
         $container.append(html);
+        $container.closest('section.products').show();
 
         // Sau khi render xong thì gắn sự kiện
         this.bindEvents();
+
+        const wrapperKey = $container.closest('[data-wrapper]').data('wrapper');
+        this.refreshScrollState(wrapperKey, $container);
+    },
+
+    refreshScrollState: function (wrapperKey, $container) {
+        const forceRecommendationButtons = () => {
+            const wrapper = $container.closest('.scrolling-wrapper').get(0);
+            if (!wrapper) {
+                return;
+            }
+
+            const section = wrapper.closest('.product-section') || document;
+            const targetKey = wrapper.dataset.wrapper || wrapperKey || 'suggestion';
+            const btnPrev = section.querySelector(`.btn-prev[data-target="${targetKey}"]`) || document.querySelector(`.btn-prev[data-target="${targetKey}"]`);
+            const btnNext = section.querySelector(`.btn-next[data-target="${targetKey}"]`) || document.querySelector(`.btn-next[data-target="${targetKey}"]`);
+            const cards = wrapper.querySelectorAll('.product-card');
+
+            if (!btnPrev || !btnNext || cards.length === 0 || window.innerWidth < 768) {
+                return;
+            }
+
+            const wrapperRect = wrapper.getBoundingClientRect();
+            const firstCardRect = cards[0].getBoundingClientRect();
+            const lastCardRect = cards[cards.length - 1].getBoundingClientRect();
+            const contentWidth = Math.max(0, lastCardRect.right - firstCardRect.left);
+            const hasOverflow = contentWidth > wrapperRect.width + 8;
+            const hasHiddenLeft = wrapper.scrollLeft > 5 || firstCardRect.left < wrapperRect.left - 4;
+            const hasHiddenRight = hasOverflow && (lastCardRect.right > wrapperRect.right + 4 || wrapper.scrollLeft <= 5);
+
+            btnPrev.classList.toggle('show', hasOverflow && hasHiddenLeft);
+            btnNext.classList.toggle('show', hasOverflow && hasHiddenRight);
+        };
+
+        const dispatchRefresh = () => {
+            forceRecommendationButtons();
+
+            if (window.ScrollSectionManager) {
+                window.ScrollSectionManager.init(document);
+                window.ScrollSectionManager.refresh(document);
+            }
+
+            forceRecommendationButtons();
+
+            window.dispatchEvent(new CustomEvent('recommendation:rendered', {
+                detail: {
+                    wrapper: wrapperKey || null
+                }
+            }));
+
+            forceRecommendationButtons();
+        };
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(dispatchRefresh);
+        });
+
+        setTimeout(dispatchRefresh, 120);
+        setTimeout(dispatchRefresh, 320);
+        setTimeout(dispatchRefresh, 1000);
+
+        const pathname = (window.location.pathname || '').toLowerCase();
+        const isHomepage = pathname === '/' || pathname === '/home' || pathname === '/home/index';
+
+        if (isHomepage) {
+            window.addEventListener('load', dispatchRefresh, { once: true });
+            setTimeout(dispatchRefresh, 1600);
+        }
+
+        $container.find('img').each(function () {
+            if (this.complete) {
+                return;
+            }
+
+            $(this).one('load error', dispatchRefresh);
+        });
     },
 
     // 5. Các Template HTML nhỏ (Tách nhỏ để dễ sửa UI)
@@ -68,7 +156,7 @@ const RecommendationManager = {
                     <div class="position-absolute d-flex gap-1" style="top: 8px; left: 8px; z-index: 2;">
                         ${badge}
                     </div>
-                    <div class="product-link" style="cursor:pointer" data-slug="${p.slug}">
+                    <div class="product-link recommendation-product-link" style="cursor:pointer" data-slug="${p.slug}" data-product-id="${p.productId}" data-product-sys-id="${p.productSysId || ''}" data-track-event="recommendation_click" data-track-source="recommendation_widget" data-track-placement="recommendation">
                         <div class="image-container">
                             <img src="${img}" class="product-image-csl-hotSale" alt="${p.name}">
                         </div>
@@ -94,6 +182,29 @@ const RecommendationManager = {
         formatMoney: function (amount) {
             return amount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
         },
+        buildRequest: function (scene, productSysId, topN) {
+            const normalizedTopN = Number.isFinite(Number(topN)) ? Number(topN) : 15;
+
+            if (scene === 'homepage') {
+                return {
+                    url: '/api/v1/recommendations/homepage',
+                    data: { topN: normalizedTopN }
+                };
+            }
+
+            if (scene === 'detail' || scene === 'cart' || scene === 'wishlist') {
+                return {
+                    url: '/api/v1/recommendations/scene',
+                    data: {
+                        scene,
+                        productSysId,
+                        topN: normalizedTopN
+                    }
+                };
+            }
+
+            return null;
+        },
         formatImage: function (imgName) {
             if (!imgName) return '/images/no-image.png';
             return imgName.includes('http') ? imgName : RecommendationManager.config.uploadPath + imgName;
@@ -110,8 +221,10 @@ const RecommendationManager = {
 
     // 7. Quản lý sự kiện (Click, Hover...)
     bindEvents: function () {
+        const $container = $(this.config.defaultContainer);
+
         // Sự kiện click chuyển trang
-        $('.product-link').off('click').on('click', function (e) {
+        $container.find('.recommendation-product-link').off('click').on('click', function (e) {
             if ($(e.target).closest('.addToWishList').length) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -119,11 +232,14 @@ const RecommendationManager = {
             }
 
             const slug = $(this).data('slug');
+            if (window.UserInteractionTracker) {
+                window.UserInteractionTracker.trackElement(this);
+            }
             window.location.href = `/view/${slug}`;
         });
 
         // Sự kiện nút yêu thích
-        $('.addToWishList').off('click').on('click', function (e) {
+        $container.find('.addToWishList').off('click').on('click', function (e) {
             e.stopPropagation();
             const id = $(this).data('id');
             if (typeof addToWishlist === 'function') {

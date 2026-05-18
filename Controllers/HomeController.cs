@@ -1,110 +1,47 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
-using OfficeOpenXml.FormulaParsing.Excel.Functions.Math;
-using StackExchange.Redis;
 using System.Diagnostics;
-using System.Drawing.Printing;
-using System.Security.Claims;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+using Tech_Store.Extensions;
 using Tech_Store.Models;
 using Tech_Store.Models.ViewModel;
 using Tech_Store.Services;
-using Tech_Store.Services.Admin.NotificationServices;
-using Tech_Store.Services.Client.RecommendServices;
+using Tech_Store.Services.Client;
+using Tech_Store.Services.Client.Storefront;
 using X.PagedList.Extensions;
 
 namespace Tech_Store.Controllers
 {
     public class HomeController : BaseController
     {
-		private readonly ILogger<HomeController> _logger;
-		private readonly IConfiguration _configuration;
-        private readonly NotificationService _notificationService;
         private readonly RedisService _redis;
-        private readonly RecommendServices _recommendServices;
-        // Khai báo chỉ cần ILogger và IConfiguration
-        public HomeController(ILogger<HomeController> logger, NotificationService notificationService, IConfiguration configuration, ApplicationDbContext context,
-            RedisService redis, RecommendServices recommendServices)
+        private readonly IBannerQueryService _bannerQueryService;
+        private readonly IHomePageContentService _homePageContentService;
+
+        public HomeController(
+            ApplicationDbContext context,
+            RedisService redis,
+            IBannerQueryService bannerQueryService,
+            IHomePageContentService homePageContentService)
 			: base(context) 
 		{
-			_logger = logger;
-			_configuration = configuration;
-            _notificationService = notificationService;
             _redis = redis;
-            _recommendServices = recommendServices;
+            _bannerQueryService = bannerQueryService;
+            _homePageContentService = homePageContentService;
         }
 
         public async Task<IActionResult> Index()
         {
-            // Lấy danh sách danh mục có trạng thái hiển thị
-            var list_cate = _context.Categories
-                .Include(p => p.Products)
-                .Where(x => x.Visible == 1)
-                .ToList();
+            var content = await _homePageContentService.GetHomePageContentAsync();
 
-            var list_hotSearch = await _redis.GetTopSearchKeywords(list_cate.ToList(),6);
-            var hotSearchByCategory = new Dictionary<string, List<string>>();
-            foreach (var category in list_cate)
-            {
-                var topKeywords = await _redis.GetTopSearchKeywordsByCategory(category.EngTitle, 12);
-                hotSearchByCategory[category.EngTitle] = topKeywords;
-            }
-
-            //Lấy các brands theo danh mục
-            var brandsByCategory = list_cate.ToDictionary(
-                category => category.CategoryId,
-                category => _context.Brands
-                    .Where(b =>
-                        !b.BrandCategories.Any() ||
-                        b.BrandCategories.Any(bc => bc.CategoryId == category.CategoryId))
-                    .OrderBy(b => b.SortOrder ?? 0)
-                    .ThenBy(_ => EF.Functions.Random())
-                    .ToList()
-            );
-            ViewBag.BrandsByCategory = brandsByCategory;
-            // Lấy tối đa 10 sản phẩm cho mỗi danh mục
-            var productsByCategory = list_cate.Select(category => new
-            {
-                Category = category,
-                Products = _context.Products
-                    .Include(p=> p.Brand)
-                    .Where(p => p.CategoryId == category.CategoryId && p.Stock >= 1 && p.Status != "outstock")
-                    .Take(10)
-                    .OrderByDescending(p => p.ProductId)
-                    .ToList()
-            }).ToList();
-
-            // Lấy danh sách sản phẩm Hot Sale
-            var hotSaleProducts = _context.Products
-                .Where(x => x.Visible == true && x.Stock >=1 && x.Status !="outstock")
-                .OrderByDescending(x => x.OrderItems.Count)
-                .Take(10)
-                .ToList();
-
-            // Nếu số lượng sản phẩm Hot Sale ít hơn 10, bổ sung thêm sản phẩm ngẫu nhiên
-            if (hotSaleProducts.Count < 10)
-            {
-                int remainingSlots = 10 - hotSaleProducts.Count;
-
-                // Lấy danh sách các sản phẩm chưa có trong hotSaleProducts
-                var additionalProducts = _context.Products
-                    .Where(x => x.Visible == true && !hotSaleProducts.Select(h => h.ProductId).Contains(x.ProductId))
-                    .OrderBy(r => EF.Functions.Random()) // Sử dụng EF.Functions.Random() thay vì Guid.NewGuid()
-                    .Take(remainingSlots)
-                    .ToList();
-
-                // Gộp danh sách sản phẩm Hot Sale với các sản phẩm ngẫu nhiên
-                hotSaleProducts.AddRange(additionalProducts);
-            }
-
-            // Sử dụng ViewBag để truyền dữ liệu vào View
-            ViewBag.productsHotSale = hotSaleProducts;
-            ViewBag.List_cate = list_cate;
-            ViewBag.ProductsByCategory = productsByCategory;
-            ViewBag.List_TopHotSearch = list_hotSearch;
-            ViewBag.HotSearchByCategory = hotSearchByCategory;
+            ViewBag.productsHotSale = content.HotSaleProducts;
+            ViewBag.List_cate = content.Categories;
+            ViewBag.ProductsByCategory = content.ProductsByCategory;
+            ViewBag.List_TopHotSearch = content.TopHotSearchByCategory;
+            ViewBag.HotSearchByCategory = content.HotSearchByCategory;
+            ViewBag.BrandsByCategory = content.BrandsByCategory;
+            ViewBag.HomeHeroMainBanners = content.HomeHeroMainBanners;
+            ViewBag.HomeHeroPromoBanners = content.HomeHeroPromoBanners;
 
             return View();
         }
@@ -114,8 +51,6 @@ namespace Tech_Store.Controllers
         [Route("View/{slug}")]
         public async Task<IActionResult> View(string slug)
         {
-            var userId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0;
-
             // Load product and related data in a single query
             var product = await _context.Products
                 .AsNoTracking()
@@ -128,7 +63,10 @@ namespace Tech_Store.Controllers
                 .Include(p => p.Brand)
                 .FirstOrDefaultAsync(p => p.Slug == slug);
 
-            if (product == null) return NotFound();
+              if (product == null) return NotFound();
+
+              HttpContext.Items["product_id"] = product.ProductId;
+              HttpContext.Items["product_sys_id"] = product.ProductSysId ?? string.Empty;
 
             // Load specs in a single query
             var specs = await _context.Species
@@ -216,7 +154,7 @@ namespace Tech_Store.Controllers
         }
 
         [HttpGet("Category/{eng_title}")]
-        public IActionResult Category(string eng_title, string? order,string? price,string? brand,int page = 1)
+        public async Task<IActionResult> Category(string eng_title, string? order,string? price,string? brand,int page = 1)
         {
             int pageSize = 20;
 
@@ -231,45 +169,22 @@ namespace Tech_Store.Controllers
                 .AsNoTracking()
                 .Where(x =>
                     x.CategoryId == cate.CategoryId &&
-                    x.Status != "outstock" &&
-                    x.SellPrice > 0
-                );
+                    x.Status != "outstock")
+                .WhereStorefrontAvailable();
 
             //  Brand filter
             if (!string.IsNullOrEmpty(brand) && int.TryParse(brand, out int brandId))
                 query = query.Where(x => x.BrandId == brandId);
 
             // Price filter
-            if (!string.IsNullOrEmpty(price))
-            {
-                query = price switch
-                {
-                    "max5" => query.Where(x => x.SellPrice < 5_000_000),
-                    "max10" => query.Where(x => x.SellPrice >= 5_000_000 && x.SellPrice < 10_000_000),
-                    "max20" => query.Where(x => x.SellPrice >= 10_000_000 && x.SellPrice < 20_000_000),
-                    "max50" => query.Where(x => x.SellPrice >= 20_000_000 && x.SellPrice < 50_000_000),
-                    "more" => query.Where(x => x.SellPrice >= 50_000_000),
-                    _ => query
-                };
-            }
-
-            // 🔥 Sort
-            query = order switch
-            {
-                "alphabet" => query.OrderBy(x => x.Name),
-                "alphabet_desc" => query.OrderByDescending(x => x.Name),
-                "price" => query.OrderBy(x => x.SellPrice),
-                "price_desc" => query.OrderByDescending(x => x.SellPrice),
-                "care" => query.OrderByDescending(x => x.Reviews),
-                _ => query.OrderByDescending(x => x.ProductId)
-            };
+            query = query
+                .ApplyStorefrontPriceFilter(price)
+                .ApplyStorefrontSort(order);
 
             var products = query.ToPagedList(page, pageSize);
 
             // 🔥 Hot search
-            var list_HotSearch = _redis
-                .GetTopSearchKeywordsByCategory(cate.EngTitle, 10)
-                .Result;
+            var list_HotSearch = await _redis.GetTopSearchKeywordsByCategory(cate.EngTitle, 10);
 
             ViewBag.list_HotSearch = list_HotSearch;
 
@@ -277,57 +192,27 @@ namespace Tech_Store.Controllers
             ViewBag.Price = price;
             ViewBag.Brand = brand;
             ViewBag.Category = cate;
+            ViewBag.CategoryHeroBanners = await _bannerQueryService.GetBannersAsync("category-hero", cate.CategoryId, null, 1);
 
             ViewBag.list_brand = _context.Brands
                 .AsNoTracking()
                 .Where(b =>
                     !b.BrandCategories.Any() ||
                     b.BrandCategories.Any(bc => bc.CategoryId == cate.CategoryId))
-                .OrderBy(b => b.SortOrder ?? 0)
-                .ThenBy(_ => EF.Functions.Random())
+                .ApplyRandomizedBrandOrdering()
                 .ToList();
 
             return View(products);
         }
 
         [HttpGet("Category")]
-        public IActionResult Categories()
+        public async Task<IActionResult> Categories()
         {
-            var categories = _context.Categories
-                .AsNoTracking()
-                .Where(x => x.VisibleOnCategoryPage == 1)
-                .OrderBy(x => x.Name)
-                .Select(x => new Category
-                {
-                    CategoryId = x.CategoryId,
-                    Name = x.Name,
-                    EngTitle = x.EngTitle,
-                    Image = x.Image,
-                    Description = x.Description,
-                    Visible = x.Visible,
-                    VisibleOnCategoryPage = x.VisibleOnCategoryPage,
-                    VisibleOnOtherPages = x.VisibleOnOtherPages
-                })
-                .ToList();
+            var content = await _homePageContentService.GetCategoryLandingContentAsync();
 
-            var categoryProductCounts = _context.Products
-                .AsNoTracking()
-                .Where(x => x.CategoryId != null && x.Status != "outstock" && x.SellPrice > 0)
-                .GroupBy(x => x.CategoryId!.Value)
-                .Select(x => new { CategoryId = x.Key, Count = x.Count() })
-                .ToDictionary(x => x.CategoryId, x => x.Count);
-
-            var featuredProducts = _context.Products
-                .AsNoTracking()
-                .Where(x => x.Visible == true && x.Stock >= 1 && x.Status != "outstock" && x.SellPrice > 0)
-                .OrderByDescending(x => x.OrderItems.Count)
-                .ThenByDescending(x => x.ProductId)
-                .Take(8)
-                .ToList();
-
-            ViewBag.CategoryCards = categories;
-            ViewBag.CategoryProductCounts = categoryProductCounts;
-            ViewBag.FeaturedProducts = featuredProducts;
+            ViewBag.CategoryCards = content.CategoryCards;
+            ViewBag.CategoryProductCounts = content.CategoryProductCounts;
+            ViewBag.FeaturedProducts = content.FeaturedProducts;
 
             return View();
         }
@@ -345,66 +230,22 @@ namespace Tech_Store.Controllers
             if (currentBrand == null)
                 return NotFound();
 
-            var keywords = key?.ToLower()
-                .Split(" ", StringSplitOptions.RemoveEmptyEntries)
-                ?? Array.Empty<string>();
-
             IQueryable<Models.Product> query = _context.Products
                 .AsNoTracking()
-                .Where(p =>
-                    p.BrandId == currentBrand.BrandId &&
-                    p.Status != "outstock" &&
-                    p.SellPrice > 0
-                );
-
-            if (!string.IsNullOrEmpty(key))
-            {
-                foreach (var word in keywords)
-                {
-                    query = query.Where(p =>
-                        p.Name.Contains(word) ||
-                        (p.Description != null && p.Description.Contains(word))
-                    );
-                }
-            }
-
-            // Order
-            query = order switch
-            {
-                "alphabet" => query.OrderBy(x => x.Name),
-                "alphabet_desc" => query.OrderByDescending(x => x.Name),
-                "price" => query.OrderBy(x => x.SellPrice),
-                "price_desc" => query.OrderByDescending(x => x.SellPrice),
-                "care" => query.OrderByDescending(x => x.Reviews),
-                _ => query.OrderByDescending(x => x.ProductId)
-            };
-
-            // Price filter
-            if (!string.IsNullOrEmpty(price))
-            {
-                query = price switch
-                {
-                    "max5" => query.Where(x => x.SellPrice < 5_000_000),
-                    "max10" => query.Where(x => x.SellPrice >= 5_000_000 && x.SellPrice < 10_000_000),
-                    "max20" => query.Where(x => x.SellPrice >= 10_000_000 && x.SellPrice < 20_000_000),
-                    "max50" => query.Where(x => x.SellPrice >= 20_000_000 && x.SellPrice < 50_000_000),
-                    "more" => query.Where(x => x.SellPrice >= 50_000_000),
-                    _ => query
-                };
-            }
+                .Where(p => p.BrandId == currentBrand.BrandId)
+                .WhereStorefrontAvailable()
+                .ApplyStorefrontKeywordSearch(key)
+                .ApplyStorefrontPriceFilter(price)
+                .ApplyStorefrontSort(order);
 
             var products = query.ToPagedList(page, pageSize);
 
             // Hot search
-            if (!string.IsNullOrWhiteSpace(key) && key.Length >= 3)
+            if (!string.IsNullOrWhiteSpace(key))
             {
-                if (Regex.IsMatch(key, @"^[a-zA-Z0-9\s]+$"))
-                {
-                    await _redis.IncrementHotKeywordAsync(
-                        key.Trim().ToLower(),
-                        currentBrand.Category?.EngTitle ?? "all"
-                    );
-                }
+                await _redis.IncrementHotKeywordAsync(
+                    key,
+                    new[] { currentBrand.Category?.EngTitle ?? "all" });
             }
 
             ViewBag.Brand = currentBrand;
@@ -412,13 +253,13 @@ namespace Tech_Store.Controllers
             ViewBag.Order = order;
             ViewBag.Price = price;
             ViewBag.Key = key;
+            ViewBag.BrandHeroBanners = await _bannerQueryService.GetBannersAsync("brand-hero", currentBrand.CategoryId, currentBrand.BrandId, 1);
 
             ViewBag.list_brand = _context.Brands
                 .Where(b =>
                     !b.BrandCategories.Any() ||
                     (currentBrand.CategoryId != null && b.BrandCategories.Any(bc => bc.CategoryId == currentBrand.CategoryId)))
-                .OrderBy(b => b.SortOrder ?? 0)
-                .ThenBy(_ => EF.Functions.Random())
+                .ApplyRandomizedBrandOrdering()
                 .ToList();
 
             return View(products);
@@ -431,18 +272,8 @@ namespace Tech_Store.Controllers
 
             IQueryable<Models.Product> query = _context.Products
                 .AsNoTracking()
-                .Where(x => x.Status != "outstock" && x.SellPrice > 0);
-
-            // 1️⃣ Keyword
-            var keywords = key?.Split(" ", StringSplitOptions.RemoveEmptyEntries)
-                           ?? Array.Empty<string>();
-
-            foreach (var word in keywords)
-            {
-                query = query.Where(p =>
-                    p.Name.Contains(word) ||
-                    (p.Description != null && p.Description.Contains(word)));
-            }
+                .WhereStorefrontAvailable()
+                .ApplyStorefrontKeywordSearch(key);
 
             // 2️⃣ Category
             if (!string.IsNullOrEmpty(category) && int.TryParse(category, out int cateId))
@@ -452,30 +283,9 @@ namespace Tech_Store.Controllers
             if (!string.IsNullOrEmpty(brand) && int.TryParse(brand, out int brandId))
                 query = query.Where(x => x.BrandId == brandId);
 
-            // 4️⃣ Price
-            if (!string.IsNullOrEmpty(price))
-            {
-                query = price switch
-                {
-                    "max5" => query.Where(x => x.SellPrice < 5_000_000),
-                    "max10" => query.Where(x => x.SellPrice >= 5_000_000 && x.SellPrice < 10_000_000),
-                    "max20" => query.Where(x => x.SellPrice >= 10_000_000 && x.SellPrice < 20_000_000),
-                    "max50" => query.Where(x => x.SellPrice >= 20_000_000 && x.SellPrice < 50_000_000),
-                    "more" => query.Where(x => x.SellPrice >= 50_000_000),
-                    _ => query
-                };
-            }
-
-            // 5️⃣ Sort
-            query = order switch
-            {
-                "alphabet" => query.OrderBy(x => x.Name),
-                "alphabet_desc" => query.OrderByDescending(x => x.Name),
-                "price" => query.OrderBy(x => x.SellPrice),
-                "price_desc" => query.OrderByDescending(x => x.SellPrice),
-                "care" => query.OrderByDescending(x => x.Reviews),
-                _ => query.OrderByDescending(x => x.ProductId)
-            };
+            query = query
+                .ApplyStorefrontPriceFilter(price)
+                .ApplyStorefrontSort(order);
 
             var pagedProducts = query
                 .Select(p => new Models.Product
@@ -496,16 +306,31 @@ namespace Tech_Store.Controllers
                 .ToPagedList(page, pageSize);
 
             // 🔥 Hot search
-            if (!string.IsNullOrWhiteSpace(key) &&
-                key.Length >= 3 &&
-                Regex.IsMatch(key, @"^[a-zA-Z0-9\s]+$"))
+            if (!string.IsNullOrWhiteSpace(key))
             {
-                var matchedCategorySlug =
-                    pagedProducts.FirstOrDefault()?.Category?.EngTitle ?? "all";
+                var matchedCategorySlugs = pagedProducts
+                    .Select(x => x.Category?.EngTitle)
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Distinct()
+                    .Take(3)
+                    .Cast<string>()
+                    .ToList();
 
-                await _redis.IncrementHotKeywordAsync(
-                    key.Trim().ToLower(),
-                    matchedCategorySlug);
+                if (!string.IsNullOrWhiteSpace(category) && int.TryParse(category, out var selectedCategoryId))
+                {
+                    var selectedCategorySlug = await _context.Categories
+                        .AsNoTracking()
+                        .Where(x => x.CategoryId == selectedCategoryId)
+                        .Select(x => x.EngTitle)
+                        .FirstOrDefaultAsync();
+
+                    if (!string.IsNullOrWhiteSpace(selectedCategorySlug))
+                    {
+                        matchedCategorySlugs.Insert(0, selectedCategorySlug);
+                    }
+                }
+
+                await _redis.IncrementHotKeywordAsync(key, matchedCategorySlugs);
             }
 
             ViewBag.Order = order;
@@ -516,8 +341,7 @@ namespace Tech_Store.Controllers
 
             ViewBag.list_brand = _context.Brands
                 .AsNoTracking()
-                .OrderBy(b => b.SortOrder ?? 0)
-                .ThenBy(_ => EF.Functions.Random())
+                .ApplyRandomizedBrandOrdering()
                 .Select(b => new { b.BrandId, b.Name })
                 .ToList();
 
