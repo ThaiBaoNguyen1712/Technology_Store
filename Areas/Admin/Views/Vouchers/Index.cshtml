@@ -105,7 +105,6 @@
                                 <tr>
                                     <td>
                                         <div class="fw-semibold text-dark">@voucher.Name</div>
-                                        <div class="small text-muted">ID #@voucher.VoucherId</div>
                                     </td>
                                     <td>
                                         <span class="badge text-bg-warning-subtle text-warning-emphasis border voucher-admin__code-badge">
@@ -118,7 +117,6 @@
                                     <td class="text-muted">@(string.IsNullOrWhiteSpace(voucher.Description) ? "-" : voucher.Description)</td>
                                     <td>
                                         <div class="fw-semibold text-dark">@voucher.Quantity</div>
-                                        <div class="small text-muted">lượt áp dụng</div>
                                     </td>
                                     <td>
                                         <div class="text-dark">@(voucher.StartedAt?.ToString("dd/MM/yyyy") ?? "-")</div>
@@ -129,7 +127,6 @@
                                             <span class="order-admin__state-dot @($"order-admin__state-dot--{voucher.StatusTone}")"></span>
                                             <div class="order-admin__state-body">
                                                 <strong>@voucher.StatusLabel</strong>
-                                                <span>@(voucher.StartedAt?.ToString("HH:mm:ss") ?? "-") - @(voucher.ExpiredAt?.ToString("HH:mm:ss") ?? "-")</span>
                                             </div>
                                         </div>
                                     </td>

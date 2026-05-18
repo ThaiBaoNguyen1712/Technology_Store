@@ -63,7 +63,7 @@
     </div>
 
     <div class="dashboard-page__layout">
-        <section class="dashboard-panel dashboard-panel--wide">
+        <section class="dashboard-panel dashboard-panel--wide dashboard-panel--chart">
             <div class="dashboard-panel__header">
                 <div>
                     <h2>Thống kê đơn hàng</h2>
@@ -117,7 +117,7 @@
             </div>
         </section>
 
-        <section class="dashboard-panel">
+        <section class="dashboard-panel dashboard-panel--revenue">
             <div class="dashboard-panel__header">
                 <div>
                     <h2>Doanh thu gần nhất</h2>
@@ -138,7 +138,7 @@
                     <a href="/Admin/Products/all" class="btn btn-light border btn-sm">Xem thêm</a>
                 </div>
 
-                <div class="table-responsive reusable-admin-table">
+                <div class="table-responsive reusable-admin-table dashboard-panel__scroll-table">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
                             <tr>
@@ -181,7 +181,7 @@
             </div>
         </section>
 
-        <section class="dashboard-panel dashboard-panel--wide">
+        <section class="dashboard-panel dashboard-panel--wide dashboard-panel--orders">
             <div class="dashboard-panel__header">
                 <div>
                     <h2>Đơn hàng mới</h2>
@@ -190,7 +190,7 @@
                 <a href="/Admin/Orders/all" class="btn btn-light border">Xem thêm</a>
             </div>
 
-            <div class="table-responsive reusable-admin-table">
+            <div class="table-responsive reusable-admin-table dashboard-panel__scroll-table">
                 <table class="table table-hover align-middle order-admin__table mb-0">
                     <thead class="table-light">
                         <tr>
@@ -246,7 +246,7 @@
             </div>
         </section>
 
-        <section class="dashboard-panel">
+        <section class="dashboard-panel dashboard-panel--users">
             <div class="dashboard-panel__header">
                 <div>
                     <h2>Khách hàng mới</h2>
@@ -255,7 +255,7 @@
                 <a href="/Admin/Users" class="btn btn-light border btn-sm">Xem thêm</a>
             </div>
 
-            <div class="dashboard-user-list">
+            <div class="dashboard-user-list dashboard-panel__scroll-list">
                 @foreach (var user in ViewBag.New_users)
                 {
                     <div class="dashboard-user-list__item">
@@ -335,6 +335,16 @@
         $(function () {
             const ctx = document.getElementById('orderChart');
             let orderChart;
+            const currencyFormatter = new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND',
+                maximumFractionDigits: 0
+            });
+
+            function formatCurrency(value) {
+                const amount = Number(value) || 0;
+                return currencyFormatter.format(amount);
+            }
 
             function renderChart(data) {
                 if (orderChart) {
@@ -349,6 +359,7 @@
                             {
                                 label: 'Số đơn hàng',
                                 data: data.map(item => item.orders),
+                                yAxisID: 'ordersAxis',
                                 backgroundColor: 'rgba(37, 99, 235, 0.72)',
                                 borderColor: 'rgba(37, 99, 235, 1)',
                                 borderWidth: 1,
@@ -357,6 +368,7 @@
                             {
                                 label: 'Doanh thu (VNĐ)',
                                 data: data.map(item => item.revenue),
+                                yAxisID: 'revenueAxis',
                                 backgroundColor: 'rgba(14, 165, 233, 0.58)',
                                 borderColor: 'rgba(14, 165, 233, 1)',
                                 borderWidth: 1,
@@ -371,15 +383,54 @@
                             mode: 'index',
                             intersect: false
                         },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    callback: function (value) {
-                                        return value.toLocaleString('vi-VN');
+                        tooltips: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function (tooltipItem, chartData) {
+                                    const dataset = chartData.datasets[tooltipItem.datasetIndex];
+                                    const value = tooltipItem.yLabel;
+
+                                    if (dataset.label && dataset.label.indexOf('Doanh thu') !== -1) {
+                                        return dataset.label + ': ' + formatCurrency(value);
                                     }
+
+                                    return dataset.label + ': ' + Number(value || 0).toLocaleString('vi-VN');
                                 }
                             }
+                        },
+                        scales: {
+                            yAxes: [{
+                                id: 'ordersAxis',
+                                position: 'left',
+                                beginAtZero: true,
+                                ticks: {
+                                    precision: 0,
+                                    callback: function (value) {
+                                        return Number(value || 0).toLocaleString('vi-VN');
+                                    }
+                                },
+                                scaleLabel: {
+                                    display: true,
+                                    labelString: 'Số đơn'
+                                }
+                            }, {
+                                id: 'revenueAxis',
+                                position: 'right',
+                                beginAtZero: true,
+                                gridLines: {
+                                    drawOnChartArea: false
+                                },
+                                ticks: {
+                                    callback: function (value) {
+                                        return formatCurrency(value);
+                                    }
+                                },
+                                scaleLabel: {
+                                    display: true,
+                                    labelString: 'Giá trị (VNĐ)'
+                                }
+                            }]
                         }
                     }
                 });

@@ -30,7 +30,7 @@
                     </button>
                 </form>
 
-                <button class="btn btn-success" id="markAllAsRead">
+                <button type="button" class="btn btn-success" id="markAllNotificationsAsRead">
                     <i class="fa fa-check"></i> Đánh dấu tất cả đã đọc
                 </button>
             </div>
@@ -96,7 +96,7 @@
                                             @if (!notification.IsRead)
                                             {
                                                 <button type="button"
-                                                        class="btn btn-success btn-sm mark-as-read"
+                                                        class="btn btn-success btn-sm notification-page-mark-as-read"
                                                         data-id="@notification.UserNotificationId">
                                                     <i class="fa fa-check"></i> Đã đọc
                                                 </button>
@@ -136,7 +136,7 @@
 <script src="~/Admin/assets/js/core/jquery-3.7.1.min.js"></script>
 <script>
     $(document).ready(function () {
-        $('.mark-as-read').on('click', function () {
+        $('.notification-page-mark-as-read').on('click', function () {
             const id = $(this).data('id');
             $.post('/admin/notifications/mark-as-read', { id: id }, function (response) {
                 if (response.success) {
@@ -147,7 +147,7 @@
             });
         });
 
-        $('#markAllAsRead').on('click', function () {
+        $('#markAllNotificationsAsRead').on('click', function () {
             $.post('/admin/notifications/mark-all-as-read', function (response) {
                 if (response.success) {
                     window.location.reload();

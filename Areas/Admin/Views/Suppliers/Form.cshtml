@@ -1,0 +1,84 @@
+@model Tech_Store.Models.ViewModel.AdminSupplierFormViewModel
+@{
+    var isEdit = Model.SupplierId > 0;
+    ViewData["Title"] = isEdit ? "Cập nhật nhà cung cấp" : "Thêm nhà cung cấp";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+}
+
+<div class="py-3 supplier-form-page">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div>
+                    <h4 class="card-title mb-1">@(isEdit ? "Cập nhật nhà cung cấp" : "Thêm nhà cung cấp mới")</h4>
+                </div>
+                <a href="@Url.Action("Index", "Suppliers", new { area = "Admin", page = Model.ReturnPage, code = Model.ReturnCode, name = Model.ReturnName, phoneNumber = Model.ReturnPhoneNumber, status = Model.ReturnStatus })"
+                   class="btn btn-light border">
+                    Quay lại danh sách
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState[string.Empty]?.Errors.Count > 0)
+            {
+                <div class="alert alert-danger border-0 shadow-sm">@ViewData.ModelState[string.Empty]!.Errors[0].ErrorMessage</div>
+            }
+
+            <form asp-area="Admin" asp-controller="Suppliers" asp-action="Save" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="SupplierId" />
+                <input type="hidden" asp-for="ReturnPage" />
+                <input type="hidden" asp-for="ReturnCode" />
+                <input type="hidden" asp-for="ReturnName" />
+                <input type="hidden" asp-for="ReturnPhoneNumber" />
+                <input type="hidden" asp-for="ReturnStatus" />
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="shadow-sm border rounded bg-white p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Mã nhà cung cấp</label>
+                            <input asp-for="Code" class="form-control" placeholder="VD: NCC-APPLE" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Tên nhà cung cấp</label>
+                            <input asp-for="Name" class="form-control" placeholder="Nhập tên doanh nghiệp / NCC..." required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Người liên hệ</label>
+                            <input asp-for="ContactName" class="form-control" placeholder="Nhập người phụ trách..." />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Số điện thoại</label>
+                            <input asp-for="PhoneNumber" class="form-control" placeholder="Nhập số điện thoại..." />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Email</label>
+                            <input asp-for="Email" class="form-control" placeholder="Nhập email..." />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Trạng thái hợp tác</label>
+                            <select asp-for="IsActive" class="form-select">
+                                <option value="true">Đang hợp tác</option>
+                                <option value="false">Ngưng hợp tác</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold text-secondary">Địa chỉ</label>
+                            <input asp-for="Address" class="form-control" placeholder="Nhập địa chỉ kho / văn phòng..." />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold text-secondary">Ghi chú vận hành</label>
+                            <textarea asp-for="Notes" class="form-control" rows="4" placeholder="Ví dụ: thời gian giao hàng, điều khoản thanh toán, nhóm ngành hàng phụ trách..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex justify-content-end gap-2">
+                    <button type="reset" class="btn btn-light border">Làm mới</button>
+                    <button type="submit" class="btn btn-primary">@(isEdit ? "Lưu thay đổi" : "Thêm nhà cung cấp")</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

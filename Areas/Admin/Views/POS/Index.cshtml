@@ -1,11 +1,10 @@
 @using System.Globalization
 @using Tech_Store.Helpers
 @{
-    ViewData["Title"] = "POS";
+    ViewData["Title"] = "POS - Bán hàng tại quầy";
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
     var products = ViewBag.product as IEnumerable<Tech_Store.Models.Product>;
     var categories = ViewBag.category as IEnumerable<Tech_Store.Models.Category>;
-    var users = ViewBag.users as IEnumerable<Tech_Store.Models.User>;
 }
 
 <div class="pos-page py-4">
@@ -83,22 +82,20 @@
                     <div class="row g-3 align-items-end">
                         <div class="col-md-7">
                             <label class="form-label pos-field-label">Khách hàng</label>
-                            <select class="form-control border selectpicker" name="selectCustomer" data-live-search="true" placeholder="Chọn khách hàng..." require>
-                                <option disabled selected>Chọn khách hàng...</option>
-                                @foreach (var cus in users ?? Enumerable.Empty<Tech_Store.Models.User>())
-                                {
-                                    <option value="@cus.UserId">@cus.LastName @cus.FirstName (@cus.PhoneNumber)</option>
-                                }
-                            </select>
+                            <input type="hidden" id="selectedCustomerId" name="selectCustomer" />
+                            <button type="button"
+                                    class="btn btn-outline-secondary w-100 text-start d-flex align-items-center justify-content-between"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#CustomerPickerModal">
+                                <span id="selectedCustomerLabel">Chọn khách hàng...</span>
+                                <i class="fa fa-chevron-right"></i>
+                            </button>
                         </div>
                         <div class="col-md-5">
-                            <button class="btn btn-success w-100"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#UserModal">
+                            <a class="btn btn-success w-100" href="/Admin/Users/Create">
                                 <i class="fa fa-plus me-1"></i>
                                 Thêm KH
-                            </button>
-                            @Html.Partial("ModalUser")
+                            </a>
                         </div>
                     </div>
 
@@ -106,18 +103,22 @@
                         <div class="pos-customer-card__header">
                             <h3>Thông tin khách hàng</h3>
                         </div>
-                        <div class="pos-customer-card__grid">
+                        <div id="customerInfoEmpty" class="text-center text-muted py-4">
+                            <i class="fa fa-user-circle mb-2 d-block" style="font-size:2rem;opacity:.55;"></i>
+                            <span>Chưa chọn khách hàng</span>
+                        </div>
+                        <div id="customerInfoGrid" class="pos-customer-card__grid d-none">
                             <div class="pos-customer-card__row">
                                 <span>Tên khách</span>
-                                <strong id="nameCustomer"></strong>
+                                <strong id="nameCustomer">-</strong>
                             </div>
                             <div class="pos-customer-card__row">
                                 <span>Số điện thoại</span>
-                                <strong id="phoneCustomer"></strong>
+                                <strong id="phoneCustomer">-</strong>
                             </div>
                             <div class="pos-customer-card__row pos-customer-card__row--full">
                                 <span>Địa chỉ</span>
-                                <strong id="addressCustomer"></strong>
+                                <strong id="addressCustomer">-</strong>
                             </div>
                         </div>
                     </div>
@@ -137,22 +138,38 @@
                                         <th>Xóa</th>
                                     </tr>
                                 </thead>
-                                <tbody></tbody>
+                                <tbody id="shoppingCartBody">
+                                    <tr class="cart-empty-state">
+                                        <td colspan="5" class="text-center text-muted py-4">
+                                            <i class="fa fa-shopping-basket mb-2 d-block" style="font-size:2rem;opacity:.55;"></i>
+                                            Chưa có sản phẩm trong giỏ hàng
+                                        </td>
+                                    </tr>
+                                </tbody>
                             </table>
                         </div>
                     </div>
 
                     <div class="pos-inline-card">
                         <div class="row g-3 align-items-end">
-                            <div class="col-md-7">
+                            <div class="col-md-6">
                                 <label class="form-label pos-field-label">Voucher</label>
                                 <input type="text" class="form-control" name="Voucher" placeholder="Nhập mã voucher" />
                                 <p id="resultVoucher" class="text-danger small mt-2 mb-0" style="display:none"></p>
                             </div>
-                            <div class="col-md-5">
+                            <div class="col-md-3">
+                                <button type="button"
+                                        class="btn btn-outline-primary w-100"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#VoucherPickerModal">
+                                    Chọn voucher
+                                </button>
+                            </div>
+                            <div class="col-md-3">
                                 <button id="Checkvoucher" type="button" class="btn btn-outline-secondary w-100">Kiểm tra voucher</button>
                             </div>
                         </div>
+                        <div id="selectedVoucherSummary" class="pos-voucher-summary mt-3" style="display:none;"></div>
                     </div>
 
                     <div class="pos-summary-card">
@@ -219,5 +236,81 @@
     </div>
 </div>
 
+<div class="modal fade" id="CustomerPickerModal" tabindex="-1" aria-labelledby="CustomerPickerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="CustomerPickerModalLabel">Chọn khách hàng</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-8">
+                        <input type="search" id="customerKeyword" class="form-control" placeholder="Tìm theo tên, email, số điện thoại..." />
+                    </div>
+                    <div class="col-md-4 d-flex gap-2">
+                        <button type="button" class="btn btn-primary flex-fill" id="searchCustomerBtn">Tìm</button>
+                        <button type="button" class="btn btn-light border flex-fill" id="resetCustomerBtn">Làm mới</button>
+                    </div>
+                </div>
+
+                <div class="reusable-admin-table">
+                    <table class="table table-hover align-middle mb-0 w-100">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 90px;">ID</th>
+                                <th style="width: 200px;">Khách hàng</th>
+                                <th style="width: 150px;">SĐT</th>
+                                <th style="width: 250px;">Email</th>
+                                <th style="width: 250px;">Địa chỉ</th>
+                                <th style="width: 70px;" class="text-center">Chọn</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customerPickerTableBody">
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">Đang tải danh sách khách hàng...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center gap-3 mt-3">
+                    <div class="small text-muted" id="customerPickerMeta"></div>
+                    <div class="d-flex align-items-center gap-2" id="customerPickerPagination"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="VoucherPickerModal" tabindex="-1" aria-labelledby="VoucherPickerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="VoucherPickerModalLabel">Voucher đang áp dụng</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-8">
+                        <input type="search" id="voucherKeyword" class="form-control" placeholder="Tìm theo mã hoặc tên voucher..." />
+                    </div>
+                    <div class="col-md-4 d-flex gap-2">
+                        <button type="button" class="btn btn-primary flex-fill" id="searchVoucherBtn">Tìm</button>
+                        <button type="button" class="btn btn-light border flex-fill" id="resetVoucherBtn">Làm mới</button>
+                    </div>
+                </div>
+
+                <div id="voucherPickerList" class="row g-3">
+                    <div class="col-12">
+                        <div class="text-center text-muted py-4">Đang tải voucher...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="~/Admin/assets/css/pos.css" asp-append-version="true" />
 <script src="~/Admin/assets/js/core/jquery-3.7.1.min.js"></script>
-<script src="~/Admin/assets/js/view/pos.js"></script>
+<script src="~/Admin/assets/js/view/pos.js" asp-append-version="true"></script>

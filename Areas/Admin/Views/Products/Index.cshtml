@@ -57,7 +57,7 @@
                 <input type="hidden" name="pageSize" value="@Model.PageSize" />
                 <div class="col-lg-3">
                     <label class="form-label fw-semibold text-secondary">SKU sản phẩm</label>
-                    <input type="text" class="form-control" name="sku" value="@filters.Sku" placeholder="Nhập hoặc scan mã SKU" />
+                    <input type="text" class="form-control" name="sku" value="@filters.Sku" placeholder="Nhập hoặc quét mã SKU" />
                 </div>
                 <div class="col-lg-3">
                     <label class="form-label fw-semibold text-secondary">Tên sản phẩm</label>
@@ -69,7 +69,7 @@
                         <option value="">Tất cả trạng thái</option>
                         <option value="available" selected="@(filters.Status == "available")">Sẵn hàng</option>
                         <option value="outstock" selected="@(filters.Status == "outstock")">Hết hàng</option>
-                        <option value="preorder" selected="@(filters.Status == "preorder")">Yêu cầu đặt trước</option>
+                        <option value="preorder" selected="@(filters.Status == "preorder")">Đặt trước</option>
                         <option value="discontinued" selected="@(filters.Status == "discontinued")">Ngưng bán</option>
                     </select>
                 </div>
@@ -122,7 +122,7 @@
                             <th style="width: 96px;">Tồn</th>
                             <th style="width: 110px;">Hiển thị</th>
                             <th style="width: 130px;">Tình trạng</th>
-                            <th style="width: 140px;" class="text-center">Hành động</th>
+                            <th style="width: 92px;" class="text-center">Hành động</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -151,7 +151,7 @@
                                 var statusLabel = product.Status == "available" ? "Còn hàng"
                                     : product.Status == "outstock" ? "Hết hàng"
                                     : product.Status == "preorder" ? "Đặt trước"
-                                    : product.Status == "discontinued" ? "Ngừng bán"
+                                    : product.Status == "discontinued" ? "Ngưng bán"
                                     : "Không rõ";
 
                                 <tr>
@@ -202,12 +202,6 @@
                                                title="Chỉnh sửa">
                                                 <i class="fa fa-edit"></i>
                                             </a>
-                                            <button type="button"
-                                                    class="btn btn-link btn-danger"
-                                                    onclick="deleteProduct(@product.ProductId)"
-                                                    title="Xóa">
-                                                <i class="fa fa-times"></i>
-                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -236,57 +230,6 @@
 </div>
 
 <script type="text/javascript">
-    function deleteProduct(id) {
-        Swal.fire({
-            title: 'Bạn có chắc rằng muốn xóa sản phẩm này?',
-            text: 'Hành động này không thể hoàn tác.',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Xóa sản phẩm',
-            cancelButtonText: 'Hủy',
-            reverseButtons: true
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $('.loading-container').show();
-
-                $.ajax({
-                    method: 'POST',
-                    url: '/Admin/Products/Delete/' + id,
-                    success: function (response) {
-                        $('.loading-container').hide();
-
-                        if (response.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Thành công!',
-                                text: response.message,
-                                confirmButtonText: 'OK'
-                            }).then(() => {
-                                window.location.reload();
-                            });
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Đã xảy ra lỗi!',
-                                text: response.message || 'Không thể xóa sản phẩm.',
-                                confirmButtonText: 'OK'
-                            });
-                        }
-                    },
-                    error: function () {
-                        $('.loading-container').hide();
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Đã có lỗi khi xóa!',
-                            text: 'Vui lòng thử lại sau.',
-                            confirmButtonText: 'OK'
-                        });
-                    }
-                });
-            }
-        });
-    }
-
     $(document).on('change', '#flexSwitchCheckChecked', function () {
         var id = $(this).data('id');
         var isVisible = $(this).is(':checked') ? 1 : 0;

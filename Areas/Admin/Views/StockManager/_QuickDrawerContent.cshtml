@@ -1,0 +1,46 @@
+@model Tech_Store.Models.ViewModel.AdminStockIndexViewModel
+
+<div class="stock-drawer">
+    <div class="stock-drawer__summary">
+        <div class="stock-drawer__summary-card">
+            <span>Tổng SKU gốc</span>
+            <strong>@Model.TotalItems</strong>
+        </div>
+        <div class="stock-drawer__summary-card">
+            <span>Trang hiện tại</span>
+            <strong>@Model.Page/@Model.TotalPages</strong>
+        </div>
+    </div>
+
+    <section class="stock-drawer__section">
+        <div class="stock-drawer__section-head">
+            <h6>Báo cáo và lịch sử</h6>
+        </div>
+        <div class="stock-drawer__actions">
+            <a href="/Admin/StockManager/ExportSelection" class="btn btn-success">
+                <i class="fas fa-file-excel me-1"></i>
+                Xuất Excel tồn kho
+            </a>
+            <a href="/Admin/StockManager/History" class="btn btn-light border">
+                <i class="fas fa-history me-1"></i>
+                Mở lịch sử nhập xuất
+            </a>
+        </div>
+    </section>
+
+    <section class="stock-drawer__section">
+        <div class="stock-drawer__section-head">
+            <h6>Gợi ý vận hành</h6>
+        </div>
+        <div class="transaction-drawer__info-list">
+            <div class="transaction-drawer__info-row">
+                <span>Xuất Excel</span>
+                <strong>Dùng khi cần chốt tồn, đối chiếu kho hoặc gửi NCC</strong>
+            </div>
+            <div class="transaction-drawer__info-row">
+                <span>Lịch sử kho</span>
+                <strong>Kiểm tra phiếu nhập, phiếu xuất và nhà cung cấp đã gắn</strong>
+            </div>
+        </div>
+    </section>
+</div>

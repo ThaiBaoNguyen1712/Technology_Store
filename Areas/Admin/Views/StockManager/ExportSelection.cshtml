@@ -1,0 +1,217 @@
+@model Tech_Store.Models.ViewModel.AdminStockExportIndexViewModel
+@using System.Globalization
+@using Tech_Store.Helpers
+@{
+    ViewData["Title"] = "Xuất Excel tồn kho";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+}
+
+<div class="py-3 stock-export-page">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0 pb-0">
+            <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
+                <div>
+                    <h4 class="card-title mb-1">Xuất báo cáo mã hàng</h4>
+                </div>
+                <div class="order-admin__header-meta">
+                    <span class="order-admin__header-pill">Tổng biến thể: @Model.TotalItems</span>
+                    <span class="order-admin__header-pill">Trang @Model.Page/@Model.TotalPages</span>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <form method="get" action="/Admin/StockManager/ExportSelection" class="brand-admin__filters stock-export-page__filters mb-4">
+                <div class="stock-export-page__filter-field">
+                    <label class="form-label fw-semibold text-secondary">Tìm mã hàng xuất báo cáo</label>
+                    <input type="text" class="form-control" name="keyword" value="@Model.Keyword" placeholder="Nhập SKU, tên sản phẩm hoặc phân loại..." />
+                </div>
+                <div class="stock-export-page__filter-field">
+                    <label class="form-label fw-semibold text-secondary">Danh mục</label>
+                    <select class="form-select" name="categoryId">
+                        <option value="">Tất cả danh mục</option>
+                        @foreach (var category in Model.Categories)
+                        {
+                            if (Model.CategoryId == category.CategoryId)
+                            {
+                                <option value="@category.CategoryId" selected>@category.Name</option>
+                            }
+                            else
+                            {
+                                <option value="@category.CategoryId">@category.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="stock-export-page__filter-field">
+                    <label class="form-label fw-semibold text-secondary">Trạng thái kho</label>
+                    <select class="form-select" name="status">
+                        <option value="">Tất cả trạng thái</option>
+                        @if (Model.Status == "available")
+                        {
+                            <option value="available" selected>Sẵn hàng</option>
+                        }
+                        else
+                        {
+                            <option value="available">Sẵn hàng</option>
+                        }
+                        @if (Model.Status == "outstock")
+                        {
+                            <option value="outstock" selected>Hết hàng</option>
+                        }
+                        else
+                        {
+                            <option value="outstock">Hết hàng</option>
+                        }
+                        @if (Model.Status == "preorder")
+                        {
+                            <option value="preorder" selected>Đặt trước</option>
+                        }
+                        else
+                        {
+                            <option value="preorder">Đặt trước</option>
+                        }
+                        @if (Model.Status == "discontinued")
+                        {
+                            <option value="discontinued" selected>Ngừng bán</option>
+                        }
+                        else
+                        {
+                            <option value="discontinued">Ngừng bán</option>
+                        }
+                    </select>
+                </div>
+                <div class="stock-export-page__filter-field">
+                    <label class="form-label fw-semibold text-secondary">Tồn từ</label>
+                    <input type="number" class="form-control" name="stockFrom" value="@Model.StockFrom" min="0" placeholder="0" />
+                </div>
+                <div class="stock-export-page__filter-field">
+                    <label class="form-label fw-semibold text-secondary">Tồn đến</label>
+                    <input type="number" class="form-control" name="stockTo" value="@Model.StockTo" min="0" placeholder="999" />
+                </div>
+                <div class="stock-export-page__filter-actions">
+                    <div class="admin-search-actions">
+                        <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+                        <a href="/Admin/StockManager/ExportSelection" class="btn btn-light border">Làm mới</a>
+                    </div>
+                </div>
+            </form>
+
+            <form method="post" action="/Admin/StockManager/ExportSelection">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="keyword" value="@Model.Keyword" />
+                <input type="hidden" name="categoryId" value="@Model.CategoryId" />
+                <input type="hidden" name="status" value="@Model.Status" />
+                <input type="hidden" name="stockFrom" value="@Model.StockFrom" />
+                <input type="hidden" name="stockTo" value="@Model.StockTo" />
+
+                <div class="stock-export-page__toolbar">
+                    <a class="btn btn-light border" href="/Admin/StockManager">
+                        Quay lại tồn kho
+                    </a>
+                    <button type="submit" class="btn btn-success">
+                        Xuất Excel đã chọn
+                    </button>
+                </div>
+
+                <div class="table-responsive reusable-admin-table">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 56px;">
+                                    <input type="checkbox" class="form-check-input js-select-all-export" />
+                                </th>
+                                <th style="width: 72px;">Ảnh</th>
+                                <th>Sản phẩm</th>
+                                <th style="width: 150px;">SKU</th>
+                                <th style="width: 220px;">Phân loại</th>
+                                <th style="width: 140px;">Danh mục</th>
+                                <th style="width: 150px;">Giá bán</th>
+                                <th style="width: 110px;">Tồn</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.Items.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-5">
+                                        Không có biến thể phù hợp để xuất báo cáo.
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                foreach (var item in Model.Items)
+                                {
+                                    var imageSource = string.IsNullOrEmpty(item.ImageUrl)
+                                        ? Url.Content("~/Upload/Products/no-image.png")
+                                        : item.ImageUrl!.Contains("http", StringComparison.OrdinalIgnoreCase)
+                                            ? ResizeCDN.Cdn(item.ImageUrl, 48, 48)
+                                            : Url.Content($"~/Upload/Products/{item.ImageUrl}");
+
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" class="form-check-input js-export-row" name="selectedVariantIds" value="@item.VariantId" />
+                                        </td>
+                                        <td>
+                                            <div class="brand-admin__logo-shell">
+                                                <img src="@imageSource" alt="@item.ProductName" class="brand-admin__logo" loading="lazy" />
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="stock-admin-page__product-name">@item.ProductName</div>
+                                        </td>
+                                        <td>@item.Sku</td>
+                                        <td>@item.AttributeSummary</td>
+                                        <td>@(string.IsNullOrWhiteSpace(item.CategoryName) ? "-" : item.CategoryName)</td>
+                                        <td class="order-admin__amount">@(item.SellPrice?.ToString("C0", new CultureInfo("vi-VN")) ?? "-")</td>
+                                        <td>@item.Stock</td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                @await Html.PartialAsync("~/Areas/Admin/Views/Shared/_ManualPagination.cshtml", new Tech_Store.Models.ViewModel.ManualPaginationViewModel
+                {
+                    CurrentPage = Model.Page,
+                    TotalPages = Model.TotalPages,
+                    BaseUrl = "/Admin/StockManager/ExportSelection",
+                    QueryString = Model.QueryString
+                })
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            const $selectAll = $('.js-select-all-export');
+            const $rows = $('.js-export-row');
+
+            function syncSelectAllState() {
+                const totalRows = $rows.length;
+                const checkedRows = $rows.filter(':checked').length;
+                const allChecked = totalRows > 0 && checkedRows === totalRows;
+                const hasChecked = checkedRows > 0;
+
+                $selectAll.prop('checked', allChecked);
+                $selectAll.prop('indeterminate', hasChecked && !allChecked);
+                $selectAll.prop('disabled', totalRows === 0);
+            }
+
+            $selectAll.on('change', function () {
+                $selectAll.prop('indeterminate', false);
+                $rows.prop('checked', $(this).is(':checked'));
+                syncSelectAllState();
+            });
+
+            $rows.on('change', function () {
+                syncSelectAllState();
+            });
+
+            syncSelectAllState();
+        });
+    </script>
+}

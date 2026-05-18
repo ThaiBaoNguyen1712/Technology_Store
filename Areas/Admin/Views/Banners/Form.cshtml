@@ -1,0 +1,541 @@
+@model Tech_Store.Models.ViewModel.AdminBannerFormViewModel
+@using Tech_Store.Models.Constants
+@using Tech_Store.Models.Enums
+
+@{
+    var isEdit = Model.BannerId > 0;
+    ViewData["Title"] = isEdit ? "Cập nhật banner" : "Thêm banner";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+}
+
+<div class="py-3 banner-form-page">
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-0">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                <div>
+                    <h4 class="card-title mb-1">@(isEdit ? "Cập nhật banner" : "Thêm banner mới")</h4>
+                </div>
+                <a href="@Url.Action("Index", "Banners", new { area = "Admin", page = Model.ReturnPage, keyword = Model.ReturnKeyword, positionId = Model.ReturnPositionId, targetType = Model.ReturnTargetType, status = Model.ReturnStatus })"
+                   class="btn btn-light border">
+                    Quay lại danh sách
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" action="/Admin/Banners/Save" enctype="multipart/form-data" id="bannerForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="BannerId" />
+        <input type="hidden" asp-for="ReturnPage" />
+        <input type="hidden" asp-for="ReturnKeyword" />
+        <input type="hidden" asp-for="ReturnPositionId" />
+        <input type="hidden" asp-for="ReturnTargetType" />
+        <input type="hidden" asp-for="ReturnStatus" />
+
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger border-0 shadow-sm mb-4"></div>
+
+        <div class="row g-4">
+            <div class="col-xl-8">
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white border-0">
+                        <h5 class="mb-0">Thông tin banner</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Tên banner</label>
+                                <input asp-for="Name" class="form-control" placeholder="Ví dụ: Hero iPhone tháng 5" />
+                                <span asp-validation-for="Name" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Alt text</label>
+                                <input asp-for="AltText" class="form-control" placeholder="Mô tả ngắn cho ảnh banner" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Ảnh desktop</label>
+                                <input asp-for="DesktopImageFile" type="file" class="form-control" accept="image/*" />
+                                <input asp-for="DesktopImageUrl" class="form-control mt-2" placeholder="Hoặc nhập URL ảnh desktop" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Ảnh mobile</label>
+                                <input asp-for="MobileImageFile" type="file" class="form-control" accept="image/*" />
+                                <input asp-for="MobileImageUrl" class="form-control mt-2" placeholder="Tùy chọn URL ảnh mobile riêng" />
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mt-2">
+                                    <input asp-for="IsActive" class="form-check-input" />
+                                    <label asp-for="IsActive" class="form-check-label">Cho phép hiển thị banner</label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold text-secondary">Ghi chú nội bộ</label>
+                                <textarea asp-for="Notes" rows="4" class="form-control" placeholder="Mô tả campaign, nguồn ảnh, người phụ trách..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white border-0">
+                        <h5 class="mb-0">Điều hướng đích</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold text-secondary">Loại điều hướng</label>
+                                <select asp-for="TargetType" class="form-select" id="bannerTargetType">
+                                    <option value="url">URL</option>
+                                    <option value="category">Danh mục</option>
+                                    <option value="brand">Thương hiệu</option>
+                                    <option value="product">Sản phẩm</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-8 banner-target-group" data-target-group="url">
+                                <label class="form-label fw-semibold text-secondary">URL đích</label>
+                                <input asp-for="ExternalUrl" class="form-control" placeholder="/Search?q=iphone hoặc https://..." />
+                            </div>
+
+                            <div class="col-md-8 banner-target-group d-none" data-target-group="category">
+                                <label class="form-label fw-semibold text-secondary">Danh mục đích</label>
+                                <select asp-for="TargetCategoryId" class="form-select">
+                                    <option value="">Chọn danh mục</option>
+                                    @foreach (var category in Model.Categories)
+                                    {
+                                        <option value="@category.Id">@category.Label</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="col-md-8 banner-target-group d-none" data-target-group="brand">
+                                <label class="form-label fw-semibold text-secondary">Thương hiệu đích</label>
+                                <select asp-for="TargetBrandId" class="form-select">
+                                    <option value="">Chọn thương hiệu</option>
+                                    @foreach (var brand in Model.Brands)
+                                    {
+                                        <option value="@brand.Id">@brand.Label</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="col-md-8 banner-target-group d-none" data-target-group="product">
+                                <label class="form-label fw-semibold text-secondary">Sản phẩm đích</label>
+                                <div class="banner-form-page__product-picker">
+                                    <input type="text" class="form-control" id="bannerProductSearch" placeholder="Tìm theo tên hoặc SKU..." autocomplete="off" />
+                                    <input type="hidden" asp-for="TargetProductId" id="bannerTargetProductId" />
+                                    <div class="list-group banner-form-page__product-results d-none" id="bannerProductResults"></div>
+                                    <div class="small text-muted mt-2" id="bannerSelectedProductLabel">
+                                        @if (Model.InitialProducts.Any())
+                                        {
+                                            @Model.InitialProducts.First().Label
+                                        }
+                                        else
+                                        {
+                                            @:Chưa chọn sản phẩm đích.
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input asp-for="OpenInNewTab" class="form-check-input" />
+                                    <label asp-for="OpenInNewTab" class="form-check-label">Mở liên kết ở tab mới</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white border-0">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                            <div>
+                                <h5 class="mb-0">Vị trí hiển thị</h5>
+                                <small class="text-muted">Mỗi dòng là một vị trí xuất hiện của banner này.</small>
+                            </div>
+                            <button type="button" class="btn btn-light border" id="addBannerPositionRow">
+                                <i class="fa fa-plus me-1"></i> Thêm vị trí
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="bannerPositionRows" class="banner-form-page__position-list">
+                            @for (var i = 0; i < Model.PositionMaps.Count; i++)
+                            {
+                                var row = Model.PositionMaps[i];
+                                <div class="banner-form-page__position-row" data-row-index="@i">
+                                    <input type="hidden" name="PositionMaps[@i].BannerPositionMapId" value="@row.BannerPositionMapId" />
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-semibold text-secondary">Vị trí hiển thị</label>
+                                            <select name="PositionMaps[@i].BannerPositionId" class="form-select banner-position-select">
+                                                <option value="">Chọn vị trí</option>
+                                                @foreach (var position in Model.Positions)
+                                                {
+                                                    <option value="@position.BannerPositionId"
+                                                            data-position-code="@position.Code"
+                                                            selected="@(row.BannerPositionId == position.BannerPositionId ? "selected" : null)">
+                                                        @position.Name
+                                                    </option>
+                                                }
+                                            </select>
+                                        </div>
+
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-semibold text-secondary">Phạm vi áp dụng</label>
+                                            <select name="PositionMaps[@i].ScopeType" class="form-select banner-scope-type-select">
+                                                <option value="@BannerScopeType.All" selected="@(row.ScopeType == BannerScopeType.All ? "selected" : null)">Toàn bộ</option>
+                                                <option value="@BannerScopeType.Category" selected="@(row.ScopeType == BannerScopeType.Category ? "selected" : null)">Theo danh mục</option>
+                                                <option value="@BannerScopeType.Brand" selected="@(row.ScopeType == BannerScopeType.Brand ? "selected" : null)">Theo thương hiệu</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="col-md-4 banner-scope-target banner-scope-target--category">
+                                            <label class="form-label fw-semibold text-secondary">Danh mục áp dụng</label>
+                                            <select name="PositionMaps[@i].DisplayCategoryId" class="form-select banner-scope-category-select">
+                                                <option value="">Chọn danh mục</option>
+                                                @foreach (var category in Model.Categories)
+                                                {
+                                                    <option value="@category.Id" selected="@(row.DisplayCategoryId == category.Id ? "selected" : null)">@category.Label</option>
+                                                }
+                                            </select>
+                                        </div>
+
+                                        <div class="col-md-4 banner-scope-target banner-scope-target--brand">
+                                            <label class="form-label fw-semibold text-secondary">Thương hiệu áp dụng</label>
+                                            <select name="PositionMaps[@i].DisplayBrandId" class="form-select banner-scope-brand-select">
+                                                <option value="">Chọn thương hiệu</option>
+                                                @foreach (var brand in Model.Brands)
+                                                {
+                                                    <option value="@brand.Id" selected="@(row.DisplayBrandId == brand.Id ? "selected" : null)">@brand.Label</option>
+                                                }
+                                            </select>
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-semibold text-secondary">Ưu tiên</label>
+                                            <input type="number" name="PositionMaps[@i].Priority" class="form-control" value="@row.Priority" />
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-semibold text-secondary">Bắt đầu</label>
+                                            <input type="datetime-local" name="PositionMaps[@i].StartAt" class="form-control" value="@(row.StartAt?.ToString("yyyy-MM-ddTHH:mm"))" />
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-semibold text-secondary">Kết thúc</label>
+                                            <input type="datetime-local" name="PositionMaps[@i].EndAt" class="form-control" value="@(row.EndAt?.ToString("yyyy-MM-ddTHH:mm"))" />
+                                        </div>
+                                        <div class="col-md-3 d-flex align-items-end">
+                                            <div class="small text-muted banner-position-hint mb-2"></div>
+                                        </div>
+
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="PositionMaps[@i].IsDefault" value="true" @(row.IsDefault ? "checked" : "") />
+                                                <input type="hidden" name="PositionMaps[@i].IsDefault" value="false" />
+                                                <label class="form-check-label">Đặt làm banner fallback</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="PositionMaps[@i].IsActive" value="true" @(row.IsActive ? "checked" : "") />
+                                                <input type="hidden" name="PositionMaps[@i].IsActive" value="false" />
+                                                <label class="form-check-label">Cho phép hiển thị ở dòng này</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 text-md-end">
+                                            <button type="button" class="btn btn-outline-danger banner-remove-position-row">Xóa dòng</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white border-0">
+                        <h5 class="mb-0">Preview nhanh</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="banner-form-page__preview-shell">
+                            @if (!string.IsNullOrWhiteSpace(Model.DesktopImageUrl))
+                            {
+                                <img src="@Model.DesktopImageUrl" alt="@Model.Name" class="banner-form-page__preview-image" />
+                            }
+                            else
+                            {
+                                <div class="text-muted text-center">Ảnh banner sẽ hiển thị ở đây sau khi chọn URL hoặc upload.</div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 d-flex justify-content-end gap-2">
+            <button type="submit" class="btn btn-primary px-5">@(isEdit ? "Lưu thay đổi" : "Tạo banner")</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    $(function () {
+        const positions = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Positions));
+        const categories = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Categories));
+        const brands = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Brands));
+        const initialProducts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.InitialProducts));
+        const selectedProductLabel = $('#bannerSelectedProductLabel');
+        const productResults = $('#bannerProductResults');
+        const productIdInput = $('#bannerTargetProductId');
+
+        const scopeTypeValues = {
+            all: '@BannerScopeType.All',
+            category: '@BannerScopeType.Category',
+            brand: '@BannerScopeType.Brand'
+        };
+
+        function buildPositionOptions(selectedValue) {
+            let html = '<option value="">Chọn vị trí</option>';
+            positions.forEach(position => {
+                const selected = String(selectedValue || '') === String(position.BannerPositionId) ? 'selected' : '';
+                html += `<option value="${position.BannerPositionId}" data-position-code="${position.Code}" ${selected}>${position.Name}</option>`;
+            });
+            return html;
+        }
+
+        function buildLookupOptions(items, selectedValue, emptyLabel) {
+            let html = `<option value="">${emptyLabel}</option>`;
+            items.forEach(item => {
+                const selected = String(selectedValue || '') === String(item.Id) ? 'selected' : '';
+                html += `<option value="${item.Id}" ${selected}>${item.Label}</option>`;
+            });
+            return html;
+        }
+
+        function updateTargetGroups() {
+            const targetType = $('#bannerTargetType').val();
+            $('.banner-target-group').addClass('d-none');
+            $(`.banner-target-group[data-target-group="${targetType}"]`).removeClass('d-none');
+        }
+
+        function reindexPositionRows() {
+            $('#bannerPositionRows .banner-form-page__position-row').each(function (index) {
+                $(this).attr('data-row-index', index);
+                $(this).find('input, select').each(function () {
+                    const currentName = $(this).attr('name');
+                    if (!currentName) {
+                        return;
+                    }
+
+                    $(this).attr('name', currentName.replace(/PositionMaps\[\d+\]/g, `PositionMaps[${index}]`));
+                });
+            });
+        }
+
+        function getPositionCode(positionId) {
+            const matched = positions.find(position => String(position.BannerPositionId) === String(positionId || ''));
+            return matched ? matched.Code : '';
+        }
+
+        function getAllowedScopes(positionCode) {
+            switch (positionCode) {
+                case '@BannerPositionCodes.CategoryHero':
+                    return [scopeTypeValues.category, scopeTypeValues.all];
+                case '@BannerPositionCodes.BrandHero':
+                    return [scopeTypeValues.brand, scopeTypeValues.all];
+                default:
+                    return [scopeTypeValues.all];
+            }
+        }
+
+        function getPositionHint(positionCode) {
+            switch (positionCode) {
+                case '@BannerPositionCodes.CategoryHero':
+                    return 'Banner này đang dùng ở trang danh mục. Nên chọn đúng danh mục hoặc fallback toàn bộ.';
+                case '@BannerPositionCodes.BrandHero':
+                    return 'Banner này đang dùng ở trang thương hiệu. Nên chọn đúng thương hiệu hoặc fallback toàn bộ.';
+                case '@BannerPositionCodes.HomeHeroMain':
+                case '@BannerPositionCodes.HomeHeroPromo':
+                    return 'Banner trang chủ dùng phạm vi toàn bộ.';
+                default:
+                    return 'Chọn vị trí trước để hệ thống gợi ý đúng phạm vi.';
+            }
+        }
+
+        function updateScopeUi($row, forceDefaultScope) {
+            const $positionSelect = $row.find('.banner-position-select');
+            const $scopeSelect = $row.find('.banner-scope-type-select');
+            const $categoryWrap = $row.find('.banner-scope-target--category');
+            const $brandWrap = $row.find('.banner-scope-target--brand');
+            const $categorySelect = $row.find('.banner-scope-category-select');
+            const $brandSelect = $row.find('.banner-scope-brand-select');
+            const $hint = $row.find('.banner-position-hint');
+
+            const positionCode = getPositionCode($positionSelect.val());
+            const allowedScopes = getAllowedScopes(positionCode);
+            let currentScope = $scopeSelect.val();
+
+            if (!allowedScopes.includes(currentScope) || forceDefaultScope) {
+                currentScope = allowedScopes[0];
+                $scopeSelect.val(currentScope);
+            }
+
+            $scopeSelect.find('option').each(function () {
+                $(this).prop('disabled', !allowedScopes.includes($(this).val()));
+            });
+
+            const showCategory = currentScope === scopeTypeValues.category;
+            const showBrand = currentScope === scopeTypeValues.brand;
+
+            $categoryWrap.toggleClass('d-none', !showCategory);
+            $brandWrap.toggleClass('d-none', !showBrand);
+
+            if (!showCategory) {
+                $categorySelect.val('');
+            }
+
+            if (!showBrand) {
+                $brandSelect.val('');
+            }
+
+            $hint.text(getPositionHint(positionCode));
+        }
+
+        function createPositionRow() {
+            const nextIndex = $('#bannerPositionRows .banner-form-page__position-row').length;
+            const rowHtml = `
+                <div class="banner-form-page__position-row" data-row-index="${nextIndex}">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-secondary">Vị trí hiển thị</label>
+                            <select name="PositionMaps[${nextIndex}].BannerPositionId" class="form-select banner-position-select">
+                                ${buildPositionOptions('')}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-secondary">Phạm vi áp dụng</label>
+                            <select name="PositionMaps[${nextIndex}].ScopeType" class="form-select banner-scope-type-select">
+                                <option value="${scopeTypeValues.all}">Toàn bộ</option>
+                                <option value="${scopeTypeValues.category}">Theo danh mục</option>
+                                <option value="${scopeTypeValues.brand}">Theo thương hiệu</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 banner-scope-target banner-scope-target--category d-none">
+                            <label class="form-label fw-semibold text-secondary">Danh mục áp dụng</label>
+                            <select name="PositionMaps[${nextIndex}].DisplayCategoryId" class="form-select banner-scope-category-select">
+                                ${buildLookupOptions(categories, '', 'Chọn danh mục')}
+                            </select>
+                        </div>
+                        <div class="col-md-4 banner-scope-target banner-scope-target--brand d-none">
+                            <label class="form-label fw-semibold text-secondary">Thương hiệu áp dụng</label>
+                            <select name="PositionMaps[${nextIndex}].DisplayBrandId" class="form-select banner-scope-brand-select">
+                                ${buildLookupOptions(brands, '', 'Chọn thương hiệu')}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold text-secondary">Ưu tiên</label>
+                            <input type="number" name="PositionMaps[${nextIndex}].Priority" class="form-control" value="100" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold text-secondary">Bắt đầu</label>
+                            <input type="datetime-local" name="PositionMaps[${nextIndex}].StartAt" class="form-control" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold text-secondary">Kết thúc</label>
+                            <input type="datetime-local" name="PositionMaps[${nextIndex}].EndAt" class="form-control" />
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <div class="small text-muted banner-position-hint mb-2"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input type="hidden" name="PositionMaps[${nextIndex}].IsDefault" value="false" />
+                                <input class="form-check-input" type="checkbox" name="PositionMaps[${nextIndex}].IsDefault" value="true" />
+                                <label class="form-check-label">Đặt làm banner fallback</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input type="hidden" name="PositionMaps[${nextIndex}].IsActive" value="false" />
+                                <input class="form-check-input" type="checkbox" name="PositionMaps[${nextIndex}].IsActive" value="true" checked />
+                                <label class="form-check-label">Cho phép hiển thị ở dòng này</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <button type="button" class="btn btn-outline-danger banner-remove-position-row">Xóa dòng</button>
+                        </div>
+                    </div>
+                </div>`;
+
+            const $row = $(rowHtml);
+            $('#bannerPositionRows').append($row);
+            updateScopeUi($row, false);
+        }
+
+        let searchRequest = null;
+        $('#bannerProductSearch').on('input', function () {
+            const keyword = $(this).val().trim();
+            if (keyword.length < 2) {
+                productResults.addClass('d-none').empty();
+                return;
+            }
+
+            if (searchRequest) {
+                searchRequest.abort();
+            }
+
+            searchRequest = $.get('/Admin/Banners/LookupProducts', { keyword })
+                .done(function (items) {
+                    if (!items || items.length === 0) {
+                        productResults.removeClass('d-none').html('<div class="list-group-item text-muted">Không có sản phẩm phù hợp.</div>');
+                        return;
+                    }
+
+                    const html = items.map(item => `<button type="button" class="list-group-item list-group-item-action" data-id="${item.id}" data-label="${item.label}">${item.label}</button>`).join('');
+                    productResults.removeClass('d-none').html(html);
+                });
+        });
+
+        $(document).on('click', '#bannerProductResults [data-id]', function () {
+            const productId = $(this).data('id');
+            const label = $(this).data('label');
+            productIdInput.val(productId);
+            selectedProductLabel.text(label);
+            $('#bannerProductSearch').val(label);
+            productResults.addClass('d-none').empty();
+        });
+
+        $(document).on('click', '.banner-remove-position-row', function () {
+            $(this).closest('.banner-form-page__position-row').remove();
+            reindexPositionRows();
+        });
+
+        $(document).on('change', '.banner-position-select', function () {
+            updateScopeUi($(this).closest('.banner-form-page__position-row'), true);
+        });
+
+        $(document).on('change', '.banner-scope-type-select', function () {
+            updateScopeUi($(this).closest('.banner-form-page__position-row'), false);
+        });
+
+        $('#addBannerPositionRow').on('click', function () {
+            createPositionRow();
+        });
+
+        $('#bannerTargetType').on('change', updateTargetGroups);
+        $('#bannerForm').on('submit', reindexPositionRows);
+
+        if (initialProducts.length > 0) {
+            productIdInput.val(initialProducts[0].Id);
+        }
+
+        $('#bannerPositionRows .banner-form-page__position-row').each(function () {
+            updateScopeUi($(this), false);
+        });
+
+        updateTargetGroups();
+    });
+</script>

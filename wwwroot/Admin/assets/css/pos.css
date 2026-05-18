@@ -1,0 +1,102 @@
+@media (min-width: 1200px) {
+    .pos-page {
+        height: calc(100vh - 88px);
+        min-height: 720px;
+    }
+
+    .pos-page > .row,
+    .pos-page > .row > [class*="col-"] {
+        height: 100%;
+    }
+
+    .pos-page .pos-panel {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    .pos-page .pos-panel__body {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .pos-page .pos-panel__body--invoice {
+        overflow-y: auto;
+    }
+
+    .pos-page .pos-catalog {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        padding-right: 6px;
+    }
+}
+
+#CustomerPickerModal .modal-dialog {
+    width: min(1400px, calc(100vw - 2rem));
+    max-width: min(1400px, calc(100vw - 2rem));
+    min-width: 85vw;
+}
+
+#VoucherPickerModal .modal-dialog {
+    width: min(1100px, calc(100vw - 2rem));
+    max-width: min(1100px, calc(100vw - 2rem));
+}
+
+#CustomerPickerModal .modal-content,
+#VoucherPickerModal .modal-content {
+    width: 100%;
+    overflow-x: hidden;
+}
+
+#CustomerPickerModal .modal-body,
+#VoucherPickerModal .modal-body {
+    overflow-x: hidden;
+}
+
+#CustomerPickerModal .reusable-admin-table,
+#CustomerPickerModal table {
+    width: 100%;
+    table-layout: fixed;
+}
+
+#CustomerPickerModal th:nth-child(2),
+#CustomerPickerModal td:nth-child(2) {
+    width: 200px !important;
+}
+
+#CustomerPickerModal th:nth-child(3),
+#CustomerPickerModal td:nth-child(3) {
+    width: 150px !important;
+}
+
+#CustomerPickerModal th:nth-child(4),
+#CustomerPickerModal td:nth-child(4) {
+    width: 250px !important;
+}
+
+#CustomerPickerModal th:nth-child(5),
+#CustomerPickerModal td:nth-child(5) {
+    width: 250px !important;
+}
+
+#CustomerPickerModal th:nth-child(6),
+#CustomerPickerModal td:nth-child(6) {
+    width: 70px !important;
+    white-space: nowrap;
+}
+
+#CustomerPickerModal td:nth-child(3),
+#CustomerPickerModal td:nth-child(4) {
+    white-space: nowrap;
+    word-break: normal;
+    overflow-wrap: normal;
+}
+
+#CustomerPickerModal th,
+#CustomerPickerModal td {
+    white-space: normal;
+    word-break: break-word;
+}

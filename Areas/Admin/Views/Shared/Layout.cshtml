@@ -5,9 +5,7 @@
     <title>@ViewData["Title"]</title>
     <meta content="width=device-width, initial-scale=1.0, shrink-to-fit=no"
           name="viewport" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/vendor/fonts/inter/inter.css" asp-append-version="true" />
     <link rel="icon"
           href="@ViewBag.LogoUrl"
           type="image/x-icon"  asp-append-version="true"/>
@@ -41,28 +39,29 @@
     <link rel="stylesheet" href="@Url.Content("~/Admin/assets/css/plugins.min.css")" asp-append-version="true" />
     <link rel="stylesheet" href="@Url.Content("~/Admin/assets/css/kaiadmin.min.css")" asp-append-version="true" />
     <link href="@Url.Content("~/Admin/assets/css/site.css")" rel="stylesheet" asp-append-version="true" />
+    <link href="@Url.Content("~/Admin/assets/css/sidebar.css")" rel="stylesheet" asp-append-version="true" />
     <link href="@Url.Content("~/Admin/assets/css/right-drawer.css")" rel="stylesheet" asp-append-version="true" />
     @* Toast JS *@
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="~/vendor/sweetalert2/sweetalert2.min.css" asp-append-version="true">
+    <script src="~/vendor/sweetalert2/sweetalert2.min.js" asp-append-version="true"></script>
 
     <!-- FilePond CSS -->
-    <link href="https://unpkg.com/filepond/dist/filepond.min.css" rel="stylesheet">
-    <link href="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css" rel="stylesheet">
+    <link href="~/vendor/filepond/filepond.min.css" rel="stylesheet" asp-append-version="true">
+    <link href="~/vendor/filepond/filepond-plugin-image-preview.min.css" rel="stylesheet" asp-append-version="true">
   
     <!-- FilePond JS -->
-    <script src="https://unpkg.com/filepond/dist/filepond.min.js"></script>
-    <script src="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.js"></script>
-    <script src="https://unpkg.com/filepond-plugin-file-validate-type/dist/filepond-plugin-file-validate-type.js"></script>
-    <script src="https://unpkg.com/filepond-plugin-image-exif-orientation/dist/filepond-plugin-image-exif-orientation.js"></script>
+    <script src="~/vendor/filepond/filepond.min.js" asp-append-version="true"></script>
+    <script src="~/vendor/filepond/filepond-plugin-image-preview.min.js" asp-append-version="true"></script>
+    <script src="~/vendor/filepond/filepond-plugin-file-validate-type.min.js" asp-append-version="true"></script>
+    <script src="~/vendor/filepond/filepond-plugin-image-exif-orientation.min.js" asp-append-version="true"></script>
 
     <script src="~/Admin/assets/js/core/jquery-3.7.1.min.js"></script>
     <script src="~/Admin/assets/js/core/core.js"></script>
 
 
     @{
-        var tagifyCss = "https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css";
-        var tagifyJs = "https://cdn.jsdelivr.net/npm/@yaireo/tagify";
+        var tagifyCss = Url.Content("~/vendor/tagify/tagify.css");
+        var tagifyJs = Url.Content("~/vendor/tagify/tagify.min.js");
     }
     <!-- Tagify CSS -->
     <link rel="stylesheet" href="@tagifyCss">
@@ -71,10 +70,10 @@
 
 
     <!-- Bootstrap-select CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta2/dist/css/bootstrap-select.min.css">
+    <link rel="stylesheet" href="~/vendor/bootstrap-select/css/bootstrap-select.min.css" asp-append-version="true">
 
 </head>
-<body>
+<body class="admin-layout">
     @* Lib support *@
     @using Tech_Store.Helpers
     @{
@@ -92,12 +91,13 @@
                 "brands" => "Thương hiệu",
                 "products" => "Sản phẩm",
                 "stockmanager" => "Quản lý kho hàng",
+                "suppliers" => "Nhà cung cấp",
                 "orders" => "Đơn hàng",
                 "users" => "Khách hàng",
                 "transactions" => "Giao dịch",
                 "vouchers" => "Voucher",
                 "banner" => "Banner",
-                "campaign" => "Chiến dịch",
+                "banners" => "Banner",
                 "settings" => "Cài đặt trang web",
                 "notifications" => "Thông báo",
                 _ => controllerName
@@ -110,348 +110,284 @@
     }
 
 
-    <div class="wrapper">
+    <div class="wrapper admin-shell sidebar-expanded" id="adminLayout">
         <!-- Sidebar -->
+        <button class="admin-sidebar-overlay" type="button" data-sidebar-overlay aria-label="Đóng menu điều hướng"></button>
 
-        <div class="sidebar" data-background-color="dark">
+        <aside class="sidebar admin-sidebar" data-background-color="dark" id="adminSidebar" aria-label="Điều hướng quản trị">
             <div class="sidebar-logo">
-                <div class="logo-header" data-background-color="dark">
-                    <a href="/admin" class="logo">
-                        <img src="@ViewBag.LogoUrl" alt="navbar brand" class="navbar-brand" height="50" />
+                <div class="logo-header admin-sidebar__brand" data-background-color="dark">
+                    <a href="/Admin" class="logo admin-sidebar__logo" aria-label="Trang chủ quản trị">
+                        <img src="@ViewBag.LogoUrl" alt="Tech Store" class="navbar-brand" height="46" />
                     </a>
-                    <div class="nav-toggle">
-       
-                        <button class="btn btn-toggle sidenav-toggler">
-                            <i class="gg-menu-left"></i>
-                        </button>
-                        <button class="btn btn-toggle toggle-sidebar">
-                            <i class="gg-menu-right"></i>
-                        </button>
-                    </div>
-                    <button class="topbar-toggler more">
-                        <i class="gg-more-vertical-alt"></i>
+                    <button class="btn btn-toggle admin-sidebar__desktop-toggle"
+                            type="button"
+                            data-sidebar-desktop-toggle
+                            aria-label="Thu gọn hoặc mở rộng sidebar">
+                        <i class="fas fa-bars"></i>
                     </button>
                 </div>
             </div>
 
             <div class="sidebar-wrapper scrollbar scrollbar-inner">
                 <div class="sidebar-content">
-                    <ul class="nav nav-secondary">
-                        <!-- Dashboard -->
-                        <li class="nav-item">
-                            <a href="/admin/index" class="nav-link">
-                                <i class="fas fa-home"></i>
-                                <p>Dashboard</p>
+                    <ul class="nav nav-secondary admin-sidebar-nav">
+                        <li class="nav-item admin-sidebar__item" data-route-exact="/admin,/admin/index">
+                            <a href="/Admin/Index" class="nav-link admin-sidebar__link" data-sidebar-link>
+                                <span class="admin-sidebar__icon"><i class="fas fa-home"></i></span>
+                                <span class="admin-sidebar__label">Dashboard</span>
                             </a>
                         </li>
 
-                        <!-- POS -->
-                        <li class="nav-item">
-                            <a href="/Admin/Pos" class="nav-link">
-                                <i class="fas fa-store"></i>
-                                <p>POS - Bán hàng</p>
+                        <li class="nav-item admin-sidebar__item" data-route-prefixes="/admin/pos">
+                            <a href="/Admin/POS" class="nav-link admin-sidebar__link" data-sidebar-link>
+                                <span class="admin-sidebar__icon"><i class="fas fa-store"></i></span>
+                                <span class="admin-sidebar__label">POS - Bán hàng</span>
                             </a>
                         </li>
-                        <!-- NOTIFICATION -->
-                       @*  <li class="nav-item">
-                            <a data-bs-toggle="collapse" href="#notification" class="nav-link">
-                                <i class="fas fa-bell"></i>
-                                <p>Thông báo</p>
-                                <span class="caret"></span>
-                            </a>
-                            <div class="collapse" id="notification">
-                                <ul class="nav nav-collapse">
-                                    <li>
-                                        <a href="/Admin/Categories" class="nav-link">
-                                            <span class="sub-item">Tạo thông báo</span>
-                                        </a>
-                                         <a href="/Admin/Categories" class="nav-link">
-                                            <span class="sub-item">Thông báo của tôi</span>
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </li> *@
-                        <!-- SECTION: Quản lý sản phẩm -->
-                        <li class="nav-section">
-                            <span class="sidebar-mini-icon">
-                                <i class="fa fa-ellipsis-h"></i>
-                            </span>
+
+                        <li class="nav-section admin-sidebar__section">
+                            <span class="sidebar-mini-icon"><i class="fa fa-ellipsis-h"></i></span>
                             <h4 class="text-section">Quản lý sản phẩm</h4>
                         </li>
 
-                        <!-- Categories -->
-                        <li class="nav-item">
-                            <a data-bs-toggle="collapse" href="#categories" class="nav-link">
-                                <i class="fas fa-th-list me-2"></i>
-                                <p>Danh mục sản phẩm</p>
-                                <span class="caret"></span>
-                            </a>
-                            <div class="collapse" id="categories">
-                                <ul class="nav nav-collapse">
-                                    <li>
-                                        <a href="/Admin/Categories" class="nav-link">
-                                            <span class="sub-item">Quản lý danh mục</span>
-                                        </a>
-                                    </li>
-                                </ul>
+                        <li class="nav-item admin-sidebar__item admin-sidebar__item--has-submenu" data-route-prefixes="/admin/categories">
+                            <button class="nav-link admin-sidebar__link admin-sidebar__link--submenu"
+                                    type="button"
+                                    data-sidebar-submenu-trigger
+                                    aria-expanded="false"
+                                    aria-controls="sidebar-submenu-categories">
+                                <span class="admin-sidebar__icon"><i class="fas fa-th-list"></i></span>
+                                <span class="admin-sidebar__label">Danh mục sản phẩm</span>
+                                <span class="admin-sidebar__caret"><i class="fas fa-chevron-down"></i></span>
+                            </button>
+                            <div class="admin-sidebar__submenu" id="sidebar-submenu-categories">
+                                <div class="admin-sidebar__submenu-inner">
+                                    <a href="/Admin/Categories" class="nav-link admin-sidebar__sublink" data-sidebar-link>
+                                        <span class="sub-item">Quản lý danh mục</span>
+                                    </a>
+                                </div>
                             </div>
                         </li>
 
-                        <!-- Brands -->
-                        <li class="nav-item">
-                            <a data-bs-toggle="collapse" href="#brands" class="nav-link">
-                                <i class="fas fa-tags me-2"></i>
-                                <p>Thương hiệu</p>
-                                <span class="caret"></span>
-                            </a>
-                            <div class="collapse" id="brands">
-                                <ul class="nav nav-collapse">
-                                    <li>
-                                        <a href="/Admin/Brands" class="nav-link">
-                                            <span class="sub-item">Quản lý thương hiệu</span>
-                                        </a>
-                                    </li>
-                                </ul>
+                        <li class="nav-item admin-sidebar__item admin-sidebar__item--has-submenu" data-route-prefixes="/admin/brands">
+                            <button class="nav-link admin-sidebar__link admin-sidebar__link--submenu"
+                                    type="button"
+                                    data-sidebar-submenu-trigger
+                                    aria-expanded="false"
+                                    aria-controls="sidebar-submenu-brands">
+                                <span class="admin-sidebar__icon"><i class="fas fa-tags"></i></span>
+                                <span class="admin-sidebar__label">Thương hiệu</span>
+                                <span class="admin-sidebar__caret"><i class="fas fa-chevron-down"></i></span>
+                            </button>
+                            <div class="admin-sidebar__submenu" id="sidebar-submenu-brands">
+                                <div class="admin-sidebar__submenu-inner">
+                                    <a href="/Admin/Brands" class="nav-link admin-sidebar__sublink" data-sidebar-link>
+                                        <span class="sub-item">Quản lý thương hiệu</span>
+                                    </a>
+                                </div>
                             </div>
                         </li>
 
-                        <!-- Products -->
-                        <li class="nav-item">
-                            <a data-bs-toggle="collapse" href="#products" class="nav-link">
-                                <i class="fas fa-pen-square me-2"></i>
-                                <p>Sản phẩm</p>
-                                <span class="caret"></span>
-                            </a>
-                            <div class="collapse" id="products">
-                                <ul class="nav nav-collapse">
-                                    <li>
-                                        <a href="/Admin/Products/all" class="nav-link">
-                                            <span class="sub-item">Tổng sản phẩm <span class="badge badge-dark">@ViewBag.Product_all</span></span>
-                                        </a>
-                                        <a href="/Admin/Products/available" class="nav-link">
-                                            <span class="sub-item">Sản phẩm sẵn hàng <span class="badge badge-success">@ViewBag.Product_available</span></span>
-                                        </a>
-                                        <a href="/Admin/Products/outstock" class="nav-link">
-                                            <span class="sub-item">Sản phẩm hết hàng <span class="badge badge-danger">@ViewBag.Product_outstock</span></span>
-                                        </a>
-                                        <a href="/Admin/Products/preorder" class="nav-link">
-                                            <span class="sub-item">Sản phẩm đặt trước <span class="badge badge-warning">@ViewBag.Product_preorder</span></span>
-                                        </a>
-                                        <a href="/Admin/Products/discontinued" class="nav-link">
-                                            <span class="sub-item">Sản phẩm ngừng bán <span class="badge badge-secondary">@ViewBag.Product_discontinued</span></span>
-                                        </a>
-                                    </li>
-                                </ul>
+                        <li class="nav-item admin-sidebar__item admin-sidebar__item--has-submenu" data-route-prefixes="/admin/products">
+                            <button class="nav-link admin-sidebar__link admin-sidebar__link--submenu"
+                                    type="button"
+                                    data-sidebar-submenu-trigger
+                                    aria-expanded="false"
+                                    aria-controls="sidebar-submenu-products">
+                                <span class="admin-sidebar__icon"><i class="fas fa-box-open"></i></span>
+                                <span class="admin-sidebar__label">Sản phẩm</span>
+                                <span class="admin-sidebar__caret"><i class="fas fa-chevron-down"></i></span>
+                            </button>
+                            <div class="admin-sidebar__submenu" id="sidebar-submenu-products">
+                                <div class="admin-sidebar__submenu-inner">
+                                    <a href="/Admin/Products/all" class="nav-link admin-sidebar__sublink" data-sidebar-link>
+                                        <span class="sub-item">Tổng sản phẩm <span class="badge badge-dark">@ViewBag.Product_all</span></span>
+                                    </a>
+                                    <a href="/Admin/Products/available" class="nav-link admin-sidebar__sublink" data-sidebar-link>
+                                        <span class="sub-item">Sản phẩm sẵn hàng <span class="badge badge-success">@ViewBag.Product_available</span></span>
+                                    </a>
+                                    <a href="/Admin/Products/outstock" class="nav-link admin-sidebar__sublink" data-sidebar-link>
+                                        <span class="sub-item">Sản phẩm hết hàng <span class="badge badge-danger">@ViewBag.Product_outstock</span></span>
+                                    </a>
+                                    <a href="/Admin/Products/preorder" class="nav-link admin-sidebar__sublink" data-sidebar-link>
+                                        <span class="sub-item">Sản phẩm đặt trước <span class="badge badge-warning">@ViewBag.Product_preorder</span></span>
+                                    </a>
+                                    <a href="/Admin/Products/discontinued" class="nav-link admin-sidebar__sublink" data-sidebar-link>
+                                        <span class="sub-item">Sản phẩm ngừng bán <span class="badge badge-secondary">@ViewBag.Product_discontinued</span></span>
+                                    </a>
+                                </div>
                             </div>
                         </li>
 
-                        <li class="nav-item">
-                            <a data-bs-toggle="collapse" href="#inventory" class="nav-link">
-                                <i class="fas fa-warehouse me-2"></i>
-                                <p>Quản lý kho hàng</p>
-                                <span class="caret"></span>
-                            </a>
-                            <div class="collapse" id="inventory">
-                                <ul class="nav nav-collapse">
-                                    <li>
-                                        <a href="/Admin/StockManager" class="nav-link">
-                                            <span class="sub-item">Nhập/Xuất hàng</span>
-                                        </a>
-                                        <a href="/Admin/StockManager/History" class="nav-link">
-                                            <span class="sub-item">Lịch sử kho</span>
-                                        </a>
-                                        <a href="/Admin/StockManager?mode=code" class="nav-link">
-                                            <span class="sub-item">In mã sản phẩm</span>
-                                        </a>
-                                    </li>
-                                </ul>
+                        <li class="nav-item admin-sidebar__item admin-sidebar__item--has-submenu" data-route-prefixes="/admin/stockmanager,/admin/suppliers">
+                            <button class="nav-link admin-sidebar__link admin-sidebar__link--submenu"
+                                    type="button"
+                                    data-sidebar-submenu-trigger
+                                    aria-expanded="false"
+                                    aria-controls="sidebar-submenu-inventory">
+                                <span class="admin-sidebar__icon"><i class="fas fa-warehouse"></i></span>
+                                <span class="admin-sidebar__label">Quản lý kho hàng</span>
+                                <span class="admin-sidebar__caret"><i class="fas fa-chevron-down"></i></span>
+                            </button>
+                            <div class="admin-sidebar__submenu" id="sidebar-submenu-inventory">
+                                <div class="admin-sidebar__submenu-inner">
+                                    <a href="/Admin/StockManager" class="nav-link admin-sidebar__sublink" data-sidebar-link>
+                                        <span class="sub-item">Nhập/Xuất hàng</span>
+                                    </a>
+                                    <a href="/Admin/Suppliers" class="nav-link admin-sidebar__sublink" data-sidebar-link>
+                                        <span class="sub-item">Nhà cung cấp</span>
+                                    </a>
+                                    <a href="/Admin/StockManager/History" class="nav-link admin-sidebar__sublink" data-sidebar-link>
+                                        <span class="sub-item">Lịch sử kho</span>
+                                    </a>
+                                </div>
                             </div>
                         </li>
 
-                        <!-- SECTION: Quản lý đơn hàng -->
-                        <li class="nav-section">
-                            <span class="sidebar-mini-icon">
-                                <i class="fa fa-ellipsis-h"></i>
-                            </span>
+                        <li class="nav-section admin-sidebar__section">
+                            <span class="sidebar-mini-icon"><i class="fa fa-ellipsis-h"></i></span>
                             <h4 class="text-section">Quản lý đơn hàng</h4>
                         </li>
 
-                        <!-- Orders -->
-                        <li class="nav-item">
-                            <a data-bs-toggle="collapse" href="#orders" class="nav-link">
-                                <i class="fa fa-shopping-cart me-2"></i>
-                                <p>Đơn hàng</p>
-                                <span class="caret"></span>
-                            </a>
-                            <div class="collapse" id="orders">
-                                <ul class="nav nav-collapse">
-                                    <li>
-                                        <a href="/Admin/Orders/all" class="nav-link">
-                                            <span class="sub-item">Tất cả đơn hàng <span class="badge badge-dark">@ViewBag.Order_all</span></span>
-                                        </a>
-                                        <a href="/Admin/Orders/pending" class="nav-link">
-                                            <span class="sub-item">Đang xử lý <span class="badge badge-primary">@ViewBag.Order_pending</span></span>
-                                        </a>
-                                        <a href="/Admin/Orders/confirmed" class="nav-link">
-                                            <span class="sub-item">Đã xác nhận <span class="badge badge-info">@ViewBag.Order_confirmed</span></span>
-                                        </a>
-                                        <a href="/Admin/Orders/shipping" class="nav-link">
-                                            <span class="sub-item">Đang giao hàng <span class="badge badge-warning">@ViewBag.Order_shipping</span></span>
-                                        </a>
-                                        <a href="/Admin/Orders/delivered" class="nav-link">
-                                            <span class="sub-item">Đã giao hàng <span class="badge badge-light">@ViewBag.Order_delivered</span></span>
-                                        </a>
-                                        <a href="/Admin/Orders/completed" class="nav-link">
-                                            <span class="sub-item">Hoàn tất <span class="badge badge-success">@ViewBag.Order_completed</span></span>
-                                        </a>
-                                        <a href="/Admin/Orders/cancelled" class="nav-link">
-                                            <span class="sub-item">Đã hủy <span class="badge badge-danger">@ViewBag.Order_cancelled</span></span>
-                                        </a>
-                                        <a href="/Admin/Orders/refunded" class="nav-link">
-                                            <span class="sub-item">Hoàn tiền <span class="badge badge-secondary">@ViewBag.Order_refunded</span></span>
-                                        </a>
-                                    </li>
-                                </ul>
+                        <li class="nav-item admin-sidebar__item admin-sidebar__item--has-submenu" data-route-prefixes="/admin/orders">
+                            <button class="nav-link admin-sidebar__link admin-sidebar__link--submenu"
+                                    type="button"
+                                    data-sidebar-submenu-trigger
+                                    aria-expanded="false"
+                                    aria-controls="sidebar-submenu-orders">
+                                <span class="admin-sidebar__icon"><i class="fas fa-shopping-cart"></i></span>
+                                <span class="admin-sidebar__label">Đơn hàng</span>
+                                <span class="admin-sidebar__caret"><i class="fas fa-chevron-down"></i></span>
+                            </button>
+                            <div class="admin-sidebar__submenu" id="sidebar-submenu-orders">
+                                <div class="admin-sidebar__submenu-inner">
+                                    <a href="/Admin/Orders/all" class="nav-link admin-sidebar__sublink" data-sidebar-link>
+                                        <span class="sub-item">Tất cả đơn hàng <span class="badge badge-dark">@ViewBag.Order_all</span></span>
+                                    </a>
+                                    <a href="/Admin/Orders/pending" class="nav-link admin-sidebar__sublink" data-sidebar-link>
+                                        <span class="sub-item">Đang xử lý <span class="badge badge-primary">@ViewBag.Order_pending</span></span>
+                                    </a>
+                                    <a href="/Admin/Orders/confirmed" class="nav-link admin-sidebar__sublink" data-sidebar-link>
+                                        <span class="sub-item">Đã xác nhận <span class="badge badge-info">@ViewBag.Order_confirmed</span></span>
+                                    </a>
+                                    <a href="/Admin/Orders/shipping" class="nav-link admin-sidebar__sublink" data-sidebar-link>
+                                        <span class="sub-item">Đang giao hàng <span class="badge badge-warning">@ViewBag.Order_shipping</span></span>
+                                    </a>
+                                    <a href="/Admin/Orders/delivered" class="nav-link admin-sidebar__sublink" data-sidebar-link>
+                                        <span class="sub-item">Đã giao hàng <span class="badge badge-light">@ViewBag.Order_delivered</span></span>
+                                    </a>
+                                    <a href="/Admin/Orders/completed" class="nav-link admin-sidebar__sublink" data-sidebar-link>
+                                        <span class="sub-item">Hoàn tất <span class="badge badge-success">@ViewBag.Order_completed</span></span>
+                                    </a>
+                                    <a href="/Admin/Orders/cancelled" class="nav-link admin-sidebar__sublink" data-sidebar-link>
+                                        <span class="sub-item">Đã hủy <span class="badge badge-danger">@ViewBag.Order_cancelled</span></span>
+                                    </a>
+                                    <a href="/Admin/Orders/refunded" class="nav-link admin-sidebar__sublink" data-sidebar-link>
+                                        <span class="sub-item">Hoàn tiền <span class="badge badge-secondary">@ViewBag.Order_refunded</span></span>
+                                    </a>
+                                </div>
                             </div>
                         </li>
 
-                        <!-- Customers -->
-                        <li class="nav-item">
-                            <a data-bs-toggle="collapse" href="#customers" class="nav-link">
-                                <i class="fa fa-user me-2"></i>
-                                <p>Khách hàng</p>
-                                <span class="caret"></span>
-                            </a>
-                            <div class="collapse" id="customers">
-                                <ul class="nav nav-collapse">
-                                    <li>
-                                        <a href="/Admin/Users" class="nav-link">
-                                            <span class="sub-item">Danh sách khách hàng</span>
-                                        </a>
-                                    </li>
-                                </ul>
+                        <li class="nav-item admin-sidebar__item admin-sidebar__item--has-submenu" data-route-prefixes="/admin/users">
+                            <button class="nav-link admin-sidebar__link admin-sidebar__link--submenu"
+                                    type="button"
+                                    data-sidebar-submenu-trigger
+                                    aria-expanded="false"
+                                    aria-controls="sidebar-submenu-users">
+                                <span class="admin-sidebar__icon"><i class="fas fa-user"></i></span>
+                                <span class="admin-sidebar__label">Khách hàng</span>
+                                <span class="admin-sidebar__caret"><i class="fas fa-chevron-down"></i></span>
+                            </button>
+                            <div class="admin-sidebar__submenu" id="sidebar-submenu-users">
+                                <div class="admin-sidebar__submenu-inner">
+                                    <a href="/Admin/Users" class="nav-link admin-sidebar__sublink" data-sidebar-link>
+                                        <span class="sub-item">Danh sách khách hàng</span>
+                                    </a>
+                                </div>
                             </div>
                         </li>
 
-                        <!-- Transactions & Vouchers -->
-                        <li class="nav-item">
-                            <a data-bs-toggle="collapse" href="#transactions" class="nav-link">
-                                <i class="fa fa-exchange-alt me-2"></i>
-                                <p>Giao dịch & Voucher</p>
-                                <span class="caret"></span>
+                        <li class="nav-item admin-sidebar__item" data-route-prefixes="/admin/transactions">
+                            <a href="/Admin/Transactions" class="nav-link admin-sidebar__link" data-sidebar-link>
+                                <span class="admin-sidebar__icon"><i class="fas fa-exchange-alt"></i></span>
+                                <span class="admin-sidebar__label">Giao dịch</span>
                             </a>
-                            <div class="collapse" id="transactions">
-                                <ul class="nav nav-collapse">
-                                    <li>
-                                        <a href="/Admin/Transactions" class="nav-link">
-                                            <span class="sub-item">Xem giao dịch</span>
-                                        </a>
-                                        <a href="/Admin/Vouchers" class="nav-link">
-                                            <span class="sub-item">Quản lý voucher</span>
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </li>
-                        <!-- SECTION: Cài đặt campain -->
-                        <li class="nav-section">
-                            <span class="sidebar-mini-icon">
-                                <i class="fa fa-ellipsis-h"></i>
-                            </span>
-                            <h4 class="text-section">Cài đặt Campain</h4>
                         </li>
 
-                        <!-- Banner -->
-                        <li class="nav-item">
-                            <a data-bs-toggle="collapse" href="#banner" class="nav-link">
-                                <i class="fas fa-images me-2"></i>
-                                <p>Banner</p>
-                                <span class="caret"></span>
+                        <li class="nav-item admin-sidebar__item" data-route-prefixes="/admin/vouchers">
+                            <a href="/Admin/Vouchers" class="nav-link admin-sidebar__link" data-sidebar-link>
+                                <span class="admin-sidebar__icon"><i class="fas fa-ticket-alt"></i></span>
+                                <span class="admin-sidebar__label">Voucher</span>
                             </a>
-                            <div class="collapse" id="banner">
-                                <ul class="nav nav-collapse">
-                                    <li>
-                                        <a href="/Admin/Banner/Index" class="nav-link">
-                                            <span class="sub-item">Danh sách banner</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="/Admin/Banner/Create" class="nav-link">
-                                            <span class="sub-item">Thêm banner</span>
-                                        </a>
-                                    </li>
-                                </ul>
+                        </li>
+
+                        <li class="nav-section admin-sidebar__section">
+                            <span class="sidebar-mini-icon"><i class="fa fa-ellipsis-h"></i></span>
+                            <h4 class="text-section">Cài đặt chiến dịch</h4>
+                        </li>
+
+                        <li class="nav-item admin-sidebar__item admin-sidebar__item--has-submenu" data-route-prefixes="/admin/banners">
+                            <button class="nav-link admin-sidebar__link admin-sidebar__link--submenu"
+                                    type="button"
+                                    data-sidebar-submenu-trigger
+                                    aria-expanded="false"
+                                    aria-controls="sidebar-submenu-banners">
+                                <span class="admin-sidebar__icon"><i class="fas fa-images"></i></span>
+                                <span class="admin-sidebar__label">Banner</span>
+                                <span class="admin-sidebar__caret"><i class="fas fa-chevron-down"></i></span>
+                            </button>
+                            <div class="admin-sidebar__submenu" id="sidebar-submenu-banners">
+                                <div class="admin-sidebar__submenu-inner">
+                                    <a href="/Admin/Banners/Index" class="nav-link admin-sidebar__sublink" data-sidebar-link>
+                                        <span class="sub-item">Danh sách banner</span>
+                                    </a>
+                                </div>
                             </div>
                         </li>
 
-                        <!-- Chiến dịch -->
-                        <li class="nav-item">
-                            <a data-bs-toggle="collapse" href="#campaign" class="nav-link">
-                                <i class="fas fa-bullhorn me-2"></i>
-                                <p>Chiến dịch</p>
-                                <span class="caret"></span>
-                            </a>
-                            <div class="collapse" id="campaign">
-                                <ul class="nav nav-collapse">
-                                    <li>
-                                        <a href="/Admin/Campaign/Index" class="nav-link">
-                                            <span class="sub-item">Quản lý chiến dịch</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="/Admin/Campaign/Create" class="nav-link">
-                                            <span class="sub-item">Tạo chiến dịch</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="/Admin/Campaign/Report" class="nav-link">
-                                            <span class="sub-item">Thống kê</span>
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </li>
-                        <!-- SECTION: Cài đặt hệ thống -->
-                        <li class="nav-section">
-                            <span class="sidebar-mini-icon">
-                                <i class="fa fa-ellipsis-h"></i>
-                            </span>
+                        <li class="nav-section admin-sidebar__section">
+                            <span class="sidebar-mini-icon"><i class="fa fa-ellipsis-h"></i></span>
                             <h4 class="text-section">Cài đặt hệ thống</h4>
                         </li>
 
-                        <!-- Settings -->
-                        <li class="nav-item">
-                            <a href="/Admin/Settings" class="nav-link">
-                                <i class="fas fa-cog me-2"></i>
-                                <p>Cài đặt trang web</p>
+                        <li class="nav-item admin-sidebar__item" data-route-prefixes="/admin/settings">
+                            <a href="/Admin/Settings" class="nav-link admin-sidebar__link" data-sidebar-link>
+                                <span class="admin-sidebar__icon"><i class="fas fa-cog"></i></span>
+                                <span class="admin-sidebar__label">Cài đặt trang web</span>
+                            </a>
+                        </li>
+
+                        <li class="nav-item admin-sidebar__item" data-route-exact="/admin/notifications/index" data-route-prefixes="/admin/notifications">
+                            <a href="/Admin/Notifications/Index" class="nav-link admin-sidebar__link" data-sidebar-link>
+                                <span class="admin-sidebar__icon"><i class="fas fa-bell"></i></span>
+                                <span class="admin-sidebar__label">Thông báo</span>
                             </a>
                         </li>
                     </ul>
                 </div>
             </div>
-        </div>
+        </aside>
         <!-- End Sidebar -->
 
         <div class="main-panel">
             <div class="main-header">
                 <div class="main-header-logo">
                     <!-- Logo Header -->
-                    <div class="logo-header" data-background-color="dark">
-                        <a href="index.html" class="logo">
-                            <img src="assets/img/kai~/Admin/logo_light.svg"
-                                 alt="navbar brand"
+                    <div class="logo-header admin-mobile-header" data-background-color="dark">
+                        <button class="btn btn-toggle admin-sidebar__mobile-toggle"
+                                type="button"
+                                data-sidebar-mobile-toggle
+                                aria-label="Mở menu điều hướng">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        <a href="/Admin" class="logo">
+                            <img src="@ViewBag.LogoUrl"
+                                 alt="Tech Store"
                                  class="navbar-brand"
-                                 height="20" />
+                                 height="32" />
                         </a>
-                        <div class="nav-toggle">
-                            <button class="btn btn-toggle toggle-sidebar">
-                                <i class="gg-menu-right"></i>
-                            </button>
-                            <button class="btn btn-toggle sidenav-toggler">
-                                <i class="gg-menu-left"></i>
-                            </button>
-                        </div>
                         <button class="topbar-toggler more">
                             <i class="gg-more-vertical-alt"></i>
                         </button>
@@ -873,9 +809,9 @@
                                 <i class="fas fa-bars"></i>
                             </button>
                             <ul class="dropdown-menu" aria-labelledby="footerMenu">
-                                <li><a class="dropdown-item" href="https://santhuongmai.citgroup.vn/admin/business-settings/web-config"><i class="fas fa-cog"></i> Thiết lập website</a></li>
-                                <li><a class="dropdown-item" href="https://santhuongmai.citgroup.vn/admin/profile/update/1"><i class="fas fa-user"></i> Hồ sơ</a></li>
-                                <li><a class="dropdown-item" href="https://santhuongmai.citgroup.vn/admin/dashboard"><i class="fas fa-home"></i> Trang chủ</a></li>
+                                <li><a class="dropdown-item" href="/Admin/Settings"><i class="fas fa-cog"></i> Thiết lập website</a></li>
+                                <li><a class="dropdown-item" href="/Admin/Account"><i class="fas fa-user"></i> Hồ sơ</a></li>
+                                <li><a class="dropdown-item" href="/Admin"><i class="fas fa-home"></i> Trang chủ</a></li>
                                 <li><a class="dropdown-item" href="#">Version 2.0</a></li>
                             </ul>
                         </div>
@@ -894,7 +830,7 @@
     <script src="~/Admin/assets/js/core/bootstrap.min.js"></script>
 
     <!-- Bootstrap-select JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/js/bootstrap-select.min.js"></script>
+    <script src="~/vendor/bootstrap-select/js/bootstrap-select.min.js" asp-append-version="true"></script>
     <!-- jQuery Scrollbar -->
     <script src="~/Admin/assets/js/plugin/jquery-scrollbar/jquery.scrollbar.min.js"></script>
     <!-- Chart JS -->
@@ -922,8 +858,9 @@
 
     <!-- Kaiadmin JS -->
     <script src="~/Admin/assets/js/kaiadmin.min.js"></script>
+    <script src="~/Admin/assets/js/sidebar.js" asp-append-version="true"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.js"></script>
+    <script src="~/vendor/signalr/signalr.min.js" asp-append-version="true"></script>
     <script src="~/js/notification.js"></script>
     <script>
         $("#lineChart").sparkline([102, 109, 120, 99, 110, 105, 115], {

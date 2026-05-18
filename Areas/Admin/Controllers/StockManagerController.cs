@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using Tech_Store.Models;
-using Tech_Store.Models.DTO;
 using X.PagedList.Extensions;
 using X.PagedList;
 using OfficeOpenXml;
@@ -18,64 +17,124 @@ namespace Tech_Store.Areas.Admin.Controllers
     [Route("Admin/[controller]")]
     public class StockManagerController : BaseAdminController
     {
-        public StockManagerController(ApplicationDbContext context) : base(context) { }
-        [Route("")]
-        [Route("index")]
-        public IActionResult Index()
+        private readonly IConfiguration _configuration;
+        private const int FallbackPageSize = 20;
+
+        public StockManagerController(ApplicationDbContext context, IConfiguration configuration) : base(context)
         {
-            var list_products = _context.Products
-               .Include(p => p.Brand).Include(p => p.Category)
-               .OrderByDescending(x => x.ProductId).ToList().Take(100);
-            var list_cate = _context.Categories.ToList();
-            ViewBag.cate = list_cate;
-            var list_brand = _context.Brands.ToList();
-            ViewBag.brand = list_brand;
-            return View(list_products);
+            _configuration = configuration;
         }
 
-        [HttpPost]
-        [Route("Filter")]
-        public IActionResult Filter(string sku, string name, string status, int? categoryId, int? brandId, int? stockFrom, int? stockTo)
+        private int GetDefaultAdminPageSize()
         {
+            var pageSize = _configuration.GetValue<int?>("AdminUi:DefaultPageSize");
+            var resolvedPageSize = pageSize.GetValueOrDefault(FallbackPageSize);
+            return resolvedPageSize > 0 ? resolvedPageSize : FallbackPageSize;
+        }
+
+        [Route("")]
+        [Route("index")]
+        public IActionResult Index(string? sku, string? name, string? status, int? categoryId, int? brandId, int? stockFrom, int? stockTo, int page = 1)
+        {
+            var pageSize = GetDefaultAdminPageSize();
+
             var products = _context.Products
                 .Include(p => p.Brand)
                 .Include(p => p.Category)
                 .AsQueryable();
 
-            // Áp dụng các tiêu chí lọc
-            if (!string.IsNullOrEmpty(sku))
-                products = products.Where(p => p.Sku.Contains(sku));
-            if (!string.IsNullOrEmpty(name))
-                products = products.Where(p => p.Name.Contains(name));
-            if (!string.IsNullOrEmpty(status))
-                products = products.Where(p => p.Status == status);
-            if (categoryId.HasValue)
-                products = products.Where(p => p.CategoryId == categoryId.Value);
-            if (brandId.HasValue)
-                products = products.Where(p => p.BrandId == brandId.Value);
-            if (stockFrom.HasValue)
-                products = products.Where(p => p.Stock >= stockFrom.Value);
-            if (stockTo.HasValue)
-                products = products.Where(p => p.Stock <= stockTo.Value);
+            if (!string.IsNullOrWhiteSpace(sku))
+            {
+                products = products.Where(p => p.Sku != null && p.Sku.Contains(sku));
+            }
 
-            // Chuyển đổi sang view model để trả về JSON
-            var result = products.OrderByDescending(p => p.ProductId)
-                .Take(100)
-                .Select(p => new ProductViewModel
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                products = products.Where(p => p.Name.Contains(name));
+            }
+
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                products = products.Where(p => p.Status == status);
+            }
+
+            if (categoryId.HasValue)
+            {
+                products = products.Where(p => p.CategoryId == categoryId.Value);
+            }
+
+            if (brandId.HasValue)
+            {
+                products = products.Where(p => p.BrandId == brandId.Value);
+            }
+
+            if (stockFrom.HasValue)
+            {
+                products = products.Where(p => p.Stock >= stockFrom.Value);
+            }
+
+            if (stockTo.HasValue)
+            {
+                products = products.Where(p => p.Stock <= stockTo.Value);
+            }
+
+            var totalItems = products.Count();
+            var totalPages = totalItems == 0 ? 1 : (int)Math.Ceiling(totalItems / (double)pageSize);
+            var currentPage = Math.Min(Math.Max(page, 1), totalPages);
+
+            var items = products
+                .OrderByDescending(x => x.ProductId)
+                .Skip((currentPage - 1) * pageSize)
+                .Take(pageSize)
+                .Select(p => new AdminStockIndexItemViewModel
                 {
                     ProductId = p.ProductId,
-                    Image = p.Image,
+                    ImageUrl = p.Image,
                     Name = p.Name,
                     Sku = p.Sku,
-                    BrandName = p.Brand.Name,
-                    CategoryName = p.Category.Name,
+                    BrandName = p.Brand != null ? p.Brand.Name : null,
+                    CategoryName = p.Category != null ? p.Category.Name : null,
                     SellPrice = p.SellPrice,
                     Stock = p.Stock,
                     Status = p.Status
                 })
                 .ToList();
 
-            return Json(result);
+            var model = new AdminStockIndexViewModel
+            {
+                Items = items,
+                Categories = _context.Categories.OrderBy(x => x.Name).ToList(),
+                Brands = _context.Brands.OrderBy(x => x.Name).ToList(),
+                Sku = sku,
+                Name = name,
+                Status = status,
+                CategoryId = categoryId,
+                BrandId = brandId,
+                StockFrom = stockFrom,
+                StockTo = stockTo,
+                Page = currentPage,
+                TotalPages = totalPages,
+                TotalItems = totalItems,
+                QueryString = BuildStockIndexQueryString(sku, name, status, categoryId, brandId, stockFrom, stockTo)
+            };
+
+            return View(model);
+        }
+
+        [HttpPost]
+        [Route("Filter")]
+        public IActionResult Filter(string sku, string name, string status, int? categoryId, int? brandId, int? stockFrom, int? stockTo)
+        {
+            return RedirectToAction(nameof(Index), new
+            {
+                sku,
+                name,
+                status,
+                categoryId,
+                brandId,
+                stockFrom,
+                stockTo
+            });
         }
         [HttpGet("GetProduct/{id}")]
         public async Task<JsonResult> GetProduct(int id)
@@ -88,109 +147,280 @@ namespace Tech_Store.Areas.Admin.Controllers
             return Json(new {success=true,product});
         }
 
-        [HttpPost("AddProductHistory")]
-        public async Task<JsonResult> AddProductHistory([FromBody] ProductHistoryDTo productHistoryDTo)
+        [HttpGet("CreateTransaction/{productId:int}")]
+        public async Task<IActionResult> CreateTransaction(int productId, int returnPage = 1, int? returnPageSize = null, string? returnSku = null, string? returnName = null, string? returnStatus = null, int? returnCategoryId = null, int? returnBrandId = null, int? returnStockFrom = null, int? returnStockTo = null)
         {
-            if (!ModelState.IsValid)
+            var model = await BuildTransactionFormModelAsync(productId, null);
+            if (model == null)
             {
-                return Json(new { success = false, message = "Dữ liệu đầu vào không hợp lệ" });
+                return NotFound();
             }
 
-            using (var transaction = await _context.Database.BeginTransactionAsync())
+            model.ReturnPage = returnPage;
+            model.ReturnPageSize = returnPageSize.GetValueOrDefault(GetDefaultAdminPageSize());
+            model.ReturnSku = returnSku;
+            model.ReturnName = returnName;
+            model.ReturnStatus = returnStatus;
+            model.ReturnCategoryId = returnCategoryId;
+            model.ReturnBrandId = returnBrandId;
+            model.ReturnStockFrom = returnStockFrom;
+            model.ReturnStockTo = returnStockTo;
+
+            return View("TransactionForm", model);
+        }
+
+        [HttpGet("EditTransaction/{id:int}")]
+        public async Task<IActionResult> EditTransaction(int id, int returnPage = 1, int? returnPageSize = null, string? returnSku = null, string? returnName = null, string? returnStatus = null, int? returnCategoryId = null, int? returnBrandId = null, int? returnStockFrom = null, int? returnStockTo = null, string? returnSource = null, string? returnHistoryFilterCode = null, string? returnHistoryFilterType = null, DateOnly? returnHistoryStartDate = null, DateOnly? returnHistoryEndDate = null)
+        {
+            var model = await BuildTransactionFormModelAsync(null, id);
+            if (model == null)
             {
-                try
+                return NotFound();
+            }
+
+            model.ReturnPage = returnPage;
+            model.ReturnPageSize = returnPageSize.GetValueOrDefault(GetDefaultAdminPageSize());
+            model.ReturnSku = returnSku;
+            model.ReturnName = returnName;
+            model.ReturnStatus = returnStatus;
+            model.ReturnCategoryId = returnCategoryId;
+            model.ReturnBrandId = returnBrandId;
+            model.ReturnStockFrom = returnStockFrom;
+            model.ReturnStockTo = returnStockTo;
+            model.ReturnSource = string.IsNullOrWhiteSpace(returnSource) ? "stock-index" : returnSource;
+            model.ReturnHistoryFilterCode = returnHistoryFilterCode;
+            model.ReturnHistoryFilterType = returnHistoryFilterType;
+            model.ReturnHistoryStartDate = returnHistoryStartDate;
+            model.ReturnHistoryEndDate = returnHistoryEndDate;
+
+            return View("TransactionForm", model);
+        }
+
+        [HttpPost("SaveTransaction")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveTransaction(AdminStockTransactionFormViewModel model)
+        {
+            var validVariants = model.Variants
+                .Where(x => x.Quantity > 0)
+                .ToList();
+
+            if (!validVariants.Any())
+            {
+                TempData["error"] = "Cần nhập ít nhất một biến thể có số lượng lớn hơn 0.";
+                var invalidModel = await BuildTransactionFormModelAsync(model.ProductId, model.InventoryTransId);
+                if (invalidModel == null)
+                {
+                    return NotFound();
+                }
+
+                invalidModel.Type = model.Type;
+                invalidModel.SupplierId = model.SupplierId;
+                invalidModel.Note = model.Note;
+                invalidModel.Variants = invalidModel.Variants.Select(x =>
+                {
+                    var input = validVariants.FirstOrDefault(v => v.VariantId == x.VariantId) ?? model.Variants.FirstOrDefault(v => v.VariantId == x.VariantId);
+                    x.Quantity = input?.Quantity ?? 0;
+                    return x;
+                }).ToList();
+                CopyTransactionReturnState(model, invalidModel);
+                return View("TransactionForm", invalidModel);
+            }
+
+            if (string.Equals(model.Type, "Import", StringComparison.OrdinalIgnoreCase) && !model.SupplierId.HasValue)
+            {
+                TempData["error"] = "Phiếu nhập kho cần gắn với một nhà cung cấp.";
+                var invalidModel = await BuildTransactionFormModelAsync(model.ProductId, model.InventoryTransId);
+                if (invalidModel == null)
+                {
+                    return NotFound();
+                }
+
+                invalidModel.Type = model.Type;
+                invalidModel.SupplierId = model.SupplierId;
+                invalidModel.Note = model.Note;
+                invalidModel.Variants = invalidModel.Variants.Select(x =>
+                {
+                    var input = model.Variants.FirstOrDefault(v => v.VariantId == x.VariantId);
+                    x.Quantity = input?.Quantity ?? 0;
+                    return x;
+                }).ToList();
+                CopyTransactionReturnState(model, invalidModel);
+                return View("TransactionForm", invalidModel);
+            }
+
+            await using var dbTransaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var product = await _context.Products
+                    .Include(x => x.VarientProducts)
+                    .FirstOrDefaultAsync(x => x.ProductId == model.ProductId);
+
+                if (product == null)
+                {
+                    return NotFound();
+                }
+
+                InventoryTransactions inventoryTransaction;
+                List<InventoryTransactionsDetail> oldDetails = new();
+
+                if (model.InventoryTransId.HasValue && model.InventoryTransId.Value > 0)
+                {
+                    inventoryTransaction = await _context.InventoryTransactions
+                        .Include(x => x.InventoryTransactionsDetail)
+                        .FirstOrDefaultAsync(x => x.InventoryTransId == model.InventoryTransId.Value);
+
+                    if (inventoryTransaction == null)
+                    {
+                        return NotFound();
+                    }
+
+                    oldDetails = inventoryTransaction.InventoryTransactionsDetail.ToList();
+                    await RevertInventoryTransactionAsync(product, inventoryTransaction.Type, oldDetails);
+
+                    _context.InventoryTransactionsDetail.RemoveRange(oldDetails);
+                }
+                else
                 {
                     var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                    var productHistory = new InventoryTransactions
+                    inventoryTransaction = new InventoryTransactions
                     {
-                        ProductId = productHistoryDTo.ProductId,
-                        Type = productHistoryDTo.Type,
-                        UserId = int.Parse(userId),
-                        Note = productHistoryDTo.Note,
+                        ProductId = product.ProductId,
+                        UserId = int.Parse(userId!),
                         CreatedAt = DateTime.Now
                     };
-
-                    await _context.InventoryTransactions.AddAsync(productHistory);
-                    await _context.SaveChangesAsync();
-
-                    var product = await _context.Products
-                        .FirstOrDefaultAsync(x => x.ProductId == productHistoryDTo.ProductId);
-
-                    if (product == null)
-                    {
-                        return Json(new { success = false, message = "Sản phẩm không tồn tại" });
-                    }
-
-                    List<InventoryTransactionsDetail> productHistoryDetails = new List<InventoryTransactionsDetail>();
-
-                    foreach (var item in productHistoryDTo.Variants)
-                    {
-                        var variant = await _context.VarientProducts
-                            .FirstOrDefaultAsync(x => x.VarientId == item.VariantId);
-
-                        if (variant == null)
-                        {
-                            return Json(new { success = false, message = $"Biến thể sản phẩm với ID {item.VariantId} không tồn tại" });
-                        }
-
-                        int quantityChange = item.Quantity;
-
-                        if (productHistoryDTo.Type == "Import")
-                        {
-                            product.Stock += quantityChange;
-                            variant.Stock += quantityChange;
-                        }
-                        else
-                        {
-                            product.Stock -= quantityChange;
-                            variant.Stock -= quantityChange;
-
-                            if (product.Stock < 0 || variant.Stock < 0)
-                            {
-                                return Json(new { success = false, message = "Số lượng tồn kho không đủ để thực hiện giao dịch" });
-                            }
-                        }
-
-                        var productHistoryDetail = new InventoryTransactionsDetail
-                        {
-                            InventoryTransId = productHistory.InventoryTransId,
-                            VarientId = item.VariantId,
-                            Quantity = quantityChange
-                        };
-                        productHistoryDetails.Add(productHistoryDetail);
-                    }
-
-                    if (product.Stock == 0)
-                    {
-                        product.Status = "outstock";
-                    }
-                    else if (product.Status.Contains("outstock") && product.Stock > 0)
-                    {
-                        product.Status = "available";
-                    }
-
-                    await _context.InventoryTransactionsDetail.AddRangeAsync(productHistoryDetails);
-                    await _context.SaveChangesAsync();
-                    await transaction.CommitAsync();
-
-                    return Json(new { success = true, message = "Thêm thành công" });
+                    await _context.InventoryTransactions.AddAsync(inventoryTransaction);
                 }
-                catch (Exception ex)
+
+                var detailEntities = new List<InventoryTransactionsDetail>();
+                var totalQuantity = 0;
+
+                foreach (var variantInput in validVariants)
                 {
-                    await transaction.RollbackAsync();
-                    return Json(new { success = false, message = "Có lỗi xảy ra: " + ex.Message });
+                    var variant = product.VarientProducts.FirstOrDefault(x => x.VarientId == variantInput.VariantId);
+                    if (variant == null)
+                    {
+                        throw new InvalidOperationException($"Không tìm thấy biến thể {variantInput.VariantId}.");
+                    }
+
+                    if (string.Equals(model.Type, "Import", StringComparison.OrdinalIgnoreCase))
+                    {
+                        product.Stock += variantInput.Quantity;
+                        variant.Stock = (variant.Stock ?? 0) + variantInput.Quantity;
+                    }
+                    else
+                    {
+                        if ((variant.Stock ?? 0) < variantInput.Quantity || product.Stock < variantInput.Quantity)
+                        {
+                            throw new InvalidOperationException($"Tồn kho của biến thể {variant.Sku} không đủ để xuất.");
+                        }
+
+                        product.Stock -= variantInput.Quantity;
+                        variant.Stock = (variant.Stock ?? 0) - variantInput.Quantity;
+                    }
+
+                    totalQuantity += variantInput.Quantity;
+
+                    detailEntities.Add(new InventoryTransactionsDetail
+                    {
+                        InventoryTransId = inventoryTransaction.InventoryTransId,
+                        VarientId = variant.VarientId,
+                        Quantity = variantInput.Quantity
+                    });
                 }
+
+                if (!string.Equals(model.Type, "Import", StringComparison.OrdinalIgnoreCase) && product.Stock < 0)
+                {
+                    throw new InvalidOperationException("Tồn kho tổng của sản phẩm không đủ để xuất.");
+                }
+
+                inventoryTransaction.Type = model.Type;
+                inventoryTransaction.SupplierId = string.Equals(model.Type, "Import", StringComparison.OrdinalIgnoreCase)
+                    ? model.SupplierId
+                    : null;
+                inventoryTransaction.Note = model.Note;
+                inventoryTransaction.UpdatedAt = DateTime.Now;
+                inventoryTransaction.ProductId = product.ProductId;
+
+                await _context.SaveChangesAsync();
+
+                foreach (var detail in detailEntities)
+                {
+                    detail.InventoryTransId = inventoryTransaction.InventoryTransId;
+                }
+
+                await _context.InventoryTransactionsDetail.AddRangeAsync(detailEntities);
+
+                product.Status = ResolveStockStatus(product.Stock, product.Status);
+
+                await _context.SaveChangesAsync();
+                await dbTransaction.CommitAsync();
+
+                TempData["success"] = model.InventoryTransId.HasValue ? "Cập nhật phiếu kho thành công." : "Tạo phiếu kho thành công.";
+
+                if (string.Equals(model.ReturnSource, "history", StringComparison.OrdinalIgnoreCase))
+                {
+                    return RedirectToAction(nameof(History), new
+                    {
+                        startDate = model.ReturnHistoryStartDate,
+                        endDate = model.ReturnHistoryEndDate,
+                        filterType = model.ReturnHistoryFilterType,
+                        filterCode = model.ReturnHistoryFilterCode,
+                        page = model.ReturnPage,
+                        pageSize = model.ReturnPageSize
+                    });
+                }
+
+                return RedirectToAction(nameof(Index), new
+                {
+                    page = model.ReturnPage,
+                    sku = model.ReturnSku,
+                    name = model.ReturnName,
+                    status = model.ReturnStatus,
+                    categoryId = model.ReturnCategoryId,
+                    brandId = model.ReturnBrandId,
+                    stockFrom = model.ReturnStockFrom,
+                    stockTo = model.ReturnStockTo
+                });
+            }
+            catch (Exception ex)
+            {
+                await dbTransaction.RollbackAsync();
+                TempData["error"] = ex.Message;
+
+                var invalidModel = await BuildTransactionFormModelAsync(model.ProductId, model.InventoryTransId);
+                if (invalidModel == null)
+                {
+                    return NotFound();
+                }
+
+                invalidModel.Type = model.Type;
+                invalidModel.SupplierId = model.SupplierId;
+                invalidModel.Note = model.Note;
+                invalidModel.Variants = invalidModel.Variants.Select(x =>
+                {
+                    var input = model.Variants.FirstOrDefault(v => v.VariantId == x.VariantId);
+                    x.Quantity = input?.Quantity ?? 0;
+                    return x;
+                }).ToList();
+                CopyTransactionReturnState(model, invalidModel);
+                return View("TransactionForm", invalidModel);
             }
         }
 
         [Route("History")]
-        public IActionResult History(DateOnly? startDate, DateOnly? endDate, string? filterType, string? filterCode, int page = 1)
+        public IActionResult History(DateOnly? startDate, DateOnly? endDate, string? filterType, string? filterCode, int page = 1, int? pageSize = null)
         {
-            const int pageSize = 20;
+            var resolvedPageSize = pageSize.GetValueOrDefault(GetDefaultAdminPageSize());
+            if (resolvedPageSize <= 0)
+            {
+                resolvedPageSize = GetDefaultAdminPageSize();
+            }
 
             var query = _context.InventoryTransactions
                 .Include(p => p.Product)
                 .Include(p => p.InventoryTransactionsDetail)
+                .Include(p => p.Supplier)
                 .Include(p => p.User)
                 .ThenInclude(p => p.Roles)
                 .AsQueryable();
@@ -218,14 +448,16 @@ namespace Tech_Store.Areas.Admin.Controllers
                     ph.InventoryTransId.ToString().Contains(filterCode));
             }
 
+            var importCount = query.Count(ph => ph.Type == "Import");
+            var exportCount = query.Count(ph => ph.Type == "Export");
             var totalItems = query.Count();
-            var totalPages = totalItems == 0 ? 1 : (int)Math.Ceiling(totalItems / (double)pageSize);
+            var totalPages = totalItems == 0 ? 1 : (int)Math.Ceiling(totalItems / (double)resolvedPageSize);
             var currentPage = Math.Min(Math.Max(page, 1), totalPages);
 
             var history = query
                 .OrderByDescending(ph => ph.InventoryTransId)
-                .Skip((currentPage - 1) * pageSize)
-                .Take(pageSize)
+                .Skip((currentPage - 1) * resolvedPageSize)
+                .Take(resolvedPageSize)
                 .Select(ph => new InventoryTransactionsVM
                 {
                     Id = ph.InventoryTransId,
@@ -236,6 +468,8 @@ namespace Tech_Store.Areas.Admin.Controllers
                     CreatedAt = ph.CreatedAt ?? DateTime.MinValue,
                     UserName = ph.User.LastName + " " + ph.User.FirstName,
                     UserRole = ph.User.Roles.FirstOrDefault().RoleName,
+                    SupplierName = ph.Supplier != null ? ph.Supplier.Name : null,
+                    SupplierCode = ph.Supplier != null ? ph.Supplier.Code : null,
                     InventoryTransactionDetail = ph.InventoryTransactionsDetail
                         .Select(d => new InventorTransactionDetailViewModel
                         {
@@ -253,11 +487,12 @@ namespace Tech_Store.Areas.Admin.Controllers
                 StartDate = startDate,
                 EndDate = endDate,
                 Page = currentPage,
+                PageSize = resolvedPageSize,
                 TotalPages = totalPages,
                 TotalItems = totalItems,
-                ImportCount = history.Count(x => x.Type == "Import"),
-                ExportCount = history.Count(x => x.Type == "Export"),
-                QueryString = BuildHistoryQueryString(startDate, endDate, filterType, filterCode)
+                ImportCount = importCount,
+                ExportCount = exportCount,
+                QueryString = BuildHistoryQueryString(startDate, endDate, filterType, filterCode, resolvedPageSize)
             };
 
             return View(model);
@@ -270,6 +505,7 @@ namespace Tech_Store.Areas.Admin.Controllers
             var history = await _context.InventoryTransactions
                 .Where(ph => ph.InventoryTransId == id) // Điều kiện lọc trước khi Select
                 .Include(p => p.Product)
+                .Include(p => p.Supplier)
                 .Include(p => p.User)
                 .ThenInclude(p => p.Roles)
                 .Include(p => p.InventoryTransactionsDetail).ThenInclude(p => p.Varient)
@@ -289,7 +525,9 @@ namespace Tech_Store.Areas.Admin.Controllers
                         VarientName = d.Varient.Attributes // Optional, if needed
                     }).ToList(), // No need to cast here
                     UserName = ph.User.LastName + " " + ph.User.FirstName,
-                    UserRole = ph.User.Roles.FirstOrDefault().RoleName ?? "Không có vai trò" // Tránh lỗi null
+                    UserRole = ph.User.Roles.FirstOrDefault().RoleName ?? "Không có vai trò", // Tránh lỗi null
+                    SupplierName = ph.Supplier != null ? ph.Supplier.Name : null,
+                    SupplierCode = ph.Supplier != null ? ph.Supplier.Code : null
                 })
                 .FirstOrDefaultAsync();
 
@@ -301,7 +539,7 @@ namespace Tech_Store.Areas.Admin.Controllers
             return Json(new { success = true, history });
         }
         [HttpPost("FilterHistoryDetail")]
-        public IActionResult FilterHistoryDetail(DateOnly? startDate, DateOnly? endDate, string? filterType, string? filterCode, int page = 1)
+        public IActionResult FilterHistoryDetail(DateOnly? startDate, DateOnly? endDate, string? filterType, string? filterCode, int page = 1, int? pageSize = null)
         {
             return RedirectToAction(nameof(History), new
             {
@@ -309,11 +547,12 @@ namespace Tech_Store.Areas.Admin.Controllers
                 endDate,
                 filterType,
                 filterCode,
-                page
+                page,
+                pageSize
             });
         }
 
-        private static string BuildHistoryQueryString(DateOnly? startDate, DateOnly? endDate, string? filterType, string? filterCode)
+        private static string BuildHistoryQueryString(DateOnly? startDate, DateOnly? endDate, string? filterType, string? filterCode, int pageSize)
         {
             var values = new List<string>();
 
@@ -337,45 +576,324 @@ namespace Tech_Store.Areas.Admin.Controllers
                 values.Add($"filterCode={Uri.EscapeDataString(filterCode)}");
             }
 
+            values.Add($"pageSize={pageSize}");
+
             return string.Join("&", values);
         }
 
-        [HttpGet("GetVariantProduct")]
-        public async Task<JsonResult> GetVariantProduct()
+        [HttpGet("ExportSelection")]
+        public IActionResult ExportSelection(string? keyword, int? categoryId, string? status, int? stockFrom, int? stockTo, int page = 1)
         {
-            // Truy vấn dữ liệu từ bảng VariantProducts và bao gồm liên kết Product
-            var variants = await _context.VarientProducts
+            var pageSize = GetDefaultAdminPageSize();
+
+            var query = _context.VarientProducts
                 .Include(x => x.Product)
-                .ThenInclude(p => p.Category).OrderByDescending(x=>x.VarientId) // Nếu bạn có bảng Category liên quan
+                .ThenInclude(x => x.Category)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                query = query.Where(x =>
+                    x.Sku.Contains(keyword) ||
+                    (x.Product != null && x.Product.Name.Contains(keyword)) ||
+                    (x.Attributes != null && x.Attributes.Contains(keyword)));
+            }
+
+            if (categoryId.HasValue)
+            {
+                query = query.Where(x => x.Product != null && x.Product.CategoryId == categoryId.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                query = query.Where(x => x.Product != null && x.Product.Status == status);
+            }
+
+            if (stockFrom.HasValue)
+            {
+                query = query.Where(x => (x.Stock ?? 0) >= stockFrom.Value);
+            }
+
+            if (stockTo.HasValue)
+            {
+                query = query.Where(x => (x.Stock ?? 0) <= stockTo.Value);
+            }
+
+            var totalItems = query.Count();
+            var totalPages = totalItems == 0 ? 1 : (int)Math.Ceiling(totalItems / (double)pageSize);
+            var currentPage = Math.Min(Math.Max(page, 1), totalPages);
+
+            var items = query
+                .OrderByDescending(x => x.VarientId)
+                .Skip((currentPage - 1) * pageSize)
+                .Take(pageSize)
+                .Select(x => new AdminStockExportVariantItemViewModel
+                {
+                    VariantId = x.VarientId,
+                    ImageUrl = x.Product != null ? x.Product.Image : null,
+                    ProductName = x.Product != null ? x.Product.Name : "N/A",
+                    Sku = x.Sku,
+                    AttributeSummary = x.Attributes ?? "N/A",
+                    SellPrice = x.Price,
+                    Stock = x.Stock ?? 0,
+                    CategoryName = x.Product != null && x.Product.Category != null ? x.Product.Category.Name : null
+                })
+                .ToList();
+
+            var model = new AdminStockExportIndexViewModel
+            {
+                Items = items,
+                Keyword = keyword,
+                CategoryId = categoryId,
+                Status = status,
+                StockFrom = stockFrom,
+                StockTo = stockTo,
+                Categories = _context.Categories.OrderBy(x => x.Name).ToList(),
+                Page = currentPage,
+                TotalPages = totalPages,
+                TotalItems = totalItems,
+                QueryString = BuildExportSelectionQueryString(keyword, categoryId, status, stockFrom, stockTo)
+            };
+
+            return View(model);
+        }
+
+        [HttpPost("ExportSelection")]
+        [ValidateAntiForgeryToken]
+        public IActionResult ExportSelection(string[] selectedVariantIds, string? keyword, int? categoryId, string? status, int? stockFrom, int? stockTo)
+        {
+            if (selectedVariantIds == null || selectedVariantIds.Length == 0)
+            {
+                TempData["error"] = "Vui lòng chọn ít nhất một biến thể để xuất Excel.";
+                return RedirectToAction(nameof(ExportSelection), new
+                {
+                    keyword,
+                    categoryId,
+                    status,
+                    stockFrom,
+                    stockTo
+                });
+            }
+
+            return ExportToExcel(selectedVariantIds);
+        }
+
+        private static string BuildExportSelectionQueryString(string? keyword, int? categoryId, string? status, int? stockFrom, int? stockTo)
+        {
+            var values = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                values.Add($"keyword={Uri.EscapeDataString(keyword)}");
+            }
+
+            if (categoryId.HasValue)
+            {
+                values.Add($"categoryId={categoryId.Value}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                values.Add($"status={Uri.EscapeDataString(status)}");
+            }
+
+            if (stockFrom.HasValue)
+            {
+                values.Add($"stockFrom={stockFrom.Value}");
+            }
+
+            if (stockTo.HasValue)
+            {
+                values.Add($"stockTo={stockTo.Value}");
+            }
+
+            return string.Join("&", values);
+        }
+
+        private async Task<AdminStockTransactionFormViewModel?> BuildTransactionFormModelAsync(int? productId, int? inventoryTransactionId)
+        {
+            InventoryTransactions? transaction = null;
+            Product? product;
+
+            if (inventoryTransactionId.HasValue)
+            {
+                transaction = await _context.InventoryTransactions
+                    .Include(x => x.Product)
+                    .ThenInclude(x => x.VarientProducts)
+                    .Include(x => x.InventoryTransactionsDetail)
+                    .FirstOrDefaultAsync(x => x.InventoryTransId == inventoryTransactionId.Value);
+
+                if (transaction == null || transaction.Product == null)
+                {
+                    return null;
+                }
+
+                product = transaction.Product;
+            }
+            else
+            {
+                if (!productId.HasValue)
+                {
+                    return null;
+                }
+
+                product = await _context.Products
+                    .Include(x => x.VarientProducts)
+                    .FirstOrDefaultAsync(x => x.ProductId == productId.Value);
+
+                if (product == null)
+                {
+                    return null;
+                }
+            }
+
+            var suppliers = await _context.Suppliers
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.Name)
+                .Select(x => new AdminStockSupplierOptionViewModel
+                {
+                    SupplierId = x.SupplierId,
+                    Code = x.Code,
+                    Name = x.Name
+                })
                 .ToListAsync();
 
-            var variant_return = variants.Select(variant => new VariantViewModel
+            var detailLookup = transaction?.InventoryTransactionsDetail.ToDictionary(x => x.VarientId, x => x.Quantity)
+                              ?? new Dictionary<int, int>();
 
+            return new AdminStockTransactionFormViewModel
             {
-
-                Id = variant.VarientId,
-
-                ProductId = variant.ProductId ?? 0, 
-
-                ProductName = variant.Product?.Name ?? "N/A", 
-
-                Sku = variant.Sku ?? "N/A", 
-
-                Attribute = variant.Attributes ?? "N/A", 
-
-                SellPrice = variant.Price ?? 0M, 
-
-                Stock = variant.Stock ?? 0,
-
-                ImageUrl = variant.Product.Image ?? "none.png",
-
-                CategoryName = variant.Product?.Category?.Name ?? "N/A" 
-
-            }).ToList();
-
-
-            return Json(variant_return);
+                InventoryTransId = transaction?.InventoryTransId,
+                ProductId = product.ProductId,
+                ProductName = product.Name,
+                ProductSku = product.Sku ?? string.Empty,
+                ProductImageUrl = product.Image,
+                Type = transaction?.Type ?? "Import",
+                SupplierId = transaction?.SupplierId,
+                Note = transaction?.Note,
+                Suppliers = suppliers,
+                Variants = product.VarientProducts
+                    .OrderBy(x => x.Sku)
+                    .Select(x => new AdminStockTransactionVariantViewModel
+                    {
+                        VariantId = x.VarientId,
+                        Sku = x.Sku,
+                        AttributeSummary = x.Attributes ?? "N/A",
+                        Price = x.Price,
+                        CurrentStock = x.Stock ?? 0,
+                        Quantity = detailLookup.TryGetValue(x.VarientId, out var quantity) ? quantity : 0
+                    })
+                    .ToList()
+            };
         }
+
+        private async Task RevertInventoryTransactionAsync(Product product, string oldType, IEnumerable<InventoryTransactionsDetail> oldDetails)
+        {
+            foreach (var detail in oldDetails)
+            {
+                var variant = product.VarientProducts.FirstOrDefault(x => x.VarientId == detail.VarientId);
+                if (variant == null)
+                {
+                    variant = await _context.VarientProducts.FirstOrDefaultAsync(x => x.VarientId == detail.VarientId);
+                    if (variant == null)
+                    {
+                        continue;
+                    }
+                }
+
+                if (string.Equals(oldType, "Import", StringComparison.OrdinalIgnoreCase))
+                {
+                    product.Stock -= detail.Quantity;
+                    variant.Stock = (variant.Stock ?? 0) - detail.Quantity;
+                }
+                else
+                {
+                    product.Stock += detail.Quantity;
+                    variant.Stock = (variant.Stock ?? 0) + detail.Quantity;
+                }
+            }
+        }
+
+        private static string ResolveStockStatus(int stock, string? currentStatus)
+        {
+            if (stock <= 0)
+            {
+                return "outstock";
+            }
+
+            if (string.Equals(currentStatus, "discontinued", StringComparison.OrdinalIgnoreCase))
+            {
+                return "discontinued";
+            }
+
+            if (string.Equals(currentStatus, "preorder", StringComparison.OrdinalIgnoreCase))
+            {
+                return "preorder";
+            }
+
+            return "available";
+        }
+
+        private static void CopyTransactionReturnState(AdminStockTransactionFormViewModel source, AdminStockTransactionFormViewModel target)
+        {
+            target.ReturnPage = source.ReturnPage;
+            target.ReturnPageSize = source.ReturnPageSize;
+            target.ReturnSku = source.ReturnSku;
+            target.ReturnName = source.ReturnName;
+            target.ReturnStatus = source.ReturnStatus;
+            target.ReturnCategoryId = source.ReturnCategoryId;
+            target.ReturnBrandId = source.ReturnBrandId;
+            target.ReturnStockFrom = source.ReturnStockFrom;
+            target.ReturnStockTo = source.ReturnStockTo;
+            target.ReturnSource = source.ReturnSource;
+            target.ReturnHistoryFilterCode = source.ReturnHistoryFilterCode;
+            target.ReturnHistoryFilterType = source.ReturnHistoryFilterType;
+            target.ReturnHistoryStartDate = source.ReturnHistoryStartDate;
+            target.ReturnHistoryEndDate = source.ReturnHistoryEndDate;
+        }
+
+        private static string BuildStockIndexQueryString(string? sku, string? name, string? status, int? categoryId, int? brandId, int? stockFrom, int? stockTo)
+        {
+            var values = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(sku))
+            {
+                values.Add($"sku={Uri.EscapeDataString(sku)}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                values.Add($"name={Uri.EscapeDataString(name)}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                values.Add($"status={Uri.EscapeDataString(status)}");
+            }
+
+            if (categoryId.HasValue)
+            {
+                values.Add($"categoryId={categoryId.Value}");
+            }
+
+            if (brandId.HasValue)
+            {
+                values.Add($"brandId={brandId.Value}");
+            }
+
+            if (stockFrom.HasValue)
+            {
+                values.Add($"stockFrom={stockFrom.Value}");
+            }
+
+            if (stockTo.HasValue)
+            {
+                values.Add($"stockTo={stockTo.Value}");
+            }
+
+            return string.Join("&", values);
+        }
+
         [HttpPost("ExportToExcel")]
         public IActionResult ExportToExcel([FromBody] string[] VariantIds)
         {

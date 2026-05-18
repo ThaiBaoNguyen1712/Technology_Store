@@ -2,12 +2,21 @@
 @{
     ViewData["Title"] = "Chỉnh sửa sản phẩm";
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+    var returnPage = (int?)ViewBag.ReturnPage ?? 1;
+    var returnPageSize = (int?)ViewBag.ReturnPageSize ?? 25;
+    var returnStatus = ViewBag.ReturnStatus as string;
+    var returnSkuKeyword = ViewBag.ReturnSkuKeyword as string;
+    var returnNameKeyword = ViewBag.ReturnNameKeyword as string;
+    var returnCategoryId = (int?)ViewBag.ReturnCategoryId;
+    var returnBrandId = (int?)ViewBag.ReturnBrandId;
+    var returnStockFrom = (int?)ViewBag.ReturnStockFrom;
+    var returnStockTo = (int?)ViewBag.ReturnStockTo;
 }
 <style>
 
 </style>
 
-<form asp-action="EditProduct" asp-controller="Product" method="post" enctype="multipart/form-data" id="ProductForm">
+<form asp-action="Update" asp-controller="Products" asp-area="Admin" method="post" enctype="multipart/form-data" id="ProductForm">
     <input type="hidden" name="ReturnPage" value="@((int?)ViewBag.ReturnPage ?? 1)" />
     <input type="hidden" name="ReturnPageSize" value="@((int?)ViewBag.ReturnPageSize ?? 25)" />
     <input type="hidden" name="ReturnStatus" value="@ViewBag.ReturnStatus" />
@@ -19,9 +28,16 @@
     <input type="hidden" name="ReturnStockTo" value="@ViewBag.ReturnStockTo" />
 
     <div class="container-fluid">
-        <h3 class="py-3 ms-3">
-            <i class="fas fa-box text-info pe-2"></i> Chỉnh Sửa Sản Phẩm
-        </h3>
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 py-3 ms-3">
+            <h3 class="mb-0">
+                <i class="fas fa-box text-info pe-2"></i> Chỉnh sửa sản phẩm
+            </h3>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="@Url.Action("Index", "Products", new { area = "Admin", page = returnPage, pageSize = returnPageSize, status = returnStatus, sku = returnSkuKeyword, name = returnNameKeyword, categoryId = returnCategoryId, brandId = returnBrandId, stockFrom = returnStockFrom, stockTo = returnStockTo })" class="btn btn-light border">
+                    Quay lại
+                </a>
+            </div>
+        </div>
         @Html.AntiForgeryToken()
         <div class="card mb-4">
             <div class="card-header">
@@ -179,13 +195,10 @@
         </div>
 
         <div class="card mb-4">
-            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="card-header">
                 <h5 class="mb-0">
                     <i class="fas fa-microchip text-info pe-2"></i>Thông số kỹ thuật
                 </h5>
-                <a href="/Admin/Settings/ProductSpecs" class="btn btn-outline-primary btn-sm">
-                    Quản lý bộ thông số
-                </a>
             </div>
             <div class="card-body">
                 @{
@@ -194,25 +207,32 @@
                 <div class="row g-3 align-items-end">
                     <div class="col-md-8">
                         <label class="form-label">Chọn thông số để thêm</label>
-                        <select class="form-control border selectpicker" id="specPicker" data-live-search="true" multiple data-actions-box="true">
-                            @foreach (var spec in ViewBag.Specs)
-                            {
-                                <option value="@spec.SpecId"
-                                        data-name="@spec.Name"
-                                        data-code="@spec.Code"
-                                        data-group="@spec.GroupName"
-                                        data-unit="@spec.Unit"
-                                        data-input="@spec.InputType"
-                                        data-sort="@spec.SortOrder"
-                                        data-description="@spec.Description">
-                                    @spec.Name (@(string.IsNullOrWhiteSpace(spec.GroupName as string) ? "Thông số chung" : spec.GroupName))
-                                </option>
-                            }
-                        </select>
+                        <div class="d-flex align-items-center gap-2 flex-nowrap">
+                            <div class="flex-grow-1 min-w-0">
+                                <select class="form-control border selectpicker" id="specPicker" data-live-search="true" multiple data-actions-box="true">
+                                    @foreach (var spec in ViewBag.Specs)
+                                    {
+                                        <option value="@spec.SpecId"
+                                                data-name="@spec.Name"
+                                                data-code="@spec.Code"
+                                                data-group="@spec.GroupName"
+                                                data-unit="@spec.Unit"
+                                                data-input="@spec.InputType"
+                                                data-sort="@spec.SortOrder"
+                                                data-description="@spec.Description">
+                                            @spec.Name (@(string.IsNullOrWhiteSpace(spec.GroupName as string) ? "Thông số chung" : spec.GroupName))
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                            <a href="/Admin/Settings/ProductSpecs" class="btn btn-outline-primary d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width:38px;min-width:38px;height:38px;padding:0;" title="Quản lý thông số">
+                                <i class="fa fa-plus"></i>
+                            </a>
+                        </div>
                     </div>
                     <div class="col-md-4">
                         <button type="button" class="btn btn-primary w-100" id="addSelectedSpecs">
-                            <i class="fas fa-plus me-2"></i>
+                            Thêm thông số đã chọn
                         </button>
                     </div>
                 </div>
@@ -333,18 +353,20 @@
                         <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Sử dụng các biến thể khác để phân biệt sản phẩm">
                             <i class="fas fa-info-circle text-info"></i>
                         </span>
-                        <div class="d-flex">
-                            <select name="VarientSelect" id="variantSelect" class="form-control border selectpicker" multiple="multiple" data-live-search="true">
-                                @foreach (var item in ViewBag.Attributes)
-                                {
-                                  <option value="@item.Code" @(ViewBag.Attributes_checked?.Contains(item.AttributeId) == true ? "selected" : "")>
-                                    @item.Name
-                                </option>
+                        <div class="d-flex align-items-center gap-2 flex-nowrap">
+                            <div class="flex-grow-1 min-w-0">
+                                <select name="VarientSelect" id="variantSelect" class="form-control border selectpicker" multiple="multiple" data-live-search="true">
+                                    @foreach (var item in ViewBag.Attributes)
+                                    {
+                                      <option value="@item.Code" @(ViewBag.Attributes_checked?.Contains(item.AttributeId) == true ? "selected" : "")>
+                                        @item.Name
+                                    </option>
 
-                                }
-                            </select>
-                            <a href="/Admin/Settings/ProductAttributes" class="btn btn-primary ms-2">
-                                <i class="fa fa-plus-circle"></i>
+                                    }
+                                </select>
+                            </div>
+                            <a href="/Admin/Settings/ProductAttributes" class="btn btn-outline-primary d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width:38px;min-width:38px;height:38px;padding:0;" title="Quản lý thuộc tính">
+                                <i class="fa fa-plus"></i>
                             </a>
                         </div>
                     </div>
@@ -366,22 +388,17 @@
                     }
 
                 </div>
-                <div class="table-responsive table-Varient mt-4" style="@(Model.VarientProducts.Any(s => !string.IsNullOrEmpty(s.Attributes)) ? "" : "display:none")">
-                    <table class="table table-hover table-striped">
-                        <thead>
-                            <tr class="table-primary text-center align-middle">
-                                <th class="fw-semibold">STT</th>
-                                <th class="fw-semibold">Biến thể thuộc tính</th>
-                                <th class="fw-semibold">Giá theo biến thể (đ)</th>
-                                <th class="fw-semibold">
-                                    SKU
-                                    <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Nếu chưa có mã SKU đầy đủ hãy copy SKU sản phẩm phía trên để bổ sung">
-                                        <i class="fas fa-info-circle text-info"></i>
-                                    </span>
-                                </th>
-                                <th class="fw-semibold">Hàng tồn kho theo biến thể</th>
-                                <th class="fw-semibold">Ảnh SP</th>
-                                <th class="fw-semibold">#</th>
+                <div class="table-responsive reusable-admin-table table-Varient mt-4" style="@(Model.VarientProducts.Any(s => !string.IsNullOrEmpty(s.Attributes)) ? "" : "display:none")">
+                    <table class="table table-hover align-middle product-form__variant-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 72px;">STT</th>
+                                <th>Biến thể</th>
+                                <th style="width: 180px;">Giá bán</th>
+                                <th style="width: 220px;">SKU</th>
+                                <th style="width: 160px;">Tồn kho</th>
+                                <th style="width: 240px;">Ảnh biến thể</th>
+                                <th style="width: 96px;" class="text-center">Xóa</th>
                             </tr>
                         </thead>
                         <tbody id="variantTableBody">
@@ -392,14 +409,14 @@
                             @foreach (var varient in Model.VarientProducts)
                             {
                                 <tr>
-                                    <td>@(index + 1)</td>
+                                    <td class="text-center fw-semibold">@(index + 1)</td>
                                     <td style="display:none">
                                         <input type="hidden" name="VarientProducts[@index].VarientId" value="@varient.VarientId" />
                                         <input type="hidden" name="VarientProducts[@index].ProductId" value="@varient.ProductId" />
                                         <input type="hidden" name="VarientProducts[@index].Attributes" value="@(varient.Attributes?.ToString() ?? "")" />
 
                                     </td>
-                                    <td>@varient.Attributes</td>
+                                    <td><div class="product-form__variant-name">@varient.Attributes</div></td>
                                     <td>
                                         <input type="number" class="form-control" name="VarientProducts[@index].Price" value="@varient.Price" />
                                     </td>
@@ -413,18 +430,18 @@
                                       <div class="d-flex flex-column align-items-center gap-2">
                                         @if(varient.ImageUrl!= null && varient.ImageUrl.Contains("http"))
                                             {
-                                                <img src="@varient.ImageUrl" alt="Product Image" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;">
+                                                <img src="@varient.ImageUrl" alt="Product Image" class="img-thumbnail product-form__variant-image" style="width:52px;height:52px;object-fit:cover;">
                                             }
                                             else
                                             {
-                                                <img src="~/Upload/Products/@varient.ImageUrl" alt="Product Image" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;">
+                                                <img src="~/Upload/Products/@varient.ImageUrl" alt="Product Image" class="img-thumbnail product-form__variant-image" style="width:52px;height:52px;object-fit:cover;">
 
                                             }
-                                        <input type="file" class="form-control form-control-sm" name="VarientProducts[@index].Image" accept="image/*" style="max-width: 200px;">
+                                        <input type="file" class="form-control form-control-sm" name="VarientProducts[@index].Image" accept="image/*">
                                       </div>
                                     </td>
-                                    <td>
-                                        <button id="delete-Variant" class="btn btn-sm btn-danger">Xóa</button>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-outline-danger delete-btn">Xóa</button>
                                     </td>
                                 </tr>
                                 index++;  // Tăng giá trị index sau mỗi lần lặp
@@ -482,7 +499,10 @@
             </div>
         </div>
 
-        <div class="text-end">
+        <div class="d-flex justify-content-end flex-wrap gap-2">
+            <button type="button" class="btn btn-outline-danger" id="deleteProductButton" data-product-id="@Model.ProductId">
+                Xóa sản phẩm
+            </button>
             <button type="submit" class="btn btn-primary">Cập nhật sản phẩm</button>
         </div>
     </div>
@@ -697,25 +717,25 @@ Ckeditor *@
                 var price = $('#sellPrice').val();
 
                 var row = $('<tr>');
-                row.append($('<td>').text(index + 1));
+                row.append($('<td class="text-center fw-semibold">').text(index + 1));
                 row.append($('<td style="display:none">').html(
                     '<input type="hidden" name="VarientProducts[' + index + '].Attributes" value="' + variantString + '"/>'
                 ));
-                row.append($('<td>').text(variantString));
+                row.append($('<td>').html('<div class="product-form__variant-name">' + variantString + '</div>'));
                 row.append($('<td>').html(
                     '<input type="number" class="form-control" name="VarientProducts[' + index + '].Price" value="' + price + '"/>'
                 ));
                 row.append($('<td>').html(
-                    '<input type="text" class="form-control" name="VarientProducts[' + index + '].Sku" value="' + sku + '"/>'
+                    '<input type="text" class="form-control" name="VarientProducts[' + index + '].Sku" value="' + sku + '" readonly/>'
                 ));
                 row.append($('<td>').html(
                     '<input type="number" class="form-control" name="VarientProducts[' + index + '].Stock" value="1" required/>'
                 ));
                 row.append($('<td>').html(
-                    '<input type="file" class="form-control form-control-sm" name="VarientProducts[' + index + '].Image"/>'
+                    '<input type="file" class="form-control form-control-sm" name="VarientProducts[' + index + '].Image" accept="image/*"/>'
                 ));
-                row.append($('<td style="width:10%">').html(
-                    '<i class="fas fa-trash delete-btn text-center text-danger" title="Xóa"></i>'
+                row.append($('<td class="text-center">').html(
+                    '<button type="button" class="btn btn-sm btn-outline-danger delete-btn" title="Xóa"><i class="fas fa-trash"></i></button>'
                 ));
 
                 tableBody.append(row);
@@ -935,6 +955,84 @@ Ckeditor *@
             $('[data-toggle="tooltip"]').tooltip();
         });
 
+    });
+</script>
+<script>
+    $(document).on('click', '#deleteProductButton', function () {
+        const productId = $(this).data('product-id');
+
+        Swal.fire({
+            title: 'Bạn có chắc chắn muốn xóa sản phẩm này?',
+            text: 'Hành động này không thể hoàn tác.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Xóa sản phẩm',
+            cancelButtonText: 'Hủy',
+            reverseButtons: true
+        }).then((result) => {
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            $('.loading-container').show();
+
+            $.ajax({
+                method: 'POST',
+                url: '/Admin/Products/Delete/' + productId,
+                success: function (response) {
+                    $('.loading-container').hide();
+
+                    if (!response.success) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Không thể xóa',
+                            text: response.message || 'Vui lòng thử lại sau.',
+                            confirmButtonText: 'OK'
+                        });
+                        return;
+                    }
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Đã xóa sản phẩm',
+                        text: response.message,
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        const params = new URLSearchParams();
+                        const returnStatus = $('input[name="ReturnStatus"]').val();
+                        const returnSku = $('input[name="ReturnSkuKeyword"]').val();
+                        const returnName = $('input[name="ReturnNameKeyword"]').val();
+                        const returnCategoryId = $('input[name="ReturnCategoryId"]').val();
+                        const returnBrandId = $('input[name="ReturnBrandId"]').val();
+                        const returnStockFrom = $('input[name="ReturnStockFrom"]').val();
+                        const returnStockTo = $('input[name="ReturnStockTo"]').val();
+                        const returnPage = $('input[name="ReturnPage"]').val();
+                        const returnPageSize = $('input[name="ReturnPageSize"]').val();
+
+                        if (returnStatus) params.set('status', returnStatus);
+                        if (returnSku) params.set('sku', returnSku);
+                        if (returnName) params.set('name', returnName);
+                        if (returnCategoryId) params.set('categoryId', returnCategoryId);
+                        if (returnBrandId) params.set('brandId', returnBrandId);
+                        if (returnStockFrom) params.set('stockFrom', returnStockFrom);
+                        if (returnStockTo) params.set('stockTo', returnStockTo);
+                        if (returnPage) params.set('page', returnPage);
+                        if (returnPageSize) params.set('pageSize', returnPageSize);
+
+                        window.location.href = '/Admin/Products' + (params.toString() ? '?' + params.toString() : '');
+                    });
+                },
+                error: function () {
+                    $('.loading-container').hide();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Đã xảy ra lỗi',
+                        text: 'Vui lòng thử lại sau.',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            });
+        });
     });
 </script>
 

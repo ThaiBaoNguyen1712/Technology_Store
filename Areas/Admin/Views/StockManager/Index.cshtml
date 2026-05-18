@@ -1,366 +1,246 @@
-﻿
+@model Tech_Store.Models.ViewModel.AdminStockIndexViewModel
+@using System.Globalization
+@using Tech_Store.Helpers
 @{
-    ViewData["Title"] = "Quản lý kho hàng";
+    ViewData["Title"] = "Quản lý kho";
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
 }
-@model IEnumerable<Tech_Store.Models.Product>
-@using System.Globalization;
-@using Tech_Store.Helpers
 
-<div class="container-fluid">
-    <h2 class="my-4">Quản lý kho hàng</h2>
-
-    <!-- Filter Section -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="row g-3">
-                <!-- Hàng 1: Thông tin cơ bản -->
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">SKU sản phẩm</label>
-                    <div class="input-group">
-                        <input type="text" class="form-control" placeholder="Nhập hoặc scan mã SKU" id="filterCode">
-                        <span class="input-group-text cursor-pointer" title="Quét mã vạch">
-                            <i class="fas fa-barcode"></i>
-                        </span>
-                    </div>
+<div class="py-3 stock-admin-page">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0 pb-0">
+            <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
+                <div>
+                    <h4 class="card-title mb-1">Tồn kho sản phẩm</h4>
                 </div>
-
-                <div class="col-md-5">
-                    <label class="form-label fw-semibold">Tên sản phẩm</label>
-                    <input type="text" class="form-control" placeholder="Nhập tên sản phẩm cần tìm" id="filterName">
-                </div>
-
-                <div class="col-md-4">
-                    <label class="form-label fw-semibold">Trạng thái</label>
-                    <select class="form-control border selectpicker" data-live-search="true" id="filterStatus">
-                        <option value="">Tất cả trạng thái</option>
-                        <option value="available">Sẵn hàng</option>
-                        <option value="outstock">Hết hàng</option>
-                        <option value="preorder">Yêu cầu đặt trước</option>
-                        <option value="discontinued">Ngưng bán</option>
-                    </select>
-                </div>
-
-                <!-- Hàng 2: Phân loại -->
-                <div class="col-md-4">
-                    <label class="form-label fw-semibold">Danh mục</label>
-                    <select class="form-control border selectpicker" data-live-search="true" id="filterCategory">
-                        <option value="">Tất cả danh mục</option>
-                        @foreach (var item in ViewBag.cate)
-                        {
-                            <option value="@item.CategoryId">@item.Name</option>
-                        }
-                    </select>
-                </div>
-
-                <div class="col-md-4">
-                    <label class="form-label fw-semibold">Thương hiệu</label>
-                    <select class="form-control border selectpicker" data-live-search="true" id="filterBrand">
-                        <option value="">Tất cả thương hiệu</option>
-                        @foreach (var item in ViewBag.brand)
-                        {
-                            <option value="@item.BrandId">@item.Name</option>
-                        }
-                    </select>
-                </div>
-
-                <!-- Hàng 3: Khoảng tồn kho -->
-                <div class="col-md-4">
-                    <label class="form-label fw-semibold">Khoảng tồn kho</label>
-                    <div class="input-group">
-                        <input type="number" class="form-control" placeholder="Từ" id="filterStockFrom">
-                        <span class="input-group-text">-</span>
-                        <input type="number" class="form-control" placeholder="Đến" id="filterStockTo">
-                    </div>
-                </div>
-
-                <!-- Nút tìm kiếm và reset -->
-                <div class="col-12 mt-4">
-                    <div class="d-flex gap-2 justify-content-end">
-                        <button type="button" class="btn btn-light px-4" id="btnReset">
-                            <i class="fas fa-redo me-1"></i> Đặt lại
-                        </button>
-                        <button type="button" class="btn btn-primary px-4" id="btnSearch">
-                            <i class="fas fa-search me-1"></i> Tìm kiếm
-                        </button>
-                    </div>
+                <div class="order-admin__header-meta">
+                    <span class="order-admin__header-pill">Tổng SKU gốc: @Model.TotalItems</span>
+                    <span class="order-admin__header-pill">Trang @Model.Page/@Model.TotalPages</span>
+                    <button type="button" class="btn btn-light border stock-admin-page__header-action" id="openStockQuickDrawer">
+                        Tác vụ kho
+                    </button>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Actions -->
-    <div class="mb-4">
-        <button class="btn btn-success" id="exportExcel" data-bs-toggle="modal" data-bs-target="#productModal">
-            <i class="fas fa-file-excel"></i> Xuất Excel
-        </button>
-        <a class="btn btn-light" href="~/Admin/StockManager/History">
-            <i class="fas fa-history"></i> Lịch sử
-        </a>
-        <span class="btn btn-outline-secondary disabled">
-            <i class="fas fa-barcode"></i> In mã theo từng sản phẩm ở bảng dưới
-        </span>
-    </div>
+        <div class="card-body">
+            <form method="get" action="/Admin/StockManager" class="brand-admin__filters order-admin__filters row g-3 align-items-end mb-4">
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">SKU sản phẩm</label>
+                    <input type="text" class="form-control" name="sku" value="@Model.Sku" placeholder="Nhập mã SKU..." />
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Tên sản phẩm</label>
+                    <input type="text" class="form-control" name="name" value="@Model.Name" placeholder="Nhập tên sản phẩm..." />
+                </div>
+                <div class="col-md-6 col-xl-2">
+                    <label class="form-label fw-semibold text-secondary">Trạng thái kho</label>
+                    <select class="form-select" name="status">
+                        <option value="">Tất cả trạng thái</option>
+                        @if (string.Equals(Model.Status, "available", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <option value="available" selected>Sẵn hàng</option>
+                        }
+                        else
+                        {
+                            <option value="available">Sẵn hàng</option>
+                        }
+                        @if (string.Equals(Model.Status, "outstock", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <option value="outstock" selected>Hết hàng</option>
+                        }
+                        else
+                        {
+                            <option value="outstock">Hết hàng</option>
+                        }
+                        @if (string.Equals(Model.Status, "preorder", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <option value="preorder" selected>Đặt trước</option>
+                        }
+                        else
+                        {
+                            <option value="preorder">Đặt trước</option>
+                        }
+                        @if (string.Equals(Model.Status, "discontinued", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <option value="discontinued" selected>Ngừng bán</option>
+                        }
+                        else
+                        {
+                            <option value="discontinued">Ngừng bán</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6 col-xl-2">
+                    <label class="form-label fw-semibold text-secondary">Danh mục</label>
+                    <select class="form-select" name="categoryId">
+                        <option value="">Tất cả danh mục</option>
+                        @foreach (var item in Model.Categories)
+                        {
+                            if (Model.CategoryId == item.CategoryId)
+                            {
+                                <option value="@item.CategoryId" selected>@item.Name</option>
+                            }
+                            else
+                            {
+                                <option value="@item.CategoryId">@item.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6 col-xl-2">
+                    <label class="form-label fw-semibold text-secondary">Thương hiệu</label>
+                    <select class="form-select" name="brandId">
+                        <option value="">Tất cả thương hiệu</option>
+                        @foreach (var item in Model.Brands)
+                        {
+                            if (Model.BrandId == item.BrandId)
+                            {
+                                <option value="@item.BrandId" selected>@item.Name</option>
+                            }
+                            else
+                            {
+                                <option value="@item.BrandId">@item.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6 col-xl-2">
+                    <label class="form-label fw-semibold text-secondary">Tồn từ</label>
+                    <input type="number" class="form-control" name="stockFrom" value="@Model.StockFrom" placeholder="0" min="0" />
+                </div>
+                <div class="col-md-6 col-xl-2">
+                    <label class="form-label fw-semibold text-secondary">Tồn đến</label>
+                    <input type="number" class="form-control" name="stockTo" value="@Model.StockTo" placeholder="999" min="0" />
+                </div>
+                <div class="col-12">
+                    <div class="admin-search-actions-row">
+                        <div class="admin-search-actions">
+                            <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+                            <a href="/Admin/StockManager" class="btn btn-light border">Làm mới</a>
+                        </div>
+                    </div>
+                </div>
+            </form>
 
-    <!-- Table -->
-    <div class="card-body">
-        <!-- Modal -->
-        <div class="table-responsive">
-            <table id="add-row" class="table table-striped table-hover">
-                <thead>
-                    <tr class="table-primary text-center align-middle">
-                        <th class="fw-semibold">Ảnh</th>
-                        <th class="fw-semibold">Tên</th>
-                        <th class="fw-semibold">SKU</th>
-                        <th class="fw-semibold">Thương Hiệu</th>
-                        <th class="fw-semibold">>Danh Mục</th>
-                        <th class="fw-semibold">Giá</th>
-                        <th class="fw-semibold">Số lượng</th>
-                        <th class="fw-semibold">Tình trạng</th>
-                        <th class="fw-semibold" style="width:14%">Thao tác</th>
-                    </tr>
-                </thead>
-
-                <tfoot>
-                    <tr>
-                        <th>Ảnh</th>
-                        <th>Tên</th>
-                        <th>SKU</th>
-                        <th>Thương Hiệu</th>
-                        <th>Danh Mục</th>
-                        <th>Giá</th>
-                        <th>Số lượng</th>
-                        <th>Tình trạng</th>
-                        <th>Action</th>
-                    </tr>
-                </tfoot>
-                <tbody id="productList">
-                    @if (Model != null)
-                    {
-                        @foreach (var product in Model)
+            <div class="table-responsive reusable-admin-table">
+                <table class="table table-hover align-middle stock-admin-page__table mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 72px;">Ảnh</th>
+                            <th>Sản phẩm</th>
+                            <th style="width: 140px;">SKU</th>
+                            <th style="width: 150px;">Thương hiệu</th>
+                            <th style="width: 150px;">Danh mục</th>
+                            <th style="width: 150px;">Giá bán</th>
+                            <th style="width: 90px;">Tồn</th>
+                            <th style="width: 160px;">Trạng thái</th>
+                            <th style="width: 200px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Items.Count == 0)
                         {
                             <tr>
-                                <td>
-                                    @if (string.IsNullOrEmpty(product.Image))
-                                    {
-                                        <img src="~/Upload/Products/no-image.png" alt="No Image" style="width: 50px; height: 50px; object-fit: cover;" loading="lazy">
-                                    }
-                                    else if(product.Image.Contains("http"))
-                                    {
-                                        <img src="@ResizeCDN.Cdn(product.Image, 50, 50)" alt="@product.Name" style="width: 50px; height: 50px; object-fit: cover;" loading="lazy">
-                                    }
-                                    else
-                                    {
-                                        <img src="~/Upload/Products/@product.Image" alt="@product.Name" style="width: 50px; height: 50px; object-fit: cover;" loading="lazy">
-                                    }
-
-                                </td>
-                                <td>@product.Name</td>
-                                <td>@product.Sku</td>
-                                <td>@product.Brand?.Name</td>
-                                <td>@product.Category?.Name</td>
-                                <td style="white-space:nowrap">@product.SellPrice?.ToString("C0", new CultureInfo("vi-VN"))</td>
-                                <td class="text-center">@product.Stock</td>
-                                <td>
-                                    <span class="badge @(product.Status == "available" ? "bg-success" :
-                                    product.Status == "outstock" ? "bg-danger" :
-                                    product.Status == "preorder" ? "bg-warning" :
-                                    product.Status == "discontinued" ? "bg-secondary" :
-                                    "bg-dark")">
-                                        @(product.Status == "available" ? "Sẵn hàng" :
-                                            product.Status == "outstock" ? "Hết hàng" :
-                                            product.Status == "preorder" ? "Đặt trước" :
-                                            product.Status == "discontinued" ? "Ngừng bán" :
-                                            "Không xác định")
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="form-button-action gap-1">
-                                        <button type="button" class="btn btn-link btn-danger btn-get" data-itemid="@product.ProductId" data-bs-toggle="modal" data-bs-target="#ImExportModal" title="Nhập/Xuất kho">
-                                            <i class="fa fa-plus-circle"></i>
-                                        </button>
-                                        <a href="/Admin/Products/GenerateCode/@product.ProductId" class="btn btn-link btn-primary" title="In mã sản phẩm">
-                                            <i class="fa fa-barcode"></i>
-                                        </a>
-                                    </div>
+                                <td colspan="9" class="text-center text-muted py-5">
+                                    Không tìm thấy sản phẩm phù hợp với bộ lọc hiện tại.
                                 </td>
                             </tr>
                         }
-                    }
-                </tbody>
-            </table>
+                        else
+                        {
+                            foreach (var product in Model.Items)
+                            {
+                                var statusLabel = product.Status switch
+                                {
+                                    "available" => "Sẵn hàng",
+                                    "outstock" => "Hết hàng",
+                                    "preorder" => "Đặt trước",
+                                    "discontinued" => "Ngừng bán",
+                                    _ => "Không xác định"
+                                };
+                                var imageSource = string.IsNullOrEmpty(product.ImageUrl)
+                                    ? Url.Content("~/Upload/Products/no-image.png")
+                                    : product.ImageUrl!.Contains("http", StringComparison.OrdinalIgnoreCase)
+                                        ? ResizeCDN.Cdn(product.ImageUrl, 48, 48)
+                                        : Url.Content($"~/Upload/Products/{product.ImageUrl}");
+
+                                <tr>
+                                    <td>
+                                        <div class="brand-admin__logo-shell">
+                                            <img src="@imageSource" alt="@product.Name" class="brand-admin__logo" loading="lazy" />
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="stock-admin-page__product-name">@product.Name</div>
+                                    </td>
+                                    <td>@product.Sku</td>
+                                    <td>@(string.IsNullOrWhiteSpace(product.BrandName) ? "-" : product.BrandName)</td>
+                                    <td>@(string.IsNullOrWhiteSpace(product.CategoryName) ? "-" : product.CategoryName)</td>
+                                    <td class="order-admin__amount">@(product.SellPrice?.ToString("C0", new CultureInfo("vi-VN")) ?? "-")</td>
+                                    <td>@product.Stock</td>
+                                    <td>
+                                        <div class="order-admin__state">
+                                            <span class="order-admin__state-dot @($"order-admin__state-dot--{product.Status?.ToLowerInvariant()}")"></span>
+                                            <div class="order-admin__state-body">
+                                                <strong>@statusLabel</strong>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="stock-admin-page__row-actions">
+                                            <a href="@Url.Action("CreateTransaction", "StockManager", new { area = "Admin", productId = product.ProductId, returnPage = Model.Page, returnSku = Model.Sku, returnName = Model.Name, returnStatus = Model.Status, returnCategoryId = Model.CategoryId, returnBrandId = Model.BrandId, returnStockFrom = Model.StockFrom, returnStockTo = Model.StockTo })"
+                                               class="btn btn-light border btn-sm">
+                                                Nhập / xuất kho
+                                            </a>
+                                            <a href="/Admin/Products/GenerateCode/@product.ProductId" class="btn btn-light border btn-sm">
+                                                In mã
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @await Html.PartialAsync("~/Areas/Admin/Views/Shared/_ManualPagination.cshtml", new Tech_Store.Models.ViewModel.ManualPaginationViewModel
+            {
+                CurrentPage = Model.Page,
+                TotalPages = Model.TotalPages,
+                BaseUrl = "/Admin/StockManager",
+                QueryString = Model.QueryString
+            })
         </div>
     </div>
 </div>
-@Html.Partial("ModalAddHistory")
-@Html.Partial("ModalImExport")
 
+@await Html.PartialAsync("~/Areas/Admin/Views/Shared/_AdminRightDrawer.cshtml", new Tech_Store.Models.ViewModel.AdminRightDrawerViewModel
+{
+    DrawerId = "stockQuickDrawer",
+    Title = "Tác vụ kho hàng",
+    BodyId = "stockQuickDrawerBody",
+    WidthClass = "admin-right-drawer--lg"
+})
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<div class="d-none" id="stockQuickDrawerTemplate">
+    @await Html.PartialAsync("~/Areas/Admin/Views/StockManager/_QuickDrawerContent.cshtml", Model)
+</div>
+
 <script>
     $(document).ready(function () {
-        $('#btnSearch').on('click', function () {
-            var filterData = {
-                sku: $('#filterCode').val(),
-                name: $('#filterName').val(),
-                status: $('#filterStatus').val(),
-                categoryId: $('#filterCategory').val(),
-                brandId: $('#filterBrand').val(),
-                stockFrom: $('#filterStockFrom').val(),
-                stockTo: $('#filterStockTo').val()
-            };
-            var table = $("#add-row").DataTable();
-            $.ajax({
-                url: '/Admin/StockManager/Filter',
-                type: 'POST',
-                data: filterData,
-                success: function (response) {
-                    $('#productList').empty();
-                    // Xóa dữ liệu cũ trong DataTable
-                    table.clear();
+        const drawerElement = document.getElementById('stockQuickDrawer');
+        const drawerBody = $('#stockQuickDrawerBody');
+        const stockDrawer = drawerElement ? bootstrap.Offcanvas.getOrCreateInstance(drawerElement) : null;
 
-                    response.forEach(function (product) {
-                        // Xác định màu sắc và tên trạng thái
-                        var statusClass = product.status === "available" ? "bg-success" :
-                            product.status === "outstock" ? "bg-danger" :
-                                product.status === "preorder" ? "bg-warning" :
-                                    product.status === "discontinued" ? "bg-secondary" :
-                                        "bg-dark";
+        $('#openStockQuickDrawer').on('click', function () {
+            if (!stockDrawer) {
+                return;
+            }
 
-                        var statusText = product.status === "available" ? "Còn hàng" :
-                            product.status === "outstock" ? "Hết hàng" :
-                                product.status === "preorder" ? "Đặt trước" :
-                                    product.status === "discontinued" ? "Ngừng bán" :
-                                        "Không xác định";
-
-                            // Chuỗi HTML cho mỗi hàng sản phẩm
-                        // Thêm hàng vào DataTable
-                        table.row.add([
-                            `<img src="${product.image.startsWith('http') ? product.image : `/Upload/Products/${product.image}`}"
-                                    loading="lazy"
-                                    style="width:50px;height:50px;object-fit:cover;">`,
-                            product.name,
-                            product.sku,
-                            product.brandName || '',
-                            product.categoryName || '',
-                            product.sellPrice ? product.sellPrice.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' }) : '',
-                            product.stock,
-                            `<span class="badge ${statusClass}">${statusText}</span>`,
-                            `<div class="form-button-action gap-1">
-                                     <button type="button" class="btn btn-link btn-danger btn-get" data-itemid="${product.productId}" data-bs-toggle="modal" data-bs-target="#ImExportModal" title="Nhập/Xuất kho">
-                                                <i class="fa fa-plus-circle"></i>
-                                            </button>
-                                     <a href="/Admin/Products/GenerateCode/${product.productId}" class="btn btn-link btn-primary" title="In mã sản phẩm">
-                                                <i class="fa fa-barcode"></i>
-                                     </a>
-                            </div>`
-                        ]);
-                    });
-
-                    // Cập nhật lại DataTable sau khi thêm dữ liệu
-                    table.draw();
-                },
-                error: function (error) {
-                    console.error("Error fetching data", error);
-                }
-            });
-        });
-
-        // Đặt lại các bộ lọc khi nhấn nút "Đặt lại"
-        $('#btnReset').on('click', function () {
-            $('#filterCode').val('');
-            $('#filterName').val('');
-            $('#filterStatus').val('');
-            $('#filterCategory').val('');
-            $('#filterBrand').val('');
-            $('#filterStockFrom').val('');
-            $('#filterStockTo').val('');
-        });
-
-        $('.btn-get').on('click', function () {
-            var id = $(this).data('itemid'); // 'data-itemid' thay vì 'data-id'
-
-            $('.loading-container').show();
-            $.ajax({
-                method: "GET",
-                url: "/admin/StockManager/GetProduct/" + id,
-                success: function (response) {
-                    $('.loading-container').hide();
-                    $('#skuProduct').text(response.product.sku);
-                    $('#nameProduct').text(response.product.name);
-                    $('#load-varient').empty();
-                    $('#ImExportModal').data('product-id',response.product.productId);
-                    // Duyệt qua từng biến thể sản phẩm và thêm vào bảng
-                    response.product.varientProducts.forEach(function (variant) {
-                        // Tạo một hàng <tr> mới với dữ liệu từ variant
-                            var row = `
-                                <tr>
-                                    <td>${variant.sku}</td>
-                                    <td>${variant.attributes}</td>
-                                    <td>${variant.price.toLocaleString()}</td>
-                                    <td>${variant.stock}</td>
-                                    <td>
-                                        <input type="number" class="form-control" />
-                                    </td>
-                                    <td class="text-center">
-                                        <input type="checkbox" min="0" name="name" class="" value="${variant.varientId}" />
-                                    </td>
-                                </tr>
-                            `;
-
-                        // Thêm hàng mới vào tbody
-                        $('#load-varient').append(row);
-                    });
-                },
-                error: function (response) {
-                    $('.loading-container').hide();
-                    alert(response.message);
-                }
-            });
-        });
-        $('#exportExcel').on('click', function () {
-            var table = $("#add-row-child").DataTable();
-
-            $.ajax({
-                method: 'GET',
-                url: '/admin/StockManager/GetVariantProduct',
-                success: function (response) {
-                    if (response) {
-                        // Xóa dữ liệu cũ trong DataTable
-                        table.clear();
-
-                        // Duyệt qua từng phần tử trong response và thêm vào DataTable
-                        response.forEach(function (variant) {
-                            table.row.add([
-                                '<input type="checkbox" name="selectVariant" value="' + variant.id + '">', // Cột "Chọn"
-                                variant.sku, // Cột SKU
-                                   '<img src="' + (variant.imageUrl?.startsWith("http") ? variant.imageUrl : '/Upload/Products/' + variant.imageUrl)
-                                        + '" alt="' + variant.productName + '" style="width:50px;height:50px;object-fit:cover;" loading="lazy">',
-                                variant.productName, // Cột Tên sản phẩm
-                                variant.attribute, // Cột Biến thể sản phẩm
-                                variant.sellPrice.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' }), // Cột Đơn giá
-                                variant.stock // Cột SL
-                            ]);
-                        });
-
-                        // Cập nhật lại DataTable để hiển thị dữ liệu mới
-                        table.draw();
-                    }
-                },
-                error: function () {
-                    alert('Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại!');
-                }
-            });
-        });
-
-        // Sự kiện khi modal bị ẩn
-        $('#ImExportModal').on('hidden.bs.modal', function () {
-            // Đặt lại các trường trong modal khi ẩn
-            $('#skuProduct').text("");
-            $('#nameProduct').text("");
-      
-            $('.loading-container').hide();
+            drawerBody.html($('#stockQuickDrawerTemplate').html());
+            stockDrawer.show();
         });
     });
-
 </script>

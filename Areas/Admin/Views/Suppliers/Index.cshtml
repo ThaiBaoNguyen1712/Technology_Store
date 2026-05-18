@@ -1,0 +1,208 @@
+@model Tech_Store.Models.ViewModel.AdminSupplierIndexViewModel
+@{
+    ViewData["Title"] = "Nhà cung cấp";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+}
+
+<div class="py-3 supplier-admin-page">
+    @Html.AntiForgeryToken()
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0 pb-0">
+            <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
+                <div>
+                    <h4 class="card-title mb-1">Danh sách nhà cung cấp</h4>
+                </div>
+                <div class="order-admin__header-meta">
+                    <span class="order-admin__header-pill">Tổng nhà cung cấp: @Model.TotalItems</span>
+                    <span class="order-admin__header-pill">Trang @Model.Page/@Model.TotalPages</span>
+                    <a class="btn btn-primary" href="@Url.Action("Form", "Suppliers", new { area = "Admin", page = Model.Page, code = Model.Code, name = Model.Name, phoneNumber = Model.PhoneNumber, status = Model.Status })">
+                        <i class="fa fa-plus me-1"></i>
+                        Thêm nhà cung cấp
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <form method="get" class="brand-admin__filters order-admin__filters row g-3 align-items-end mb-4">
+                <input type="hidden" name="page" value="1" />
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Mã nhà cung cấp</label>
+                    <input type="text" class="form-control" name="code" value="@Model.Code" placeholder="Nhập mã NCC..." />
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Tên / người liên hệ</label>
+                    <input type="text" class="form-control" name="name" value="@Model.Name" placeholder="Nhập tên NCC hoặc người liên hệ..." />
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Số điện thoại</label>
+                    <input type="text" class="form-control" name="phoneNumber" value="@Model.PhoneNumber" placeholder="Nhập số điện thoại..." />
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Trạng thái</label>
+                    <select class="form-select" name="status">
+                        <option value="">Tất cả trạng thái</option>
+                        @if (Model.Status == "true")
+                        {
+                            <option value="true" selected>Đang hợp tác</option>
+                            <option value="false">Ngưng hợp tác</option>
+                        }
+                        else if (Model.Status == "false")
+                        {
+                            <option value="true">Đang hợp tác</option>
+                            <option value="false" selected>Ngưng hợp tác</option>
+                        }
+                        else
+                        {
+                            <option value="true">Đang hợp tác</option>
+                            <option value="false">Ngưng hợp tác</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-12">
+                    <div class="admin-search-actions-row">
+                        <div class="admin-search-actions">
+                            <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+                            <a href="/Admin/Suppliers" class="btn btn-light border">Làm mới</a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <div class="table-responsive reusable-admin-table">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 140px;">Mã NCC</th>
+                            <th>Nhà cung cấp</th>
+                            <th style="width: 160px;">Liên hệ</th>
+                            <th>Địa chỉ</th>
+                            <th style="width: 120px;">Phiếu kho</th>
+                            <th style="width: 160px;">Trạng thái</th>
+                            <th style="width: 160px;">Cập nhật</th>
+                            <th style="width: 120px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Suppliers.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-5">Không có nhà cung cấp phù hợp với bộ lọc hiện tại.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var supplier in Model.Suppliers)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold text-dark">@supplier.Code</div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold text-dark">@supplier.Name</div>
+                                        <div class="small text-muted">@(string.IsNullOrWhiteSpace(supplier.ContactName) ? "Chưa có người liên hệ" : supplier.ContactName)</div>
+                                    </td>
+                                    <td>
+                                        <div class="user-admin__contact">
+                                            <strong>@(string.IsNullOrWhiteSpace(supplier.PhoneNumber) ? "-" : supplier.PhoneNumber)</strong>
+                                            <span>@(string.IsNullOrWhiteSpace(supplier.Email) ? "-" : supplier.Email)</span>
+                                        </div>
+                                    </td>
+                                    <td class="text-muted">@(string.IsNullOrWhiteSpace(supplier.Address) ? "-" : supplier.Address)</td>
+                                    <td>
+                                        <div class="fw-semibold text-dark">@supplier.TransactionCount</div>
+                                        <div class="small text-muted">phiếu liên quan</div>
+                                    </td>
+                                    <td>
+                                        <div class="order-admin__state">
+                                            <span class="order-admin__state-dot @(supplier.IsActive ? "order-admin__state-dot--success" : "order-admin__state-dot--danger")"></span>
+                                            <div class="order-admin__state-body">
+                                                <strong>@(supplier.IsActive ? "Đang hợp tác" : "Ngưng hợp tác")</strong>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="text-dark">@(supplier.UpdatedAt?.ToString("dd/MM/yyyy") ?? "-")</div>
+                                        <div class="small text-muted">@(supplier.UpdatedAt?.ToString("HH:mm:ss") ?? "-")</div>
+                                    </td>
+                                    <td>
+                                        <div class="form-button-action justify-content-center">
+                                            <a href="@Url.Action("Form", "Suppliers", new { area = "Admin", id = supplier.SupplierId, page = Model.Page, code = Model.Code, name = Model.Name, phoneNumber = Model.PhoneNumber, status = Model.Status })"
+                                               class="btn btn-link btn-primary btn-lg"
+                                               title="Cập nhật">
+                                                <i class="fa fa-edit"></i>
+                                            </a>
+                                            <button type="button"
+                                                    class="btn btn-link btn-danger"
+                                                    data-role="remove-supplier"
+                                                    data-id="@supplier.SupplierId"
+                                                    data-name="@supplier.Name"
+                                                    title="Xóa">
+                                                <i class="fa fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @await Html.PartialAsync("~/Areas/Admin/Views/Shared/_ManualPagination.cshtml", new Tech_Store.Models.ViewModel.ManualPaginationViewModel
+            {
+                CurrentPage = Model.Page,
+                TotalPages = Model.TotalPages,
+                BaseUrl = "/Admin/Suppliers",
+                QueryString = Model.QueryString
+            })
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        const antiForgeryToken = $('input[name="__RequestVerificationToken"]').val();
+
+        $(document).on('click', '[data-role="remove-supplier"]', function () {
+            const supplierId = $(this).data('id');
+            const supplierName = $(this).data('name');
+
+            Swal.fire({
+                title: 'Xóa nhà cung cấp?',
+                text: `Bạn đang chuẩn bị xóa "${supplierName}". Hành động này không thể hoàn tác.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Xóa',
+                cancelButtonText: 'Hủy',
+                confirmButtonColor: '#d33'
+            }).then((result) => {
+                if (!result.isConfirmed) {
+                    return;
+                }
+
+                $('.loading-container').show();
+
+                $.ajax({
+                    method: 'DELETE',
+                    url: `/Admin/Suppliers/Delete/${supplierId}`,
+                    headers: {
+                        "RequestVerificationToken": antiForgeryToken
+                    },
+                    success: function () {
+                        $('.loading-container').hide();
+                        location.reload();
+                    },
+                    error: function (xhr) {
+                        $('.loading-container').hide();
+                        const message = xhr.responseJSON && xhr.responseJSON.message
+                            ? xhr.responseJSON.message
+                            : 'Không thể xóa nhà cung cấp.';
+                        Swal.fire('Lỗi', message, 'error');
+                    }
+                });
+            });
+        });
+    });
+</script>

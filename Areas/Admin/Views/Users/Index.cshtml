@@ -133,6 +133,8 @@
                             <th style="width: 120px;">Đơn hàng</th>
                             <th style="width: 170px;">Doanh số</th>
                             <th style="width: 170px;">Kích hoạt</th>
+                            <th style="width: 180px;">Đăng nhập gần nhất</th>
+                            <th style="width: 180px;">Request gần nhất</th>
                             <th style="width: 150px;">Ngày tạo</th>
                             <th style="width: 140px;">Thao tác</th>
                         </tr>
@@ -141,7 +143,7 @@
                         @if (Model.Users.Count == 0)
                         {
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-5">
+                                <td colspan="10" class="text-center text-muted py-5">
                                     Không có khách hàng phù hợp với bộ lọc hiện tại.
                                 </td>
                             </tr>
@@ -218,6 +220,18 @@
                                             <div class="order-admin__state-body">
                                                 <strong>@(user.IsActive ? "Đã kích hoạt" : "Chưa kích hoạt")</strong>
                                             </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="text-dark">@(user.LastLogin?.ToString("dd/MM/yyyy HH:mm") ?? "-")</div>
+                                        <div class="small text-muted text-truncate" title="@user.LastLoginIp">
+                                            @(string.IsNullOrWhiteSpace(user.LastLoginIp) ? "-" : user.LastLoginIp)
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="text-dark">@(user.LastRequestAt?.ToString("dd/MM/yyyy HH:mm") ?? "-")</div>
+                                        <div class="small text-muted text-truncate" title="@user.LastRequestIp">
+                                            @(string.IsNullOrWhiteSpace(user.LastRequestIp) ? "-" : user.LastRequestIp)
                                         </div>
                                     </td>
                                     <td>

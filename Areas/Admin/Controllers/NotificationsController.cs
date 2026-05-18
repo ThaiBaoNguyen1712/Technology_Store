@@ -64,6 +64,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                 int id_user = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
                 //Đánh dấu đã đọc chỉ cho những thông báo chưa được đọc
                 var notification = await _context.UserNotifications.FirstOrDefaultAsync(un => un.UserNotificationId == id
+                && un.UserId == id_user
                 && (un.IsRead == null || un.IsRead == false));
 
                 if (notification == null)

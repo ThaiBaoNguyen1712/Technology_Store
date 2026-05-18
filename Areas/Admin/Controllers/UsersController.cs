@@ -31,6 +31,10 @@ namespace Tech_Store.Areas.Admin.Controllers
             public bool IsVerified { get; set; }
             public DateTime? CreatedAt { get; set; }
             public DateTime? LastLogin { get; set; }
+            public string? LastLoginIp { get; set; }
+            public string? LastLoginDevice { get; set; }
+            public DateTime? LastRequestAt { get; set; }
+            public string? LastRequestIp { get; set; }
             public int OrderCount { get; set; }
             public decimal TotalSpent { get; set; }
         }
@@ -58,6 +62,10 @@ namespace Tech_Store.Areas.Admin.Controllers
                     IsVerified = x.IsVerified ?? false,
                     CreatedAt = x.CreatedAt,
                     LastLogin = x.LastLogin,
+                    LastLoginIp = x.LastLoginIp,
+                    LastLoginDevice = x.LastLoginDevice,
+                    LastRequestAt = x.LastRequestAt,
+                    LastRequestIp = x.LastRequestIp,
                     OrderCount = x.Orders.Count(),
                     TotalSpent = x.Orders.Sum(o => (decimal?)o.TotalAmount) ?? 0m
                 });
@@ -161,6 +169,11 @@ namespace Tech_Store.Areas.Admin.Controllers
                     x.UserId,
                     x.CreatedAt,
                     x.LastLogin,
+                    x.LastLoginIp,
+                    x.LastLoginDevice,
+                    x.LastRequestAt,
+                    x.LastRequestIp,
+                    x.LastRequestDevice,
                     IsVerified = x.IsVerified ?? false,
                     OrderCount = x.Orders.Count(),
                     TotalSpent = x.Orders.Sum(o => (decimal?)o.TotalAmount) ?? 0m,
@@ -181,6 +194,11 @@ namespace Tech_Store.Areas.Admin.Controllers
             model.TotalSpent = detail.TotalSpent;
             model.CreatedAt = detail.CreatedAt;
             model.LastLogin = detail.LastLogin;
+            model.LastLoginIp = detail.LastLoginIp;
+            model.LastLoginDevice = detail.LastLoginDevice;
+            model.LastRequestAt = detail.LastRequestAt;
+            model.LastRequestIp = detail.LastRequestIp;
+            model.LastRequestDevice = detail.LastRequestDevice;
             model.IsVerified = detail.IsVerified;
             model.Province ??= detail.Province;
             model.District ??= detail.District;
@@ -259,7 +277,12 @@ namespace Tech_Store.Areas.Admin.Controllers
                     IsActive = x.IsActive,
                     OrderCount = x.OrderCount,
                     TotalSpent = x.TotalSpent,
-                    CreatedAt = x.CreatedAt
+                    CreatedAt = x.CreatedAt,
+                    LastLogin = x.LastLogin,
+                    LastLoginIp = x.LastLoginIp ?? string.Empty,
+                    LastLoginDevice = x.LastLoginDevice ?? string.Empty,
+                    LastRequestAt = x.LastRequestAt,
+                    LastRequestIp = x.LastRequestIp ?? string.Empty
                 })
                 .ToListAsync();
 
@@ -343,6 +366,11 @@ namespace Tech_Store.Areas.Admin.Controllers
                     TotalSpent = x.Orders.Sum(o => (decimal?)o.TotalAmount) ?? 0m,
                     CreatedAt = x.CreatedAt,
                     LastLogin = x.LastLogin,
+                    LastLoginIp = x.LastLoginIp,
+                    LastLoginDevice = x.LastLoginDevice,
+                    LastRequestAt = x.LastRequestAt,
+                    LastRequestIp = x.LastRequestIp,
+                    LastRequestDevice = x.LastRequestDevice,
                     AddressLine = x.Addresses.OrderByDescending(a => a.UpdatedAt ?? a.CreatedAt).Select(a => a.AddressLine).FirstOrDefault(),
                     Ward = x.Addresses.OrderByDescending(a => a.UpdatedAt ?? a.CreatedAt).Select(a => a.Ward).FirstOrDefault(),
                     District = x.Addresses.OrderByDescending(a => a.UpdatedAt ?? a.CreatedAt).Select(a => a.District).FirstOrDefault(),

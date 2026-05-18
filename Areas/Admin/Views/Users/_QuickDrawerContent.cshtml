@@ -54,6 +54,26 @@
                 <span>Đăng nhập gần nhất</span>
                 <strong>@(Model.LastLogin?.ToString("dd/MM/yyyy HH:mm") ?? "-")</strong>
             </div>
+            <div class="order-drawer__info-row">
+                <span>Thiết bị đăng nhập</span>
+                <strong>@(string.IsNullOrWhiteSpace(Model.LastLoginDevice) ? "-" : Model.LastLoginDevice)</strong>
+            </div>
+            <div class="order-drawer__info-row">
+                <span>IP đăng nhập</span>
+                <strong>@(string.IsNullOrWhiteSpace(Model.LastLoginIp) ? "-" : Model.LastLoginIp)</strong>
+            </div>
+            <div class="order-drawer__info-row">
+                <span>Request gần nhất</span>
+                <strong>@(Model.LastRequestAt?.ToString("dd/MM/yyyy HH:mm") ?? "-")</strong>
+            </div>
+            <div class="order-drawer__info-row">
+                <span>Thiết bị request</span>
+                <strong>@(string.IsNullOrWhiteSpace(Model.LastRequestDevice) ? "-" : Model.LastRequestDevice)</strong>
+            </div>
+            <div class="order-drawer__info-row">
+                <span>IP request</span>
+                <strong>@(string.IsNullOrWhiteSpace(Model.LastRequestIp) ? "-" : Model.LastRequestIp)</strong>
+            </div>
         </div>
     </section>
 

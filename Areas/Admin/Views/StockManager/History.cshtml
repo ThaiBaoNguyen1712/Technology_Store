@@ -23,6 +23,9 @@
 
         <div class="card-body">
             <form method="get" action="/Admin/StockManager/History" class="brand-admin__filters order-admin__filters row g-3 align-items-end mb-4">
+                <input type="hidden" name="page" value="1" />
+                <input type="hidden" name="pageSize" value="@Model.PageSize" />
+
                 <div class="col-md-6 col-xl-3">
                     <label class="form-label fw-semibold text-secondary">Từ ngày</label>
                     <input type="date" class="form-control" name="startDate" value="@(Model.StartDate?.ToString("yyyy-MM-dd"))" />
@@ -34,35 +37,58 @@
                 <div class="col-md-6 col-xl-3">
                     <label class="form-label fw-semibold text-secondary">Loại phiếu</label>
                     <select class="form-select" name="filterType">
-                        <option value="" selected="@string.IsNullOrWhiteSpace(Model.FilterType)">Tất cả loại phiếu</option>
-                        <option value="import" selected="@string.Equals(Model.FilterType, "import", StringComparison.OrdinalIgnoreCase)">Nhập kho</option>
-                        <option value="export" selected="@string.Equals(Model.FilterType, "export", StringComparison.OrdinalIgnoreCase)">Xuất kho</option>
+                        <option value="">Tất cả loại phiếu</option>
+                        @if (string.Equals(Model.FilterType, "import", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <option value="import" selected>Nhập kho</option>
+                            <option value="export">Xuất kho</option>
+                        }
+                        else if (string.Equals(Model.FilterType, "export", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <option value="import">Nhập kho</option>
+                            <option value="export" selected>Xuất kho</option>
+                        }
+                        else
+                        {
+                            <option value="import">Nhập kho</option>
+                            <option value="export">Xuất kho</option>
+                        }
                     </select>
                 </div>
                 <div class="col-md-6 col-xl-3">
                     <label class="form-label fw-semibold text-secondary">Mã phiếu / SKU / tên sản phẩm</label>
-                    <input type="text"
-                           class="form-control"
-                           name="filterCode"
-                           value="@Model.FilterCode"
-                           placeholder="Nhập mã phiếu, SKU hoặc tên sản phẩm..." />
+                    <input type="text" class="form-control" name="filterCode" value="@Model.FilterCode" placeholder="Nhập mã phiếu, SKU hoặc tên sản phẩm..." />
                 </div>
-                <div class="col-12 col-xl-4 ms-xl-auto">
-                    <div class="order-admin__filter-actions">
-                        <button type="submit" class="btn btn-primary">Tìm kiếm</button>
-                        <a href="/Admin/StockManager/History" class="btn btn-light border">Làm mới</a>
+                <div class="col-12">
+                    <div class="admin-search-actions-row">
+                        <div class="admin-search-actions">
+                            <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+                            <a href="/Admin/StockManager/History" class="btn btn-light border">Làm mới</a>
+                        </div>
                     </div>
                 </div>
             </form>
 
-            <div class="row g-4">
-                <div class="col-xl-7">
-                    <div class="stock-history-page__list">
+            <div class="table-responsive reusable-admin-table">
+                <table class="table table-hover align-middle stock-history-page__table">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 120px;">Mã phiếu</th>
+                            <th style="width: 140px;">Loại phiếu</th>
+                            <th>Thông tin sản phẩm</th>
+                            <th style="width: 180px;">Nhà cung cấp</th>
+                            <th style="width: 90px;" class="text-end">SL</th>
+                            <th style="width: 180px;">Người tạo</th>
+                            <th style="width: 160px;">Thời gian</th>
+                            <th style="width: 130px;" class="text-center">Tác vụ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
                         @if (Model.Items.Count == 0)
                         {
-                            <div class="stock-history-page__empty">
-                                Không tìm thấy phiếu kho phù hợp với bộ lọc hiện tại.
-                            </div>
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-5">Không tìm thấy phiếu kho phù hợp với bộ lọc hiện tại.</td>
+                            </tr>
                         }
                         else
                         {
@@ -70,198 +96,236 @@
                             {
                                 var totalQuantity = item.InventoryTransactionDetail?.Sum(x => x.Quantity) ?? 0;
                                 var isImport = string.Equals(item.Type, "Import", StringComparison.OrdinalIgnoreCase);
+                                var supplierText = isImport
+                                    ? (string.IsNullOrWhiteSpace(item.SupplierName) ? "Chưa gắn nhà cung cấp" : $"{item.SupplierCode} - {item.SupplierName}")
+                                    : "-";
+                                var noteText = string.IsNullOrWhiteSpace(item.Note) ? "Không có ghi chú" : item.Note;
+                                var editUrl = Url.Action("EditTransaction", "StockManager", new
+                                {
+                                    area = "Admin",
+                                    id = item.InventoryTransId,
+                                    returnPage = Model.Page,
+                                    returnPageSize = Model.PageSize,
+                                    returnSource = "history",
+                                    returnHistoryFilterCode = Model.FilterCode,
+                                    returnHistoryFilterType = Model.FilterType,
+                                    returnHistoryStartDate = Model.StartDate?.ToString("yyyy-MM-dd"),
+                                    returnHistoryEndDate = Model.EndDate?.ToString("yyyy-MM-dd")
+                                });
 
-                                <button type="button"
-                                        class="stock-history-card @(isImport ? "stock-history-card--import" : "stock-history-card--export") js-stock-history-card"
-                                        data-id="@item.InventoryTransId">
-                                    <div class="stock-history-card__head">
-                                        <div>
-                                            <div class="stock-history-card__title">
-                                                @(isImport ? "Phiếu nhập kho" : "Phiếu xuất kho") #@item.InventoryTransId
-                                            </div>
-                                            <div class="stock-history-card__time">
-                                                @item.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss", new CultureInfo("vi-VN"))
-                                            </div>
-                                        </div>
+                                <tr class="js-stock-history-row"
+                                    data-id="@item.InventoryTransId"
+                                    data-edit-url="@editUrl">
+                                    <td>
+                                        <button type="button" class="btn btn-link p-0 text-decoration-none fw-semibold js-stock-history-open">
+                                            #@item.InventoryTransId
+                                        </button>
+                                    </td>
+                                    <td>
                                         <div class="order-admin__state">
                                             <span class="order-admin__state-dot @(isImport ? "order-admin__state-dot--success" : "order-admin__state-dot--danger")"></span>
                                             <div class="order-admin__state-body">
                                                 <strong>@(isImport ? "Nhập kho" : "Xuất kho")</strong>
-                                                <span>@totalQuantity sản phẩm</span>
                                             </div>
                                         </div>
-                                    </div>
-
-                                    <div class="stock-history-card__body">
-                                        <div class="stock-history-card__meta">
-                                            <span>SKU</span>
-                                            <strong>@item.Product.Sku</strong>
-                                        </div>
-                                        <div class="stock-history-card__meta">
-                                            <span>Sản phẩm</span>
-                                            <strong>@item.Product.Name</strong>
-                                        </div>
-                                        <div class="stock-history-card__meta">
-                                            <span>Người tạo</span>
-                                            <strong>@item.UserName (@item.UserRole)</strong>
-                                        </div>
-                                        <div class="stock-history-card__meta">
-                                            <span>Ghi chú</span>
-                                            <strong>@(string.IsNullOrWhiteSpace(item.Note) ? "Không có ghi chú" : item.Note)</strong>
-                                        </div>
-                                    </div>
-                                </button>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold text-dark">@item.Product.Name</div>
+                                        <div class="small text-muted">SKU: @(string.IsNullOrWhiteSpace(item.Product.Sku) ? "-" : item.Product.Sku)</div>
+                                        <div class="small text-muted text-truncate">@noteText</div>
+                                    </td>
+                                    <td class="text-muted">@supplierText</td>
+                                    <td class="text-end fw-semibold">@totalQuantity</td>
+                                    <td>
+                                        <div class="fw-semibold text-dark">@item.UserName</div>
+                                        <div class="small text-muted">@item.UserRole</div>
+                                    </td>
+                                    <td class="text-muted">@item.CreatedAt.ToString("dd/MM/yyyy HH:mm", new CultureInfo("vi-VN"))</td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-light border btn-sm js-stock-history-open">Chi tiết</button>
+                                    </td>
+                                </tr>
                             }
                         }
-                    </div>
-
-                    @await Html.PartialAsync("~/Areas/Admin/Views/Shared/_ManualPagination.cshtml", new Tech_Store.Models.ViewModel.ManualPaginationViewModel
-                    {
-                        CurrentPage = Model.Page,
-                        TotalPages = Model.TotalPages,
-                        BaseUrl = "/Admin/StockManager/History",
-                        QueryString = Model.QueryString
-                    })
-                </div>
-
-                <div class="col-xl-5">
-                    <div class="card shadow-sm border-0 stock-history-page__detail-card">
-                        <div class="card-header bg-white border-0">
-                            <h6 class="mb-0">Chi tiết phiếu kho</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="stock-history-detail__empty" id="emptyState">
-                                <i class="fas fa-file-alt"></i>
-                                <p>Chọn một phiếu ở danh sách bên trái để xem chi tiết.</p>
-                            </div>
-
-                            <div id="detailView" class="d-none">
-                                <div class="order-admin__detail-list mb-4">
-                                    <div class="order-admin__detail-row">
-                                        <span>Mã phiếu</span>
-                                        <strong id="ticketCode"></strong>
-                                    </div>
-                                    <div class="order-admin__detail-row">
-                                        <span>Thời gian</span>
-                                        <strong id="ticketTime"></strong>
-                                    </div>
-                                    <div class="order-admin__detail-row">
-                                        <span>Người tạo</span>
-                                        <strong id="ticketCreator"></strong>
-                                    </div>
-                                    <div class="order-admin__detail-row">
-                                        <span>Sản phẩm</span>
-                                        <strong id="ticketProduct"></strong>
-                                    </div>
-                                    <div class="order-admin__detail-row">
-                                        <span>Loại phiếu</span>
-                                        <div class="order-admin__state">
-                                            <span id="ticketTypeDot" class="order-admin__state-dot"></span>
-                                            <div class="order-admin__state-body">
-                                                <strong id="ticketTypeLabel"></strong>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="order-admin__detail-row">
-                                        <span>Ghi chú</span>
-                                        <strong id="ticketNote"></strong>
-                                    </div>
-                                </div>
-
-                                <div class="table-responsive reusable-admin-table">
-                                    <table class="table table-hover align-middle stock-history-detail__table mb-0">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>SKU biến thể</th>
-                                                <th>Biến thể</th>
-                                                <th class="text-end">Số lượng</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="productDetails"></tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    </tbody>
+                </table>
             </div>
+
+            @await Html.PartialAsync("~/Areas/Admin/Views/Shared/_ManualPagination.cshtml", new Tech_Store.Models.ViewModel.ManualPaginationViewModel
+            {
+                CurrentPage = Model.Page,
+                TotalPages = Model.TotalPages,
+                BaseUrl = "/Admin/StockManager/History",
+                QueryString = Model.QueryString
+            })
         </div>
     </div>
 </div>
 
-@section Scripts {
-    <script>
-        $(function () {
-            const $cards = $('.js-stock-history-card');
-            const $emptyState = $('#emptyState');
-            const $detailView = $('#detailView');
-            const $detailsBody = $('#productDetails');
-            const $ticketTypeDot = $('#ticketTypeDot');
-            const $ticketTypeLabel = $('#ticketTypeLabel');
+@await Html.PartialAsync("~/Areas/Admin/Views/Shared/_AdminRightDrawer.cshtml", new Tech_Store.Models.ViewModel.AdminRightDrawerViewModel
+{
+    DrawerId = "stockHistoryDrawer",
+    Title = "Chi tiết phiếu kho",
+    BodyId = "stockHistoryDrawerBody",
+    WidthClass = "admin-right-drawer--lg"
+})
 
-            function renderDetail(history) {
-                const isImport = history.type === 'Import';
-                $('#ticketCode').text(`#${history.id}`);
-                $('#ticketTime').text(new Date(history.createdAt).toLocaleString('vi-VN'));
-                $('#ticketCreator').text(`${history.userName} (${history.userRole})`);
-                $('#ticketProduct').text(history.product.name);
-                $('#ticketNote').text(history.note && history.note.trim() ? history.note : 'Không có ghi chú');
+<script src="~/Admin/assets/js/core/jquery-3.7.1.min.js"></script>
+<script>
+    $(function () {
+        const $rows = $('.js-stock-history-row');
+        const drawerElement = document.getElementById('stockHistoryDrawer');
+        const drawerBody = $('#stockHistoryDrawerBody');
+        const stockHistoryDrawer = drawerElement ? bootstrap.Offcanvas.getOrCreateInstance(drawerElement) : null;
 
-                $ticketTypeLabel.text(isImport ? 'Nhập kho' : 'Xuất kho');
-                $ticketTypeDot
-                    .removeClass('order-admin__state-dot--success order-admin__state-dot--danger')
-                    .addClass(isImport ? 'order-admin__state-dot--success' : 'order-admin__state-dot--danger');
+        function buildDrawerHtml(history) {
+            const isImport = history.type === 'Import';
+            const supplierText = isImport
+                ? (history.supplierCode && history.supplierName
+                    ? `${history.supplierCode} - ${history.supplierName}`
+                    : 'Chưa gắn nhà cung cấp')
+                : 'Phiếu xuất không áp dụng';
 
-                $detailsBody.empty();
+            const detailRows = history.inventoryTransactionDetail && history.inventoryTransactionDetail.length
+                ? history.inventoryTransactionDetail.map(detail => `
+                    <tr>
+                        <td>${detail.varientSku || '-'}</td>
+                        <td>${detail.varientName || '-'}</td>
+                        <td class="text-end">${detail.quantity}</td>
+                    </tr>
+                `).join('')
+                : `
+                    <tr>
+                        <td colspan="3" class="text-center text-muted py-4">Không có chi tiết biến thể.</td>
+                    </tr>
+                `;
 
-                if (history.inventoryTransactionDetail && history.inventoryTransactionDetail.length) {
-                    history.inventoryTransactionDetail.forEach(detail => {
-                        $detailsBody.append(`
-                            <tr>
-                                <td>${detail.varientSku || '-'}</td>
-                                <td>${detail.varientName || '-'}</td>
-                                <td class="text-end">${detail.quantity}</td>
-                            </tr>
-                        `);
-                    });
-                } else {
-                    $detailsBody.append(`
-                        <tr>
-                            <td colspan="3" class="text-center text-muted py-4">Không có chi tiết biến thể.</td>
-                        </tr>
-                    `);
-                }
+            return `
+                <div class="transaction-drawer">
+                    <div class="transaction-drawer__summary">
+                        <div class="transaction-drawer__summary-card">
+                            <span>Mã phiếu</span>
+                            <strong>#${history.id}</strong>
+                        </div>
+                        <div class="transaction-drawer__summary-card">
+                            <span>Loại phiếu</span>
+                            <strong>${isImport ? 'Nhập kho' : 'Xuất kho'}</strong>
+                        </div>
+                        <div class="transaction-drawer__summary-card">
+                            <span>Người tạo</span>
+                            <strong>${history.userName || '-'}</strong>
+                        </div>
+                        <div class="transaction-drawer__summary-card">
+                            <span>Thời gian</span>
+                            <strong>${new Date(history.createdAt).toLocaleString('vi-VN')}</strong>
+                        </div>
+                    </div>
 
-                $emptyState.addClass('d-none');
-                $detailView.removeClass('d-none');
+                    <section class="transaction-drawer__section">
+                        <div class="transaction-drawer__section-head">
+                            <h6>Thông tin phiếu</h6>
+                        </div>
+                        <div class="transaction-drawer__info-list">
+                            <div class="transaction-drawer__info-row">
+                                <span>Sản phẩm</span>
+                                <strong>${history.product?.name || '-'}</strong>
+                            </div>
+                            <div class="transaction-drawer__info-row">
+                                <span>SKU</span>
+                                <strong>${history.product?.sku || '-'}</strong>
+                            </div>
+                            <div class="transaction-drawer__info-row">
+                                <span>Nhà cung cấp</span>
+                                <strong>${supplierText}</strong>
+                            </div>
+                            <div class="transaction-drawer__info-row">
+                                <span>Vai trò</span>
+                                <strong>${history.userRole || '-'}</strong>
+                            </div>
+                            <div class="transaction-drawer__info-row">
+                                <span>Ghi chú</span>
+                                <strong>${history.note && history.note.trim() ? history.note : 'Không có ghi chú'}</strong>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="transaction-drawer__section">
+                        <div class="transaction-drawer__section-head">
+                            <h6>Chi tiết biến thể</h6>
+                        </div>
+                        <div class="table-responsive reusable-admin-table">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>SKU biến thể</th>
+                                        <th>Biến thể</th>
+                                        <th class="text-end">Số lượng</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${detailRows}</tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section class="transaction-drawer__section">
+                        <div class="transaction-drawer__section-head">
+                            <h6>Hành động</h6>
+                        </div>
+                        <div class="transaction-drawer__actions">
+                            <a href="${history.editUrl}" class="btn btn-primary">Chỉnh sửa phiếu</a>
+                        </div>
+                    </section>
+                </div>
+            `;
+        }
+
+        function openHistoryDetail($row) {
+            const id = $row.data('id');
+            const editUrl = $row.data('edit-url');
+
+            if (!stockHistoryDrawer) {
+                return;
             }
 
-            $cards.on('click', function () {
-                const $card = $(this);
-                const id = $card.data('id');
+            drawerBody.html('<div class="admin-right-drawer__loading">Đang tải chi tiết phiếu kho...</div>');
+            stockHistoryDrawer.show();
+            $('.loading-container').show();
 
-                $('.loading-container').show();
-                $.ajax({
-                    method: 'GET',
-                    url: `/Admin/StockManager/GetHistoryDetail/${id}`,
-                    success: function (response) {
-                        $('.loading-container').hide();
-
-                        if (!response || !response.success) {
-                            Swal.fire('Không thể tải dữ liệu', response?.message || 'Có lỗi xảy ra.', 'error');
-                            return;
-                        }
-
-                        $cards.removeClass('is-active');
-                        $card.addClass('is-active');
-                        renderDetail(response.history);
-                    },
-                    error: function () {
-                        $('.loading-container').hide();
-                        Swal.fire('Không thể tải dữ liệu', 'Vui lòng thử lại.', 'error');
+            $.ajax({
+                method: 'GET',
+                url: `/Admin/StockManager/GetHistoryDetail/${id}`,
+                success: function (response) {
+                    if (!response || !response.success) {
+                        drawerBody.html('<div class="alert alert-danger mb-0">Không thể tải dữ liệu phiếu kho.</div>');
+                        return;
                     }
-                });
+
+                    response.history.editUrl = editUrl;
+                    $rows.removeClass('table-active');
+                    $row.addClass('table-active');
+                    drawerBody.html(buildDrawerHtml(response.history));
+                },
+                error: function () {
+                    drawerBody.html('<div class="alert alert-danger mb-0">Không thể tải dữ liệu phiếu kho.</div>');
+                },
+                complete: function () {
+                    $('.loading-container').hide();
+                }
             });
+        }
+
+        $rows.on('click', function (event) {
+            if ($(event.target).closest('a').length > 0) {
+                return;
+            }
+
+            openHistoryDetail($(this));
         });
-    </script>
-}
+
+        $('.js-stock-history-open').on('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            openHistoryDetail($(this).closest('.js-stock-history-row'));
+        });
+    });
+</script>

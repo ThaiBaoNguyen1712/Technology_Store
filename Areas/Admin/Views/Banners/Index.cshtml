@@ -1,0 +1,250 @@
+@model Tech_Store.Models.ViewModel.AdminBannerIndexViewModel
+
+@{
+    ViewData["Title"] = "Banner";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+}
+
+<div class="py-3 banner-admin-page">
+    @Html.AntiForgeryToken()
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0 pb-0">
+            <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
+                <div>
+                    <h4 class="card-title mb-1">Danh sách banner</h4>
+                </div>
+                <div class="order-admin__header-meta">
+                    <span class="order-admin__header-pill">Tổng banner: @Model.TotalItems</span>
+                    <span class="order-admin__header-pill">Trang @Model.Page/@Model.TotalPages</span>
+                    <a href="@Url.Action("Form", "Banners", new { area = "Admin", page = Model.Page, keyword = Model.Keyword, positionId = Model.PositionId, targetType = Model.TargetType, status = Model.Status })"
+                       class="btn btn-primary">
+                        <i class="fa fa-plus me-1"></i>
+                        Thêm banner
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <form method="get" class="brand-admin__filters row g-3 align-items-end mb-4">
+                <input type="hidden" name="page" value="1" />
+
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Tên banner</label>
+                    <input type="text" class="form-control" name="keyword" value="@Model.Keyword" placeholder="Nhập tên banner..." />
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Vị trí</label>
+                    <select class="form-select" name="positionId">
+                        <option value="">Tất cả vị trí</option>
+                        @foreach (var position in Model.Positions)
+                        {
+                            if (Model.PositionId == position.BannerPositionId)
+                            {
+                                <option value="@position.BannerPositionId" selected>@position.Name</option>
+                            }
+                            else
+                            {
+                                <option value="@position.BannerPositionId">@position.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Điều hướng</label>
+                    <select class="form-select" name="targetType">
+                        <option value="">Tất cả loại</option>
+                        @if (Model.TargetType == "url")
+                        {
+                            <option value="url" selected>URL</option>
+                        }
+                        else
+                        {
+                            <option value="url">URL</option>
+                        }
+                        @if (Model.TargetType == "category")
+                        {
+                            <option value="category" selected>Danh mục</option>
+                        }
+                        else
+                        {
+                            <option value="category">Danh mục</option>
+                        }
+                        @if (Model.TargetType == "brand")
+                        {
+                            <option value="brand" selected>Thương hiệu</option>
+                        }
+                        else
+                        {
+                            <option value="brand">Thương hiệu</option>
+                        }
+                        @if (Model.TargetType == "product")
+                        {
+                            <option value="product" selected>Sản phẩm</option>
+                        }
+                        else
+                        {
+                            <option value="product">Sản phẩm</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label fw-semibold text-secondary">Trạng thái</label>
+                    <select class="form-select" name="status">
+                        <option value="">Tất cả trạng thái</option>
+                        @if (Model.Status == "active")
+                        {
+                            <option value="active" selected>Đang hiển thị</option>
+                        }
+                        else
+                        {
+                            <option value="active">Đang hiển thị</option>
+                        }
+                        @if (Model.Status == "inactive")
+                        {
+                            <option value="inactive" selected>Tạm tắt</option>
+                        }
+                        else
+                        {
+                            <option value="inactive">Tạm tắt</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6 col-xl-3 ms-xl-auto admin-search-actions-col">
+                    <div class="admin-search-actions">
+                        <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+                        <a href="/Admin/Banners" class="btn btn-light border">Làm mới</a>
+                    </div>
+                </div>
+            </form>
+
+            <div class="table-responsive reusable-admin-table">
+                <table class="table table-hover align-middle banner-admin__table">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 84px;">Ảnh</th>
+                            <th>Banner</th>
+                            <th style="width: 220px;">Điều hướng</th>
+                            <th style="width: 260px;">Vị trí</th>
+                            <th style="width: 190px;">Lịch hiển thị</th>
+                            <th style="width: 120px;">Ưu tiên</th>
+                            <th style="width: 150px;">Trạng thái</th>
+                            <th style="width: 140px;">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Banners.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-5">Chưa có banner phù hợp với bộ lọc hiện tại.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var banner in Model.Banners)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="banner-admin__thumb-shell">
+                                            <img src="@banner.DesktopImageUrl" alt="@banner.Name" class="banner-admin__thumb" />
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold text-dark">@banner.Name</div>
+                                        <div class="small text-muted">ID #@banner.BannerId</div>
+                                    </td>
+                                    <td class="text-muted">@banner.TargetSummary</td>
+                                    <td class="text-muted">@banner.PositionSummary</td>
+                                    <td class="text-muted">@banner.ScheduleSummary</td>
+                                    <td>
+                                        <div class="fw-semibold text-dark">@banner.HighestPriority</div>
+                                        @if (banner.HasDefaultPosition)
+                                        {
+                                            <div class="small text-success">Có fallback</div>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="order-admin__state">
+                                            <span class="order-admin__state-dot @(banner.IsActive ? "order-admin__state-dot--success" : "order-admin__state-dot--danger")"></span>
+                                            <div class="order-admin__state-body">
+                                                <strong>@(banner.IsActive ? "Đang hiển thị" : "Tạm tắt")</strong>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="form-button-action justify-content-center">
+                                            <a href="@Url.Action("Form", "Banners", new { area = "Admin", id = banner.BannerId, page = Model.Page, keyword = Model.Keyword, positionId = Model.PositionId, targetType = Model.TargetType, status = Model.Status })"
+                                               class="btn btn-link btn-primary btn-lg"
+                                               title="Cập nhật">
+                                                <i class="fa fa-edit"></i>
+                                            </a>
+                                            <button type="button"
+                                                    class="btn btn-link btn-danger"
+                                                    data-role="remove-banner"
+                                                    data-id="@banner.BannerId"
+                                                    data-name="@banner.Name"
+                                                    title="Ẩn banner">
+                                                <i class="fa fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @await Html.PartialAsync("~/Areas/Admin/Views/Shared/_ManualPagination.cshtml", new Tech_Store.Models.ViewModel.ManualPaginationViewModel
+            {
+                CurrentPage = Model.Page,
+                TotalPages = Model.TotalPages,
+                BaseUrl = "/Admin/Banners",
+                QueryString = Model.QueryString
+            })
+        </div>
+    </div>
+</div>
+
+<script>
+    $(function () {
+        const antiForgeryToken = $('input[name="__RequestVerificationToken"]').val();
+
+        $(document).on('click', '[data-role="remove-banner"]', function () {
+            const bannerId = $(this).data('id');
+            const bannerName = $(this).data('name');
+
+            Swal.fire({
+                title: 'Ẩn banner này?',
+                text: `Banner "${bannerName}" sẽ bị tắt và không còn hiển thị ngoài storefront.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ẩn banner',
+                cancelButtonText: 'Hủy',
+                confirmButtonColor: '#d33'
+            }).then((result) => {
+                if (!result.isConfirmed) {
+                    return;
+                }
+
+                $.ajax({
+                    method: 'DELETE',
+                    url: `/Admin/Banners/Delete/${bannerId}`,
+                    headers: {
+                        "RequestVerificationToken": antiForgeryToken
+                    },
+                    success: function () {
+                        location.reload();
+                    },
+                    error: function (xhr) {
+                        const message = xhr.responseJSON && xhr.responseJSON.message
+                            ? xhr.responseJSON.message
+                            : 'Không thể ẩn banner.';
+                        Swal.fire('Lỗi', message, 'error');
+                    }
+                });
+            });
+        });
+    });
+</script>

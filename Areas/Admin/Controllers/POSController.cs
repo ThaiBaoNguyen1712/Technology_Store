@@ -36,12 +36,87 @@ namespace Tech_Store.Areas.Admin.Controllers
                      .Where(x=>x.Status != "outstock" && x.Status != "discontinued")
                 .OrderByDescending(x => x.ProductId).Take(50).ToList();
 
-            var users = _context.Users.Where(x=>x.FirstName!=null&& x.LastName!=null).OrderByDescending(x => x.UserId).ToList();
-
             ViewBag.category = categories;
             ViewBag.product = products;
-            ViewBag.users = users;
             return View();
+        }
+
+        [HttpGet]
+        [Route("GetCustomers")]
+        public async Task<JsonResult> GetCustomers(string? keyword, int page = 1, int pageSize = 10)
+        {
+            var resolvedPage = page < 1 ? 1 : page;
+            var resolvedPageSize = pageSize <= 0 ? 10 : Math.Min(pageSize, 50);
+
+            var query = _context.Users
+                .AsNoTracking()
+                .Select(x => new
+                {
+                    x.UserId,
+                    x.FirstName,
+                    x.LastName,
+                    x.PhoneNumber,
+                    x.Email,
+                    Address = x.Addresses
+                        .OrderByDescending(a => a.UpdatedAt ?? a.CreatedAt)
+                        .Select(a => new
+                        {
+                            a.AddressLine,
+                            a.Ward,
+                            a.District,
+                            a.Province
+                        })
+                        .FirstOrDefault()
+                });
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                var normalizedKeyword = keyword.Trim();
+                query = query.Where(x =>
+                    ((x.LastName ?? string.Empty) + " " + (x.FirstName ?? string.Empty)).Contains(normalizedKeyword) ||
+                    (x.PhoneNumber ?? string.Empty).Contains(normalizedKeyword) ||
+                    (x.Email ?? string.Empty).Contains(normalizedKeyword));
+            }
+
+            var totalItems = await query.CountAsync();
+            var totalPages = totalItems == 0 ? 1 : (int)Math.Ceiling(totalItems / (double)resolvedPageSize);
+            if (resolvedPage > totalPages)
+            {
+                resolvedPage = totalPages;
+            }
+
+            var customers = await query
+                .OrderByDescending(x => x.UserId)
+                .Skip((resolvedPage - 1) * resolvedPageSize)
+                .Take(resolvedPageSize)
+                .ToListAsync();
+
+            return Json(new
+            {
+                success = true,
+                page = resolvedPage,
+                pageSize = resolvedPageSize,
+                totalItems,
+                totalPages,
+                customers = customers.Select(x => new
+                {
+                    x.UserId,
+                    FullName = $"{x.LastName} {x.FirstName}".Trim(),
+                    x.PhoneNumber,
+                    x.Email,
+                    AddressLine = x.Address?.AddressLine,
+                    Ward = x.Address?.Ward,
+                    District = x.Address?.District,
+                    Province = x.Address?.Province,
+                    Address = string.Join(", ", new[]
+                    {
+                        x.Address?.AddressLine,
+                        x.Address?.Ward,
+                        x.Address?.District,
+                        x.Address?.Province
+                    }.Where(part => !string.IsNullOrWhiteSpace(part)))
+                })
+            });
         }
 
         [Route("Invoice/{id}")]
@@ -125,6 +200,49 @@ namespace Tech_Store.Areas.Admin.Controllers
             }
 
             return Json(new { success = true, voucher });
+        }
+
+        [HttpGet]
+        [Route("GetAvailableVouchers")]
+        public async Task<JsonResult> GetAvailableVouchers(string? keyword)
+        {
+            var today = DateTime.Now.Date;
+
+            var query = _context.Vouchers
+                .AsNoTracking()
+                .Where(x =>
+                    (!x.StartedAt.HasValue || x.StartedAt.Value.Date <= today) &&
+                    (!x.ExpiredAt.HasValue || x.ExpiredAt.Value.Date >= today) &&
+                    (x.Quantity ?? 0) > 0);
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                var normalizedKeyword = keyword.Trim();
+                query = query.Where(x =>
+                    (x.Code ?? string.Empty).Contains(normalizedKeyword) ||
+                    (x.Name ?? string.Empty).Contains(normalizedKeyword));
+            }
+
+            var vouchers = await query
+                .OrderBy(x => x.ExpiredAt ?? DateTime.MaxValue)
+                .ThenByDescending(x => x.VoucherId)
+                .Take(20)
+                .Select(x => new
+                {
+                    x.VoucherId,
+                    x.Code,
+                    x.Name,
+                    x.Promotion,
+                    x.Quantity,
+                    x.ExpiredAt
+                })
+                .ToListAsync();
+
+            return Json(new
+            {
+                success = true,
+                vouchers
+            });
         }
 
         [HttpGet]
@@ -571,11 +689,9 @@ namespace Tech_Store.Areas.Admin.Controllers
             // Thay thế các giá trị trong template
             htmlTemplate = htmlTemplate.Replace("{{name}}", invoice.User.LastName + " " + invoice.User.FirstName);
             htmlTemplate = htmlTemplate.Replace("{{address}}", invoice.ShippingAddress.AddressLine);
-            htmlTemplate = htmlTemplate.Replace("{{address}}", invoice.ShippingAddress.AddressLine);
             htmlTemplate = htmlTemplate.Replace("{{phoneNumber}}", invoice.User.PhoneNumber);
             htmlTemplate = htmlTemplate.Replace("{{orderID}}", invoice.OrderId.ToString());
             htmlTemplate = htmlTemplate.Replace("{{orderDate}}", invoice.OrderDate?.ToString("dd/MM/yyyy"));
-            htmlTemplate = htmlTemplate.Replace("{{oderStatus}}", invoice.OrderStatus);
             htmlTemplate = htmlTemplate.Replace("{{originAmount}}", invoice.OriginAmount?.ToString("C0", new CultureInfo("vi-VN")));
             htmlTemplate = htmlTemplate.Replace("{{discountAmount}}", invoice.DiscountAmount?.ToString("C0", new CultureInfo("vi-VN")));
             htmlTemplate = htmlTemplate.Replace("{{deductAmount}}", invoice.DeductAmount?.ToString("C0", new CultureInfo("vi-VN")));
@@ -586,7 +702,20 @@ namespace Tech_Store.Areas.Admin.Controllers
             int index = 1;
             foreach (var item in invoice.OrderItems)
             {
-                productRows.Append($"<tr><th scope='row'>{index++}</th><td>{item.Product.Name} ({item.VarientProduct.Attributes})</td><td>{item.Quantity}</td><td>{item.Price:C}</td></tr>");
+                var variantDisplay = string.IsNullOrWhiteSpace(item.VarientProduct.Attributes)
+                    ? string.Empty
+                    : $" ({item.VarientProduct.Attributes})";
+                var unitPrice = item.Price.ToString("C0", new CultureInfo("vi-VN"));
+                var lineTotal = (item.Price * item.Quantity).ToString("C0", new CultureInfo("vi-VN"));
+
+                productRows.Append($@"
+                    <tr>
+                        <td class='text-center'>{index++}</td>
+                        <td>{item.Product.Name}{variantDisplay}</td>
+                        <td class='text-center'>{item.Quantity}</td>
+                        <td class='text-end'>{unitPrice}</td>
+                        <td class='text-end'>{lineTotal}</td>
+                    </tr>");
             }
             htmlTemplate = htmlTemplate.Replace("{{productRows}}", productRows.ToString());
 

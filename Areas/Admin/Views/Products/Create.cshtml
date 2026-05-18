@@ -7,7 +7,7 @@
 
 </style>
 
-<form asp-action="CreateProduct" asp-controller="Product" method="post" enctype="multipart/form-data" id="ProductForm">
+<form asp-action="Create" asp-controller="Products" asp-area="Admin" method="post" enctype="multipart/form-data" id="ProductForm">
     <input type="hidden" name="ReturnPage" value="@((int?)ViewBag.ReturnPage ?? 1)" />
     <input type="hidden" name="ReturnPageSize" value="@((int?)ViewBag.ReturnPageSize ?? 25)" />
     <input type="hidden" name="ReturnStatus" value="@ViewBag.ReturnStatus" />
@@ -171,37 +171,41 @@
         </div>
 
         <div class="card mb-4">
-            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="card-header">
                 <h5 class="mb-0">
                     <i class="fas fa-microchip text-info pe-2"></i>Thông số kỹ thuật
                 </h5>
-                <a href="/Admin/Settings/ProductSpecs" class="btn btn-outline-primary btn-sm">
-                    Quản lý bộ thông số
-                </a>
             </div>
             <div class="card-body">
                 <div class="row g-3 align-items-end">
                     <div class="col-md-8">
                         <label class="form-label">Chọn thông số để thêm</label>
-                        <select class="form-control border selectpicker" id="specPicker" data-live-search="true" multiple data-actions-box="true">
-                            @foreach (var spec in ViewBag.Specs)
-                            {
-                                <option value="@spec.SpecId"
-                                        data-name="@spec.Name"
-                                        data-code="@spec.Code"
-                                        data-group="@spec.GroupName"
-                                        data-unit="@spec.Unit"
-                                        data-input="@spec.InputType"
-                                        data-sort="@spec.SortOrder"
-                                        data-description="@spec.Description">
-                                    @spec.Name (@(string.IsNullOrWhiteSpace(spec.GroupName as string) ? "Thông số chung" : spec.GroupName))
-                                </option>
-                            }
-                        </select>
+                        <div class="d-flex align-items-center gap-2 flex-nowrap">
+                            <div class="flex-grow-1 min-w-0">
+                                <select class="form-control border selectpicker" id="specPicker" data-live-search="true" multiple data-actions-box="true">
+                                    @foreach (var spec in ViewBag.Specs)
+                                    {
+                                        <option value="@spec.SpecId"
+                                                data-name="@spec.Name"
+                                                data-code="@spec.Code"
+                                                data-group="@spec.GroupName"
+                                                data-unit="@spec.Unit"
+                                                data-input="@spec.InputType"
+                                                data-sort="@spec.SortOrder"
+                                                data-description="@spec.Description">
+                                            @spec.Name (@(string.IsNullOrWhiteSpace(spec.GroupName as string) ? "Thông số chung" : spec.GroupName))
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                            <a href="/Admin/Settings/ProductSpecs" class="btn btn-outline-primary d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width:38px;min-width:38px;height:38px;padding:0;" title="Quản lý thông số">
+                                <i class="fa fa-plus"></i>
+                            </a>
+                        </div>
                     </div>
                     <div class="col-md-4">
                         <button type="button" class="btn btn-primary w-100" id="addSelectedSpecs">
-                            <i class="fas fa-plus me-2"></i>
+                            Thêm thông số đã chọn
                         </button>
                     </div>
                 </div>
@@ -244,15 +248,17 @@
                         <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Sử dụng các biến thể khác để phân biệt sản phẩm">
                             <i class="fas fa-info-circle text-info"></i>
                         </span>
-                        <div class="d-flex">
-                            <select name="VarientSelect" id="variantSelect" class="form-control border selectpicker" multiple="multiple" data-live-search="true" disabled>
-                                @foreach (var item in ViewBag.Attributes)
-                                {
-                                    <option value="@item.Code">@item.Name</option>
-                                }
-                            </select>
-                            <a href="/Admin/Settings/ProductAttributes" class="btn btn-primary ms-2">
-                                <i class="fa fa-plus-circle"></i>
+                        <div class="d-flex align-items-center gap-2 flex-nowrap">
+                            <div class="flex-grow-1 min-w-0">
+                                <select name="VarientSelect" id="variantSelect" class="form-control border selectpicker" multiple="multiple" data-live-search="true" disabled>
+                                    @foreach (var item in ViewBag.Attributes)
+                                    {
+                                        <option value="@item.Code">@item.Name</option>
+                                    }
+                                </select>
+                            </div>
+                            <a href="/Admin/Settings/ProductAttributes" class="btn btn-outline-primary d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width:38px;min-width:38px;height:38px;padding:0;" title="Quản lý thuộc tính">
+                                <i class="fa fa-plus"></i>
                             </a>
                         </div>
                         
@@ -270,17 +276,17 @@
                             </select>
                         </div>
                     }
-                    <div class="table-responsive table-Varient mt-4" style="display:none">
-                        <table class="table table-hover table-striped">
-                            <thead>
-                                <tr class="table-primary text-center align-middle">
-                                    <th class="fw-semibold">STT</th>
-                                    <th class="fw-semibold">Biến thể thuộc tính</th>
-                                    <th class="fw-semibold">Giá theo biến thể (đ)</th>
-                                    <th class="fw-semibold">SKU</th>
-                                    <th class="fw-semibold">Hàng tồn kho theo biến thể</th>
-                                    <th class="fw-semibold">Ảnh SP</th>
-                                    <th class="fw-semibold">Trạng thái</th>
+                    <div class="table-responsive reusable-admin-table table-Varient mt-4" style="display:none">
+                        <table class="table table-hover align-middle product-form__variant-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 72px;">STT</th>
+                                    <th>Biến thể</th>
+                                    <th style="width: 180px;">Giá bán</th>
+                                    <th style="width: 220px;">SKU</th>
+                                    <th style="width: 160px;">Tồn kho</th>
+                                    <th style="width: 240px;">Ảnh biến thể</th>
+                                    <th style="width: 96px;" class="text-center">Xóa</th>
                                 </tr>
                             </thead>
                             <tbody id="variantTableBody"></tbody>
@@ -418,25 +424,25 @@ Ckeditor CDN*@
                 var price = $('#sellPrice').val();
 
                 var row = $('<tr>');
-                row.append($('<td>').text(index + 1));
+                row.append($('<td class="text-center fw-semibold">').text(index + 1));
                 row.append($('<td style="display:none">').html(
                     '<input type="hidden" name="VarientProducts[' + index + '].Attributes" value="' + variantString + '"/>'
                 ));
-                row.append($('<td>').text(variantString));
+                row.append($('<td>').html('<div class="product-form__variant-name">' + variantString + '</div>'));
                 row.append($('<td>').html(
                     '<input type="number" class="form-control" name="VarientProducts[' + index + '].Price" value="' + price + '"/>'
                 ));
                 row.append($('<td>').html(
-                    '<input type="text" class="form-control" name="VarientProducts[' + index + '].Sku" value="' + sku + '"/>'
+                    '<input type="text" class="form-control" name="VarientProducts[' + index + '].Sku" value="' + sku + '" readonly/>'
                 ));
                 row.append($('<td>').html(
                     '<input type="number" class="form-control" name="VarientProducts[' + index + '].Stock" value="1" required/>'
                 ));
                 row.append($('<td>').html(
-                    '<input type="file" class="form-control form-control-sm" name="VarientProducts[' + index + '].Image"/>'
+                    '<input type="file" class="form-control form-control-sm" name="VarientProducts[' + index + '].Image" accept="image/*"/>'
                 ));
-                row.append($('<td style="width:10%">').html(
-                    '<i class="fas fa-trash delete-btn text-center text-danger" title="Xóa"></i>'
+                row.append($('<td class="text-center">').html(
+                    '<button type="button" class="btn btn-sm btn-outline-danger delete-btn" title="Xóa"><i class="fas fa-trash"></i></button>'
                 ));
 
                 tableBody.append(row);
