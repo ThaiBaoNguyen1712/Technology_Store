@@ -48,10 +48,16 @@ Use these files as the first place to understand or extend shared behavior:
 
 - Controllers should stay thin.
 - Business logic belongs in `Services/*`, not in Razor views or large controller actions.
+- Khi thêm service interface mới, đặt interface vào folder `Services/Interfaces/*` theo domain/module; không đặt interface rải trực tiếp ở root `Services` hoặc trộn chung với file implement nếu không có lý do đặc biệt.
+- Với payment/auth/banner và các module nghiệp vụ lớn, interface phải nằm trong folder domain tương ứng như `Services/Interfaces/Payment`, `Services/Interfaces/Auth`.
 - DTO/ViewModel classes should be used to shape admin and client data instead of passing raw entities where view-specific structure is needed.
 - Shared admin data should keep flowing through `BaseAdminController`.
 - Shared client data should keep flowing through `BaseController`.
 - Do not introduce page-specific behavior into global layout unless the feature is truly cross-site.
+- Tránh magic value cho `status`, `type`, `method`, `source`, key xử lý nghiệp vụ; ưu tiên `enum` hoặc hằng số dùng chung để controller, service, view model không tự giữ chuỗi rời rạc.
+
+- Luồng lên đơn, thanh toán, trừ tồn và tiêu hao voucher phải chạy trong transaction backend; nếu một bước ghi DB thất bại thì rollback toàn bộ, không commit dở dang.
+- Khi chạy ứng dụng local, ưu tiên chạy bằng launch profile của project trong workspace editor (`https`) thay vì spawn process rời; trước khi run lại phải dọn listener cũ của app để tránh phải kill tay.
 
 ## UI Consistency Rules
 
@@ -71,6 +77,7 @@ Use these files as the first place to understand or extend shared behavior:
   - `wwwroot/Client/asset/css/site.css` for storefront
   - `wwwroot/Admin/assets/css/site.css` for admin
 - Shared admin breadcrumb placement belongs in the admin layout, not redefined per page.
+- Admin breadcrumb is currently rendered in the footer region of the admin layout, replacing the old copyright slot.
 
 ### CSS Naming
 
@@ -121,6 +128,8 @@ Use these files as the first place to understand or extend shared behavior:
 - Destructive or important actions should use confirmation dialogs.
 - File uploads should provide inline preview where useful.
 - For repeated metadata inputs, prefer table-like row editors or dedicated management pages instead of very long stacked inputs.
+- Do not add side advisory panels, checklist blocks, or explanatory rule cards to standard CRUD forms unless the user explicitly asks for that content.
+- If an entity is already referenced by other tables or business records, do not hard delete it; use soft delete, inactive status, or equivalent non-destructive deactivation instead.
 
 ## Admin UI Rules
 
@@ -130,13 +139,14 @@ Use these files as the first place to understand or extend shared behavior:
   - clear grouping
   - strong information hierarchy
 - Breadcrumbs in admin should:
-  - live in their own strip below the top header
-  - stay separate from search, clock, notifications, and profile actions
-  - allow horizontal scrolling when the path is long instead of colliding with nearby header elements
-  - never overlay or visually wash out page body content or partial views
+  - stay inside the shared admin footer area unless the layout standard changes again
+  - allow horizontal scrolling when the path is long
+  - never collide with header utilities or overlay page content
 - Order management pages should follow familiar Vietnamese ecommerce operations patterns:
   - compact filter bar
   - search actions such as `Tìm kiếm` and `Làm mới` stay in the last filter column and align to the end of the filter area on desktop
+  - search action buttons must behave as a normal filter column first; if the current row still has available slot, they stay on that same row
+  - only when the current row is actually full may the search action buttons wrap to a new row, and in that case the action group must still stay right-aligned
   - server-side manual pagination
   - obvious status/payment badges
   - customer/payment/amount summary first
@@ -145,6 +155,20 @@ Use these files as the first place to understand or extend shared behavior:
 - Product administration and stock administration are separate concerns:
   - product list pages focus on CRUD, filters, visibility, and merchandising state
   - stock actions such as import/export inventory and printing product codes belong under inventory/warehouse navigation, not mixed into the main product list action set
+- Stock administration pages should follow the same admin list pattern:
+  - no DataTables for stock list, stock history, or stock export selection
+  - server-side manual pagination via `_ManualPagination.cshtml`
+  - compact paired filters with `Tìm kiếm` and `Làm mới` aligned to the right end of the filter section
+  - search action buttons must not be forced into a dedicated full-width row when the current filter grid still has available slot
+  - inventory import/export create and update flows use dedicated pages, not modal popups
+  - import tickets should support supplier linkage because that is standard for ecommerce warehouse intake in Vietnam
+  - supplier management belongs under inventory navigation and should use the same search + table + page-form CRUD pattern
+- Banner management should follow the same admin pattern:
+  - use page-based CRUD, not modal CRUD
+  - use manual pagination on the admin list
+  - keep banner target logic structured through banner target tables or view models, not free-form mixed fields in the view
+  - each storefront banner position must support at least one default fallback banner so expired campaigns do not leave empty gaps
+  - storefront pages should render banners from query/service layers, not hardcoded image blocks inside Razor when the position is intended to be managed from admin
 - Avoid old-style tab strips when the content is large and multi-section.
 - Prefer:
   - left-side local navigation
@@ -166,6 +190,9 @@ Use these files as the first place to understand or extend shared behavior:
 - Prefer one shared selector pattern instead of one-off IDs when multiple instances of a component exist.
 - Avoid loading libraries for a single page unless they are already part of the project standard.
 - New admin list pages should not depend on DataTables if manual pagination is enough.
+- Third-party frontend libraries that are part of the long-term project standard should be self-hosted under `wwwroot/lib` or `wwwroot/vendor` instead of being loaded from public CDNs.
+- Remote embeds that are service-bound, such as reCAPTCHA, Tawk, hosted video, or external social URLs, may stay remote when the integration itself requires a live third-party endpoint.
+- When cleaning template leftovers, only delete sample, test, demo, backup, modal, or legacy files after a reference scan confirms they are not used by current views, controllers, scripts, or partial rendering paths.
 
 ## Routing And Error Handling
 
