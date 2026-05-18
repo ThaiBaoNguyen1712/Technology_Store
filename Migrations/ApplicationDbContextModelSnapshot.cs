@@ -169,7 +169,12 @@ namespace Tech_Store.Migrations
                         .HasColumnType("int")
                         .HasColumnName("banner_id");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BannerId"), 0L);
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BannerId"));
+
+                    b.Property<string>("AltText")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("alt_text");
 
                     b.Property<DateTime?>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -177,33 +182,34 @@ namespace Tech_Store.Migrations
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("(getdate())");
 
-                    b.Property<string>("Device")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("device");
+                    b.Property<string>("DesktopImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("desktop_image_url");
 
-                    b.Property<string>("ImageUrl")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("imageUrl");
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
 
-                    b.Property<string>("LinkUrl")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("link");
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_deleted");
 
-                    b.Property<string>("Position")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("position");
+                    b.Property<string>("MobileImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("mobile_image_url");
 
-                    b.Property<string>("RefId")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("refId");
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("name");
 
-                    b.Property<int?>("SortOrder")
-                        .HasColumnType("int")
-                        .HasColumnName("sortOrder");
-
-                    b.Property<string>("Type")
+                    b.Property<string>("Notes")
                         .HasColumnType("nvarchar(max)")
-                        .HasColumnName("type");
+                        .HasColumnName("notes");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .ValueGeneratedOnAdd()
@@ -211,13 +217,607 @@ namespace Tech_Store.Migrations
                         .HasColumnName("updated_at")
                         .HasDefaultValueSql("(getdate())");
 
-                    b.Property<bool?>("isActive")
-                        .HasColumnType("bit")
-                        .HasColumnName("active");
-
                     b.HasKey("BannerId");
 
-                    b.ToTable("Banner", (string)null);
+                    b.HasIndex("IsDeleted", "IsActive");
+
+                    b.ToTable("Banners", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            BannerId = 1001,
+                            AltText = "Khuyến mãi điện thoại nổi bật",
+                            DesktopImageUrl = "https://images.macrumors.com/t/H0wescJV-Z32v37P2JxpOBsFX8c=/2500x0/filters:no_upscale()/article-new/2024/11/iPhone-17-Pro-Dual-Tone-Rectangle-Feature-1.jpg",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Banner mặc định hero 1"
+                        },
+                        new
+                        {
+                            BannerId = 1002,
+                            AltText = "Khuyến mãi Samsung nổi bật",
+                            DesktopImageUrl = "https://i.gadgets360cdn.com/large/samsung_galaxy_s25_ultra_technizoconcept_inline_1731133022562.jpg",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Banner mặc định hero 2"
+                        },
+                        new
+                        {
+                            BannerId = 1003,
+                            AltText = "Khuyến mãi flagship mới",
+                            DesktopImageUrl = "https://cdn.mos.cms.futurecdn.net/hyKSYAeHLcrRtExozn7EBA-1200-80.jpg",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Banner mặc định hero 3"
+                        },
+                        new
+                        {
+                            BannerId = 1004,
+                            AltText = "Khuyến mãi iPhone",
+                            DesktopImageUrl = "/Client/asset/img/R.png",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Banner mặc định promo 1"
+                        },
+                        new
+                        {
+                            BannerId = 1005,
+                            AltText = "Khuyến mãi Samsung",
+                            DesktopImageUrl = "/Client/asset/img/right-banner-14-10.webp",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Banner mặc định promo 2"
+                        },
+                        new
+                        {
+                            BannerId = 1101,
+                            AltText = "Banner điện thoại nổi bật",
+                            DesktopImageUrl = "https://images.macrumors.com/t/H0wescJV-Z32v37P2JxpOBsFX8c=/2500x0/filters:no_upscale()/article-new/2024/11/iPhone-17-Pro-Dual-Tone-Rectangle-Feature-1.jpg",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Category hero điện thoại"
+                        },
+                        new
+                        {
+                            BannerId = 1102,
+                            AltText = "Banner laptop hiệu năng cao",
+                            DesktopImageUrl = "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1600&q=80",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Category hero laptop"
+                        },
+                        new
+                        {
+                            BannerId = 1103,
+                            AltText = "Banner máy tính bảng học tập và giải trí",
+                            DesktopImageUrl = "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=1600&q=80",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Category hero tablet"
+                        },
+                        new
+                        {
+                            BannerId = 1104,
+                            AltText = "Banner phụ kiện công nghệ",
+                            DesktopImageUrl = "https://images.unsplash.com/photo-1585338447937-7082f8fc763d?auto=format&fit=crop&w=1600&q=80",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Category hero phụ kiện"
+                        },
+                        new
+                        {
+                            BannerId = 1105,
+                            AltText = "Banner Apple",
+                            DesktopImageUrl = "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1600&q=80",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Brand hero Apple"
+                        },
+                        new
+                        {
+                            BannerId = 1106,
+                            AltText = "Banner Samsung",
+                            DesktopImageUrl = "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?auto=format&fit=crop&w=1600&q=80",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Brand hero Samsung"
+                        },
+                        new
+                        {
+                            BannerId = 1107,
+                            AltText = "Banner ASUS",
+                            DesktopImageUrl = "https://images.unsplash.com/photo-1593642702744-d377ab507dc8?auto=format&fit=crop&w=1600&q=80",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Brand hero ASUS"
+                        },
+                        new
+                        {
+                            BannerId = 1108,
+                            AltText = "Banner Lenovo",
+                            DesktopImageUrl = "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=1600&q=80",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Brand hero Lenovo"
+                        });
+                });
+
+            modelBuilder.Entity("Tech_Store.Models.BannerPosition", b =>
+                {
+                    b.Property<int>("BannerPositionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("banner_position_id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BannerPositionId"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(120)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("description");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("name");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.HasKey("BannerPositionId");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("BannerPositions", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            BannerPositionId = 1,
+                            Code = "home-hero-main",
+                            Description = "Carousel lớn giữa trang chủ",
+                            IsActive = true,
+                            Name = "Hero chính trang chủ"
+                        },
+                        new
+                        {
+                            BannerPositionId = 2,
+                            Code = "home-hero-promo",
+                            Description = "Hai banner phụ bên phải hero trang chủ",
+                            IsActive = true,
+                            Name = "Promo phụ trang chủ"
+                        },
+                        new
+                        {
+                            BannerPositionId = 3,
+                            Code = "category-hero",
+                            Description = "Banner đầu trang danh mục",
+                            IsActive = true,
+                            Name = "Hero danh mục"
+                        },
+                        new
+                        {
+                            BannerPositionId = 4,
+                            Code = "brand-hero",
+                            Description = "Banner đầu trang thương hiệu",
+                            IsActive = true,
+                            Name = "Hero thương hiệu"
+                        });
+                });
+
+            modelBuilder.Entity("Tech_Store.Models.BannerPositionMap", b =>
+                {
+                    b.Property<int>("BannerPositionMapId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("banner_position_map_id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BannerPositionMapId"));
+
+                    b.Property<int>("BannerId")
+                        .HasColumnType("int")
+                        .HasColumnName("banner_id");
+
+                    b.Property<int>("BannerPositionId")
+                        .HasColumnType("int")
+                        .HasColumnName("banner_position_id");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<int?>("DisplayBrandId")
+                        .HasColumnType("int")
+                        .HasColumnName("display_brand_id");
+
+                    b.Property<int?>("DisplayCategoryId")
+                        .HasColumnType("int")
+                        .HasColumnName("display_category_id");
+
+                    b.Property<DateTime?>("EndAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("end_at");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_default");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("int")
+                        .HasColumnName("priority");
+
+                    b.Property<DateTime?>("StartAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("start_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.HasKey("BannerPositionMapId");
+
+                    b.HasIndex("BannerId");
+
+                    b.HasIndex("DisplayBrandId");
+
+                    b.HasIndex("DisplayCategoryId");
+
+                    b.HasIndex("BannerPositionId", "DisplayCategoryId", "DisplayBrandId", "IsActive", "IsDefault", "Priority")
+                        .HasDatabaseName("IX_BannerPositionMaps_PositionScopePriority");
+
+                    b.ToTable("BannerPositionMaps", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            BannerPositionMapId = 3001,
+                            BannerId = 1001,
+                            BannerPositionId = 1,
+                            IsActive = true,
+                            IsDefault = true,
+                            Priority = 300
+                        },
+                        new
+                        {
+                            BannerPositionMapId = 3002,
+                            BannerId = 1002,
+                            BannerPositionId = 1,
+                            IsActive = true,
+                            IsDefault = true,
+                            Priority = 200
+                        },
+                        new
+                        {
+                            BannerPositionMapId = 3003,
+                            BannerId = 1003,
+                            BannerPositionId = 1,
+                            IsActive = true,
+                            IsDefault = true,
+                            Priority = 100
+                        },
+                        new
+                        {
+                            BannerPositionMapId = 3004,
+                            BannerId = 1004,
+                            BannerPositionId = 2,
+                            IsActive = true,
+                            IsDefault = true,
+                            Priority = 200
+                        },
+                        new
+                        {
+                            BannerPositionMapId = 3005,
+                            BannerId = 1005,
+                            BannerPositionId = 2,
+                            IsActive = true,
+                            IsDefault = true,
+                            Priority = 100
+                        },
+                        new
+                        {
+                            BannerPositionMapId = 3006,
+                            BannerId = 1001,
+                            BannerPositionId = 3,
+                            IsActive = true,
+                            IsDefault = true,
+                            Priority = 100
+                        },
+                        new
+                        {
+                            BannerPositionMapId = 3007,
+                            BannerId = 1002,
+                            BannerPositionId = 4,
+                            IsActive = true,
+                            IsDefault = true,
+                            Priority = 100
+                        },
+                        new
+                        {
+                            BannerPositionMapId = 3101,
+                            BannerId = 1101,
+                            BannerPositionId = 3,
+                            DisplayCategoryId = 1,
+                            IsActive = true,
+                            IsDefault = false,
+                            Priority = 500
+                        },
+                        new
+                        {
+                            BannerPositionMapId = 3102,
+                            BannerId = 1102,
+                            BannerPositionId = 3,
+                            DisplayCategoryId = 2,
+                            IsActive = true,
+                            IsDefault = false,
+                            Priority = 500
+                        },
+                        new
+                        {
+                            BannerPositionMapId = 3103,
+                            BannerId = 1103,
+                            BannerPositionId = 3,
+                            DisplayCategoryId = 3,
+                            IsActive = true,
+                            IsDefault = false,
+                            Priority = 500
+                        },
+                        new
+                        {
+                            BannerPositionMapId = 3104,
+                            BannerId = 1104,
+                            BannerPositionId = 3,
+                            DisplayCategoryId = 5,
+                            IsActive = true,
+                            IsDefault = false,
+                            Priority = 500
+                        },
+                        new
+                        {
+                            BannerPositionMapId = 3105,
+                            BannerId = 1105,
+                            BannerPositionId = 4,
+                            DisplayBrandId = 4,
+                            IsActive = true,
+                            IsDefault = false,
+                            Priority = 500
+                        },
+                        new
+                        {
+                            BannerPositionMapId = 3106,
+                            BannerId = 1106,
+                            BannerPositionId = 4,
+                            DisplayBrandId = 2,
+                            IsActive = true,
+                            IsDefault = false,
+                            Priority = 500
+                        },
+                        new
+                        {
+                            BannerPositionMapId = 3107,
+                            BannerId = 1107,
+                            BannerPositionId = 4,
+                            DisplayBrandId = 354036,
+                            IsActive = true,
+                            IsDefault = false,
+                            Priority = 500
+                        },
+                        new
+                        {
+                            BannerPositionMapId = 3108,
+                            BannerId = 1108,
+                            BannerPositionId = 4,
+                            DisplayBrandId = 9,
+                            IsActive = true,
+                            IsDefault = false,
+                            Priority = 500
+                        });
+                });
+
+            modelBuilder.Entity("Tech_Store.Models.BannerTarget", b =>
+                {
+                    b.Property<int>("BannerTargetId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("banner_target_id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BannerTargetId"));
+
+                    b.Property<int>("BannerId")
+                        .HasColumnType("int")
+                        .HasColumnName("banner_id");
+
+                    b.Property<int?>("BrandId")
+                        .HasColumnType("int")
+                        .HasColumnName("brand_id");
+
+                    b.Property<int?>("CategoryId")
+                        .HasColumnType("int")
+                        .HasColumnName("category_id");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<string>("ExternalUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("external_url");
+
+                    b.Property<bool>("OpenInNewTab")
+                        .HasColumnType("bit")
+                        .HasColumnName("open_in_new_tab");
+
+                    b.Property<int?>("ProductId")
+                        .HasColumnType("int")
+                        .HasColumnName("product_id");
+
+                    b.Property<string>("TargetType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("target_type");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.HasKey("BannerTargetId");
+
+                    b.HasIndex("BannerId")
+                        .IsUnique();
+
+                    b.HasIndex("BrandId");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("TargetType", "CategoryId", "BrandId", "ProductId")
+                        .HasDatabaseName("IX_BannerTargets_TargetLookup");
+
+                    b.ToTable("BannerTargets", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            BannerTargetId = 2001,
+                            BannerId = 1001,
+                            ExternalUrl = "/Search?q=iphone",
+                            OpenInNewTab = false,
+                            TargetType = "url"
+                        },
+                        new
+                        {
+                            BannerTargetId = 2002,
+                            BannerId = 1002,
+                            ExternalUrl = "/Search?q=samsung",
+                            OpenInNewTab = false,
+                            TargetType = "url"
+                        },
+                        new
+                        {
+                            BannerTargetId = 2003,
+                            BannerId = 1003,
+                            ExternalUrl = "/Search?q=flagship",
+                            OpenInNewTab = false,
+                            TargetType = "url"
+                        },
+                        new
+                        {
+                            BannerTargetId = 2004,
+                            BannerId = 1004,
+                            ExternalUrl = "/Search?q=iphone",
+                            OpenInNewTab = false,
+                            TargetType = "url"
+                        },
+                        new
+                        {
+                            BannerTargetId = 2005,
+                            BannerId = 1005,
+                            ExternalUrl = "/Search?q=samsung",
+                            OpenInNewTab = false,
+                            TargetType = "url"
+                        },
+                        new
+                        {
+                            BannerTargetId = 2101,
+                            BannerId = 1101,
+                            CategoryId = 1,
+                            OpenInNewTab = false,
+                            TargetType = "category"
+                        },
+                        new
+                        {
+                            BannerTargetId = 2102,
+                            BannerId = 1102,
+                            CategoryId = 2,
+                            OpenInNewTab = false,
+                            TargetType = "category"
+                        },
+                        new
+                        {
+                            BannerTargetId = 2103,
+                            BannerId = 1103,
+                            CategoryId = 3,
+                            OpenInNewTab = false,
+                            TargetType = "category"
+                        },
+                        new
+                        {
+                            BannerTargetId = 2104,
+                            BannerId = 1104,
+                            CategoryId = 5,
+                            OpenInNewTab = false,
+                            TargetType = "category"
+                        },
+                        new
+                        {
+                            BannerTargetId = 2105,
+                            BannerId = 1105,
+                            BrandId = 4,
+                            OpenInNewTab = false,
+                            TargetType = "brand"
+                        },
+                        new
+                        {
+                            BannerTargetId = 2106,
+                            BannerId = 1106,
+                            BrandId = 2,
+                            OpenInNewTab = false,
+                            TargetType = "brand"
+                        },
+                        new
+                        {
+                            BannerTargetId = 2107,
+                            BannerId = 1107,
+                            BrandId = 354036,
+                            OpenInNewTab = false,
+                            TargetType = "brand"
+                        },
+                        new
+                        {
+                            BannerTargetId = 2108,
+                            BannerId = 1108,
+                            BrandId = 9,
+                            OpenInNewTab = false,
+                            TargetType = "brand"
+                        });
                 });
 
             modelBuilder.Entity("Tech_Store.Models.Brand", b =>
@@ -549,6 +1149,10 @@ namespace Tech_Store.Migrations
                         .HasColumnType("int")
                         .HasColumnName("productId");
 
+                    b.Property<int?>("SupplierId")
+                        .HasColumnType("int")
+                        .HasColumnName("supplierId");
+
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -568,6 +1172,8 @@ namespace Tech_Store.Migrations
                     b.HasKey("InventoryTransId");
 
                     b.HasIndex("ProductId");
+
+                    b.HasIndex("SupplierId");
 
                     b.HasIndex("UserId");
 
@@ -1247,6 +1853,78 @@ namespace Tech_Store.Migrations
                     b.ToTable("Specs", (string)null);
                 });
 
+            modelBuilder.Entity("Tech_Store.Models.Supplier", b =>
+                {
+                    b.Property<int>("SupplierId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("supplier_id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SupplierId"));
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("address");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("code");
+
+                    b.Property<string>("ContactName")
+                        .HasMaxLength(155)
+                        .HasColumnType("nvarchar(155)")
+                        .HasColumnName("contact_name");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(155)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(155)")
+                        .HasColumnName("email");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("notes");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("phone_number");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.HasKey("SupplierId");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("Supplier", (string)null);
+                });
+
             modelBuilder.Entity("Tech_Store.Models.User", b =>
                 {
                     b.Property<int>("UserId")
@@ -1297,10 +1975,36 @@ namespace Tech_Store.Migrations
                         .HasColumnType("datetime")
                         .HasColumnName("last_login");
 
+                    b.Property<string>("LastLoginDevice")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("last_login_device");
+
+                    b.Property<string>("LastLoginIp")
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("last_login_ip");
+
                     b.Property<string>("LastName")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("last_name");
+
+                    b.Property<DateTime?>("LastRequestAt")
+                        .HasColumnType("datetime")
+                        .HasColumnName("last_request_at");
+
+                    b.Property<string>("LastRequestDevice")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("last_request_device");
+
+                    b.Property<string>("LastRequestIp")
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("last_request_ip");
 
                     b.Property<string>("PasswordHash")
                         .HasMaxLength(255)
@@ -1369,6 +2073,70 @@ namespace Tech_Store.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("UserNotifications");
+                });
+
+            modelBuilder.Entity("Tech_Store.Models.UserProductEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("event_type");
+
+                    b.Property<string>("MetadataJson")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("metadata_json");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int")
+                        .HasColumnName("product_id");
+
+                    b.Property<string>("SessionId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("session_id");
+
+                    b.Property<string>("Source")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("source");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.Property<double>("Weight")
+                        .HasColumnType("float")
+                        .HasColumnName("weight");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EventType", "CreatedAt")
+                        .HasDatabaseName("IX_UserProductEvent_EventType_CreatedAt");
+
+                    b.HasIndex("ProductId", "CreatedAt")
+                        .HasDatabaseName("IX_UserProductEvent_ProductId_CreatedAt");
+
+                    b.HasIndex("SessionId", "CreatedAt")
+                        .HasDatabaseName("IX_UserProductEvent_SessionId_CreatedAt");
+
+                    b.HasIndex("UserId", "CreatedAt")
+                        .HasDatabaseName("IX_UserProductEvent_UserId_CreatedAt");
+
+                    b.ToTable("UserProductEvent", (string)null);
                 });
 
             modelBuilder.Entity("Tech_Store.Models.VariantAttribute", b =>
@@ -1593,6 +2361,79 @@ namespace Tech_Store.Migrations
                     b.Navigation("Attribute");
                 });
 
+            modelBuilder.Entity("Tech_Store.Models.BannerPositionMap", b =>
+                {
+                    b.HasOne("Tech_Store.Models.Banner", "Banner")
+                        .WithMany("BannerPositionMaps")
+                        .HasForeignKey("BannerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_BannerPositionMaps_Banners");
+
+                    b.HasOne("Tech_Store.Models.BannerPosition", "BannerPosition")
+                        .WithMany("BannerPositionMaps")
+                        .HasForeignKey("BannerPositionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_BannerPositionMaps_BannerPositions");
+
+                    b.HasOne("Tech_Store.Models.Brand", "DisplayBrand")
+                        .WithMany()
+                        .HasForeignKey("DisplayBrandId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("FK_BannerPositionMaps_Brands");
+
+                    b.HasOne("Tech_Store.Models.Category", "DisplayCategory")
+                        .WithMany()
+                        .HasForeignKey("DisplayCategoryId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("FK_BannerPositionMaps_Categories");
+
+                    b.Navigation("Banner");
+
+                    b.Navigation("BannerPosition");
+
+                    b.Navigation("DisplayBrand");
+
+                    b.Navigation("DisplayCategory");
+                });
+
+            modelBuilder.Entity("Tech_Store.Models.BannerTarget", b =>
+                {
+                    b.HasOne("Tech_Store.Models.Banner", "Banner")
+                        .WithOne("BannerTarget")
+                        .HasForeignKey("Tech_Store.Models.BannerTarget", "BannerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_BannerTargets_Banners");
+
+                    b.HasOne("Tech_Store.Models.Brand", "Brand")
+                        .WithMany()
+                        .HasForeignKey("BrandId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("FK_BannerTargets_Brands");
+
+                    b.HasOne("Tech_Store.Models.Category", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("FK_BannerTargets_Categories");
+
+                    b.HasOne("Tech_Store.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("FK_BannerTargets_Products");
+
+                    b.Navigation("Banner");
+
+                    b.Navigation("Brand");
+
+                    b.Navigation("Category");
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("Tech_Store.Models.Brand", b =>
                 {
                     b.HasOne("Tech_Store.Models.Category", "Category")
@@ -1704,6 +2545,11 @@ namespace Tech_Store.Migrations
                         .IsRequired()
                         .HasConstraintName("FK_ProductHistory_Product");
 
+                    b.HasOne("Tech_Store.Models.Supplier", "Supplier")
+                        .WithMany("InventoryTransactions")
+                        .HasForeignKey("SupplierId")
+                        .HasConstraintName("FK_InventoryTransactions_Supplier");
+
                     b.HasOne("Tech_Store.Models.User", "User")
                         .WithMany("InventoryTransactions")
                         .HasForeignKey("UserId")
@@ -1711,6 +2557,8 @@ namespace Tech_Store.Migrations
                         .HasConstraintName("FK_ProductHistory_User");
 
                     b.Navigation("Product");
+
+                    b.Navigation("Supplier");
 
                     b.Navigation("User");
                 });
@@ -1871,6 +2719,26 @@ namespace Tech_Store.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Tech_Store.Models.UserProductEvent", b =>
+                {
+                    b.HasOne("Tech_Store.Models.Product", "Product")
+                        .WithMany("UserProductEvents")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_UserProductEvent_Product");
+
+                    b.HasOne("Tech_Store.Models.User", "User")
+                        .WithMany("UserProductEvents")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("FK_UserProductEvent_User");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Tech_Store.Models.VariantAttribute", b =>
                 {
                     b.HasOne("Tech_Store.Models.AttributeValue", "AttributeValue")
@@ -1947,6 +2815,18 @@ namespace Tech_Store.Migrations
                     b.Navigation("VariantAttributes");
                 });
 
+            modelBuilder.Entity("Tech_Store.Models.Banner", b =>
+                {
+                    b.Navigation("BannerPositionMaps");
+
+                    b.Navigation("BannerTarget");
+                });
+
+            modelBuilder.Entity("Tech_Store.Models.BannerPosition", b =>
+                {
+                    b.Navigation("BannerPositionMaps");
+                });
+
             modelBuilder.Entity("Tech_Store.Models.Brand", b =>
                 {
                     b.Navigation("BrandCategories");
@@ -2003,6 +2883,8 @@ namespace Tech_Store.Migrations
 
                     b.Navigation("SpecValues");
 
+                    b.Navigation("UserProductEvents");
+
                     b.Navigation("VarientProducts");
 
                     b.Navigation("Wishlists");
@@ -2011,6 +2893,11 @@ namespace Tech_Store.Migrations
             modelBuilder.Entity("Tech_Store.Models.Specs", b =>
                 {
                     b.Navigation("SpecValues");
+                });
+
+            modelBuilder.Entity("Tech_Store.Models.Supplier", b =>
+                {
+                    b.Navigation("InventoryTransactions");
                 });
 
             modelBuilder.Entity("Tech_Store.Models.User", b =>
@@ -2028,6 +2915,8 @@ namespace Tech_Store.Migrations
                     b.Navigation("Reviews");
 
                     b.Navigation("UserNotifications");
+
+                    b.Navigation("UserProductEvents");
 
                     b.Navigation("Wishlists");
                 });

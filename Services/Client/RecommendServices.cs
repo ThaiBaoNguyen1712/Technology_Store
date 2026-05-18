@@ -35,7 +35,7 @@ namespace Tech_Store.Services.Client.RecommendServices
         // ===============================
         // 1️⃣ Homepage
         // ===============================
-        public async Task<RecommendResponse> GetHomepageRecommend(int userId, int topN = 50)
+        public async Task<RecommendResponse> GetHomepageRecommend(int userId, int topN = 15)
         {
             List<string> ids = new();
             try
@@ -67,17 +67,35 @@ namespace Tech_Store.Services.Client.RecommendServices
         // ===============================
         // 2️⃣ Scene-based (Detail, Cart, Wishlist)
         // ===============================
-        public async Task<RecommendResponse> GetSceneRecommend(int userId, string scene, string? productSysId = null, int topN = 10)
+        public async Task<RecommendResponse> GetSceneRecommend(int userId, string scene, string? productSysId = null, int topN = 15)
         {
             List<string> ids = new();
             try
             {
-                string url = scene == "detail"
-                    ? $"api/v1/recommendation/{userId}/{scene}/{productSysId}?top_n={topN}"
-                    : $"api/v1/recommendation/{userId}/{scene}/_?top_n={topN}";
+                string? url = scene switch
+                {
+                    "detail" when !string.IsNullOrWhiteSpace(productSysId)
+                        => $"content_based_filter/{productSysId}?top_n={topN}",
+                    "cart" => $"api/v1/recommendation/cart/{userId}?top_n={topN}",
+                    "wishlist" => $"api/v1/recommendation/wishlist/{userId}?top_n={topN}",
+                    "homepage" => $"api/v1/recommendation/homepage/{userId}?top_n={topN}",
+                    _ => null
+                };
+
+                if (string.IsNullOrWhiteSpace(url))
+                {
+                    return new RecommendResponse
+                    {
+                        Scene = scene,
+                        Products = await BuildBackupProducts(scene, productSysId, topN)
+                    };
+                }
 
                 var aiResult = await _http.GetFromJsonAsync<RecommendRawResponse>(url, _jsonOptions);
-                if (aiResult?.Recommendations != null) ids = aiResult.Recommendations;
+                if (aiResult?.Recommendations != null)
+                {
+                    ids = aiResult.Recommendations;
+                }
             }
             catch { }
 

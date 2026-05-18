@@ -24,6 +24,16 @@ namespace Tech_Store.Models.ViewModel
 
         public DateTime? LastLogin { get; set; }
 
+        public string? LastLoginIp { get; set; }
+
+        public string? LastLoginDevice { get; set; }
+
+        public DateTime? LastRequestAt { get; set; }
+
+        public string? LastRequestIp { get; set; }
+
+        public string? LastRequestDevice { get; set; }
+
         public string? AddressLine { get; set; }
 
         public string? Ward { get; set; }

@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Tech_Store.Models;
 using Tech_Store.Models.DTO;
+using Tech_Store.Models.DTO.Payment.Admin;
 using Tech_Store.Models.ViewModel;
+using Tech_Store.Services.Payment;
 
 namespace Tech_Store.Areas.Admin.Controllers
 {
@@ -11,11 +13,16 @@ namespace Tech_Store.Areas.Admin.Controllers
     public class SettingsController : BaseAdminController
     {
         private readonly IConfiguration _configuration;
+        private readonly IPaymentGatewaySettingsService _paymentGatewaySettingsService;
         private const int FallbackPageSize = 20;
 
-        public SettingsController(ApplicationDbContext context, IConfiguration configuration) : base(context)
+        public SettingsController(
+            ApplicationDbContext context,
+            IConfiguration configuration,
+            IPaymentGatewaySettingsService paymentGatewaySettingsService) : base(context)
         {
             _configuration = configuration;
+            _paymentGatewaySettingsService = paymentGatewaySettingsService;
         }
 
         private int GetDefaultAdminPageSize()
@@ -26,15 +33,18 @@ namespace Tech_Store.Areas.Admin.Controllers
 
         [Route("Index")]
         [Route("")]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             var settings = _context.Settings.AsNoTracking().ToList();
+            var paymentGateways = await _paymentGatewaySettingsService.GetGatewaySettingsAsync();
             var model = new AdminSettingsHubViewModel
             {
                 WebsiteName = settings.FirstOrDefault(s => s.Key == "NameWebsite")?.Value ?? string.Empty,
                 SupportEmail = settings.FirstOrDefault(s => s.Key == "Email")?.Value ?? string.Empty,
                 ProductSpecCount = _context.Species.Count(),
-                ProductAttributeCount = _context.Attributes.Count()
+                ProductAttributeCount = _context.Attributes.Count(),
+                EnabledPaymentGatewayCount = paymentGateways.Count(x => x.IsEnabled),
+                TotalPaymentGatewayCount = paymentGateways.Count
             };
 
             return View(model);
@@ -44,6 +54,20 @@ namespace Tech_Store.Areas.Admin.Controllers
         public IActionResult General()
         {
             return View(BuildGeneralSettingsModel());
+        }
+
+        [HttpGet("PaymentGateways")]
+        public async Task<IActionResult> PaymentGateways()
+        {
+            var gateways = await _paymentGatewaySettingsService.GetGatewaySettingsAsync();
+            var model = new AdminPaymentGatewaySettingsViewModel
+            {
+                Gateways = gateways,
+                EnabledGatewayCount = gateways.Count(x => x.IsEnabled),
+                TotalGatewayCount = gateways.Count
+            };
+
+            return View(model);
         }
 
         [HttpGet("ProductSpecs")]
@@ -301,6 +325,16 @@ namespace Tech_Store.Areas.Admin.Controllers
             {
                 return Json(new { success = false, message = $"Đã xảy ra lỗi: {ex.Message}" });
             }
+        }
+
+        [HttpPost("UpdatePaymentGateways")]
+        public async Task<IActionResult> UpdatePaymentGateways([FromForm] PaymentGatewaySettingsUpdateDTo dto)
+        {
+            await _paymentGatewaySettingsService.UpdateGatewayStatusesAsync(
+                dto.IsMomoEnabled,
+                dto.IsVnPayEnabled,
+                dto.IsSePayEnabled);
+            return Json(new { success = true, message = "Đã cập nhật trạng thái cổng thanh toán." });
         }
 
         private SettingDTo BuildGeneralSettingsModel()

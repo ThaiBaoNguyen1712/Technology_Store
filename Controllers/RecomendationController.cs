@@ -17,7 +17,7 @@ namespace Tech_Store.Controllers
         }
 
         [HttpGet("homepage")]
-        public async Task<IActionResult> RecommendHomepage([FromQuery] int topN = 50)
+        public async Task<IActionResult> RecommendHomepage([FromQuery] int topN = 15)
         {
             int userId = GetCurrentUserId();
             var result = await _recommendServices.GetHomepageRecommend(userId, topN);
@@ -25,7 +25,7 @@ namespace Tech_Store.Controllers
         }
 
         [HttpGet("scene")]
-        public async Task<IActionResult> RecommendByScene([FromQuery] string scene, [FromQuery] string? productSysId, [FromQuery] int topN = 10)
+        public async Task<IActionResult> RecommendByScene([FromQuery] string scene, [FromQuery] string? productSysId, [FromQuery] int topN = 15)
         {
             int userId = GetCurrentUserId();
             var result = await _recommendServices.GetSceneRecommend(userId, scene, productSysId, topN);

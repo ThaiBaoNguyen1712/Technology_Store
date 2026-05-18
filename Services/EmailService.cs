@@ -70,13 +70,13 @@ namespace Tech_Store.Services
 
                 // Tạo bảng sản phẩm từ danh sách sản phẩm
                 StringBuilder productRows = new StringBuilder();
-                decimal totalAmount = 0;
+                decimal productSubtotal = 0;
 
                 for (int i = 0; i < invoiceEmail.Products.Count; i++)
                 {
                     var product = invoiceEmail.Products[i];
                     decimal lineTotal = product.Price * product.Quantity;
-                    totalAmount += lineTotal;
+                    productSubtotal += lineTotal;
 
                     productRows.AppendLine($@"<tr>
                 <td>{i + 1}</td>
@@ -86,15 +86,18 @@ namespace Tech_Store.Services
                 <td>{lineTotal.ToString("N0")} VNĐ</td>
             </tr>");
                 }
-       
-                // Tính các khoản phí
-                decimal tax = totalAmount * 0.1m; // 10% VAT
-                decimal shippingFee = invoiceEmail.ShippingFee;
-                decimal grandTotal = totalAmount + tax + shippingFee;
+
+                var originAmount = invoiceEmail.OriginAmount ?? productSubtotal;
+                var discountAmount = invoiceEmail.DiscountAmount ?? 0;
+                var shippingFee = invoiceEmail.ShippingFee;
+                var grandTotal = invoiceEmail.TotalAmount ?? Math.Max(0, originAmount - discountAmount + shippingFee);
+                var discountRowHtml = discountAmount > 0
+                    ? $@"<p>Giảm giá: {discountAmount.ToString("N0")} VNĐ</p>"
+                    : string.Empty;
 
                 // Thay thế thông tin tổng tiền
-                htmlBody = htmlBody.Replace("{Tổng tiền hàng}", totalAmount.ToString("N0") + " VNĐ")
-                                   .Replace("{Tiền thuế}", tax.ToString("N0") + " VNĐ")
+                htmlBody = htmlBody.Replace("{Tổng tiền hàng}", originAmount.ToString("N0") + " VNĐ")
+                                   .Replace("{Dòng giảm giá}", discountRowHtml)
                                    .Replace("{Phí vận chuyển}", shippingFee.ToString("N0") + " VNĐ")
                                    .Replace("{Tổng thanh toán}", grandTotal.ToString("N0") + " VNĐ")
                                    .Replace("{Phương thức thanh toán}", invoiceEmail.PaymentMethod)

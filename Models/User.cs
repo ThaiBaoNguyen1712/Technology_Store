@@ -25,6 +25,16 @@ public partial class User
 
     public DateTime? LastLogin { get; set; }
 
+    public string? LastLoginIp { get; set; }
+
+    public string? LastLoginDevice { get; set; }
+
+    public DateTime? LastRequestAt { get; set; }
+
+    public string? LastRequestIp { get; set; }
+
+    public string? LastRequestDevice { get; set; }
+
     public string? VerificationCode { get; set; }
 
     public bool? IsVerified { get; set; }
@@ -46,6 +56,8 @@ public partial class User
     public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
 
     public virtual ICollection<UserNotification> UserNotifications { get; set; } = new List<UserNotification>();
+
+    public virtual ICollection<UserProductEvent> UserProductEvents { get; set; } = new List<UserProductEvent>();
 
     public virtual ICollection<Wishlist> Wishlists { get; set; } = new List<Wishlist>();
 

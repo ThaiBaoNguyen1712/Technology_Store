@@ -1,5 +1,7 @@
 ﻿using System.Security.Claims;
 using Tech_Store.Services;
+using Tech_Store.Models.Enums;
+using Tech_Store.Services.Recommendation;
 
 namespace Tech_Store.Middleware
 {
@@ -46,32 +48,32 @@ namespace Tech_Store.Middleware
                 var productSysId = sysIdObj?.ToString();
                 if (string.IsNullOrWhiteSpace(productSysId)) return;
 
-                // Trích xuất thông tin cần thiết trước khi đẩy vào luồng ngầm
                 var userIdStr = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var productId = context.Items.TryGetValue("product_id", out var productIdObj)
+                    && int.TryParse(productIdObj?.ToString(), out var parsedProductId)
+                    ? parsedProductId
+                    : (int?)null;
 
-                // Fire-and-forget: Bắn task chạy ngầm và kết thúc request chính ngay tại đây
-                _ = Task.Run(async () =>
+                using var scope = _scopeFactory.CreateScope();
+                var tracker = scope.ServiceProvider.GetRequiredService<IUserProductEventTrackingService>();
+                var logger = scope.ServiceProvider.GetRequiredService<ILogger<TrackProductViewMiddleware>>();
+
+                try
                 {
-                    using var scope = _scopeFactory.CreateScope();
-                    var redisService = scope.ServiceProvider.GetRequiredService<RedisService>();
-                    var logger = scope.ServiceProvider.GetRequiredService<ILogger<TrackProductViewMiddleware>>();
-
-                    try
+                    await tracker.TrackAsync(new UserProductEventWriteRequest
                     {
-                        if (int.TryParse(userIdStr, out var userId))
-                        {
-                            await redisService.TrackUserWatchedProductAsync(userId, productSysId);
-                        }
-                        else if (!string.IsNullOrEmpty(guestId))
-                        {
-                            await redisService.TrackGuestWatchedProductAsync(guestId, productSysId);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogError(ex, "Background Tracking Error for Product: {ProductSysId}", productSysId);
-                    }
-                });
+                        UserId = int.TryParse(userIdStr, out var userId) ? userId : null,
+                        SessionId = int.TryParse(userIdStr, out _) ? null : guestId,
+                        ProductId = productId,
+                        ProductSysId = productSysId,
+                        EventType = UserProductEventType.ViewDetail,
+                        Source = "product_detail_middleware"
+                    });
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Background Tracking Error for Product: {ProductSysId}", productSysId);
+                }
             }
         }
     }

@@ -19,6 +19,12 @@ public partial class ApplicationDbContext : DbContext
     public virtual DbSet<AttributeValue> AttributeValues { get; set; }
 
     public virtual DbSet<Banner> Banners { get; set; }
+
+    public virtual DbSet<BannerPosition> BannerPositions { get; set; }
+
+    public virtual DbSet<BannerPositionMap> BannerPositionMaps { get; set; }
+
+    public virtual DbSet<BannerTarget> BannerTargets { get; set; }
     public virtual DbSet<Brand> Brands { get; set; }
     public virtual DbSet<BrandCategory> BrandCategories { get; set; }
 
@@ -53,7 +59,11 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<Setting> Settings { get; set; }
 
+    public virtual DbSet<Supplier> Suppliers { get; set; }
+
     public virtual DbSet<User> Users { get; set; }
+
+    public virtual DbSet<UserProductEvent> UserProductEvents { get; set; }
 
     public virtual DbSet<UserNotification> UserNotifications { get; set; }
 
@@ -202,17 +212,289 @@ public partial class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<Banner>(entity =>
         {
-            entity.ToTable("Banner");
+            entity.ToTable("Banners");
             ConfigureTimestamps(entity);
-            entity.Property(e => e.BannerId).HasColumnName("banner_id").UseIdentityColumn(00000);
-            entity.Property(e=>e.Type).HasColumnName("type");
-            entity.Property(e => e.RefId).HasColumnName("refId");
-            entity.Property(e => e.ImageUrl).HasColumnName("imageUrl");
-            entity.Property(e=>e.Position).HasColumnName("position");
-            entity.Property(e=>e.LinkUrl).HasColumnName("link");
-            entity.Property(e => e.SortOrder).HasColumnName("sortOrder");
-            entity.Property(e => e.Device).HasColumnName("device");
-            entity.Property(e=>e.isActive).HasColumnName("active");
+
+            entity.HasIndex(e => new { e.IsDeleted, e.IsActive });
+
+            entity.Property(e => e.BannerId).HasColumnName("banner_id");
+            entity.Property(e => e.AltText)
+                .HasMaxLength(255)
+                .HasColumnName("alt_text");
+            entity.Property(e => e.DesktopImageUrl)
+                .HasMaxLength(500)
+                .HasColumnName("desktop_image_url");
+            entity.Property(e => e.IsActive).HasColumnName("is_active");
+            entity.Property(e => e.IsDeleted).HasColumnName("is_deleted");
+            entity.Property(e => e.MobileImageUrl)
+                .HasMaxLength(500)
+                .HasColumnName("mobile_image_url");
+            entity.Property(e => e.Name)
+                .HasMaxLength(200)
+                .HasColumnName("name");
+            entity.Property(e => e.Notes).HasColumnName("notes");
+
+            entity.HasData(
+                new Banner
+                {
+                    BannerId = 1001,
+                    Name = "Banner mặc định hero 1",
+                    DesktopImageUrl = "https://images.macrumors.com/t/H0wescJV-Z32v37P2JxpOBsFX8c=/2500x0/filters:no_upscale()/article-new/2024/11/iPhone-17-Pro-Dual-Tone-Rectangle-Feature-1.jpg",
+                    AltText = "Khuyến mãi điện thoại nổi bật",
+                    IsActive = true,
+                    IsDeleted = false
+                },
+                new Banner
+                {
+                    BannerId = 1002,
+                    Name = "Banner mặc định hero 2",
+                    DesktopImageUrl = "https://i.gadgets360cdn.com/large/samsung_galaxy_s25_ultra_technizoconcept_inline_1731133022562.jpg",
+                    AltText = "Khuyến mãi Samsung nổi bật",
+                    IsActive = true,
+                    IsDeleted = false
+                },
+                new Banner
+                {
+                    BannerId = 1003,
+                    Name = "Banner mặc định hero 3",
+                    DesktopImageUrl = "https://cdn.mos.cms.futurecdn.net/hyKSYAeHLcrRtExozn7EBA-1200-80.jpg",
+                    AltText = "Khuyến mãi flagship mới",
+                    IsActive = true,
+                    IsDeleted = false
+                },
+                new Banner
+                {
+                    BannerId = 1004,
+                    Name = "Banner mặc định promo 1",
+                    DesktopImageUrl = "/Client/asset/img/R.png",
+                    AltText = "Khuyến mãi iPhone",
+                    IsActive = true,
+                    IsDeleted = false
+                },
+                new Banner
+                {
+                    BannerId = 1005,
+                    Name = "Banner mặc định promo 2",
+                    DesktopImageUrl = "/Client/asset/img/right-banner-14-10.webp",
+                    AltText = "Khuyến mãi Samsung",
+                    IsActive = true,
+                    IsDeleted = false
+                },
+                new Banner
+                {
+                    BannerId = 1101,
+                    Name = "Category hero điện thoại",
+                    DesktopImageUrl = "https://images.macrumors.com/t/H0wescJV-Z32v37P2JxpOBsFX8c=/2500x0/filters:no_upscale()/article-new/2024/11/iPhone-17-Pro-Dual-Tone-Rectangle-Feature-1.jpg",
+                    AltText = "Banner điện thoại nổi bật",
+                    IsActive = true,
+                    IsDeleted = false
+                },
+                new Banner
+                {
+                    BannerId = 1102,
+                    Name = "Category hero laptop",
+                    DesktopImageUrl = "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1600&q=80",
+                    AltText = "Banner laptop hiệu năng cao",
+                    IsActive = true,
+                    IsDeleted = false
+                },
+                new Banner
+                {
+                    BannerId = 1103,
+                    Name = "Category hero tablet",
+                    DesktopImageUrl = "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=1600&q=80",
+                    AltText = "Banner máy tính bảng học tập và giải trí",
+                    IsActive = true,
+                    IsDeleted = false
+                },
+                new Banner
+                {
+                    BannerId = 1104,
+                    Name = "Category hero phụ kiện",
+                    DesktopImageUrl = "https://images.unsplash.com/photo-1585338447937-7082f8fc763d?auto=format&fit=crop&w=1600&q=80",
+                    AltText = "Banner phụ kiện công nghệ",
+                    IsActive = true,
+                    IsDeleted = false
+                },
+                new Banner
+                {
+                    BannerId = 1105,
+                    Name = "Brand hero Apple",
+                    DesktopImageUrl = "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1600&q=80",
+                    AltText = "Banner Apple",
+                    IsActive = true,
+                    IsDeleted = false
+                },
+                new Banner
+                {
+                    BannerId = 1106,
+                    Name = "Brand hero Samsung",
+                    DesktopImageUrl = "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?auto=format&fit=crop&w=1600&q=80",
+                    AltText = "Banner Samsung",
+                    IsActive = true,
+                    IsDeleted = false
+                },
+                new Banner
+                {
+                    BannerId = 1107,
+                    Name = "Brand hero ASUS",
+                    DesktopImageUrl = "https://images.unsplash.com/photo-1593642702744-d377ab507dc8?auto=format&fit=crop&w=1600&q=80",
+                    AltText = "Banner ASUS",
+                    IsActive = true,
+                    IsDeleted = false
+                },
+                new Banner
+                {
+                    BannerId = 1108,
+                    Name = "Brand hero Lenovo",
+                    DesktopImageUrl = "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=1600&q=80",
+                    AltText = "Banner Lenovo",
+                    IsActive = true,
+                    IsDeleted = false
+                });
+        });
+
+        modelBuilder.Entity<BannerPosition>(entity =>
+        {
+            entity.ToTable("BannerPositions");
+            ConfigureTimestamps(entity);
+
+            entity.HasIndex(e => e.Code).IsUnique();
+
+            entity.Property(e => e.BannerPositionId).HasColumnName("banner_position_id");
+            entity.Property(e => e.Code)
+                .HasMaxLength(120)
+                .IsUnicode(false)
+                .HasColumnName("code");
+            entity.Property(e => e.Description)
+                .HasMaxLength(500)
+                .HasColumnName("description");
+            entity.Property(e => e.IsActive).HasColumnName("is_active");
+            entity.Property(e => e.Name)
+                .HasMaxLength(200)
+                .HasColumnName("name");
+
+            entity.HasData(
+                new BannerPosition { BannerPositionId = 1, Code = "home-hero-main", Name = "Hero chính trang chủ", Description = "Carousel lớn giữa trang chủ", IsActive = true },
+                new BannerPosition { BannerPositionId = 2, Code = "home-hero-promo", Name = "Promo phụ trang chủ", Description = "Hai banner phụ bên phải hero trang chủ", IsActive = true },
+                new BannerPosition { BannerPositionId = 3, Code = "category-hero", Name = "Hero danh mục", Description = "Banner đầu trang danh mục", IsActive = true },
+                new BannerPosition { BannerPositionId = 4, Code = "brand-hero", Name = "Hero thương hiệu", Description = "Banner đầu trang thương hiệu", IsActive = true });
+        });
+
+        modelBuilder.Entity<BannerPositionMap>(entity =>
+        {
+            entity.ToTable("BannerPositionMaps");
+            ConfigureTimestamps(entity);
+
+            entity.HasIndex(e => new { e.BannerPositionId, e.DisplayCategoryId, e.DisplayBrandId, e.IsActive, e.IsDefault, e.Priority })
+                .HasDatabaseName("IX_BannerPositionMaps_PositionScopePriority");
+
+            entity.Property(e => e.BannerPositionMapId).HasColumnName("banner_position_map_id");
+            entity.Property(e => e.BannerId).HasColumnName("banner_id");
+            entity.Property(e => e.BannerPositionId).HasColumnName("banner_position_id");
+            entity.Property(e => e.DisplayCategoryId).HasColumnName("display_category_id");
+            entity.Property(e => e.DisplayBrandId).HasColumnName("display_brand_id");
+            entity.Property(e => e.EndAt).HasColumnName("end_at");
+            entity.Property(e => e.IsActive).HasColumnName("is_active");
+            entity.Property(e => e.IsDefault).HasColumnName("is_default");
+            entity.Property(e => e.Priority).HasColumnName("priority");
+            entity.Property(e => e.StartAt).HasColumnName("start_at");
+
+            entity.HasOne(d => d.Banner).WithMany(p => p.BannerPositionMaps)
+                .HasForeignKey(d => d.BannerId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_BannerPositionMaps_Banners");
+
+            entity.HasOne(d => d.BannerPosition).WithMany(p => p.BannerPositionMaps)
+                .HasForeignKey(d => d.BannerPositionId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_BannerPositionMaps_BannerPositions");
+
+            entity.HasOne(d => d.DisplayCategory).WithMany()
+                .HasForeignKey(d => d.DisplayCategoryId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("FK_BannerPositionMaps_Categories");
+
+            entity.HasOne(d => d.DisplayBrand).WithMany()
+                .HasForeignKey(d => d.DisplayBrandId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("FK_BannerPositionMaps_Brands");
+
+            entity.HasData(
+                new BannerPositionMap { BannerPositionMapId = 3001, BannerId = 1001, BannerPositionId = 1, Priority = 300, IsDefault = true, IsActive = true },
+                new BannerPositionMap { BannerPositionMapId = 3002, BannerId = 1002, BannerPositionId = 1, Priority = 200, IsDefault = true, IsActive = true },
+                new BannerPositionMap { BannerPositionMapId = 3003, BannerId = 1003, BannerPositionId = 1, Priority = 100, IsDefault = true, IsActive = true },
+                new BannerPositionMap { BannerPositionMapId = 3004, BannerId = 1004, BannerPositionId = 2, Priority = 200, IsDefault = true, IsActive = true },
+                new BannerPositionMap { BannerPositionMapId = 3005, BannerId = 1005, BannerPositionId = 2, Priority = 100, IsDefault = true, IsActive = true },
+                new BannerPositionMap { BannerPositionMapId = 3006, BannerId = 1001, BannerPositionId = 3, Priority = 100, IsDefault = true, IsActive = true },
+                new BannerPositionMap { BannerPositionMapId = 3007, BannerId = 1002, BannerPositionId = 4, Priority = 100, IsDefault = true, IsActive = true },
+                new BannerPositionMap { BannerPositionMapId = 3101, BannerId = 1101, BannerPositionId = 3, DisplayCategoryId = 1, Priority = 500, IsDefault = false, IsActive = true },
+                new BannerPositionMap { BannerPositionMapId = 3102, BannerId = 1102, BannerPositionId = 3, DisplayCategoryId = 2, Priority = 500, IsDefault = false, IsActive = true },
+                new BannerPositionMap { BannerPositionMapId = 3103, BannerId = 1103, BannerPositionId = 3, DisplayCategoryId = 3, Priority = 500, IsDefault = false, IsActive = true },
+                new BannerPositionMap { BannerPositionMapId = 3104, BannerId = 1104, BannerPositionId = 3, DisplayCategoryId = 5, Priority = 500, IsDefault = false, IsActive = true },
+                new BannerPositionMap { BannerPositionMapId = 3105, BannerId = 1105, BannerPositionId = 4, DisplayBrandId = 4, Priority = 500, IsDefault = false, IsActive = true },
+                new BannerPositionMap { BannerPositionMapId = 3106, BannerId = 1106, BannerPositionId = 4, DisplayBrandId = 2, Priority = 500, IsDefault = false, IsActive = true },
+                new BannerPositionMap { BannerPositionMapId = 3107, BannerId = 1107, BannerPositionId = 4, DisplayBrandId = 354036, Priority = 500, IsDefault = false, IsActive = true },
+                new BannerPositionMap { BannerPositionMapId = 3108, BannerId = 1108, BannerPositionId = 4, DisplayBrandId = 9, Priority = 500, IsDefault = false, IsActive = true });
+        });
+
+        modelBuilder.Entity<BannerTarget>(entity =>
+        {
+            entity.ToTable("BannerTargets");
+            ConfigureTimestamps(entity);
+
+            entity.HasIndex(e => e.BannerId).IsUnique();
+            entity.HasIndex(e => new { e.TargetType, e.CategoryId, e.BrandId, e.ProductId })
+                .HasDatabaseName("IX_BannerTargets_TargetLookup");
+
+            entity.Property(e => e.BannerTargetId).HasColumnName("banner_target_id");
+            entity.Property(e => e.BannerId).HasColumnName("banner_id");
+            entity.Property(e => e.BrandId).HasColumnName("brand_id");
+            entity.Property(e => e.CategoryId).HasColumnName("category_id");
+            entity.Property(e => e.ExternalUrl)
+                .HasMaxLength(500)
+                .HasColumnName("external_url");
+            entity.Property(e => e.OpenInNewTab).HasColumnName("open_in_new_tab");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.TargetType)
+                .HasMaxLength(30)
+                .IsUnicode(false)
+                .HasColumnName("target_type");
+
+            entity.HasOne(d => d.Banner).WithOne(p => p.BannerTarget)
+                .HasForeignKey<BannerTarget>(d => d.BannerId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_BannerTargets_Banners");
+
+            entity.HasOne(d => d.Brand).WithMany()
+                .HasForeignKey(d => d.BrandId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("FK_BannerTargets_Brands");
+
+            entity.HasOne(d => d.Category).WithMany()
+                .HasForeignKey(d => d.CategoryId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("FK_BannerTargets_Categories");
+
+            entity.HasOne(d => d.Product).WithMany()
+                .HasForeignKey(d => d.ProductId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("FK_BannerTargets_Products");
+
+            entity.HasData(
+                new BannerTarget { BannerTargetId = 2001, BannerId = 1001, TargetType = "url", ExternalUrl = "/Search?q=iphone", OpenInNewTab = false },
+                new BannerTarget { BannerTargetId = 2002, BannerId = 1002, TargetType = "url", ExternalUrl = "/Search?q=samsung", OpenInNewTab = false },
+                new BannerTarget { BannerTargetId = 2003, BannerId = 1003, TargetType = "url", ExternalUrl = "/Search?q=flagship", OpenInNewTab = false },
+                new BannerTarget { BannerTargetId = 2004, BannerId = 1004, TargetType = "url", ExternalUrl = "/Search?q=iphone", OpenInNewTab = false },
+                new BannerTarget { BannerTargetId = 2005, BannerId = 1005, TargetType = "url", ExternalUrl = "/Search?q=samsung", OpenInNewTab = false },
+                new BannerTarget { BannerTargetId = 2101, BannerId = 1101, TargetType = "category", CategoryId = 1, OpenInNewTab = false },
+                new BannerTarget { BannerTargetId = 2102, BannerId = 1102, TargetType = "category", CategoryId = 2, OpenInNewTab = false },
+                new BannerTarget { BannerTargetId = 2103, BannerId = 1103, TargetType = "category", CategoryId = 3, OpenInNewTab = false },
+                new BannerTarget { BannerTargetId = 2104, BannerId = 1104, TargetType = "category", CategoryId = 5, OpenInNewTab = false },
+                new BannerTarget { BannerTargetId = 2105, BannerId = 1105, TargetType = "brand", BrandId = 4, OpenInNewTab = false },
+                new BannerTarget { BannerTargetId = 2106, BannerId = 1106, TargetType = "brand", BrandId = 2, OpenInNewTab = false },
+                new BannerTarget { BannerTargetId = 2107, BannerId = 1107, TargetType = "brand", BrandId = 354036, OpenInNewTab = false },
+                new BannerTarget { BannerTargetId = 2108, BannerId = 1108, TargetType = "brand", BrandId = 9, OpenInNewTab = false });
         });
 
         modelBuilder.Entity<Brand>(entity =>
@@ -604,6 +886,7 @@ public partial class ApplicationDbContext : DbContext
                 .HasColumnName("updated_at");
             entity.Property(e => e.Note).HasColumnName("note");
             entity.Property(e => e.ProductId).HasColumnName("productId");
+            entity.Property(e => e.SupplierId).HasColumnName("supplierId");
             entity.Property(e => e.Type)
                 .HasMaxLength(50)
                 .HasColumnName("type");
@@ -613,6 +896,10 @@ public partial class ApplicationDbContext : DbContext
                 .HasForeignKey(d => d.ProductId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ProductHistory_Product");
+
+            entity.HasOne(d => d.Supplier).WithMany(p => p.InventoryTransactions)
+                .HasForeignKey(d => d.SupplierId)
+                .HasConstraintName("FK_InventoryTransactions_Supplier");
 
             entity.HasOne(d => d.User).WithMany(p => p.InventoryTransactions)
                 .HasForeignKey(d => d.UserId)
@@ -769,6 +1056,39 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.Value).HasColumnName("value");
         });
 
+        modelBuilder.Entity<Supplier>(entity =>
+        {
+            entity.ToTable("Supplier");
+            ConfigureTimestamps(entity);
+
+            entity.HasIndex(e => e.Code).IsUnique();
+
+            entity.Property(e => e.SupplierId).HasColumnName("supplier_id");
+            entity.Property(e => e.Address)
+                .HasMaxLength(500)
+                .HasColumnName("address");
+            entity.Property(e => e.Code)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("code");
+            entity.Property(e => e.ContactName)
+                .HasMaxLength(155)
+                .HasColumnName("contact_name");
+            entity.Property(e => e.Email)
+                .HasMaxLength(155)
+                .IsUnicode(false)
+                .HasColumnName("email");
+            entity.Property(e => e.IsActive).HasColumnName("is_active");
+            entity.Property(e => e.Name)
+                .HasMaxLength(255)
+                .HasColumnName("name");
+            entity.Property(e => e.Notes).HasColumnName("notes");
+            entity.Property(e => e.PhoneNumber)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasColumnName("phone_number");
+        });
+
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(e => e.UserId).HasName("PK__User__B9BE370F7C090B8B");
@@ -806,6 +1126,23 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.LastLogin)
                 .HasColumnType("datetime")
                 .HasColumnName("last_login");
+            entity.Property(e => e.LastLoginDevice)
+                .HasMaxLength(255)
+                .HasColumnName("last_login_device");
+            entity.Property(e => e.LastLoginIp)
+                .HasMaxLength(64)
+                .IsUnicode(false)
+                .HasColumnName("last_login_ip");
+            entity.Property(e => e.LastRequestAt)
+                .HasColumnType("datetime")
+                .HasColumnName("last_request_at");
+            entity.Property(e => e.LastRequestDevice)
+                .HasMaxLength(255)
+                .HasColumnName("last_request_device");
+            entity.Property(e => e.LastRequestIp)
+                .HasMaxLength(64)
+                .IsUnicode(false)
+                .HasColumnName("last_request_ip");
             entity.Property(e => e.LastName)
                 .HasMaxLength(50)
                 .HasColumnName("last_name");
@@ -840,6 +1177,53 @@ public partial class ApplicationDbContext : DbContext
                         j.IndexerProperty<int>("UserId").HasColumnName("user_id");
                         j.IndexerProperty<int>("RoleId").HasColumnName("role_id");
                     });
+        });
+
+        modelBuilder.Entity<UserProductEvent>(entity =>
+        {
+            entity.ToTable("UserProductEvent");
+
+            entity.HasKey(e => e.Id);
+
+            entity.HasIndex(e => new { e.UserId, e.CreatedAt })
+                .HasDatabaseName("IX_UserProductEvent_UserId_CreatedAt");
+            entity.HasIndex(e => new { e.SessionId, e.CreatedAt })
+                .HasDatabaseName("IX_UserProductEvent_SessionId_CreatedAt");
+            entity.HasIndex(e => new { e.ProductId, e.CreatedAt })
+                .HasDatabaseName("IX_UserProductEvent_ProductId_CreatedAt");
+            entity.HasIndex(e => new { e.EventType, e.CreatedAt })
+                .HasDatabaseName("IX_UserProductEvent_EventType_CreatedAt");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.SessionId)
+                .HasMaxLength(100)
+                .HasColumnName("session_id");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.EventType)
+                .HasMaxLength(50)
+                .HasColumnName("event_type");
+            entity.Property(e => e.Weight)
+                .HasColumnType("float")
+                .HasColumnName("weight");
+            entity.Property(e => e.Source)
+                .HasMaxLength(50)
+                .HasColumnName("source");
+            entity.Property(e => e.MetadataJson).HasColumnName("metadata_json");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime2")
+                .HasColumnName("created_at");
+
+            entity.HasOne(d => d.Product).WithMany(p => p.UserProductEvents)
+                .HasForeignKey(d => d.ProductId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_UserProductEvent_Product");
+
+            entity.HasOne(d => d.User).WithMany(p => p.UserProductEvents)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("FK_UserProductEvent_User");
         });
 
         modelBuilder.Entity<UserNotification>(entity =>

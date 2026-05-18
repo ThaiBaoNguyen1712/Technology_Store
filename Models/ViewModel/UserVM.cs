@@ -12,5 +12,10 @@
         public int OrderCount { get; set; }
         public decimal TotalSpent { get; set; }
         public DateTime? CreatedAt { get; set; }
+        public DateTime? LastLogin { get; set; }
+        public string LastLoginIp { get; set; } = string.Empty;
+        public string LastLoginDevice { get; set; } = string.Empty;
+        public DateTime? LastRequestAt { get; set; }
+        public string LastRequestIp { get; set; } = string.Empty;
     }
 }

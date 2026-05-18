@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using reCAPTCHA.AspNetCore;
 using StackExchange.Redis;
 using System.Reflection;
 using Tech_Store.Helpers;
@@ -15,15 +14,22 @@ using Tech_Store.Models;
 using Tech_Store.Models.DTO.Payment.Client.Momo;
 using Tech_Store.Services;
 using Tech_Store.Services.Admin.BrandServices;
+using Tech_Store.Services.Admin.BannerServices;
 using Tech_Store.Services.Admin.CategoryServices;
 using Tech_Store.Services.Admin.Interfaces;
 using Tech_Store.Services.Admin.MomoServices;
 using Tech_Store.Services.Admin.NotificationServices;
 using Tech_Store.Services.Admin.ProductServices;
+using Tech_Store.Services.Admin.SupplierServices;
 using Tech_Store.Services.Admin.VNPayServices;
 using Tech_Store.Services.Admin.VoucherServices;
+using Tech_Store.Services.Auth;
 using Tech_Store.Services.Client;
+using Tech_Store.Services.Client.Storefront;
 using Tech_Store.Services.Client.RecommendServices;
+using Tech_Store.Services.Interfaces.Auth;
+using Tech_Store.Services.Payment;
+using Tech_Store.Services.Recommendation;
 using static Org.BouncyCastle.Math.EC.ECCurve;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,6 +39,8 @@ builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.Get
 // Add services to the container.
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddMemoryCache();
 
 builder.Services.AddControllersWithViews().AddJsonOptions(options =>
 {
@@ -57,9 +65,22 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 });
 // Identity Configuration
 builder.Services.AddScoped<IBrandService, BrandService>();
+builder.Services.AddScoped<IBannerAdminService, BannerAdminService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IVoucherService, VoucherService>();
 builder.Services.AddScoped<IAdminProductService, AdminProductService>();
+builder.Services.AddScoped<ISupplierService, SupplierService>();
+builder.Services.AddScoped<IBannerQueryService, BannerQueryService>();
+builder.Services.AddScoped<IPaymentGatewaySettingsService, PaymentGatewaySettingsService>();
+builder.Services.AddScoped<IClientPaymentService, ClientPaymentService>();
+builder.Services.AddScoped<IOnlinePaymentGatewayService, OnlinePaymentGatewayService>();
+builder.Services.AddScoped<ISePayService, SePayService>();
+builder.Services.Configure<SePayOptions>(builder.Configuration.GetSection("SePay"));
+builder.Services.AddScoped<ICloudflareTurnstileService, CloudflareTurnstileService>();
+builder.Services.Configure<CloudflareTurnstileOptions>(builder.Configuration.GetSection(CloudflareTurnstileOptions.SectionName));
+builder.Services.AddScoped<IAuthenticationFlowService, AuthenticationFlowService>();
+builder.Services.AddScoped<IExternalAuthenticationService, ExternalAuthenticationService>();
+builder.Services.AddScoped<IHomePageContentService, HomePageContentService>();
 
 // VNPay and Momo Payment Services
 builder.Services.AddSingleton<IVnPayService, VnPayService>();
@@ -78,13 +99,6 @@ builder.Services.AddScoped<RecommendServices>();
 builder.Services.Configure<FormOptions>(options =>
 {
     options.MultipartBodyLengthLimit = 50 * 1024 * 1024; // 50 MB
-});
-
-// reCAPTCHA Configuration
-builder.Services.AddRecaptcha(options =>
-{
-    options.SiteKey = builder.Configuration["reCAPTCHA:SiteKey"];
-    options.SecretKey = builder.Configuration["reCAPTCHA:SecretKey"];
 });
 
 // Authorization
@@ -132,6 +146,12 @@ builder.Services.AddScoped<NotificationService>();
 
 //Redis cache
 builder.Services.AddScoped<RedisService>();
+builder.Services.AddScoped<IUserActivityTrackingService, UserActivityTrackingService>();
+builder.Services.AddSingleton<UserProductEventBackgroundQueue>();
+builder.Services.AddSingleton<IUserProductEventQueue>(sp => sp.GetRequiredService<UserProductEventBackgroundQueue>());
+builder.Services.AddHostedService(sp => sp.GetRequiredService<UserProductEventBackgroundQueue>());
+builder.Services.AddScoped<IUserProductEventTrackingService, UserProductEventTrackingService>();
+builder.Services.AddHostedService<UserProductEventRetentionService>();
 
 builder.Services.AddSignalR();
 
@@ -191,6 +211,7 @@ app.UseSession();
 //Authentication & Authorization should be placed after session
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<TrackAuthenticatedUserActivityMiddleware>();
 
 // SignalR route
 app.MapHub<NotificationHub>("/notificationHub");

@@ -1,0 +1,33 @@
+@{
+    ViewData["Title"] = "Đặt hàng chưa thành công";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<section class="client-status-page">
+    <div class="container">
+        <div class="client-status-card client-status-card--danger">
+            <div class="client-status-card__icon">
+                <i class="fas fa-times"></i>
+            </div>
+            <p class="client-status-card__eyebrow">Đặt hàng chưa thành công</p>
+            <h1 class="client-status-card__title">Đơn hàng chưa được tạo</h1>
+            <p class="client-status-card__message">@(TempData["Message"]?.ToString() ?? "Hệ thống chưa thể ghi nhận đơn hàng của bạn. Vui lòng thử lại.")</p>
+
+            <div class="client-status-card__notes">
+                <div class="client-status-card__note">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Kiểm tra lại giỏ hàng và thông tin nhận hàng trước khi đặt lại.</span>
+                </div>
+                <div class="client-status-card__note">
+                    <i class="fas fa-redo"></i>
+                    <span>Bạn có thể quay lại giỏ hàng để thực hiện lại đơn mua.</span>
+                </div>
+            </div>
+
+            <div class="client-status-card__actions">
+                <a href="@Url.Action("Cart", "User")" class="btn btn-danger">Quay lại giỏ hàng</a>
+                <a href="@Url.Action("Index", "Home")" class="btn btn-outline-secondary">Về trang chủ</a>
+            </div>
+        </div>
+    </div>
+</section>

@@ -11,6 +11,8 @@
         public ICollection<InventorTransactionDetailViewModel> InventoryTransactionDetail { get; set; } 
         public string UserName { get; set; }
         public string UserRole { get; set; }
+        public string? SupplierName { get; set; }
+        public string? SupplierCode { get; set; }
     }
     public class InventorTransactionDetailViewModel
     {

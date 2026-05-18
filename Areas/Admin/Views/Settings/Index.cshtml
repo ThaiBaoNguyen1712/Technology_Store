@@ -1,7 +1,7 @@
 @model Tech_Store.Models.ViewModel.AdminSettingsHubViewModel
 
 @{
-    ViewData["Title"] = "Cài đặt trang web";
+    ViewData["Title"] = "Cài đặt website";
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
 }
 
@@ -9,7 +9,7 @@
     <div class="settings-page__hero">
         <div>
             <span class="settings-page__eyebrow">Quản trị hệ thống</span>
-            <h1 class="settings-page__title">Cài đặt trang web</h1>
+            <h1 class="settings-page__title">Cài đặt website</h1>
         </div>
         <div class="settings-page__hero-meta">
             <div class="settings-page__meta-card">
@@ -48,6 +48,16 @@
             </div>
             <div class="settings-hub__body">
                 <h2>Thuộc tính biến thể</h2>
+            </div>
+        </a>
+
+        <a class="settings-hub__card" href="/Admin/Settings/PaymentGateways">
+            <div class="settings-hub__icon">
+                <i class="fas fa-university"></i>
+            </div>
+            <div class="settings-hub__body">
+                <h2>Cổng thanh toán</h2>
+                <p>@Model.EnabledPaymentGatewayCount/@Model.TotalPaymentGatewayCount cổng đang mở</p>
             </div>
         </a>
     </div>

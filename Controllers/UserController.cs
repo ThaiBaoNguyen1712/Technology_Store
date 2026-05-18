@@ -11,9 +11,11 @@ using Tech_Store.Helper;
 using Tech_Store.Models;
 using Tech_Store.Models.DTO;
 using Tech_Store.Models.DTO.Authentication;
+using Tech_Store.Models.Enums;
 using Tech_Store.Models.ViewModel;
 using Tech_Store.Services;
 using Tech_Store.Services.Admin.NotificationServices;
+using Tech_Store.Services.Recommendation;
 
 namespace Tech_Store.Controllers
 {
@@ -22,11 +24,11 @@ namespace Tech_Store.Controllers
     public class UserController : BaseController
     {
         private readonly NotificationService _notificationService;
-        private readonly RedisService _redisService;
+        private readonly IUserProductEventTrackingService _userProductEventTrackingService;
 
-        public UserController(ApplicationDbContext context, NotificationService notificationService, RedisService redisService) : base(context) {
+        public UserController(ApplicationDbContext context, NotificationService notificationService, IUserProductEventTrackingService userProductEventTrackingService) : base(context) {
             _notificationService = notificationService;
-            _redisService = redisService;
+            _userProductEventTrackingService = userProductEventTrackingService;
         }
         public IActionResult Index()
         {
@@ -353,13 +355,19 @@ namespace Tech_Store.Controllers
 
             try
             {
-                await _redisService.TrackUserWatchedProductAsync(int.Parse(userId), product.Product.ProductSysId, 5);
+                await _userProductEventTrackingService.TrackAsync(new UserProductEventWriteRequest
+                {
+                    UserId = int.Parse(userId),
+                    ProductId = product.ProductId ?? product.Product.ProductId,
+                    ProductSysId = product.Product.ProductSysId,
+                    EventType = UserProductEventType.AddCart,
+                    Source = "user_add_to_cart"
+                });
             }
             catch(Exception ex)
             {
                 Console.WriteLine($"Lỗi khi theo dõi sản phẩm đã xem: {ex.Message}");
             }
-            //Add vào Redis để theo dõi sản phẩm đã xem
 
             return Json(new { success = true, message = "Đã thêm vào giỏ hàng" });
         }
@@ -412,8 +420,28 @@ namespace Tech_Store.Controllers
                 return Json(new { success = false, message = "Không tìm thấy sản phẩm trong giỏ hàng" });
             }
 
+            var trackedProductId = item.ProductId;
             _context.CartItems.Remove(item);
             await _context.SaveChangesAsync();
+
+            var removedProduct = await _context.Products
+                .AsNoTracking()
+                .Where(x => x.ProductId == trackedProductId)
+                .Select(x => new { x.ProductId, x.ProductSysId })
+                .FirstOrDefaultAsync();
+
+            if (removedProduct != null)
+            {
+                await _userProductEventTrackingService.TrackAsync(new UserProductEventWriteRequest
+                {
+                    UserId = int.Parse(userId),
+                    ProductId = removedProduct.ProductId,
+                    ProductSysId = removedProduct.ProductSysId,
+                    EventType = UserProductEventType.RemoveCart,
+                    Source = "user_delete_cart_item"
+                });
+            }
+
             return Json(new { success = true, message = "Xóa thành công" });
         }
         #endregion
@@ -483,6 +511,14 @@ namespace Tech_Store.Controllers
                 Id = o.OrderId,
                 ImageUrl = o.OrderItems.FirstOrDefault()?.VarientProduct?.Product?.Image ?? "/default-image.jpg", // Kiểm tra null và thêm ảnh mặc định
                 variantIds = o.OrderItems.Select(x => x.VarientProductId).ToArray(),
+                ReviewItems = o.OrderItems.Select(x => new OrderReviewItemViewModel
+                {
+                    ProductId = x.ProductId,
+                    VariantId = x.VarientProductId,
+                    ProductName = x.VarientProduct?.Product?.Name ?? string.Empty,
+                    Attributes = x.VarientProduct?.Attributes ?? string.Empty,
+                    ImageUrl = x.VarientProduct?.Product?.Image ?? string.Empty
+                }).ToList(),
                 OrderStatus = o.OrderStatus,
                 Is_Reviewed = o.IsReviewed ?? false, // Nếu null, đặt mặc định là false
                 OrderDate = o.OrderDate ?? DateTime.MinValue, // Nếu null, đặt mặc định là ngày nhỏ nhất
@@ -505,14 +541,39 @@ namespace Tech_Store.Controllers
             {
                 return Json(new { success = false, message = "Không gửi được mã đơn hàng" });
             }
-            var order = await _context.Orders.FirstOrDefaultAsync(x => x.OrderId.Equals(orderId));
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId) || !int.TryParse(userId, out var parsedUserId))
+            {
+                return Json(new { success = false, message = "Không xác định được người dùng" });
+            }
+
+            var order = await _context.Orders.FirstOrDefaultAsync(x => x.OrderId == orderId && x.UserId == parsedUserId);
             if (order == null)
             {
                 return Json(new { success = false, message = "Không tìm thấy đơn hàng" });
             }
-            order.Note = reason;
-            order.OrderStatus = "Cancelled";
-            await _context.SaveChangesAsync();
+
+            if (!string.Equals(order.OrderStatus, OrderStatusType.Pending.ToRecordValue(), StringComparison.OrdinalIgnoreCase))
+            {
+                return Json(new { success = false, message = "Đơn hàng này không thể hủy." });
+            }
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                order.Note = reason?.Trim();
+                order.OrderStatus = OrderStatusType.Cancelled.ToRecordValue();
+                order.UpdatedAt = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                return Json(new { success = false, message = "Có lỗi xảy ra trong quá trình hủy đơn hàng" });
+            }
 
             //Gửi thông báo đến admin và client
             await _notificationService.NotifyAsync(NotificationTarget.SpecificUsers, "Hủy đơn hàng", $"Đơn hàng {order.OrderId} đã được hủy", "info", $"/user/MyOrders/OrderDetail/{order.OrderId}", new List<int> { order.UserId});
@@ -523,43 +584,100 @@ namespace Tech_Store.Controllers
         }
 
         [HttpPost("SendReview")]
-        public async Task<JsonResult> SendReview(int orderId, int[] variantIds, string content, int starPoint)
+        public async Task<JsonResult> SendReview([FromBody] OrderReviewSubmitDto request)
         {
-            // Kiểm tra điều kiện dữ liệu đầu vào
-            if (orderId == 0 || string.IsNullOrEmpty(content))
+            if (request == null || request.OrderId <= 0 || request.Items == null || !request.Items.Any())
             {
                 return Json(new { success = false, message = "Có lỗi khi gửi thông tin" });
             }
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            // Duyệt qua các variantIds và tạo các đánh giá
-            foreach (var variant in variantIds)
+            if (string.IsNullOrEmpty(userId))
             {
-                var product = _context.VarientProducts
-               .Where(x => x.VarientId == variant)
-               .Select(x => new { x.ProductId, x.VarientId })
-               .FirstOrDefault();
+                return Json(new { success = false, message = "Không xác định được người dùng" });
+            }
 
-                var review = new Review
+            var reviewItems = request.Items
+                .Where(x => x.VariantId > 0)
+                .Select(x => new OrderReviewItemSubmitDto
+                {
+                    VariantId = x.VariantId,
+                    StarPoint = x.StarPoint,
+                    Content = x.Content?.Trim() ?? string.Empty
+                })
+                .ToList();
+
+            if (!reviewItems.Any())
+            {
+                return Json(new { success = false, message = "Không có sản phẩm nào để đánh giá" });
+            }
+
+            if (reviewItems.Any(x => x.StarPoint < 1 || x.StarPoint > 5 || string.IsNullOrWhiteSpace(x.Content)))
+            {
+                return Json(new { success = false, message = "Vui lòng nhập đủ số sao và nhận xét cho từng sản phẩm" });
+            }
+
+            var order = await _context.Orders
+                .Include(x => x.OrderItems)
+                .FirstOrDefaultAsync(x => x.OrderId == request.OrderId && x.UserId == int.Parse(userId));
+
+            if (order == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy đơn hàng" });
+            }
+
+            var validVariantIds = order.OrderItems
+                .Select(x => x.VarientProductId)
+                .Distinct()
+                .ToHashSet();
+
+            if (reviewItems.Any(x => !validVariantIds.Contains(x.VariantId)))
+            {
+                return Json(new { success = false, message = "Có sản phẩm không thuộc đơn hàng này" });
+            }
+
+            var variants = await _context.VarientProducts
+                .Where(x => reviewItems.Select(item => item.VariantId).Contains(x.VarientId))
+                .Select(x => new { x.VarientId, x.ProductId })
+                .ToListAsync();
+
+            foreach (var item in reviewItems)
+            {
+                var product = variants.FirstOrDefault(x => x.VarientId == item.VariantId);
+                if (product == null)
+                {
+                    continue;
+                }
+
+                var existingReview = await _context.Reviews
+                    .FirstOrDefaultAsync(x => x.UserId == int.Parse(userId) && x.VarientId == item.VariantId);
+
+                if (existingReview != null)
+                {
+                    existingReview.ProductId = product.ProductId ?? 0;
+                    existingReview.Rating = item.StarPoint;
+                    existingReview.Comment = item.Content;
+                    existingReview.ReviewDate = DateTime.Now;
+                    existingReview.UpdatedAt = DateTime.Now;
+                    continue;
+                }
+
+                _context.Reviews.Add(new Review
                 {
                     UserId = int.Parse(userId),
-                    ProductId = (int)product.ProductId,
-                    VarientId = variant,
-                    Rating = starPoint,
-                    Comment = content,
+                    ProductId = product.ProductId ?? 0,
+                    VarientId = item.VariantId,
+                    Rating = item.StarPoint,
+                    Comment = item.Content,
                     ReviewDate = DateTime.Now,
-                };
-
-                // Thêm review vào context
-                _context.Reviews.Add(review);
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
+                });
             }
-            var order = await _context.Orders.FirstOrDefaultAsync(x => x.OrderId == orderId);
+
             order.IsReviewed = true;
-            // Lưu thay đổi vào cơ sở dữ liệu
             await _context.SaveChangesAsync();
 
-            //Gửi thông báo cho admin
             await _notificationService.NotifyAsync(NotificationTarget.Admins, "Đánh giá mới", $"Đánh giá của đơn hàng {order.OrderId}", "info" ,"/Admin/Orders/completed");
 
             return Json(new { success = true, message = "Gửi đánh giá thành công" });
@@ -661,10 +779,16 @@ namespace Tech_Store.Controllers
             _context.Wishlists.Add(wishlist);
             await _context.SaveChangesAsync();
 
-            //Add vào Redis để theo dõi sản phẩm đã xem
             var product_get = await _context.Products.Select(x => new { x.ProductId, x.ProductSysId, x.Name }).FirstOrDefaultAsync(x => x.ProductId == productId);
 
-            await _redisService.TrackUserWatchedProductAsync(int.Parse(userId), product_get.ProductSysId, 3);
+            await _userProductEventTrackingService.TrackAsync(new UserProductEventWriteRequest
+            {
+                UserId = int.Parse(userId),
+                ProductId = product_get?.ProductId ?? productId,
+                ProductSysId = product_get?.ProductSysId,
+                EventType = UserProductEventType.WishlistAdd,
+                Source = "user_add_to_wishlist"
+            });
 
             return Json(new { success = true, message = "Đã thêm vào DS yêu thích" });
         }
@@ -678,8 +802,28 @@ namespace Tech_Store.Controllers
             {
                 return Json(new { success = false, message = "Không tìm thấy sản phẩm trong ds yêu thích" });
             }
+            var trackedProductId = wishlist.ProductId;
             _context.Wishlists.Remove(wishlist);
             await _context.SaveChangesAsync();
+
+            var removedProduct = await _context.Products
+                .AsNoTracking()
+                .Where(x => x.ProductId == trackedProductId)
+                .Select(x => new { x.ProductId, x.ProductSysId })
+                .FirstOrDefaultAsync();
+
+            if (removedProduct != null)
+            {
+                await _userProductEventTrackingService.TrackAsync(new UserProductEventWriteRequest
+                {
+                    UserId = int.Parse(userId),
+                    ProductId = removedProduct.ProductId,
+                    ProductSysId = removedProduct.ProductSysId,
+                    EventType = UserProductEventType.WishlistRemove,
+                    Source = "user_remove_wishlist"
+                });
+            }
+
             return Json(new { success = true, message = "Đã xóa sản phẩm ra khỏi ds" });
         }
 

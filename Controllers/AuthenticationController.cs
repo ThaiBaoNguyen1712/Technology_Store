@@ -5,15 +5,18 @@ using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using reCAPTCHA.AspNetCore;
 using System.Security.Claims;
 using Tech_Store.Events;
 using Tech_Store.Helper;
 using Tech_Store.Helpers;
 using Tech_Store.Models;
 using Tech_Store.Models.DTO.Authentication;
+using Tech_Store.Models.Enums;
 using Tech_Store.Services;
 using Tech_Store.Services.Admin.NotificationServices;
+using Tech_Store.Services.Auth;
+using Tech_Store.Services.Interfaces.Auth;
+using Tech_Store.Services.Recommendation;
 
 namespace Tech_Store.Controllers
 {
@@ -21,24 +24,29 @@ namespace Tech_Store.Controllers
     public class AuthenticationController : Controller
     {
         private readonly ApplicationDbContext _context;
-        private readonly IEmailService _emailService;
-        private readonly IRecaptchaService _recaptchaService;
+        private readonly IAuthenticationFlowService _authenticationFlowService;
+        private readonly ICloudflareTurnstileService _cloudflareTurnstileService;
         private readonly NotificationService _notificationService;
-        private readonly RedisService _redisService;
-        private const int OTP_EXPIRATION_MINUTES = 3;
+        private readonly IUserProductEventTrackingService _userProductEventTrackingService;
+        private readonly IUserActivityTrackingService _userActivityTrackingService;
+        private readonly IExternalAuthenticationService _externalAuthenticationService;
 
         public AuthenticationController(
             ApplicationDbContext context,
-            IEmailService emailService,
-            IRecaptchaService recaptchaService,
+            IAuthenticationFlowService authenticationFlowService,
+            ICloudflareTurnstileService cloudflareTurnstileService,
             NotificationService notificationService,
-            RedisService redisService)
+            IUserProductEventTrackingService userProductEventTrackingService,
+            IUserActivityTrackingService userActivityTrackingService,
+            IExternalAuthenticationService externalAuthenticationService)
         {
             _context = context;
-            _emailService = emailService;
-            _recaptchaService = recaptchaService;
+            _authenticationFlowService = authenticationFlowService;
+            _cloudflareTurnstileService = cloudflareTurnstileService;
             _notificationService = notificationService;
-            _redisService = redisService;
+            _userProductEventTrackingService = userProductEventTrackingService;
+            _userActivityTrackingService = userActivityTrackingService;
+            _externalAuthenticationService = externalAuthenticationService;
         }
 
         #region Public Actions
@@ -58,33 +66,33 @@ namespace Tech_Store.Controllers
             try
             {
                 // Kiểm tra Captcha
-                var recaptchaResult = await _recaptchaService.Validate(Request);
-                if (!recaptchaResult.success)
+                var captchaResult = await _cloudflareTurnstileService.ValidateAsync(Request);
+                if (!captchaResult.IsSuccess)
                 {
-                    ViewData["ValidateMessage"] = "Captcha không hợp lệ.";
+                    ViewData["ValidateMessage"] = captchaResult.ErrorMessage;
                     return View("Login", loginDto); // Specify the view name
                 }
 
                 if (!ModelState.IsValid)
                     return View(loginDto);
 
-                var (success, message, user) = await AuthenticateUser(loginDto.Email, loginDto.Password);
-                if (!success)
+                var loginResult = await _authenticationFlowService.AuthenticateUserAsync(loginDto.Email, loginDto.Password);
+                if (!loginResult.IsSuccess || loginResult.User == null)
                 {
-                    ViewData["ValidateMessage"] = message;
+                    ViewData["ValidateMessage"] = loginResult.Message;
                     return View(loginDto);
                 }
 
                 var guestId = HttpContext.Items["guest_id"]?.ToString() ?? HttpContext.Request.Cookies["guest_id"];
 
-                if (user != null && !string.IsNullOrEmpty(guestId))
+                if (!string.IsNullOrEmpty(guestId))
                 {
-                    await _redisService.MergeGuestToUserHistory(guestId, user.UserId);
+                    await _userProductEventTrackingService.MergeSessionToUserAsync(guestId, loginResult.User.UserId);
                 }
 
-                await SignInUser(user, loginDto.Remember);
+                await SignInUser(loginResult.User, loginDto.Remember);
              
-                return RedirectToUserDashboard(user);
+                return RedirectToUserDashboard(loginResult.User);
             }
             catch (Exception)
             {
@@ -103,75 +111,7 @@ namespace Tech_Store.Controllers
         [Route("GoogleResponse")]
         public async Task<IActionResult> GoogleResponse()
         {
-            try
-            {
-                // Lấy thông tin từ Google
-                var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                if (result?.Principal == null)
-                {
-                    ViewData["ValidateMessage"] = "Không thể xác thực tài khoản Google. Vui lòng thử lại.";
-                    return View("Login");
-                }
-
-                var claims = result.Principal.Identities.FirstOrDefault()?.Claims.ToList();
-                if (claims == null || !claims.Any())
-                {
-                    ViewData["ValidateMessage"] = "Không tìm thấy thông tin người dùng từ Google.";
-                    return View("Login");
-                }
-
-                // Trích xuất thông tin
-                var email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
-                var firstName = claims.FirstOrDefault(c => c.Type == ClaimTypes.GivenName)?.Value ?? "Unknown";
-                var lastName = claims.FirstOrDefault(c => c.Type == ClaimTypes.Surname)?.Value ?? "Unknown";
-                
-                if (string.IsNullOrEmpty(email))
-                {
-                    ViewData["ValidateMessage"] = "Không tìm thấy email từ Google.";
-                    return View("Login");
-                }
-
-                // Kiểm tra người dùng tồn tại
-                var user = await _context.Users.Include(p=>p.Roles).FirstOrDefaultAsync(u => u.Email == email);
-
-                if (user == null)
-                {
-                    // Người dùng chưa tồn tại -> tạo mới
-                    var passwordHash = PasswordHelper.HashPassword(Guid.NewGuid().ToString()); // Mật khẩu ngẫu nhiên
-                    user = new User
-                    {
-                        Email = email,
-                        FirstName = firstName,
-                        LastName = lastName,
-                        PasswordHash = passwordHash,
-                        IsVerified = true,
-                        IsActive = true,
-                        Img = "none.png"
-                    };
-
-                    _context.Users.Add(user);
-                    await _context.SaveChangesAsync();
-
-                    // Thiết lập vai trò và giỏ hàng
-                    await SetupUserRole(user.UserId);
-                    await CreateCart(user);
-                    await _notificationService.NotifyAsync(NotificationTarget.Admins, "Người dùng mới ", $"Người dùng {user.Email} vừa tạo tài khoản !", "new register", $"/admin/users/{user.UserId}");
-
-                }
-
-                // Tự động đăng nhập
-                await SignInUser(user, true);
-                HttpContext.Session.SetString("UserEmail", email);
-
-                return RedirectToUserDashboard(user);
-            }
-            catch (Exception ex)
-            {
-                // Log lỗi nếu cần thiết
-                // _logger.LogError(ex, "Lỗi trong quá trình xử lý Google login");
-                ViewData["ValidateMessage"] = "Đã xảy ra lỗi. Vui lòng thử lại.";
-                return View("Login");
-            }
+            return await HandleExternalLoginResponseAsync("Google");
         }
         [Route("LoginByFacebook")]
         public async Task LoginByFacebook()
@@ -184,77 +124,7 @@ namespace Tech_Store.Controllers
         [Route("FacebookResponse")]
         public async Task<IActionResult> FacebookResponse()
         {
-            try
-            {
-                // Lấy thông tin từ Google
-                var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                if (result?.Principal == null)
-                {
-                    ViewData["ValidateMessage"] = "Không thể xác thực tài khoản Google. Vui lòng thử lại.";
-                    return View("Login");
-                }
-
-                var claims = result.Principal.Identities.FirstOrDefault()?.Claims.ToList();
-                if (claims == null || !claims.Any())
-                {
-                    ViewData["ValidateMessage"] = "Không tìm thấy thông tin người dùng từ Facebook.";
-                    return View("Login");
-                }
-
-                // Trích xuất thông tin
-                var email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
-                var firstName = claims.FirstOrDefault(c => c.Type == ClaimTypes.GivenName)?.Value ?? "Unknown";
-                var lastName = claims.FirstOrDefault(c => c.Type == ClaimTypes.Surname)?.Value ?? "Unknown";
-
-                if (string.IsNullOrEmpty(email))
-                {
-                    ViewData["ValidateMessage"] = "Không tìm thấy email từ Facebook.";
-                    return View("Login");
-                }
-
-                // Kiểm tra người dùng tồn tại
-                var user = await _context.Users.Include(p=>p.Roles).FirstOrDefaultAsync(u => u.Email == email);
-
-                if (user == null)
-                {
-                    // Người dùng chưa tồn tại -> tạo mới
-                    var passwordHash = PasswordHelper.HashPassword(Guid.NewGuid().ToString()); // Mật khẩu ngẫu nhiên
-                    user = new User
-                    {
-                        Email = email,
-                        FirstName = firstName,
-                        LastName = lastName,
-                        PasswordHash = passwordHash,
-                        IsVerified = true,
-                        IsActive = true,
-                        Img = "none.png"
-
-                    };
-
-                    _context.Users.Add(user);
-                    await _context.SaveChangesAsync();
-
-                    // Thiết lập vai trò và giỏ hàng
-                    await SetupUserRole(user.UserId);
-                    await CreateCart(user);
-
-                    await _notificationService.NotifyAsync(NotificationTarget.Admins, "Người dùng mới", $"Người dùng{user.Email} vừa tạo tài khoản !", "new register", $"/admin/users/{user.UserId}");
-
-                }
-
-                // Tự động đăng nhập
-                await SignInUser(user, true);
-                HttpContext.Session.SetString("UserEmail", email);
-
-                 return RedirectToUserDashboard(user);
-            }
-            catch (Exception ex)
-            {
-                // Log lỗi nếu cần thiết
-                // _logger.LogError(ex, "Lỗi trong quá trình xử lý Google login");
-                ViewData["ValidateMessage"] = "Đã xảy ra lỗi. Vui lòng thử lại.";
-                return View("Login");
-            }
+            return await HandleExternalLoginResponseAsync("Facebook");
         }
         [HttpGet("Register")]
         [AllowAnonymous]
@@ -271,48 +141,34 @@ namespace Tech_Store.Controllers
             try
             {
                 // Kiểm tra Captcha
-                var recaptchaResult = await _recaptchaService.Validate(Request);
-                if (!recaptchaResult.success)
+                var captchaResult = await _cloudflareTurnstileService.ValidateAsync(Request);
+                if (!captchaResult.IsSuccess)
                 {
-                    return Json(new { success = false, message = "Captcha không hợp lệ." });
+                    return Json(new { success = false, message = captchaResult.ErrorMessage });
                 }
 
                 if (!ModelState.IsValid)
                     return Json(new { success = false, message = "Dữ liệu không hợp lệ." });
 
-                if (await CheckExistEmail(registerDto.Email))
-                    return Json(new { success = false, message = "Email đã được sử dụng." });
-
-                if (registerDto.Password != registerDto.ConfirmPassword)
-                    return Json(new { success = false, message = "Mật khẩu không khớp." });
-
-                using var transaction = await _context.Database.BeginTransactionAsync();
-                try
+                var otpResult = await _authenticationFlowService.RegisterAsync(registerDto, HttpContext.Session);
+                if (!otpResult.IsSuccess)
                 {
-                    var user = await CreateOrUpdateUser(registerDto);
-                    await SetupUserRole(user.UserId);
-                    await CreateCart(user);
-                    await SendVerificationEmail(user.Email, user.VerificationCode);
-                    await transaction.CommitAsync();
-
-                    // Auto login after registration
-                    await SignInUser(user, true);
-                    HttpContext.Session.SetString("UserEmail", registerDto.Email);
-
-                    await _notificationService.NotifyAsync(NotificationTarget.Admins, "Người dùng mới", $"Người dùng{user.Email} vừa tạo tài khoản !", "new register", $"/admin/users/{user.UserId}");
-
                     return Json(new
                     {
-                        success = true,
-                        message = "Đăng ký thành công, vui lòng kiểm tra Email để nhập mã xác thực!",
-                        action = "Register"
+                        success = false,
+                        message = otpResult.Message,
+                        resendAvailableInSeconds = otpResult.ResendAvailableInSeconds
                     });
                 }
-                catch
+
+                return Json(new
                 {
-                    await transaction.RollbackAsync();
-                    throw;
-                }
+                    success = true,
+                    message = otpResult.Message,
+                    action = otpResult.ActionType.ToRouteValue(),
+                    otpExpiresInSeconds = otpResult.OtpExpiresInSeconds,
+                    resendAvailableInSeconds = otpResult.ResendAvailableInSeconds
+                });
             }
             catch (Exception ex)
             {
@@ -323,8 +179,16 @@ namespace Tech_Store.Controllers
         [HttpGet("VerifyOTP")]
         public IActionResult VerifyOTP(string actionDirect, string? error)
         {
-            ViewData["actionDirect"] = actionDirect;
+            var otpPageState = _authenticationFlowService.GetOtpPageState(HttpContext.Session);
+            if (!otpPageState.IsSuccess)
+            {
+                return RedirectToAction("Login");
+            }
+
+            ViewData["actionDirect"] = otpPageState.ActionType.ToRouteValue();
             ViewBag.Error = error;
+            ViewData["OtpExpiresInSeconds"] = otpPageState.OtpExpiresInSeconds;
+            ViewData["ResendAvailableInSeconds"] = otpPageState.ResendAvailableInSeconds;
             return View();
         }
 
@@ -334,25 +198,35 @@ namespace Tech_Store.Controllers
         {
             try
             {
-                verifyOtp.Email = HttpContext.Session.GetString("UserEmail");
-                if (string.IsNullOrEmpty(verifyOtp.Email))
-                    return Json(new { success = false, message = "Phiên làm việc đã hết hạn." });
+                var otpResult = await _authenticationFlowService.VerifyOtpAsync(verifyOtp, HttpContext.Session);
+                if (!otpResult.IsSuccess)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = otpResult.Message,
+                        otpExpiresInSeconds = otpResult.OtpExpiresInSeconds,
+                        resendAvailableInSeconds = otpResult.ResendAvailableInSeconds
+                    });
+                }
 
-                var user = await _context.Users.FirstOrDefaultAsync(x => x.Email == verifyOtp.Email);
-                if (user == null)
-                    return Json(new { success = false, message = "Không tìm thấy người dùng." });
+                if (otpResult.ActionType == AuthOtpActionType.Register)
+                {
+                    var user = await _context.Users
+                        .Include(x => x.Roles)
+                        .FirstOrDefaultAsync(x => x.Email == otpResult.Email);
 
-                if (!await ValidateOTP(user, verifyOtp.OtpToken))
-                    return Json(new { success = false, message = "Mã xác thực OTP không hợp lệ hoặc đã hết hạn!" });
-
-                user.IsVerified = true;
-                await _context.SaveChangesAsync();
+                    if (user != null)
+                    {
+                        await SignInUser(user, true);
+                    }
+                }
 
                 return Json(new
                 {
                     success = true,
                     message = "Mã xác thực OTP hợp lệ!",
-                    action = verifyOtp.Action
+                    action = otpResult.ActionType.ToRouteValue()
                 });
             }
             catch (Exception)
@@ -367,16 +241,25 @@ namespace Tech_Store.Controllers
         {
             try
             {
-                var email = HttpContext.Session.GetString("UserEmail");
-                if (string.IsNullOrEmpty(email))
-                    return Json(new { success = false, message = "Phiên làm việc đã hết hạn." });
+                var otpResult = await _authenticationFlowService.ResendOtpAsync(HttpContext.Session);
+                if (!otpResult.IsSuccess)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = otpResult.Message,
+                        otpExpiresInSeconds = otpResult.OtpExpiresInSeconds,
+                        resendAvailableInSeconds = otpResult.ResendAvailableInSeconds
+                    });
+                }
 
-                var user = await _context.Users.FirstOrDefaultAsync(x => x.Email == email);
-                if (user == null)
-                    return Json(new { success = false, message = "Không tìm thấy người dùng." });
-
-                await UpdateAndSendNewOTP(user);
-                return Json(new { success = true, message = "Đã gửi mã OTP mới." });
+                return Json(new
+                {
+                    success = true,
+                    message = otpResult.Message,
+                    otpExpiresInSeconds = otpResult.OtpExpiresInSeconds,
+                    resendAvailableInSeconds = otpResult.ResendAvailableInSeconds
+                });
             }
             catch (Exception)
             {
@@ -396,18 +279,24 @@ namespace Tech_Store.Controllers
         {
             try
             {
-                var user = await _context.Users.FirstOrDefaultAsync(x => x.Email == email);
-                if (user == null)
-                    return Json(new { success = false, message = "Email chưa được đăng ký!" });
-
-                await UpdateAndSendNewOTP(user);
-                HttpContext.Session.SetString("UserEmail", email);
+                var otpResult = await _authenticationFlowService.ForgotPasswordAsync(email, HttpContext.Session);
+                if (!otpResult.IsSuccess)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = otpResult.Message,
+                        resendAvailableInSeconds = otpResult.ResendAvailableInSeconds
+                    });
+                }
 
                 return Json(new
                 {
                     success = true,
-                    message = "Vui lòng kiểm tra Email để lấy mã xác thực",
-                    action = "ForgotPassword"
+                    message = otpResult.Message,
+                    action = otpResult.ActionType.ToRouteValue(),
+                    otpExpiresInSeconds = otpResult.OtpExpiresInSeconds,
+                    resendAvailableInSeconds = otpResult.ResendAvailableInSeconds
                 });
             }
             catch (Exception)
@@ -417,7 +306,12 @@ namespace Tech_Store.Controllers
         }
 
         [HttpGet("ChangePassword")]
-        public IActionResult ChangePassword() => View();
+        public IActionResult ChangePassword()
+        {
+            return _authenticationFlowService.CanAccessChangePassword(HttpContext.Session)
+                ? View()
+                : RedirectToAction("ForgotPassword");
+        }
 
 
         [HttpPost("ChangePassword")]
@@ -425,26 +319,8 @@ namespace Tech_Store.Controllers
         {
             try
             {
-                forgotPassword.Email = HttpContext.Session.GetString("UserEmail");
-                if (string.IsNullOrEmpty(forgotPassword.Email))
-                    return Json(new { success = false, message = "Phiên làm việc đã hết hạn." });
-
-                if (forgotPassword.Password != forgotPassword.ConfirmPassword)
-                    return Json(new { success = false, message = "Mật khẩu không khớp." });
-
-                var user = await _context.Users.FirstOrDefaultAsync(x => x.Email == forgotPassword.Email);
-                if (user == null)
-                    return Json(new { success = false, message = "Không tìm thấy người dùng." });
-
-                user.PasswordHash = PasswordHelper.HashPassword(forgotPassword.Password);
-                await _context.SaveChangesAsync();
-
-                // Auto login after password change
-                await SignInUser(user, true);
-
-                await _notificationService.NotifyAsync(NotificationTarget.SpecificUsers, "Thay đổi mật khẩu", $"Bạn đã thay đổi mật khẩu lúc {DateTime.Now}", "info", "#", new List<int> { user.UserId });
-
-                return Json(new { success = true, message = "Thay đổi mật khẩu thành công" });
+                var result = await _authenticationFlowService.ChangeForgottenPasswordAsync(forgotPassword, HttpContext.Session);
+                return Json(new { success = result.IsSuccess, message = result.Message });
             }
             catch (Exception)
             {
@@ -508,21 +384,6 @@ namespace Tech_Store.Controllers
         #endregion
 
         #region Private Helper Methods
-        private async Task<(bool success, string message, User user)> AuthenticateUser(string email, string password)
-        {
-            var user = await _context.Users
-                .Include(u => u.Roles)
-                .FirstOrDefaultAsync(x => x.Email == email);
-
-            if (user == null || !PasswordHelper.VerifyPassword(password, user.PasswordHash))
-                return (false, "Sai tài khoản hoặc mật khẩu.", null);
-            if((bool)!user.IsActive)
-            {
-                return (false, "Bạn đã bị chặn bởi cửa hàng", null);
-            }
-            return (true, string.Empty, user);
-        }
-
         private async Task SignInUser(User user, bool isPersistent)
         {
             var claims = new List<Claim>
@@ -539,10 +400,42 @@ namespace Tech_Store.Controllers
                 IsPersistent = isPersistent
             };
 
-            await HttpContext.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme,
-                new ClaimsPrincipal(claimsIdentity),
-                authProperties);
+                await HttpContext.SignInAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme,
+                    new ClaimsPrincipal(claimsIdentity),
+                    authProperties);
+
+            await _userActivityTrackingService.TrackLoginAsync(user.UserId, HttpContext);
+        }
+
+        private async Task<IActionResult> HandleExternalLoginResponseAsync(string providerName)
+        {
+            try
+            {
+                var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                if (result?.Principal == null)
+                {
+                    ViewData["ValidateMessage"] = $"Không thể xác thực tài khoản {providerName}. Vui lòng thử lại.";
+                    return View("Login");
+                }
+
+                var authResult = await _externalAuthenticationService.GetOrCreateUserAsync(result.Principal, providerName);
+                if (!authResult.IsSuccess || authResult.User == null)
+                {
+                    ViewData["ValidateMessage"] = authResult.ErrorMessage ?? "Đã xảy ra lỗi. Vui lòng thử lại.";
+                    return View("Login");
+                }
+
+                await SignInUser(authResult.User, true);
+                HttpContext.Session.SetString("UserEmail", authResult.User.Email);
+
+                return RedirectToUserDashboard(authResult.User);
+            }
+            catch
+            {
+                ViewData["ValidateMessage"] = "Đã xảy ra lỗi. Vui lòng thử lại.";
+                return View("Login");
+            }
         }
 
         private IActionResult RedirectToUserDashboard(User user)
@@ -551,115 +444,6 @@ namespace Tech_Store.Controllers
             return Redirect(isAdmin ? "~/Admin/Index" : "/");
         }
 
-        private async Task<bool> CheckExistEmail(string email)
-        {
-            if (string.IsNullOrWhiteSpace(email)) return false;
-            return await _context.Users.AnyAsync(x => x.Email == email.Trim() && x.PasswordHash != null);
-        }
-
-        private async Task<User> CreateOrUpdateUser(RegisterDTo registerDto)
-        {
-            var verificationCode = GenerateOTP();
-            var user = await _context.Users.FirstOrDefaultAsync(x => x.Email == registerDto.Email);
-
-            if (user != null)
-            {
-                UpdateExistingUser(user, registerDto, verificationCode);
-            }
-            else
-            {
-                user = CreateNewUser(registerDto, verificationCode);
-                _context.Users.Add(user);
-            }
-
-            await _context.SaveChangesAsync();
-            return user;
-        }
-
-        private void UpdateExistingUser(User user, RegisterDTo registerDto, string verificationCode)
-        {
-            user.PasswordHash = PasswordHelper.HashPassword(registerDto.Password);
-            user.VerificationCode = verificationCode;
-            user.IsVerified = false;
-            user.CreatedVerify = DateTime.Now;
-            user.LastLogin = DateTime.Now;
-        }
-
-        private User CreateNewUser(RegisterDTo registerDto, string verificationCode)
-        {
-            return new User
-            {
-                Email = registerDto.Email,
-                PasswordHash = PasswordHelper.HashPassword(registerDto.Password),
-                VerificationCode = verificationCode,
-                IsVerified = false,
-                CreatedVerify = DateTime.Now,
-                IsActive = true,
-                Img = "none.png",
-                LastLogin = DateTime.Now,
-            };
-        }
-
-        private async Task SetupUserRole(int userId)
-        {
-            var userRole = new Dictionary<string, object>
-            {
-                { "UserId", userId },
-                { "RoleId", 2 }
-            };
-            _context.Set<Dictionary<string, object>>("UserRole").Add(userRole);
-            await _context.SaveChangesAsync();
-        }
-
-        private async Task SendVerificationEmail(string email, string code)
-        {
-            await _emailService.SendEmailAsync(new MailRequest
-            {
-                ToEmail = email,
-                Subject = "Xác thực tài khoản",
-                Body = $"Đây là mã xác thực của bạn: {code}"
-            });
-        }
-
-        private string GenerateOTP()
-        {
-            return new Random().Next(100000, 999999).ToString();
-        }
-
-        private async Task<bool> ValidateOTP(User user, string otpToken)
-        {
-            if (user.VerificationCode.Trim() != otpToken.Trim())
-                return false;
-
-            var timeElapsed = DateTime.Now - user.CreatedVerify;
-            return timeElapsed <= TimeSpan.FromMinutes(OTP_EXPIRATION_MINUTES);
-        }
-
-        private async Task UpdateAndSendNewOTP(User user)
-        {
-            user.VerificationCode = GenerateOTP();
-            user.CreatedVerify = DateTime.Now;
-            user.IsVerified = false;
-            await _context.SaveChangesAsync();
-
-            await _emailService.SendEmailAsync(new MailRequest
-            {
-                ToEmail = user.Email,
-                Subject = "Mã xác thực mới",
-                Body = $"Đây là mã xác thực mới của bạn: {user.VerificationCode}"
-            });
-        }
-        private async Task CreateCart(User user)
-        {
-            var cart = new Cart
-            {
-                UserId = user.UserId,
-                CreatedAt = DateTime.Now,
-                UpdatedAt = DateTime.Now
-            };
-            _context.Carts.Add(cart);
-            await _context.SaveChangesAsync();
-        }
         #endregion
     }
 }

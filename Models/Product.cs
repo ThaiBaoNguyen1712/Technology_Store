@@ -75,6 +75,8 @@ public partial class Product
 
     public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
 
+    public virtual ICollection<UserProductEvent> UserProductEvents { get; set; } = new List<UserProductEvent>();
+
     public virtual ICollection<VarientProduct> VarientProducts { get; set; } = new List<VarientProduct>();
 
     public virtual ICollection<Wishlist> Wishlists { get; set; } = new List<Wishlist>();

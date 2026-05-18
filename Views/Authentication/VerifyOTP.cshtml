@@ -1,5 +1,8 @@
-﻿@{
+@{
     Layout = null;
+    var actionDirect = ViewData["actionDirect"]?.ToString() ?? string.Empty;
+    var otpExpiresInSeconds = ViewData["OtpExpiresInSeconds"] as int? ?? 0;
+    var resendAvailableInSeconds = ViewData["ResendAvailableInSeconds"] as int? ?? 0;
 }
 
 <!DOCTYPE html>
@@ -7,12 +10,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xác nhận OTP</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
+    <title>Xác thực OTP</title>
+    <link href="~/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
             background-color: #f8f9fa;
@@ -22,375 +21,339 @@
             padding: 40px 0;
         }
 
-        .login-container {
-            max-width: 400px;
+        .auth-card {
+            max-width: 420px;
             width: 100%;
             margin: auto;
-        }
-
-        .card {
             border: none;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
         }
 
-        .card-body {
-            padding: 2.5rem;
+        .auth-body {
+            padding: 32px 24px;
         }
 
-        .logo {
+        .auth-logo {
             color: #ff0000;
-            font-size: 2.5rem;
-            font-weight: bold;
+            font-size: 2rem;
+            font-weight: 700;
             text-align: center;
-            margin-bottom: 1.5rem;
+            margin-bottom: 12px;
         }
-        a{
-            color: #ff0000;
-        }
-        .otp-field {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            margin: 30px 0;
+
+        .otp-fields {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 10px;
+            margin: 24px 0 18px;
         }
 
         .otp-input {
-            width: 45px;
-            height: 55px;
+            width: 100%;
+            min-width: 0;
+            height: 52px;
             text-align: center;
-            font-size: 1.2rem;
+            font-size: 1.15rem;
             font-weight: 600;
-            border: 2px solid #dee2e6;
-            border-radius: 8px;
-            transition: all 0.2s ease;
+            border: 1px solid #d0d7de;
+            border-radius: 12px;
         }
 
-            .otp-input:focus {
-                border-color: #0d6efd;
-                box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-                outline: none;
-            }
+        .otp-input:focus {
+            border-color: #ff4d4f;
+            box-shadow: 0 0 0 0.2rem rgba(255, 77, 79, 0.12);
+            outline: none;
+        }
 
-            .otp-input:disabled {
-                background-color: #f8f9fa;
-                cursor: not-allowed;
-            }
+        .otp-input:disabled {
+            background-color: #f3f4f6;
+        }
 
-            /* Remove spinner from number input */
-            .otp-input::-webkit-outer-spin-button,
-            .otp-input::-webkit-inner-spin-button {
-                -webkit-appearance: none;
-                margin: 0;
-            }
+        .otp-input::-webkit-outer-spin-button,
+        .otp-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
 
-            .otp-input[type=number] {
-                -moz-appearance: textfield;
-            }
+        .otp-input[type=number] {
+            -moz-appearance: textfield;
+        }
 
-        .btn-danger {
-            padding: 0.8rem 2rem;
+        .otp-meta {
+            font-size: 0.92rem;
+            color: #6b7280;
+        }
+
+        .otp-link {
+            color: #ff0000;
+            text-decoration: none;
             font-weight: 500;
-            border-radius: 8px;
-            transition: all 0.3s ease;
         }
 
-            .btn-danger:disabled {
-                opacity: 0.7;
-                cursor: not-allowed;
-            }
-
-        .resend {
-            margin-top: 20px;
-        }
-
-            .resend a {
-                color: #ff0000;
-                text-decoration: none;
-                font-weight: 500;
-                cursor: pointer;
-            }
-
-                .resend a.disabled {
-                    color: gray;
-                    pointer-events: none; /* Ngăn không cho bấm */
-                    opacity: 0.6;
-                }
-
-
-        .timer {
-            color: #6c757d;
-            font-size: 0.9rem;
-            margin-top: 10px;
-        }
-
-        .text-danger {
-            display: block;
-            margin-top: 10px;
-            font-size: 0.9rem;
+        .otp-link.disabled {
+            pointer-events: none;
+            color: #9ca3af;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="login-container">
-            <div class="card d-flex" style="padding:15px">
-                <div class="mx-auto" style="width:90%">
-                    <div class="logo">Tech Store</div>
-                    <div class="text-center">
-                        <h4 class="mb-3">Xác thực OTP</h4>
-                        <p class="text-muted">Mã xác thực đã được gửi đến email của bạn</p>
-                    </div>
-                        
-                    <form method="POST" id="otpForm">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="Email" value="@ViewData["Email"]" />
-                        <input type="hidden" name="Action" value="@ViewData["actionDirect"]" />
-                        <div class="otp-field">
-                            <input type="number" class="otp-input" maxlength="1" autofocus>
-                            <input type="number" class="otp-input" maxlength="1" disabled>
-                            <input type="number" class="otp-input" maxlength="1" disabled>
-                            <input type="number" class="otp-input" maxlength="1" disabled>
-                            <input type="number" class="otp-input" maxlength="1" disabled>
-                            <input type="number" class="otp-input" maxlength="1" disabled>
-                        </div>
-
-                        <input type="hidden" id="completeOtp" name="OtpToken">
-                        <div class="mb-3">
-
-                            <span class="text-danger" id="ErrorMessage">@ViewBag.Error</span> <!-- Thông báo lỗi -->
-
-                        </div>
-                        <div class="text-center">
-                            <button type="submit" class="btn btn-danger justify-content-center align-items-center" disabled>
-                                Xác Thực
-                                <div class="spinner-border text-light ms-2" role="status" style="width: 1rem; height: 1rem;display: none; ">
-                                    <span class="visually-hidden">Loading...</span>
-                                </div>
-                            </button>
-
-
-                            <div class="timer" id="timer">
-                                Mã sẽ hết hạn sau: <span> </span>
-                            </div>
-
-                            <div class="resend">
-                                <span class="text-muted">Chưa nhận được mã? </span>
-                                <a href="#" id="resendBtn" class="disabled">Gửi lại</a>
-                            </div>
-                        </div>
-
-
-                   
-                    </form>
+        <div class="card auth-card">
+            <div class="auth-body">
+                <div class="auth-logo">Tech Store</div>
+                <div class="text-center">
+                    <h4 class="mb-2">Xác thực OTP</h4>
+                    <p class="text-muted mb-0">Nhập mã gồm 6 số đã được gửi đến email của bạn.</p>
                 </div>
+
+                <form id="otpForm" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="Action" value="@actionDirect" />
+                    <input type="hidden" id="completeOtp" name="OtpToken" />
+
+                    <div class="otp-fields">
+                        <input type="number" class="otp-input" maxlength="1" inputmode="numeric" autofocus>
+                        <input type="number" class="otp-input" maxlength="1" inputmode="numeric" disabled>
+                        <input type="number" class="otp-input" maxlength="1" inputmode="numeric" disabled>
+                        <input type="number" class="otp-input" maxlength="1" inputmode="numeric" disabled>
+                        <input type="number" class="otp-input" maxlength="1" inputmode="numeric" disabled>
+                        <input type="number" class="otp-input" maxlength="1" inputmode="numeric" disabled>
+                    </div>
+
+                    <div id="ErrorMessage" class="text-danger small mb-3">@ViewBag.Error</div>
+
+                    <button type="submit" class="btn btn-danger w-100 d-flex justify-content-center align-items-center" id="verifyButton" disabled>
+                        Xác thực
+                        <span class="spinner-border spinner-border-sm text-light ms-2 d-none" id="verifyLoading" role="status"></span>
+                    </button>
+
+                    <div class="text-center mt-3 otp-meta">
+                        Mã còn hiệu lực: <strong id="otpExpiryLabel">00:00</strong>
+                    </div>
+
+                    <div class="text-center mt-2 otp-meta">
+                        Chưa nhận được mã?
+                        <a href="#" id="resendBtn" class="otp-link disabled">Gửi lại</a>
+                    </div>
+
+                    <div class="text-center mt-1 otp-meta" id="resendHint"></div>
+                </form>
             </div>
         </div>
     </div>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const inputs = document.querySelectorAll(".otp-input");
+        document.addEventListener("DOMContentLoaded", function () {
+            const inputs = Array.from(document.querySelectorAll(".otp-input"));
             const form = document.getElementById("otpForm");
-            const submitButton = form.querySelector("button[type='submit']");
+            const submitButton = document.getElementById("verifyButton");
+            const loadingIndicator = document.getElementById("verifyLoading");
             const completeOtpInput = document.getElementById("completeOtp");
-            const resendBtn = document.getElementById("resendBtn");
-            const timerDisplay = document.querySelector("#timer span");
-            const errorMessageContainer = document.getElementById('ErrorMessage');
+            const errorMessage = document.getElementById("ErrorMessage");
+            const resendButton = document.getElementById("resendBtn");
+            const otpExpiryLabel = document.getElementById("otpExpiryLabel");
+            const resendHint = document.getElementById("resendHint");
 
-            let timer;
-            const OTP_EXPIRY_KEY = "otp_expiry_time"; // Khóa lưu thời gian hết hạn OTP
-            const RESEND_INTERVAL = 120; // 2 phút để bật lại nút resend
-            const OTP_DURATION = 180; // 3 phút
+            let otpExpiresInSeconds = @otpExpiresInSeconds;
+            let resendAvailableInSeconds = @resendAvailableInSeconds;
+            let timerId = null;
 
-            function getRemainingTime() {
-                const expiryTime = localStorage.getItem(OTP_EXPIRY_KEY);
-                if (expiryTime) {
-                    const now = Math.floor(Date.now() / 1000);
-                    return Math.max(0, expiryTime - now);
+            function formatSeconds(totalSeconds) {
+                const safeValue = Math.max(0, totalSeconds);
+                const minutes = Math.floor(safeValue / 60);
+                const seconds = safeValue % 60;
+                return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+            }
+
+            function updateTimerUi() {
+                otpExpiryLabel.textContent = formatSeconds(otpExpiresInSeconds);
+
+                if (resendAvailableInSeconds > 0) {
+                    resendButton.classList.add("disabled");
+                    resendHint.textContent = `Bạn có thể gửi lại sau ${resendAvailableInSeconds} giây.`;
+                } else {
+                    resendButton.classList.remove("disabled");
+                    resendHint.textContent = "Bạn có thể yêu cầu mã mới ngay bây giờ.";
                 }
-                return OTP_DURATION;
             }
 
             function startTimer() {
-                let timeLeft = getRemainingTime();
-
-                // Lưu thời gian hết hạn nếu chưa có
-                if (!localStorage.getItem(OTP_EXPIRY_KEY)) {
-                    localStorage.setItem(OTP_EXPIRY_KEY, Math.floor(Date.now() / 1000) + OTP_DURATION);
+                if (timerId) {
+                    window.clearInterval(timerId);
                 }
 
-                timer = setInterval(() => {
-                    if (timeLeft <= 0) {
-                        clearInterval(timer);
-                        localStorage.removeItem(OTP_EXPIRY_KEY);
-                        resendBtn.classList.remove('disabled');
-                        timerDisplay.parentElement.textContent = 'Mã OTP đã hết hạn';
-                    } else {
-                        const minutes = Math.floor(timeLeft / 60);
-                        const seconds = timeLeft % 60;
-                        timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                        if (timeLeft % RESEND_INTERVAL === 0) {
-                            resendBtn.classList.remove('disabled');
-                        }
-                        timeLeft--;
+                updateTimerUi();
+
+                timerId = window.setInterval(function () {
+                    if (otpExpiresInSeconds > 0) {
+                        otpExpiresInSeconds -= 1;
                     }
+
+                    if (resendAvailableInSeconds > 0) {
+                        resendAvailableInSeconds -= 1;
+                    }
+
+                    updateTimerUi();
                 }, 1000);
             }
 
-            startTimer(); // Bắt đầu đếm ngược
-
-            inputs.forEach((input, index) => {
-                input.addEventListener('input', (e) => {
-                    if (e.target.value.length > 1) {
-                        e.target.value = e.target.value[0];
-                    }
-                    const next = input.nextElementSibling;
-                    if (next && e.target.value !== '') {
-                        next.removeAttribute('disabled');
-                        next.focus();
-                    }
-                    checkComplete();
-                });
-
-                input.addEventListener('keydown', (e) => {
-                    const prev = input.previousElementSibling;
-                    if (e.key === 'Backspace' && input.value === '' && prev) {
-                        e.preventDefault();
-                        prev.focus();
-                        prev.value = '';
-                        checkComplete();
+            function resetInputs() {
+                inputs.forEach(function (input, index) {
+                    input.value = "";
+                    if (index === 0) {
+                        input.removeAttribute("disabled");
+                    } else {
+                        input.setAttribute("disabled", "disabled");
                     }
                 });
 
-                if (index === 0) {
-                    input.addEventListener('paste', (e) => {
-                        e.preventDefault();
-                        const pasteData = (e.clipboardData || window.clipboardData)
-                            .getData('text')
-                            .slice(0, inputs.length)
-                            .split('');
+                completeOtpInput.value = "";
+                submitButton.setAttribute("disabled", "disabled");
+                inputs[0].focus();
+            }
 
-                        inputs.forEach((input, i) => {
-                            if (pasteData[i]) {
-                                input.value = pasteData[i];
-                                if (input.nextElementSibling) {
-                                    input.nextElementSibling.removeAttribute('disabled');
-                                }
-                            }
-                        });
-                        checkComplete();
-                    });
-                }
-            });
+            function collectOtp() {
+                let otp = "";
+                let isComplete = true;
 
-            function checkComplete() {
-                let complete = true;
-                let otp = '';
-
-                inputs.forEach(input => {
+                inputs.forEach(function (input) {
                     if (!input.value) {
-                        complete = false;
+                        isComplete = false;
                     }
+
                     otp += input.value;
                 });
 
-                if (complete) {
-                    submitButton.removeAttribute('disabled');
-                    completeOtpInput.value = otp;
-                } else {
-                    submitButton.setAttribute('disabled', 'true');
-                    completeOtpInput.value = '';
-                }
+                completeOtpInput.value = isComplete ? otp : "";
+                submitButton.disabled = !isComplete;
             }
 
-            const notyf = new Notyf({
-                position: {
-                    x: 'right', // Căn phải
-                    y: 'top'    // Căn trên
-                }
-            });
+            inputs.forEach(function (input, index) {
+                input.addEventListener("input", function (event) {
+                    const value = event.target.value.replace(/\D/g, "").slice(0, 1);
+                    event.target.value = value;
 
-            $('#otpForm').on('submit', function (event) {
-                event.preventDefault();
+                    if (value && index < inputs.length - 1) {
+                        inputs[index + 1].removeAttribute("disabled");
+                        inputs[index + 1].focus();
+                    }
 
-                var action = $('input[name="Action"]').val();
-                var otpToken = completeOtpInput.value;
-                $('.loading').show();
+                    collectOtp();
+                });
 
-                $.ajax({
-                    method: 'POST',
-                    url: '@Url.Action("VerifyOTP", "Authentication")',
-                    headers: {
-                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
-                    },
-                    data: {
-                        Action: action,
-                        OtpToken: otpToken
-                    },
-                    success: function (response) {
-                        console.log("Phản hồi nhận được:", response);
-                        if (response.success) {
-                            $('.loading').hide();
-                            localStorage.removeItem(OTP_EXPIRY_KEY); // Xóa thời gian khi OTP hợp lệ
-                            if (response.action === "Register") {
-                                window.location.href = '@Url.Action("Index", "Home")';
-                            } else if (response.action === "ForgotPassword") {
-                                window.location.href = '@Url.Action("ChangePassword", "Authentication")';
-                                $('#ErrorMessage').text(response.message);
-                            }
-                        } else {
-                            $('.loading').hide();
-                            errorMessageContainer.textContent = response.message || 'Có lỗi xảy ra';
-                        }
-                    },
-                    error: function (xhr) {
-                        $('.loading').hide();
-                        notyf.error("Lỗi:", xhr);
-                        errorMessageContainer.textContent = xhr.responseJSON?.message || 'Có lỗi xảy ra';
+                input.addEventListener("keydown", function (event) {
+                    if (event.key === "Backspace" && !input.value && index > 0) {
+                        inputs[index - 1].focus();
+                        inputs[index - 1].value = "";
+                        collectOtp();
                     }
                 });
             });
 
-            resendBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (!resendBtn.classList.contains('disabled')) {
-                    clearInterval(timer);
-                    localStorage.setItem(OTP_EXPIRY_KEY, Math.floor(Date.now() / 1000) + OTP_DURATION);
-                    startTimer();
-                    resendBtn.classList.add('disabled');
+            inputs[0].addEventListener("paste", function (event) {
+                event.preventDefault();
+                const pasted = (event.clipboardData || window.clipboardData).getData("text").replace(/\D/g, "").slice(0, 6).split("");
 
-                    $.ajax({
-                        method: 'POST',
-                        url: '@Url.Action("ResendOTP", "Authentication")',
-                        headers: {
-                            'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
-                        },
-                        data: {
-                            Email: $('input[name="Email"]').val()
-                        },
-                        success: function (response) {
-                            if (response.success) {
-                                notyfsuccess(response.message)
-                            }
-                            else {
-                                notyf.error(response.message); // Hiển thị lỗi từ server
-                            }
-                         
-                        },
-                        error: function (xhr) {
-                            notyf.error("Lỗi gửi lại mã OTP:", xhr);
-                            errorMessageContainer.textContent = xhr.responseJSON?.message || 'Có lỗi xảy ra';
-                        }
-                    });
+                pasted.forEach(function (value, index) {
+                    inputs[index].value = value;
+                    if (index > 0) {
+                        inputs[index].removeAttribute("disabled");
+                    }
+                });
+
+                if (pasted.length > 0) {
+                    const focusIndex = Math.min(pasted.length, inputs.length - 1);
+                    inputs[focusIndex].focus();
                 }
+
+                collectOtp();
             });
+
+            form.addEventListener("submit", function (event) {
+                event.preventDefault();
+                errorMessage.textContent = "";
+                loadingIndicator.classList.remove("d-none");
+                submitButton.disabled = true;
+
+                $.ajax({
+                    method: "POST",
+                    url: '@Url.Action("VerifyOTP", "Authentication")',
+                    headers: {
+                        RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    data: {
+                        Action: $('input[name="Action"]').val(),
+                        OtpToken: completeOtpInput.value
+                    },
+                    success: function (response) {
+                        loadingIndicator.classList.add("d-none");
+
+                        if (response.success) {
+                            if (response.action === "Register") {
+                                window.location.href = '@Url.Action("Index", "Home")';
+                                return;
+                            }
+
+                            if (response.action === "ForgotPassword") {
+                                window.location.href = '@Url.Action("ChangePassword", "Authentication")';
+                                return;
+                            }
+                        }
+
+                        submitButton.disabled = false;
+                        errorMessage.textContent = response.message || "Không thể xác thực mã.";
+                        otpExpiresInSeconds = response.otpExpiresInSeconds ?? otpExpiresInSeconds;
+                        resendAvailableInSeconds = response.resendAvailableInSeconds ?? resendAvailableInSeconds;
+                        updateTimerUi();
+                    },
+                    error: function (xhr) {
+                        loadingIndicator.classList.add("d-none");
+                        submitButton.disabled = false;
+                        errorMessage.textContent = xhr.responseJSON?.message || "Đã xảy ra lỗi khi xác thực mã.";
+                    }
+                });
+            });
+
+            resendButton.addEventListener("click", function (event) {
+                event.preventDefault();
+
+                if (resendButton.classList.contains("disabled")) {
+                    return;
+                }
+
+                resendButton.classList.add("disabled");
+                errorMessage.textContent = "";
+
+                $.ajax({
+                    method: "POST",
+                    url: '@Url.Action("ResendOTP", "Authentication")',
+                    headers: {
+                        RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            otpExpiresInSeconds = response.otpExpiresInSeconds ?? otpExpiresInSeconds;
+                            resendAvailableInSeconds = response.resendAvailableInSeconds ?? resendAvailableInSeconds;
+                            resetInputs();
+                            updateTimerUi();
+                            return;
+                        }
+
+                        errorMessage.textContent = response.message || "Không thể gửi lại mã lúc này.";
+                        resendAvailableInSeconds = response.resendAvailableInSeconds ?? resendAvailableInSeconds;
+                        updateTimerUi();
+                    },
+                    error: function (xhr) {
+                        errorMessage.textContent = xhr.responseJSON?.message || "Đã xảy ra lỗi khi gửi lại mã.";
+                        updateTimerUi();
+                    }
+                });
+            });
+
+            startTimer();
         });
     </script>
-
-
-
 </body>
 </html>

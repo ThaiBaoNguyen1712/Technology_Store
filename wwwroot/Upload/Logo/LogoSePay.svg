@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="SePay">
+  <rect width="160" height="160" rx="28" fill="#eef6ff"/>
+  <rect x="18" y="18" width="124" height="124" rx="24" fill="#0f5ef7"/>
+  <path d="M52 61c0-9.4 7.6-17 17-17h22c9.4 0 17 7.6 17 17s-7.6 17-17 17H76c-2.8 0-5 2.2-5 5s2.2 5 5 5h31v16H76c-11.6 0-21-9.4-21-21s9.4-21 21-21h15c2.8 0 5-2.2 5-5s-2.2-5-5-5H69c-2.8 0-5 2.2-5 5v3H52v-3z" fill="#fff"/>
+  <circle cx="115" cy="112" r="13" fill="#53d769"/>
+  <path d="m110 112 3.5 3.5 6.5-7" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5"/>
+</svg>

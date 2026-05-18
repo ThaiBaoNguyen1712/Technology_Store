@@ -15,6 +15,8 @@ public partial class InventoryTransactions
 
     public int UserId { get; set; }
 
+    public int? SupplierId { get; set; }
+
     public string? Note { get; set; }
 
     public DateTime? CreatedAt { get; set; }
@@ -22,6 +24,8 @@ public partial class InventoryTransactions
     public virtual Product Product { get; set; } = null!;
 
     public virtual ICollection<InventoryTransactionsDetail> InventoryTransactionsDetail { get; set; } = new List<InventoryTransactionsDetail>();
+
+    public virtual Supplier? Supplier { get; set; }
 
     public virtual User User { get; set; } = null!;
 }

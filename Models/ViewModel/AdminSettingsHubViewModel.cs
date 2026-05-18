@@ -9,5 +9,9 @@ namespace Tech_Store.Models.ViewModel
         public int ProductSpecCount { get; set; }
 
         public int ProductAttributeCount { get; set; }
+
+        public int EnabledPaymentGatewayCount { get; set; }
+
+        public int TotalPaymentGatewayCount { get; set; }
     }
 }
