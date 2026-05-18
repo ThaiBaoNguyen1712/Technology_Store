@@ -1,92 +1,92 @@
 # Tech_Store
 
-## Tổng quan
+Tech_Store is a full-stack e-commerce platform for selling mobile devices and consumer tech, built with ASP.NET Core MVC on .NET 8. The project includes a customer-facing storefront, a back-office admin area, inventory and POS workflows, configurable payment gateways, banner management, and user activity tracking to support recommendation features.
 
-`Tech_Store` là một hệ thống e-commerce bán thiết bị công nghệ xây dựng bằng `ASP.NET Core MVC` trên `.NET 8`.
-Project gồm hai khối chính:
-
-- Storefront cho khách hàng: duyệt sản phẩm, tìm kiếm, giỏ hàng, thanh toán, tài khoản, đơn hàng.
-- Admin backoffice: quản lý sản phẩm, kho, POS, banner, voucher, người dùng, giao dịch, cấu hình hệ thống.
-
-## Công nghệ chính
-
-- Backend: `ASP.NET Core MVC`, `Entity Framework Core`, `SQL Server`
-- Realtime: `SignalR`
-- Cache và hỗ trợ discovery/recommendation: `Redis`
-- UI: `Razor Views`, `Bootstrap`, `jQuery`
-- Payment: `VNPay`, `Momo`, `SePay`
-- Email: `MailKit`, `MimeKit`
-
-## Chức năng chính
+## What the project includes
 
 ### Storefront
 
-- Trang chủ động với banner quản trị được từ admin
-- Danh mục, thương hiệu, tìm kiếm và gợi ý tìm kiếm
-- Trang chi tiết sản phẩm, wishlist, cart
-- Checkout nhiều cổng thanh toán
-- Đăng nhập, đăng ký, OTP, quên mật khẩu
-- Khu vực tài khoản, lịch sử đơn hàng, chi tiết đơn hàng, đánh giá sản phẩm
-- Theo dõi hành vi người dùng để phục vụ recommendation và analytics nội bộ
+- Homepage with admin-managed banner zones
+- Product catalog by category and brand
+- Search with suggestions and interaction tracking
+- Product detail, wishlist, cart, and checkout
+- Customer authentication, OTP, and password recovery
+- Account area, order history, order detail, and product reviews
 
 ### Admin
 
-- Quản lý sản phẩm, category, brand, voucher
-- Dashboard và điều hướng admin mới
-- POS và in hóa đơn
-- Quản lý kho theo phiếu nhập/xuất
-- Quản lý nhà cung cấp
-- Quản lý banner storefront
-- Quản lý người dùng, giao dịch, thông báo
-- Bật/tắt cổng thanh toán từ trang cấu hình
+- Product, category, brand, and voucher management
+- POS workflow and invoice rendering
+- Stock management with import/export transactions
+- Supplier management
+- Storefront banner management
+- User, transaction, and notification management
+- Payment gateway settings management
 
-## Tài liệu trong repo
+### Platform capabilities
 
-- `PROJECT_MAP.md`: bản đồ module, cấu trúc source và các entry point quan trọng
-- `CODE_CONTEXT.md`: quy ước kiến trúc, UI, pagination, form, layout và workflow bảo trì
-- `TODAY_FEATURES_2026-05-18.md`: tổng hợp các chức năng lớn đã hoàn thành trong đợt cập nhật hôm nay
+- Multiple payment flows: VNPay, Momo, SePay
+- Redis-backed search/recommendation support
+- SignalR real-time notifications
+- Email and invoice template support
+- User activity and product event tracking
 
-## Cấu trúc thư mục
+## Tech stack
+
+- Backend: ASP.NET Core MVC, Entity Framework Core, SQL Server
+- Frontend: Razor Views, Bootstrap, jQuery
+- Realtime: SignalR
+- Cache and support services: Redis
+- Email: MailKit, MimeKit
+- Payments: VNPay, Momo, SePay
+
+## Project structure
 
 ```text
 Tech_Store/
-|-- Areas/Admin/        # Admin area: controllers, views, workflows backoffice
+|-- Areas/Admin/        # Admin controllers and views
 |-- Controllers/        # Storefront controllers
-|-- Middleware/         # Middleware theo dõi hành vi và request
+|-- Middleware/         # Request and activity tracking middleware
 |-- Migrations/         # EF Core migrations
 |-- Models/             # Entities, DTOs, enums, constants, view models
-|-- Services/           # Business services theo domain
-|-- Views/              # Razor views cho storefront
-|-- wwwroot/            # Static assets, templates, uploads, vendor assets
+|-- Services/           # Business services by domain
+|-- Views/              # Storefront Razor views
+|-- wwwroot/            # Static assets, uploads, templates, vendor files
 |-- Program.cs          # Bootstrap, DI, middleware pipeline
 ```
 
-## Chạy project local
+## Documentation in the repo
 
-### Yêu cầu
+- `PROJECT_MAP.md`: module map, source layout, and important entry points
+- `CODE_CONTEXT.md`: architecture, UI, pagination, form, and maintenance rules
+- `TODAY_FEATURES_2026-05-18.md`: summary of the major features added in the latest update batch
 
-- `.NET SDK 8`
-- `SQL Server`
-- `Redis`
+## Run locally
 
-### Chuẩn bị cấu hình
+### Requirements
 
-Tạo hoặc cập nhật các file cấu hình môi trường dựa trên:
+- .NET SDK 8
+- SQL Server
+- Redis
+
+### Configuration
+
+Use these files as the baseline for environment setup:
 
 - `appsettings.template.json`
 - `appsettingsTemplate.json`
 - `appsettingsTemplate.template.json`
 
-Các nhóm cấu hình chính cần có:
+You will typically need to provide:
 
-- Connection string SQL Server
-- Redis
-- Email SMTP
-- Google/Facebook auth
-- VNPay, Momo, SePay
-- Cloudflare Turnstile
+- SQL Server connection string
+- Redis connection settings
+- SMTP email settings
+- Google and Facebook auth keys
+- VNPay, Momo, and SePay settings
+- Cloudflare Turnstile settings
 
-### Chạy ứng dụng
+### Commands
 
 ```powershell
 dotnet restore
@@ -95,8 +95,8 @@ dotnet build
 dotnet run --launch-profile https
 ```
 
-## Ghi chú
+## Notes
 
-- Repo hiện có một số file local không nên commit như `.tmp-build/`, `.vscode/`, `run.err`.
-- Frontend vendor chính đã được self-host trong `wwwroot/vendor`.
-- Khi mở rộng module mới, ưu tiên đọc `PROJECT_MAP.md` và `CODE_CONTEXT.md` trước.
+- Main frontend vendor assets are self-hosted under `wwwroot/vendor`
+- Local-only artifacts such as `.tmp-build/`, `.vscode/`, and `run.err` should not be committed
+- When extending the codebase, read `PROJECT_MAP.md` and `CODE_CONTEXT.md` first
