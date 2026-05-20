@@ -31,6 +31,7 @@
         {
             <div class="alert alert-danger border-0 shadow-sm mb-4">
                 Vui lòng kiểm tra lại thông tin voucher trước khi lưu.
+                @Html.ValidationSummary(false, null, new { @class = "mb-0 mt-2" })
             </div>
         }
 
@@ -45,6 +46,7 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold text-secondary">Tên voucher</label>
                                 <input type="text" class="form-control" name="Name" value="@Model.Name" required />
+                                @Html.ValidationMessage("Name", null, new { @class = "text-danger small d-block mt-1" })
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold text-secondary">Mã khuyến mãi</label>
@@ -52,6 +54,7 @@
                                     <input type="text" class="form-control" name="Code" id="voucherCode" value="@Model.Code" required />
                                     <button type="button" class="btn btn-light border" id="generateVoucherCode">Tạo mã</button>
                                 </div>
+                                @Html.ValidationMessage("Code", null, new { @class = "text-danger small d-block mt-1" })
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold text-secondary">Giá trị khuyến mãi</label>
@@ -62,6 +65,7 @@
                                        min="0"
                                        step="0.01"
                                        required />
+                                @Html.ValidationMessage("PromotionValue", null, new { @class = "text-danger small d-block mt-1" })
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold text-secondary">Loại khuyến mãi</label>
@@ -77,6 +81,7 @@
                                         <option value="percent">Phần trăm</option>
                                     }
                                 </select>
+                                @Html.ValidationMessage("PromotionType", null, new { @class = "text-danger small d-block mt-1" })
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold text-secondary">Số lượng áp dụng</label>
@@ -86,6 +91,7 @@
                                        value="@Model.Quantity"
                                        min="1"
                                        required />
+                                @Html.ValidationMessage("Quantity", null, new { @class = "text-danger small d-block mt-1" })
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold text-secondary">Ngày bắt đầu</label>
@@ -94,6 +100,7 @@
                                        name="StartedAt"
                                        value="@(Model.StartedAt?.ToString("yyyy-MM-ddTHH:mm"))"
                                        required />
+                                @Html.ValidationMessage("StartedAt", null, new { @class = "text-danger small d-block mt-1" })
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold text-secondary">Ngày kết thúc</label>
@@ -102,12 +109,14 @@
                                        name="ExpiredAt"
                                        value="@(Model.ExpiredAt?.ToString("yyyy-MM-ddTHH:mm"))"
                                        required />
+                                @Html.ValidationMessage("ExpiredAt", null, new { @class = "text-danger small d-block mt-1" })
                             </div>
                             <div class="col-12">
                                 <label class="form-label fw-semibold text-secondary">Mô tả</label>
                                 <textarea class="form-control"
                                           name="Description"
                                           rows="4">@Model.Description</textarea>
+                                @Html.ValidationMessage("Description", null, new { @class = "text-danger small d-block mt-1" })
                             </div>
                         </div>
                     </div>

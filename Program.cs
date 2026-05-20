@@ -52,14 +52,39 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
     var config = builder.Configuration;
     var redisHost = config["Redis:Host"];
     var redisPassword = config["Redis:Password"];
+    var redisPort = config.GetValue("Redis:Port", 6379);
+    var redisSsl = config.GetValue<bool?>("Redis:Ssl");
+    if (!redisSsl.HasValue)
+    {
+        redisSsl = !string.IsNullOrWhiteSpace(redisHost) &&
+            redisHost.Contains("upstash.io", StringComparison.OrdinalIgnoreCase);
+    }
 
     var options = new ConfigurationOptions
     {
-        EndPoints = { redisHost },
-        Password = redisPassword,
-        Ssl = true,
-        AbortOnConnectFail = false
+        AbortOnConnectFail = false,
+        ConnectTimeout = 5000,
+        AsyncTimeout = 5000
     };
+
+    if (!string.IsNullOrWhiteSpace(redisHost))
+    {
+        if (redisHost.Contains(':'))
+        {
+            options.EndPoints.Add(redisHost);
+        }
+        else
+        {
+            options.EndPoints.Add(redisHost, redisPort);
+        }
+    }
+
+    if (!string.IsNullOrWhiteSpace(redisPassword))
+    {
+        options.Password = redisPassword;
+    }
+
+    options.Ssl = redisSsl ?? false;
 
     return ConnectionMultiplexer.Connect(options);
 });
@@ -159,6 +184,20 @@ builder.Services.AddHttpClient();
 
 var app = builder.Build();
 
+var databaseBootstrapMode = builder.Configuration["Database:BootstrapMode"];
+if (string.Equals(databaseBootstrapMode, "EnsureCreated", StringComparison.OrdinalIgnoreCase))
+{
+    using var scope = app.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    dbContext.Database.EnsureCreated();
+}
+else if (builder.Configuration.GetValue("Database:ApplyMigrationsOnStartup", false))
+{
+    using var scope = app.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    dbContext.Database.Migrate();
+}
+
 app.UseStatusCodePages(async statusCodeContext =>
 {
     var httpContext = statusCodeContext.HttpContext;
@@ -182,7 +221,10 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+if (builder.Configuration.GetValue("App:EnableHttpsRedirection", !app.Environment.IsProduction()))
+{
+    app.UseHttpsRedirection();
+}
 
 // Serve static files before routing
 

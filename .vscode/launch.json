@@ -1,0 +1,23 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Tech Store HTTPS",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "tech-store:prepare-run",
+      "program": "${workspaceFolder}/bin/Debug/net8.0/Tech_Store.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "stopAtEntry": false,
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+      },
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "launchSettingsProfile": "https"
+    }
+  ]
+}

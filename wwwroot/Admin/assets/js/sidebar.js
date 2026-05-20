@@ -165,11 +165,17 @@
 
                 var childLinks = item.querySelectorAll(".admin-sidebar__sublink[href]");
                 var activeChild = null;
+                var activeChildLength = -1;
 
                 childLinks.forEach(function (childLink) {
                     var childPath = normalizePath(childLink.getAttribute("href"));
-                    if (!activeChild && pathMatches(currentPath, childPath)) {
+                    var childAliases = splitRoutes(childLink.getAttribute("data-route-prefixes"));
+                    var childMatched = pathMatches(currentPath, childPath) ||
+                        childAliases.some(function (route) { return pathMatches(currentPath, route); });
+
+                    if (childMatched && childPath.length > activeChildLength) {
                         activeChild = childLink;
+                        activeChildLength = childPath.length;
                     }
                 });
 

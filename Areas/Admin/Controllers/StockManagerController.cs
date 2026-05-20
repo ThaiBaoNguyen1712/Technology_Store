@@ -10,6 +10,7 @@ using System.Linq;
 using OfficeOpenXml.Style;
 using System.Drawing;
 using System.Text;
+using System.Text.Json;
 using Tech_Store.Models.ViewModel;
 namespace Tech_Store.Areas.Admin.Controllers
 {
@@ -19,6 +20,10 @@ namespace Tech_Store.Areas.Admin.Controllers
     {
         private readonly IConfiguration _configuration;
         private const int FallbackPageSize = 20;
+        private static readonly JsonSerializerOptions BatchTransactionJsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true
+        };
 
         public StockManagerController(ApplicationDbContext context, IConfiguration configuration) : base(context)
         {
@@ -32,8 +37,9 @@ namespace Tech_Store.Areas.Admin.Controllers
             return resolvedPageSize > 0 ? resolvedPageSize : FallbackPageSize;
         }
 
-        [Route("")]
-        [Route("index")]
+        [HttpGet("")]
+        [HttpGet("index")]
+        [HttpGet("inventory", Name = "AdminStockInventory")]
         public IActionResult Index(string? sku, string? name, string? status, int? categoryId, int? brandId, int? stockFrom, int? stockTo, int page = 1)
         {
             var pageSize = GetDefaultAdminPageSize();
@@ -166,7 +172,30 @@ namespace Tech_Store.Areas.Admin.Controllers
             model.ReturnStockFrom = returnStockFrom;
             model.ReturnStockTo = returnStockTo;
 
-            return View("TransactionForm", model);
+            return View("CreateTransactionForm", model);
+        }
+
+        [HttpGet("BatchTransaction")]
+        public async Task<IActionResult> BatchTransaction(int[] selectedProductIds, string type = "Import", int returnPage = 1, string? returnSku = null, string? returnName = null, string? returnStatus = null, int? returnCategoryId = null, int? returnBrandId = null, int? returnStockFrom = null, int? returnStockTo = null)
+        {
+            var model = selectedProductIds != null && selectedProductIds.Length > 0
+                ? await BuildBatchImportFormModelAsync(selectedProductIds.Distinct().ToArray())
+                : new AdminStockBatchImportFormViewModel
+                {
+                    Suppliers = await GetSupplierOptionsAsync()
+                };
+
+            model.Type = string.Equals(type, "Export", StringComparison.OrdinalIgnoreCase) ? "Export" : "Import";
+            model.ReturnPage = returnPage;
+            model.ReturnSku = returnSku;
+            model.ReturnName = returnName;
+            model.ReturnStatus = returnStatus;
+            model.ReturnCategoryId = returnCategoryId;
+            model.ReturnBrandId = returnBrandId;
+            model.ReturnStockFrom = returnStockFrom;
+            model.ReturnStockTo = returnStockTo;
+
+            return View("BatchImport", model);
         }
 
         [HttpGet("EditTransaction/{id:int}")]
@@ -192,223 +221,544 @@ namespace Tech_Store.Areas.Admin.Controllers
             model.ReturnHistoryFilterType = returnHistoryFilterType;
             model.ReturnHistoryStartDate = returnHistoryStartDate;
             model.ReturnHistoryEndDate = returnHistoryEndDate;
+            ViewData["InventoryTransId"] = model.InventoryTransId.GetValueOrDefault(id);
 
-            return View("TransactionForm", model);
+            return View("EditTransactionForm", model);
+        }
+
+        [HttpPost("SaveCreateTransaction")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveCreateTransaction(AdminStockTransactionFormViewModel model)
+        {
+            if (Request.HasFormContentType &&
+                int.TryParse(Request.Form["InventoryTransId"].ToString(), out var postedInventoryTransId) &&
+                postedInventoryTransId > 0)
+            {
+                model.InventoryTransId = postedInventoryTransId;
+                return await SaveTransaction(model, isUpdate: true, postedInventoryTransId);
+            }
+
+            model.InventoryTransId = null;
+            return await SaveTransaction(model, isUpdate: false);
         }
 
         [HttpPost("SaveTransaction")]
+        [HttpPost("SaveTransaction/{inventoryTransId:int}")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SaveTransaction(AdminStockTransactionFormViewModel model)
+        public async Task<IActionResult> SaveTransactionLegacy(AdminStockTransactionFormViewModel model, int? inventoryTransId = null)
         {
-            var validVariants = model.Variants
-                .Where(x => x.Quantity > 0)
-                .ToList();
-
-            if (!validVariants.Any())
+            var resolvedInventoryTransId = inventoryTransId.GetValueOrDefault();
+            if (resolvedInventoryTransId <= 0 &&
+                Request.HasFormContentType &&
+                int.TryParse(Request.Form["InventoryTransId"].ToString(), out var postedInventoryTransId) &&
+                postedInventoryTransId > 0)
             {
-                TempData["error"] = "Cần nhập ít nhất một biến thể có số lượng lớn hơn 0.";
-                var invalidModel = await BuildTransactionFormModelAsync(model.ProductId, model.InventoryTransId);
-                if (invalidModel == null)
-                {
-                    return NotFound();
-                }
-
-                invalidModel.Type = model.Type;
-                invalidModel.SupplierId = model.SupplierId;
-                invalidModel.Note = model.Note;
-                invalidModel.Variants = invalidModel.Variants.Select(x =>
-                {
-                    var input = validVariants.FirstOrDefault(v => v.VariantId == x.VariantId) ?? model.Variants.FirstOrDefault(v => v.VariantId == x.VariantId);
-                    x.Quantity = input?.Quantity ?? 0;
-                    return x;
-                }).ToList();
-                CopyTransactionReturnState(model, invalidModel);
-                return View("TransactionForm", invalidModel);
+                resolvedInventoryTransId = postedInventoryTransId;
             }
 
-            if (string.Equals(model.Type, "Import", StringComparison.OrdinalIgnoreCase) && !model.SupplierId.HasValue)
+            if (resolvedInventoryTransId > 0)
             {
-                TempData["error"] = "Phiếu nhập kho cần gắn với một nhà cung cấp.";
-                var invalidModel = await BuildTransactionFormModelAsync(model.ProductId, model.InventoryTransId);
-                if (invalidModel == null)
-                {
-                    return NotFound();
-                }
+                model.InventoryTransId = resolvedInventoryTransId;
+                return await SaveTransaction(model, isUpdate: true, resolvedInventoryTransId);
+            }
 
-                invalidModel.Type = model.Type;
-                invalidModel.SupplierId = model.SupplierId;
-                invalidModel.Note = model.Note;
-                invalidModel.Variants = invalidModel.Variants.Select(x =>
+            model.InventoryTransId = null;
+            return await SaveTransaction(model, isUpdate: false);
+        }
+
+        [HttpPost("UpdateTransaction/{inventoryTransId:int}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateTransaction(int inventoryTransId, AdminStockTransactionFormViewModel model)
+        {
+            if (inventoryTransId <= 0 &&
+                Request.HasFormContentType &&
+                int.TryParse(Request.Form["InventoryTransId"].ToString(), out var postedInventoryTransId) &&
+                postedInventoryTransId > 0)
+            {
+                inventoryTransId = postedInventoryTransId;
+            }
+
+            model.InventoryTransId = inventoryTransId;
+            return await SaveTransaction(model, isUpdate: true, inventoryTransId);
+        }
+
+        private async Task<IActionResult> SaveTransaction(AdminStockTransactionFormViewModel model, bool isUpdate, int? inventoryTransId = null)
+        {
+            ApplyTransactionFormRequestFallbacks(model, inventoryTransId);
+            if (isUpdate)
+            {
+                model.InventoryTransId = inventoryTransId.GetValueOrDefault(model.InventoryTransId.GetValueOrDefault());
+                if (!model.InventoryTransId.HasValue || model.InventoryTransId.Value <= 0)
                 {
-                    var input = model.Variants.FirstOrDefault(v => v.VariantId == x.VariantId);
-                    x.Quantity = input?.Quantity ?? 0;
-                    return x;
-                }).ToList();
-                CopyTransactionReturnState(model, invalidModel);
-                return View("TransactionForm", invalidModel);
+                    return await BuildTransactionFormErrorResultAsync(model, "Không xác định được phiếu kho cần cập nhật.");
+                }
+            }
+            else
+            {
+                model.InventoryTransId = null;
+            }
+
+            model.Products = ResolveTransactionFormProducts(model);
+
+            var validProducts = model.Products
+                .Select(product => new
+                {
+                    Product = product,
+                    Variants = product.Variants.Where(variant => variant.Quantity > 0).ToList()
+                })
+                .Where(x => x.Variants.Count > 0)
+                .ToList();
+
+            var isImport = string.Equals(model.Type, "Import", StringComparison.OrdinalIgnoreCase);
+
+            if (validProducts.Count == 0)
+            {
+                return await BuildTransactionFormErrorResultAsync(model, "Cần nhập ít nhất một biến thể có số lượng lớn hơn 0.");
+            }
+
+            if (isImport && !model.SupplierId.HasValue)
+            {
+                return await BuildTransactionFormErrorResultAsync(model, "Phiếu nhập kho cần gắn với một nhà cung cấp.");
             }
 
             await using var dbTransaction = await _context.Database.BeginTransactionAsync();
 
             try
             {
-                var product = await _context.Products
-                    .Include(x => x.VarientProducts)
-                    .FirstOrDefaultAsync(x => x.ProductId == model.ProductId);
-
-                if (product == null)
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!int.TryParse(userId, out var parsedUserId) || parsedUserId <= 0)
                 {
-                    return NotFound();
+                    throw new InvalidOperationException("Không xác định được người tạo phiếu kho.");
                 }
 
-                InventoryTransactions inventoryTransaction;
-                List<InventoryTransactionsDetail> oldDetails = new();
-
-                if (model.InventoryTransId.HasValue && model.InventoryTransId.Value > 0)
+                var createdAt = DateTime.Now;
+                var transactionUserId = parsedUserId;
+                var existingTransactions = new List<InventoryTransactions>();
+                if (isUpdate)
                 {
-                    inventoryTransaction = await _context.InventoryTransactions
-                        .Include(x => x.InventoryTransactionsDetail)
-                        .FirstOrDefaultAsync(x => x.InventoryTransId == model.InventoryTransId.Value);
+                    var seedTransaction = await _context.InventoryTransactions
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(x => x.InventoryTransId == model.InventoryTransId!.Value);
 
-                    if (inventoryTransaction == null)
+                    if (seedTransaction == null)
                     {
                         return NotFound();
                     }
 
-                    oldDetails = inventoryTransaction.InventoryTransactionsDetail.ToList();
-                    await RevertInventoryTransactionAsync(product, inventoryTransaction.Type, oldDetails);
+                    createdAt = seedTransaction.CreatedAt ?? DateTime.Now;
+                    transactionUserId = seedTransaction.UserId;
 
-                    _context.InventoryTransactionsDetail.RemoveRange(oldDetails);
-                }
-                else
-                {
-                    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                    inventoryTransaction = new InventoryTransactions
+                    existingTransactions = await GetInventoryTransactionGroupQuery(seedTransaction)
+                        .Include(x => x.Product)
+                        .ThenInclude(x => x.VarientProducts)
+                        .Include(x => x.InventoryTransactionsDetail)
+                        .ToListAsync();
+
+                    foreach (var existingTransaction in existingTransactions)
                     {
-                        ProductId = product.ProductId,
-                        UserId = int.Parse(userId!),
-                        CreatedAt = DateTime.Now
-                    };
-                    await _context.InventoryTransactions.AddAsync(inventoryTransaction);
-                }
-
-                var detailEntities = new List<InventoryTransactionsDetail>();
-                var totalQuantity = 0;
-
-                foreach (var variantInput in validVariants)
-                {
-                    var variant = product.VarientProducts.FirstOrDefault(x => x.VarientId == variantInput.VariantId);
-                    if (variant == null)
-                    {
-                        throw new InvalidOperationException($"Không tìm thấy biến thể {variantInput.VariantId}.");
+                        await RevertInventoryTransactionAsync(
+                            existingTransaction.Product,
+                            existingTransaction.Type,
+                            existingTransaction.InventoryTransactionsDetail);
                     }
 
-                    if (string.Equals(model.Type, "Import", StringComparison.OrdinalIgnoreCase))
+                    _context.InventoryTransactionsDetail.RemoveRange(existingTransactions.SelectMany(x => x.InventoryTransactionsDetail));
+                    await _context.SaveChangesAsync();
+                }
+
+                var validProductIds = validProducts.Select(x => x.Product.ProductId).Distinct().ToArray();
+                var products = await _context.Products
+                    .Include(x => x.VarientProducts)
+                    .Where(x => validProductIds.Contains(x.ProductId))
+                    .ToDictionaryAsync(x => x.ProductId);
+
+                var existingByProductId = existingTransactions
+                    .GroupBy(x => x.ProductId)
+                    .ToDictionary(x => x.Key, x => x.OrderByDescending(t => t.InventoryTransId).First());
+                var obsoleteTransactions = existingTransactions
+                    .Where(x => !validProductIds.Contains(x.ProductId))
+                    .ToList();
+                if (obsoleteTransactions.Count > 0)
+                {
+                    _context.InventoryTransactions.RemoveRange(obsoleteTransactions);
+                }
+
+                foreach (var productInput in validProducts)
+                {
+                    if (!products.TryGetValue(productInput.Product.ProductId, out var product))
                     {
-                        product.Stock += variantInput.Quantity;
-                        variant.Stock = (variant.Stock ?? 0) + variantInput.Quantity;
+                        throw new InvalidOperationException($"Không tìm thấy sản phẩm #{productInput.Product.ProductId}.");
                     }
-                    else
+
+                    if (!existingByProductId.TryGetValue(product.ProductId, out var inventoryTransaction))
                     {
-                        if ((variant.Stock ?? 0) < variantInput.Quantity || product.Stock < variantInput.Quantity)
+                        inventoryTransaction = new InventoryTransactions
                         {
-                            throw new InvalidOperationException($"Tồn kho của biến thể {variant.Sku} không đủ để xuất.");
+                            ProductId = product.ProductId,
+                            Type = isImport ? "Import" : "Export",
+                            UserId = transactionUserId,
+                            SupplierId = isImport ? model.SupplierId : null,
+                            Note = model.Note,
+                            CreatedAt = createdAt,
+                            UpdatedAt = DateTime.Now
+                        };
+                        await _context.InventoryTransactions.AddAsync(inventoryTransaction);
+                        await _context.SaveChangesAsync();
+                    }
+
+                    var detailEntities = new List<InventoryTransactionsDetail>();
+                    foreach (var variantInput in productInput.Variants)
+                    {
+                        var variant = product.VarientProducts.FirstOrDefault(x => x.VarientId == variantInput.VariantId);
+                        if (variant == null)
+                        {
+                            throw new InvalidOperationException($"Không tìm thấy biến thể {variantInput.VariantId} của sản phẩm {product.Name}.");
                         }
 
-                        product.Stock -= variantInput.Quantity;
-                        variant.Stock = (variant.Stock ?? 0) - variantInput.Quantity;
+                        if (isImport)
+                        {
+                            product.Stock += variantInput.Quantity;
+                            variant.Stock = (variant.Stock ?? 0) + variantInput.Quantity;
+                        }
+                        else
+                        {
+                            if ((variant.Stock ?? 0) < variantInput.Quantity || product.Stock < variantInput.Quantity)
+                            {
+                                throw new InvalidOperationException($"Tồn kho của biến thể {variant.Sku} trong sản phẩm {product.Name} không đủ để xuất.");
+                            }
+
+                            product.Stock -= variantInput.Quantity;
+                            variant.Stock = (variant.Stock ?? 0) - variantInput.Quantity;
+                        }
+
+                        detailEntities.Add(new InventoryTransactionsDetail
+                        {
+                            InventoryTransId = inventoryTransaction.InventoryTransId,
+                            VarientId = variant.VarientId,
+                            Quantity = variantInput.Quantity,
+                            CreatedAt = DateTime.Now,
+                            UpdatedAt = DateTime.Now
+                        });
                     }
 
-                    totalQuantity += variantInput.Quantity;
-
-                    detailEntities.Add(new InventoryTransactionsDetail
-                    {
-                        InventoryTransId = inventoryTransaction.InventoryTransId,
-                        VarientId = variant.VarientId,
-                        Quantity = variantInput.Quantity
-                    });
+                    inventoryTransaction.Type = isImport ? "Import" : "Export";
+                    inventoryTransaction.SupplierId = isImport ? model.SupplierId : null;
+                    inventoryTransaction.Note = model.Note;
+                    inventoryTransaction.UpdatedAt = DateTime.Now;
+                    inventoryTransaction.ProductId = product.ProductId;
+                    product.Status = ResolveStockStatus(product.Stock, product.Status);
+                    await _context.InventoryTransactionsDetail.AddRangeAsync(detailEntities);
                 }
-
-                if (!string.Equals(model.Type, "Import", StringComparison.OrdinalIgnoreCase) && product.Stock < 0)
-                {
-                    throw new InvalidOperationException("Tồn kho tổng của sản phẩm không đủ để xuất.");
-                }
-
-                inventoryTransaction.Type = model.Type;
-                inventoryTransaction.SupplierId = string.Equals(model.Type, "Import", StringComparison.OrdinalIgnoreCase)
-                    ? model.SupplierId
-                    : null;
-                inventoryTransaction.Note = model.Note;
-                inventoryTransaction.UpdatedAt = DateTime.Now;
-                inventoryTransaction.ProductId = product.ProductId;
 
                 await _context.SaveChangesAsync();
-
-                foreach (var detail in detailEntities)
-                {
-                    detail.InventoryTransId = inventoryTransaction.InventoryTransId;
-                }
-
-                await _context.InventoryTransactionsDetail.AddRangeAsync(detailEntities);
-
-                product.Status = ResolveStockStatus(product.Stock, product.Status);
-
-                await _context.SaveChangesAsync();
+                EnsureNonNegativeStock(products.Values);
                 await dbTransaction.CommitAsync();
 
-                TempData["success"] = model.InventoryTransId.HasValue ? "Cập nhật phiếu kho thành công." : "Tạo phiếu kho thành công.";
+                var successMessage = isUpdate
+                    ? "Cập nhật phiếu kho thành công."
+                    : "Tạo phiếu kho thành công.";
+                var redirectUrl = BuildTransactionReturnUrl(model);
 
-                if (string.Equals(model.ReturnSource, "history", StringComparison.OrdinalIgnoreCase))
+                if (IsAjaxRequest())
                 {
-                    return RedirectToAction(nameof(History), new
+                    return Json(new
                     {
-                        startDate = model.ReturnHistoryStartDate,
-                        endDate = model.ReturnHistoryEndDate,
-                        filterType = model.ReturnHistoryFilterType,
-                        filterCode = model.ReturnHistoryFilterCode,
-                        page = model.ReturnPage,
-                        pageSize = model.ReturnPageSize
+                        success = true,
+                        message = successMessage,
+                        redirectUrl
                     });
                 }
 
-                return RedirectToAction(nameof(Index), new
-                {
-                    page = model.ReturnPage,
-                    sku = model.ReturnSku,
-                    name = model.ReturnName,
-                    status = model.ReturnStatus,
-                    categoryId = model.ReturnCategoryId,
-                    brandId = model.ReturnBrandId,
-                    stockFrom = model.ReturnStockFrom,
-                    stockTo = model.ReturnStockTo
-                });
+                TempData["success"] = successMessage;
+                return Redirect(redirectUrl);
             }
             catch (Exception ex)
             {
                 await dbTransaction.RollbackAsync();
-                TempData["error"] = ex.Message;
-
-                var invalidModel = await BuildTransactionFormModelAsync(model.ProductId, model.InventoryTransId);
-                if (invalidModel == null)
-                {
-                    return NotFound();
-                }
-
-                invalidModel.Type = model.Type;
-                invalidModel.SupplierId = model.SupplierId;
-                invalidModel.Note = model.Note;
-                invalidModel.Variants = invalidModel.Variants.Select(x =>
-                {
-                    var input = model.Variants.FirstOrDefault(v => v.VariantId == x.VariantId);
-                    x.Quantity = input?.Quantity ?? 0;
-                    return x;
-                }).ToList();
-                CopyTransactionReturnState(model, invalidModel);
-                return View("TransactionForm", invalidModel);
+                return await BuildTransactionFormErrorResultAsync(model, GetRootExceptionMessage(ex));
             }
         }
 
-        [Route("History")]
+        [HttpPost("DeleteTransaction/{inventoryTransId:int}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteTransaction(int inventoryTransId)
+        {
+            await using var dbTransaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var seedTransaction = await _context.InventoryTransactions
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.InventoryTransId == inventoryTransId);
+
+                if (seedTransaction == null)
+                {
+                    return IsAjaxRequest()
+                        ? Json(new { success = false, message = "Không tìm thấy phiếu kho cần xóa." })
+                        : NotFound();
+                }
+
+                var existingTransactions = await GetInventoryTransactionGroupQuery(seedTransaction)
+                    .Include(x => x.Product)
+                    .ThenInclude(x => x.VarientProducts)
+                    .Include(x => x.InventoryTransactionsDetail)
+                    .ToListAsync();
+
+                if (existingTransactions.Count == 0)
+                {
+                    return IsAjaxRequest()
+                        ? Json(new { success = false, message = "Không tìm thấy nhóm phiếu kho cần xóa." })
+                        : NotFound();
+                }
+
+                foreach (var existingTransaction in existingTransactions)
+                {
+                    await RevertInventoryTransactionAsync(
+                        existingTransaction.Product,
+                        existingTransaction.Type,
+                        existingTransaction.InventoryTransactionsDetail);
+                }
+
+                EnsureNonNegativeStock(existingTransactions.Select(x => x.Product).DistinctBy(x => x.ProductId));
+                foreach (var product in existingTransactions.Select(x => x.Product).DistinctBy(x => x.ProductId))
+                {
+                    product.Status = ResolveStockStatus(product.Stock, product.Status);
+                }
+
+                _context.InventoryTransactionsDetail.RemoveRange(existingTransactions.SelectMany(x => x.InventoryTransactionsDetail));
+                await _context.SaveChangesAsync();
+
+                _context.InventoryTransactions.RemoveRange(existingTransactions);
+                await _context.SaveChangesAsync();
+
+                await dbTransaction.CommitAsync();
+
+                if (IsAjaxRequest())
+                {
+                    return Json(new
+                    {
+                        success = true,
+                        message = "Xóa phiếu kho thành công.",
+                        redirectUrl = "/Admin/StockManager/Transactions"
+                    });
+                }
+
+                TempData["success"] = "Xóa phiếu kho thành công.";
+                return Redirect("/Admin/StockManager/Transactions");
+            }
+            catch (Exception ex)
+            {
+                await dbTransaction.RollbackAsync();
+                var message = GetRootExceptionMessage(ex);
+
+                if (IsAjaxRequest())
+                {
+                    return Json(new { success = false, message });
+                }
+
+                TempData["error"] = message;
+                return Redirect("/Admin/StockManager/Transactions");
+            }
+        }
+
+        [HttpPost("SaveBatchTransaction")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveBatchTransaction(AdminStockBatchImportFormViewModel model)
+        {
+            model.Products = ResolveBatchTransactionProducts(model);
+
+            var validProducts = model.Products
+                .Select(product => new
+                {
+                    Product = product,
+                    Variants = product.Variants.Where(variant => variant.Quantity > 0).ToList()
+                })
+                .Where(x => x.Variants.Count > 0)
+                .ToList();
+
+            var isImport = string.Equals(model.Type, "Import", StringComparison.OrdinalIgnoreCase);
+
+            if (isImport && !model.SupplierId.HasValue)
+            {
+                return await BuildBatchTransactionErrorResultAsync(model, "Phiếu nhập kho cần gắn với một nhà cung cấp.");
+            }
+
+            if (validProducts.Count == 0)
+            {
+                return await BuildBatchTransactionErrorResultAsync(model, "Cần nhập ít nhất một biến thể có số lượng lớn hơn 0.");
+            }
+
+            await using var dbTransaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!int.TryParse(userId, out var parsedUserId) || parsedUserId <= 0)
+                {
+                    throw new InvalidOperationException("Không xác định được người tạo phiếu kho.");
+                }
+
+                var batchCreatedAt = DateTime.Now;
+                var batchNote = model.Note?.Trim();
+                var selectedProductIds = validProducts.Select(x => x.Product.ProductId).Distinct().ToArray();
+                var products = await _context.Products
+                    .Include(x => x.VarientProducts)
+                    .Where(x => selectedProductIds.Contains(x.ProductId))
+                    .ToDictionaryAsync(x => x.ProductId);
+
+                foreach (var productInput in validProducts)
+                {
+                    if (!products.TryGetValue(productInput.Product.ProductId, out var product))
+                    {
+                        throw new InvalidOperationException($"Không tìm thấy sản phẩm #{productInput.Product.ProductId}.");
+                    }
+
+                    var inventoryTransaction = new InventoryTransactions
+                    {
+                        ProductId = product.ProductId,
+                        Type = isImport ? "Import" : "Export",
+                        UserId = parsedUserId,
+                        SupplierId = isImport ? model.SupplierId : null,
+                        Note = batchNote,
+                        CreatedAt = batchCreatedAt,
+                        UpdatedAt = batchCreatedAt
+                    };
+
+                    await _context.InventoryTransactions.AddAsync(inventoryTransaction);
+                    await _context.SaveChangesAsync();
+
+                    var detailEntities = new List<InventoryTransactionsDetail>();
+
+                    foreach (var variantInput in productInput.Variants)
+                    {
+                        var variant = product.VarientProducts.FirstOrDefault(x => x.VarientId == variantInput.VariantId);
+                        if (variant == null)
+                        {
+                            throw new InvalidOperationException($"Không tìm thấy biến thể {variantInput.VariantId} của sản phẩm {product.Name}.");
+                        }
+
+                        if (isImport)
+                        {
+                            product.Stock += variantInput.Quantity;
+                            variant.Stock = (variant.Stock ?? 0) + variantInput.Quantity;
+                        }
+                        else
+                        {
+                            if ((variant.Stock ?? 0) < variantInput.Quantity || product.Stock < variantInput.Quantity)
+                            {
+                                throw new InvalidOperationException($"Tồn kho của biến thể {variant.Sku} trong sản phẩm {product.Name} không đủ để xuất.");
+                            }
+
+                            product.Stock -= variantInput.Quantity;
+                            variant.Stock = (variant.Stock ?? 0) - variantInput.Quantity;
+                        }
+
+                        detailEntities.Add(new InventoryTransactionsDetail
+                        {
+                            InventoryTransId = inventoryTransaction.InventoryTransId,
+                            VarientId = variant.VarientId,
+                            Quantity = variantInput.Quantity,
+                            CreatedAt = DateTime.Now,
+                            UpdatedAt = DateTime.Now
+                        });
+                    }
+
+                    product.Status = ResolveStockStatus(product.Stock, product.Status);
+                    await _context.InventoryTransactionsDetail.AddRangeAsync(detailEntities);
+                    await _context.SaveChangesAsync();
+                }
+
+                await dbTransaction.CommitAsync();
+                TempData["success"] = isImport
+                    ? $"Đã tạo phiếu nhập cho {validProducts.Count} sản phẩm."
+                    : $"Đã tạo phiếu xuất cho {validProducts.Count} sản phẩm.";
+
+                if (IsAjaxRequest())
+                {
+                    return Json(new
+                    {
+                        success = true,
+                        redirectUrl = "/Admin/StockManager/Transactions"
+                    });
+                }
+
+                return Redirect("/Admin/StockManager/Transactions");
+            }
+            catch (Exception ex)
+            {
+                await dbTransaction.RollbackAsync();
+                return await BuildBatchTransactionErrorResultAsync(model, ex.Message);
+            }
+        }
+
+        [HttpGet("BatchTransactionProducts")]
+        public async Task<IActionResult> BatchTransactionProducts(int[] selectedProductIds)
+        {
+            if (selectedProductIds == null || selectedProductIds.Length == 0)
+            {
+                return Json(new { success = true, products = Array.Empty<AdminStockBatchImportProductViewModel>() });
+            }
+
+            var model = await BuildBatchImportFormModelAsync(selectedProductIds.Distinct().ToArray());
+            return Json(new { success = true, products = model.Products });
+        }
+
+        [HttpGet("ProductPicker")]
+        public IActionResult ProductPicker(string? keyword, int page = 1, int pageSize = 8)
+        {
+            var resolvedPageSize = Math.Clamp(pageSize, 5, 20);
+
+            var query = _context.Products
+                .AsNoTracking()
+                .Include(x => x.Brand)
+                .Include(x => x.Category)
+                .Where(x => x.Visible == true && x.Status != "discontinued")
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                var normalizedKeyword = keyword.Trim();
+                query = query.Where(x =>
+                    x.Name.Contains(normalizedKeyword) ||
+                    (x.Sku != null && x.Sku.Contains(normalizedKeyword)));
+            }
+
+            var totalItems = query.Count();
+            var totalPages = totalItems == 0 ? 1 : (int)Math.Ceiling(totalItems / (double)resolvedPageSize);
+            var currentPage = Math.Min(Math.Max(page, 1), totalPages);
+
+            var items = query
+                .OrderByDescending(x => x.ProductId)
+                .Skip((currentPage - 1) * resolvedPageSize)
+                .Take(resolvedPageSize)
+                .Select(x => new AdminStockProductPickerItemViewModel
+                {
+                    ProductId = x.ProductId,
+                    Name = x.Name,
+                    Sku = x.Sku ?? string.Empty,
+                    ProductImageUrl = x.Image,
+                    BrandName = x.Brand != null ? x.Brand.Name : null,
+                    CategoryName = x.Category != null ? x.Category.Name : null,
+                    Stock = x.Stock,
+                    VariantCount = x.VarientProducts.Count
+                })
+                .ToList();
+
+            var model = new AdminStockProductPickerViewModel
+            {
+                Items = items,
+                Keyword = keyword,
+                Page = currentPage,
+                PageSize = resolvedPageSize,
+                TotalPages = totalPages,
+                TotalItems = totalItems
+            };
+
+            return PartialView("_ProductPickerResults", model);
+        }
+
+        [HttpGet("transactions", Name = "AdminStockTransactions")]
+        [HttpGet("history")]
         public IActionResult History(DateOnly? startDate, DateOnly? endDate, string? filterType, string? filterCode, int page = 1, int? pageSize = null)
         {
             var resolvedPageSize = pageSize.GetValueOrDefault(GetDefaultAdminPageSize());
@@ -448,35 +798,93 @@ namespace Tech_Store.Areas.Admin.Controllers
                     ph.InventoryTransId.ToString().Contains(filterCode));
             }
 
-            var importCount = query.Count(ph => ph.Type == "Import");
-            var exportCount = query.Count(ph => ph.Type == "Export");
-            var totalItems = query.Count();
-            var totalPages = totalItems == 0 ? 1 : (int)Math.Ceiling(totalItems / (double)resolvedPageSize);
-            var currentPage = Math.Min(Math.Max(page, 1), totalPages);
-
-            var history = query
+            var rawHistory = query
                 .OrderByDescending(ph => ph.InventoryTransId)
-                .Skip((currentPage - 1) * resolvedPageSize)
-                .Take(resolvedPageSize)
                 .Select(ph => new InventoryTransactionsVM
                 {
                     Id = ph.InventoryTransId,
+                    UserId = ph.UserId,
+                    SupplierId = ph.SupplierId,
                     Product = ph.Product,
                     InventoryTransId = ph.InventoryTransId,
                     Type = ph.Type,
-                    Note = ph.Note,
+                    Note = ph.Note ?? string.Empty,
                     CreatedAt = ph.CreatedAt ?? DateTime.MinValue,
+                    ProductCount = 1,
+                    TotalQuantity = ph.InventoryTransactionsDetail.Sum(d => d.Quantity),
                     UserName = ph.User.LastName + " " + ph.User.FirstName,
-                    UserRole = ph.User.Roles.FirstOrDefault().RoleName,
+                    UserRole = ph.User.Roles.FirstOrDefault().RoleName ?? "Không có vai trò",
                     SupplierName = ph.Supplier != null ? ph.Supplier.Name : null,
                     SupplierCode = ph.Supplier != null ? ph.Supplier.Code : null,
+                    Products = new List<InventoryTransactionProductSummaryViewModel>
+                    {
+                        new InventoryTransactionProductSummaryViewModel
+                        {
+                            InventoryTransId = ph.InventoryTransId,
+                            ProductId = ph.ProductId,
+                            ProductName = ph.Product.Name,
+                            ProductSku = ph.Product.Sku ?? string.Empty,
+                            ProductImageUrl = ph.Product.Image,
+                            TotalQuantity = ph.InventoryTransactionsDetail.Sum(d => d.Quantity)
+                        }
+                    },
                     InventoryTransactionDetail = ph.InventoryTransactionsDetail
                         .Select(d => new InventorTransactionDetailViewModel
                         {
+                            InventoryTransId = d.InventoryTransId,
+                            VarientId = d.VarientId,
                             Quantity = d.Quantity
                         })
                         .ToList()
                 })
+                .ToList();
+
+            var groupedHistory = rawHistory
+                .GroupBy(BuildInventoryTransactionGroupKey)
+                .Select(group =>
+                {
+                    var orderedGroup = group
+                        .OrderBy(x => x.InventoryTransId)
+                        .ToList();
+                    var primary = orderedGroup[0];
+
+                    return new InventoryTransactionsVM
+                    {
+                        Id = primary.Id,
+                        InventoryTransId = primary.InventoryTransId,
+                        UserId = primary.UserId,
+                        SupplierId = primary.SupplierId,
+                        Product = primary.Product,
+                        Type = primary.Type,
+                        Note = primary.Note,
+                        CreatedAt = primary.CreatedAt,
+                        ProductCount = orderedGroup.Count,
+                        TotalQuantity = orderedGroup.Sum(x => x.TotalQuantity),
+                        UserName = primary.UserName,
+                        UserRole = primary.UserRole,
+                        SupplierName = primary.SupplierName,
+                        SupplierCode = primary.SupplierCode,
+                        Products = orderedGroup
+                            .SelectMany(x => x.Products)
+                            .OrderBy(x => x.ProductName)
+                            .ToList(),
+                        InventoryTransactionDetail = orderedGroup
+                            .SelectMany(x => x.InventoryTransactionDetail)
+                            .ToList()
+                    };
+                })
+                .OrderByDescending(x => x.CreatedAt)
+                .ThenByDescending(x => x.InventoryTransId)
+                .ToList();
+
+            var importCount = groupedHistory.Count(ph => ph.Type == "Import");
+            var exportCount = groupedHistory.Count(ph => ph.Type == "Export");
+            var totalItems = groupedHistory.Count;
+            var totalPages = totalItems == 0 ? 1 : (int)Math.Ceiling(totalItems / (double)resolvedPageSize);
+            var currentPage = Math.Min(Math.Max(page, 1), totalPages);
+            var history = groupedHistory
+                .Skip((currentPage - 1) * resolvedPageSize)
+                .Take(resolvedPageSize)
                 .ToList();
 
             var model = new AdminStockHistoryIndexViewModel
@@ -502,34 +910,101 @@ namespace Tech_Store.Areas.Admin.Controllers
         [HttpGet("GetHistoryDetail/{id}")]
         public async Task<JsonResult> GetHistoryDetail(int id)
         {
-            var history = await _context.InventoryTransactions
-                .Where(ph => ph.InventoryTransId == id) // Điều kiện lọc trước khi Select
+            var selectedTransaction = await _context.InventoryTransactions
+                .AsNoTracking()
+                .FirstOrDefaultAsync(ph => ph.InventoryTransId == id);
+
+            if (selectedTransaction == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy chi tiết lịch sử" });
+            }
+
+            var histories = await _context.InventoryTransactions
                 .Include(p => p.Product)
                 .Include(p => p.Supplier)
                 .Include(p => p.User)
                 .ThenInclude(p => p.Roles)
                 .Include(p => p.InventoryTransactionsDetail).ThenInclude(p => p.Varient)
+                .Where(ph =>
+                    ph.CreatedAt == selectedTransaction.CreatedAt &&
+                    ph.UserId == selectedTransaction.UserId &&
+                    ph.Type == selectedTransaction.Type &&
+                    ph.SupplierId == selectedTransaction.SupplierId &&
+                    (ph.Note ?? string.Empty) == (selectedTransaction.Note ?? string.Empty))
                 .Select(ph => new InventoryTransactionsVM
                 {
                     Id = ph.InventoryTransId,
+                    InventoryTransId = ph.InventoryTransId,
+                    UserId = ph.UserId,
+                    SupplierId = ph.SupplierId,
                     Product = ph.Product,
                     Type = ph.Type,
-                    Note = ph.Note,
-                    CreatedAt = (DateTime)ph.CreatedAt,
+                    Note = ph.Note ?? string.Empty,
+                    CreatedAt = ph.CreatedAt ?? DateTime.MinValue,
+                    ProductCount = 1,
+                    TotalQuantity = ph.InventoryTransactionsDetail.Sum(d => d.Quantity),
                     InventoryTransactionDetail = ph.InventoryTransactionsDetail.Select(d => new InventorTransactionDetailViewModel
                     {
                         InventoryTransId = d.InventoryTransId,
                         VarientId = d.VarientId,
                         VarientSku = d.Varient.Sku,
                         Quantity = d.Quantity,
-                        VarientName = d.Varient.Attributes // Optional, if needed
-                    }).ToList(), // No need to cast here
+                        VarientName = d.Varient.Attributes ?? "N/A"
+                    }).ToList(),
+                    Products = new List<InventoryTransactionProductSummaryViewModel>
+                    {
+                        new InventoryTransactionProductSummaryViewModel
+                        {
+                            InventoryTransId = ph.InventoryTransId,
+                            ProductId = ph.ProductId,
+                            ProductName = ph.Product.Name,
+                            ProductSku = ph.Product.Sku ?? string.Empty,
+                            ProductImageUrl = ph.Product.Image,
+                            TotalQuantity = ph.InventoryTransactionsDetail.Sum(d => d.Quantity),
+                            Details = ph.InventoryTransactionsDetail.Select(d => new InventorTransactionDetailViewModel
+                            {
+                                InventoryTransId = d.InventoryTransId,
+                                VarientId = d.VarientId,
+                                VarientSku = d.Varient.Sku,
+                                Quantity = d.Quantity,
+                                VarientName = d.Varient.Attributes ?? "N/A"
+                            }).ToList()
+                        }
+                    },
                     UserName = ph.User.LastName + " " + ph.User.FirstName,
-                    UserRole = ph.User.Roles.FirstOrDefault().RoleName ?? "Không có vai trò", // Tránh lỗi null
+                    UserRole = ph.User.Roles.FirstOrDefault().RoleName ?? "Không có vai trò",
                     SupplierName = ph.Supplier != null ? ph.Supplier.Name : null,
                     SupplierCode = ph.Supplier != null ? ph.Supplier.Code : null
                 })
-                .FirstOrDefaultAsync();
+                .OrderByDescending(ph => ph.InventoryTransId)
+                .ToListAsync();
+
+            var history = histories
+                .GroupBy(BuildInventoryTransactionGroupKey)
+                .Select(group =>
+                {
+                    var primary = group.OrderBy(x => x.InventoryTransId).First();
+                    return new InventoryTransactionsVM
+                    {
+                        Id = primary.Id,
+                        InventoryTransId = primary.InventoryTransId,
+                        UserId = primary.UserId,
+                        SupplierId = primary.SupplierId,
+                        Product = primary.Product,
+                        Type = primary.Type,
+                        Note = primary.Note,
+                        CreatedAt = primary.CreatedAt,
+                        ProductCount = group.Count(),
+                        TotalQuantity = group.Sum(x => x.TotalQuantity),
+                        UserName = primary.UserName,
+                        UserRole = primary.UserRole,
+                        SupplierName = primary.SupplierName,
+                        SupplierCode = primary.SupplierCode,
+                        Products = group.SelectMany(x => x.Products).OrderBy(x => x.ProductName).ToList(),
+                        InventoryTransactionDetail = group.SelectMany(x => x.InventoryTransactionDetail).ToList()
+                    };
+                })
+                .FirstOrDefault();
 
             if (history == null)
             {
@@ -710,68 +1185,32 @@ namespace Tech_Store.Areas.Admin.Controllers
             return string.Join("&", values);
         }
 
-        private async Task<AdminStockTransactionFormViewModel?> BuildTransactionFormModelAsync(int? productId, int? inventoryTransactionId)
+        private IQueryable<InventoryTransactions> GetInventoryTransactionGroupQuery(InventoryTransactions seedTransaction)
         {
-            InventoryTransactions? transaction = null;
-            Product? product;
+            var seedNote = seedTransaction.Note ?? string.Empty;
 
-            if (inventoryTransactionId.HasValue)
+            return _context.InventoryTransactions.Where(ph =>
+                ph.CreatedAt == seedTransaction.CreatedAt &&
+                ph.UserId == seedTransaction.UserId &&
+                ph.Type == seedTransaction.Type &&
+                ph.SupplierId == seedTransaction.SupplierId &&
+                (ph.Note ?? string.Empty) == seedNote);
+        }
+
+        private static AdminStockBatchImportProductViewModel BuildTransactionProductViewModel(
+            Product product,
+            IEnumerable<InventoryTransactionsDetail> details)
+        {
+            var detailLookup = details
+                .GroupBy(x => x.VarientId)
+                .ToDictionary(x => x.Key, x => x.Sum(detail => detail.Quantity));
+
+            return new AdminStockBatchImportProductViewModel
             {
-                transaction = await _context.InventoryTransactions
-                    .Include(x => x.Product)
-                    .ThenInclude(x => x.VarientProducts)
-                    .Include(x => x.InventoryTransactionsDetail)
-                    .FirstOrDefaultAsync(x => x.InventoryTransId == inventoryTransactionId.Value);
-
-                if (transaction == null || transaction.Product == null)
-                {
-                    return null;
-                }
-
-                product = transaction.Product;
-            }
-            else
-            {
-                if (!productId.HasValue)
-                {
-                    return null;
-                }
-
-                product = await _context.Products
-                    .Include(x => x.VarientProducts)
-                    .FirstOrDefaultAsync(x => x.ProductId == productId.Value);
-
-                if (product == null)
-                {
-                    return null;
-                }
-            }
-
-            var suppliers = await _context.Suppliers
-                .Where(x => x.IsActive)
-                .OrderBy(x => x.Name)
-                .Select(x => new AdminStockSupplierOptionViewModel
-                {
-                    SupplierId = x.SupplierId,
-                    Code = x.Code,
-                    Name = x.Name
-                })
-                .ToListAsync();
-
-            var detailLookup = transaction?.InventoryTransactionsDetail.ToDictionary(x => x.VarientId, x => x.Quantity)
-                              ?? new Dictionary<int, int>();
-
-            return new AdminStockTransactionFormViewModel
-            {
-                InventoryTransId = transaction?.InventoryTransId,
                 ProductId = product.ProductId,
                 ProductName = product.Name,
                 ProductSku = product.Sku ?? string.Empty,
                 ProductImageUrl = product.Image,
-                Type = transaction?.Type ?? "Import",
-                SupplierId = transaction?.SupplierId,
-                Note = transaction?.Note,
-                Suppliers = suppliers,
                 Variants = product.VarientProducts
                     .OrderBy(x => x.Sku)
                     .Select(x => new AdminStockTransactionVariantViewModel
@@ -781,10 +1220,275 @@ namespace Tech_Store.Areas.Admin.Controllers
                         AttributeSummary = x.Attributes ?? "N/A",
                         Price = x.Price,
                         CurrentStock = x.Stock ?? 0,
+                        PreviousQuantity = detailLookup.TryGetValue(x.VarientId, out var previousQuantity) ? previousQuantity : 0,
                         Quantity = detailLookup.TryGetValue(x.VarientId, out var quantity) ? quantity : 0
                     })
                     .ToList()
             };
+        }
+
+        private static List<AdminStockBatchImportProductViewModel> ResolveTransactionFormProducts(AdminStockTransactionFormViewModel model)
+        {
+            var jsonProducts = new List<AdminStockBatchImportProductViewModel>();
+            if (!string.IsNullOrWhiteSpace(model.ProductPayloadJson))
+            {
+                try
+                {
+                    jsonProducts = ParseBatchTransactionProducts(model.ProductPayloadJson);
+                }
+                catch (JsonException)
+                {
+                    jsonProducts = new List<AdminStockBatchImportProductViewModel>();
+                }
+            }
+
+            if (HasPositiveQuantity(jsonProducts))
+            {
+                return jsonProducts;
+            }
+
+            if (HasPositiveQuantity(model.Products))
+            {
+                return model.Products;
+            }
+
+            if (jsonProducts.Count > 0)
+            {
+                return jsonProducts;
+            }
+
+            if (model.Products.Count > 0)
+            {
+                return model.Products;
+            }
+
+            if (model.Variants.Count == 0)
+            {
+                return new List<AdminStockBatchImportProductViewModel>();
+            }
+
+            return new List<AdminStockBatchImportProductViewModel>
+            {
+                new()
+                {
+                    ProductId = model.ProductId,
+                    ProductName = model.ProductName,
+                    ProductSku = model.ProductSku,
+                    ProductImageUrl = model.ProductImageUrl,
+                    Variants = model.Variants
+                }
+            };
+        }
+
+        private void ApplyTransactionFormRequestFallbacks(AdminStockTransactionFormViewModel model, int? routeInventoryTransId = null)
+        {
+            if (!Request.HasFormContentType)
+            {
+                if (!model.InventoryTransId.HasValue && routeInventoryTransId.HasValue && routeInventoryTransId.Value > 0)
+                {
+                    model.InventoryTransId = routeInventoryTransId;
+                }
+
+                return;
+            }
+
+            if (!model.InventoryTransId.HasValue && routeInventoryTransId.HasValue && routeInventoryTransId.Value > 0)
+            {
+                model.InventoryTransId = routeInventoryTransId;
+            }
+
+            var postedType = Request.Form["Type"].ToString();
+            if (!string.IsNullOrWhiteSpace(postedType))
+            {
+                model.Type = postedType;
+            }
+
+            if (!model.SupplierId.HasValue && int.TryParse(Request.Form["SupplierId"].ToString(), out var supplierId))
+            {
+                model.SupplierId = supplierId;
+            }
+
+            if (!model.InventoryTransId.HasValue &&
+                int.TryParse(Request.Form["InventoryTransId"].ToString(), out var postedInventoryTransId) &&
+                postedInventoryTransId > 0)
+            {
+                model.InventoryTransId = postedInventoryTransId;
+            }
+        }
+
+        private async Task<IActionResult> BuildTransactionFormErrorResultAsync(AdminStockTransactionFormViewModel model, string message)
+        {
+            model.Suppliers = await GetSupplierOptionsAsync();
+            model.Variants = model.Products.FirstOrDefault()?.Variants ?? model.Variants;
+
+            if (IsAjaxRequest())
+            {
+                return Json(new
+                {
+                    success = false,
+                    message,
+                    debug = BuildTransactionFormPostDebug(model)
+                });
+            }
+
+            TempData["error"] = message;
+            return View(model.IsEdit ? "EditTransactionForm" : "CreateTransactionForm", model);
+        }
+
+        private static string GetRootExceptionMessage(Exception exception)
+        {
+            var current = exception;
+            while (current.InnerException != null)
+            {
+                current = current.InnerException;
+            }
+
+            return current.Message;
+        }
+
+        private object BuildTransactionFormPostDebug(AdminStockTransactionFormViewModel model)
+        {
+            return new
+            {
+                type = model.Type,
+                supplierId = model.SupplierId,
+                postedSupplierId = Request.HasFormContentType ? Request.Form["SupplierId"].ToString() : string.Empty,
+                productCount = model.Products.Count,
+                variantCount = model.Products.Sum(product => product.Variants.Count),
+                positiveVariantCount = model.Products.Sum(product => product.Variants.Count(variant => variant.Quantity > 0)),
+                payloadJsonLength = model.ProductPayloadJson?.Length ?? 0
+            };
+        }
+
+        private string BuildTransactionReturnUrl(AdminStockTransactionFormViewModel model)
+        {
+            return "/Admin/StockManager/Transactions";
+        }
+
+        private async Task<AdminStockTransactionFormViewModel?> BuildTransactionFormModelAsync(int? productId, int? inventoryTransactionId)
+        {
+            if (inventoryTransactionId.HasValue)
+            {
+                var transaction = await _context.InventoryTransactions
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.InventoryTransId == inventoryTransactionId.Value);
+
+                if (transaction == null)
+                {
+                    return null;
+                }
+
+                var transactions = await GetInventoryTransactionGroupQuery(transaction)
+                    .Include(x => x.Product)
+                    .ThenInclude(x => x.VarientProducts)
+                    .Include(x => x.InventoryTransactionsDetail)
+                    .OrderBy(x => x.InventoryTransId)
+                    .ToListAsync();
+
+                if (transactions.Count == 0)
+                {
+                    return null;
+                }
+
+                var primary = transactions[0];
+                var products = transactions
+                    .OrderBy(x => x.Product.Name)
+                    .Select(x => BuildTransactionProductViewModel(x.Product, x.InventoryTransactionsDetail))
+                    .ToList();
+
+                return new AdminStockTransactionFormViewModel
+                {
+                    InventoryTransId = primary.InventoryTransId,
+                    ProductId = primary.ProductId,
+                    ProductName = products.FirstOrDefault()?.ProductName ?? primary.Product.Name,
+                    ProductSku = products.FirstOrDefault()?.ProductSku ?? primary.Product.Sku ?? string.Empty,
+                    ProductImageUrl = products.FirstOrDefault()?.ProductImageUrl ?? primary.Product.Image,
+                    Type = primary.Type,
+                    SupplierId = primary.SupplierId,
+                    Note = primary.Note,
+                    Suppliers = await GetSupplierOptionsAsync(),
+                    Products = products,
+                    Variants = products.FirstOrDefault()?.Variants ?? new List<AdminStockTransactionVariantViewModel>()
+                };
+            }
+
+            if (!productId.HasValue)
+            {
+                return null;
+            }
+
+            var product = await _context.Products
+                .Include(x => x.VarientProducts)
+                .FirstOrDefaultAsync(x => x.ProductId == productId.Value);
+
+            if (product == null)
+            {
+                return null;
+            }
+
+            var productModel = BuildTransactionProductViewModel(product, Array.Empty<InventoryTransactionsDetail>());
+
+            return new AdminStockTransactionFormViewModel
+            {
+                ProductId = product.ProductId,
+                ProductName = product.Name,
+                ProductSku = product.Sku ?? string.Empty,
+                ProductImageUrl = product.Image,
+                Type = "Import",
+                Suppliers = await GetSupplierOptionsAsync(),
+                Products = new List<AdminStockBatchImportProductViewModel> { productModel },
+                Variants = productModel.Variants
+            };
+        }
+
+        private async Task<AdminStockBatchImportFormViewModel> BuildBatchImportFormModelAsync(int[] selectedProductIds)
+        {
+            var products = await _context.Products
+                .Include(x => x.VarientProducts)
+                .Where(x =>
+                    selectedProductIds.Contains(x.ProductId) &&
+                    x.Visible == true &&
+                    x.Status != "discontinued")
+                .OrderBy(x => x.Name)
+                .ToListAsync();
+
+            return new AdminStockBatchImportFormViewModel
+            {
+                Suppliers = await GetSupplierOptionsAsync(),
+                Products = products.Select(product => new AdminStockBatchImportProductViewModel
+                {
+                    ProductId = product.ProductId,
+                    ProductName = product.Name,
+                    ProductSku = product.Sku ?? string.Empty,
+                    ProductImageUrl = product.Image,
+                    Variants = product.VarientProducts
+                        .OrderBy(x => x.Sku)
+                        .Select(x => new AdminStockTransactionVariantViewModel
+                        {
+                            VariantId = x.VarientId,
+                            Sku = x.Sku,
+                            AttributeSummary = x.Attributes ?? "N/A",
+                            Price = x.Price,
+                            CurrentStock = x.Stock ?? 0,
+                            Quantity = 0
+                        })
+                        .ToList()
+                }).ToList()
+            };
+        }
+
+        private async Task<IReadOnlyList<AdminStockSupplierOptionViewModel>> GetSupplierOptionsAsync()
+        {
+            return await _context.Suppliers
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.Name)
+                .Select(x => new AdminStockSupplierOptionViewModel
+                {
+                    SupplierId = x.SupplierId,
+                    Code = x.Code,
+                    Name = x.Name
+                })
+                .ToListAsync();
         }
 
         private async Task RevertInventoryTransactionAsync(Product product, string oldType, IEnumerable<InventoryTransactionsDetail> oldDetails)
@@ -810,6 +1514,25 @@ namespace Tech_Store.Areas.Admin.Controllers
                 {
                     product.Stock += detail.Quantity;
                     variant.Stock = (variant.Stock ?? 0) + detail.Quantity;
+                }
+            }
+        }
+
+        private static void EnsureNonNegativeStock(IEnumerable<Product> products)
+        {
+            foreach (var product in products)
+            {
+                if (product.Stock < 0)
+                {
+                    throw new InvalidOperationException($"Tồn kho của sản phẩm {product.Name} không đủ để thực hiện thao tác này.");
+                }
+
+                foreach (var variant in product.VarientProducts)
+                {
+                    if ((variant.Stock ?? 0) < 0)
+                    {
+                        throw new InvalidOperationException($"Tồn kho của biến thể {variant.Sku} trong sản phẩm {product.Name} không đủ để thực hiện thao tác này.");
+                    }
                 }
             }
         }
@@ -850,6 +1573,208 @@ namespace Tech_Store.Areas.Admin.Controllers
             target.ReturnHistoryFilterType = source.ReturnHistoryFilterType;
             target.ReturnHistoryStartDate = source.ReturnHistoryStartDate;
             target.ReturnHistoryEndDate = source.ReturnHistoryEndDate;
+        }
+
+        private static string BuildInventoryTransactionGroupKey(InventoryTransactionsVM item)
+        {
+            return string.Join("|",
+                item.CreatedAt.Ticks,
+                item.UserId,
+                item.Type,
+                item.SupplierId?.ToString() ?? "null",
+                item.Note ?? string.Empty);
+        }
+
+        private static List<AdminStockBatchImportProductViewModel> ParseBatchTransactionProducts(string payloadJson)
+        {
+            var products = new List<AdminStockBatchImportProductViewModel>();
+
+            if (string.IsNullOrWhiteSpace(payloadJson))
+            {
+                return products;
+            }
+
+            using var document = JsonDocument.Parse(payloadJson);
+            if (document.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                return products;
+            }
+
+            foreach (var productElement in document.RootElement.EnumerateArray())
+            {
+                var variants = new List<AdminStockTransactionVariantViewModel>();
+                if (TryGetProperty(productElement, "variants", out var variantsElement) &&
+                    variantsElement.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var variantElement in variantsElement.EnumerateArray())
+                    {
+                        variants.Add(new AdminStockTransactionVariantViewModel
+                        {
+                            VariantId = ReadInt32(variantElement, "variantId"),
+                            Sku = ReadString(variantElement, "sku"),
+                            AttributeSummary = ReadString(variantElement, "attributeSummary"),
+                            Price = ReadNullableDecimal(variantElement, "price"),
+                            CurrentStock = ReadInt32(variantElement, "currentStock"),
+                            PreviousQuantity = ReadInt32(variantElement, "previousQuantity"),
+                            Quantity = ReadInt32(variantElement, "quantity")
+                        });
+                    }
+                }
+
+                products.Add(new AdminStockBatchImportProductViewModel
+                {
+                    ProductId = ReadInt32(productElement, "productId"),
+                    ProductName = ReadString(productElement, "productName"),
+                    ProductSku = ReadString(productElement, "productSku"),
+                    ProductImageUrl = ReadNullableString(productElement, "productImageUrl"),
+                    Variants = variants
+                });
+            }
+
+            return products;
+        }
+
+        private static List<AdminStockBatchImportProductViewModel> ResolveBatchTransactionProducts(AdminStockBatchImportFormViewModel model)
+        {
+            var boundProducts = model.Products ?? new List<AdminStockBatchImportProductViewModel>();
+            var jsonProducts = new List<AdminStockBatchImportProductViewModel>();
+
+            if (!string.IsNullOrWhiteSpace(model.ProductPayloadJson))
+            {
+                try
+                {
+                    jsonProducts = ParseBatchTransactionProducts(model.ProductPayloadJson);
+                }
+                catch (JsonException)
+                {
+                    jsonProducts = new List<AdminStockBatchImportProductViewModel>();
+                }
+            }
+
+            if (HasPositiveQuantity(jsonProducts))
+            {
+                return jsonProducts;
+            }
+
+            if (HasPositiveQuantity(boundProducts))
+            {
+                return boundProducts;
+            }
+
+            return jsonProducts.Count > 0 ? jsonProducts : boundProducts;
+        }
+
+        private static bool HasPositiveQuantity(IEnumerable<AdminStockBatchImportProductViewModel> products)
+        {
+            return products.Any(product => product.Variants.Any(variant => variant.Quantity > 0));
+        }
+
+        private static bool TryGetProperty(JsonElement element, string propertyName, out JsonElement value)
+        {
+            foreach (var property in element.EnumerateObject())
+            {
+                if (string.Equals(property.Name, propertyName, StringComparison.OrdinalIgnoreCase))
+                {
+                    value = property.Value;
+                    return true;
+                }
+            }
+
+            value = default;
+            return false;
+        }
+
+        private static int ReadInt32(JsonElement element, string propertyName)
+        {
+            if (!TryGetProperty(element, propertyName, out var value))
+            {
+                return 0;
+            }
+
+            if (value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var number))
+            {
+                return number;
+            }
+
+            if (value.ValueKind == JsonValueKind.String &&
+                int.TryParse(value.GetString(), out var parsed))
+            {
+                return parsed;
+            }
+
+            return 0;
+        }
+
+        private static decimal? ReadNullableDecimal(JsonElement element, string propertyName)
+        {
+            if (!TryGetProperty(element, propertyName, out var value))
+            {
+                return null;
+            }
+
+            if (value.ValueKind == JsonValueKind.Number && value.TryGetDecimal(out var number))
+            {
+                return number;
+            }
+
+            if (value.ValueKind == JsonValueKind.String &&
+                decimal.TryParse(value.GetString(), out var parsed))
+            {
+                return parsed;
+            }
+
+            return null;
+        }
+
+        private static string ReadString(JsonElement element, string propertyName)
+        {
+            return ReadNullableString(element, propertyName) ?? string.Empty;
+        }
+
+        private static string? ReadNullableString(JsonElement element, string propertyName)
+        {
+            if (!TryGetProperty(element, propertyName, out var value))
+            {
+                return null;
+            }
+
+            return value.ValueKind == JsonValueKind.Null ? null : value.ToString();
+        }
+
+        private bool IsAjaxRequest()
+        {
+            return string.Equals(Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private async Task<IActionResult> BuildBatchTransactionErrorResultAsync(AdminStockBatchImportFormViewModel model, string message)
+        {
+            model.Suppliers = await GetSupplierOptionsAsync();
+
+            if (IsAjaxRequest())
+            {
+                return Json(new
+                {
+                    success = false,
+                    message,
+                    debug = BuildBatchTransactionPostDebug(model)
+                });
+            }
+
+            TempData["error"] = message;
+            return View("BatchImport", model);
+        }
+
+        private static object BuildBatchTransactionPostDebug(AdminStockBatchImportFormViewModel model)
+        {
+            var products = model.Products ?? new List<AdminStockBatchImportProductViewModel>();
+
+            return new
+            {
+                productCount = products.Count,
+                variantCount = products.Sum(product => product.Variants.Count),
+                positiveVariantCount = products.Sum(product => product.Variants.Count(variant => variant.Quantity > 0)),
+                payloadJsonLength = model.ProductPayloadJson?.Length ?? 0
+            };
         }
 
         private static string BuildStockIndexQueryString(string? sku, string? name, string? status, int? categoryId, int? brandId, int? stockFrom, int? stockTo)

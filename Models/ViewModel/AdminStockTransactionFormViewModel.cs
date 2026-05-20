@@ -22,6 +22,10 @@ public class AdminStockTransactionFormViewModel
 
     public List<AdminStockTransactionVariantViewModel> Variants { get; set; } = new();
 
+    public List<AdminStockBatchImportProductViewModel> Products { get; set; } = new();
+
+    public string? ProductPayloadJson { get; set; }
+
     public bool IsEdit => InventoryTransId.HasValue && InventoryTransId.Value > 0;
 
     public int ReturnPage { get; set; } = 1;

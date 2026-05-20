@@ -24,7 +24,7 @@
         </div>
 
         <div class="card-body">
-            <form method="get" action="/Admin/StockManager" class="brand-admin__filters order-admin__filters row g-3 align-items-end mb-4">
+            <form method="get" action="/Admin/StockManager/Inventory" class="brand-admin__filters order-admin__filters row g-3 align-items-end mb-4">
                 <div class="col-md-6 col-xl-3">
                     <label class="form-label fw-semibold text-secondary">SKU sản phẩm</label>
                     <input type="text" class="form-control" name="sku" value="@Model.Sku" placeholder="Nhập mã SKU..." />
@@ -117,7 +117,7 @@
                     <div class="admin-search-actions-row">
                         <div class="admin-search-actions">
                             <button type="submit" class="btn btn-primary">Tìm kiếm</button>
-                            <a href="/Admin/StockManager" class="btn btn-light border">Làm mới</a>
+                            <a href="/Admin/StockManager/Inventory" class="btn btn-light border">Làm mới</a>
                         </div>
                     </div>
                 </div>
@@ -189,10 +189,6 @@
                                     </td>
                                     <td>
                                         <div class="stock-admin-page__row-actions">
-                                            <a href="@Url.Action("CreateTransaction", "StockManager", new { area = "Admin", productId = product.ProductId, returnPage = Model.Page, returnSku = Model.Sku, returnName = Model.Name, returnStatus = Model.Status, returnCategoryId = Model.CategoryId, returnBrandId = Model.BrandId, returnStockFrom = Model.StockFrom, returnStockTo = Model.StockTo })"
-                                               class="btn btn-light border btn-sm">
-                                                Nhập / xuất kho
-                                            </a>
                                             <a href="/Admin/Products/GenerateCode/@product.ProductId" class="btn btn-light border btn-sm">
                                                 In mã
                                             </a>
@@ -209,7 +205,7 @@
             {
                 CurrentPage = Model.Page,
                 TotalPages = Model.TotalPages,
-                BaseUrl = "/Admin/StockManager",
+                BaseUrl = "/Admin/StockManager/Inventory",
                 QueryString = Model.QueryString
             })
         </div>

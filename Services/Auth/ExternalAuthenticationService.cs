@@ -111,7 +111,7 @@ namespace Tech_Store.Services.Auth
 
         private async Task CreateCartAsync(int userId)
         {
-            _context.Carts.Add(new Cart
+            _context.Carts.Add(new Models.Cart
             {
                 UserId = userId,
                 CreatedAt = DateTime.Now,

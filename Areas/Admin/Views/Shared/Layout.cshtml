@@ -232,14 +232,14 @@
                             </button>
                             <div class="admin-sidebar__submenu" id="sidebar-submenu-inventory">
                                 <div class="admin-sidebar__submenu-inner">
-                                    <a href="/Admin/StockManager" class="nav-link admin-sidebar__sublink" data-sidebar-link>
-                                        <span class="sub-item">Nhập/Xuất hàng</span>
+                                    <a href="/Admin/StockManager/Inventory" class="nav-link admin-sidebar__sublink" data-sidebar-link data-route-prefixes="/admin/stockmanager/inventory,/admin/stockmanager,/admin/stockmanager/index">
+                                        <span class="sub-item">Tồn kho</span>
                                     </a>
                                     <a href="/Admin/Suppliers" class="nav-link admin-sidebar__sublink" data-sidebar-link>
                                         <span class="sub-item">Nhà cung cấp</span>
                                     </a>
-                                    <a href="/Admin/StockManager/History" class="nav-link admin-sidebar__sublink" data-sidebar-link>
-                                        <span class="sub-item">Lịch sử kho</span>
+                                    <a href="/Admin/StockManager/Transactions" class="nav-link admin-sidebar__sublink" data-sidebar-link data-route-prefixes="/admin/stockmanager/transactions,/admin/stockmanager/history">
+                                        <span class="sub-item">Nhập - Xuất Kho</span>
                                     </a>
                                 </div>
                             </div>
@@ -891,6 +891,24 @@
         });
     </script>
     <script type="text/javascript">
+        window.initDataTableSafe = function (selector, options) {
+            if (!window.jQuery || !$.fn.DataTable) {
+                return null;
+            }
+
+            var $table = $(selector);
+            if (!$table.length) {
+                return null;
+            }
+
+            if ($.fn.DataTable.isDataTable($table)) {
+                return $table.DataTable();
+            }
+
+            return $table.DataTable($.extend(true, {
+                retrieve: true
+            }, options || {}));
+        };
 
         $(document).ready(function () {
             $('.loading-container').hide()
@@ -904,25 +922,6 @@
             $(document).ajaxStop(function () {
                 $('.loading-container').hide();
             });
-
-            window.initDataTableSafe = function (selector, options) {
-                if (!$.fn.DataTable) {
-                    return null;
-                }
-
-                var $table = $(selector);
-                if (!$table.length) {
-                    return null;
-                }
-
-                if ($.fn.DataTable.isDataTable($table)) {
-                    return $table.DataTable();
-                }
-
-                return $table.DataTable($.extend(true, {
-                    retrieve: true
-                }, options || {}));
-            };
 
             var $defaultTable = $('#add-row');
             if ($defaultTable.length && !$defaultTable.is('[data-skip-auto-datatable]')) {

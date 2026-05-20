@@ -1,0 +1,605 @@
+@model Tech_Store.Models.ViewModel.AdminStockBatchImportFormViewModel
+@using System.Text.Json
+@using Tech_Store.Helpers
+@{
+    ViewData["Title"] = "Tạo phiếu nhập - xuất";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+    var initialProductsJson = JsonSerializer.Serialize(Model.Products, new JsonSerializerOptions
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    });
+}
+
+<div class="py-3 stock-transaction-page">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div>
+                    <h4 class="card-title mb-1">Tạo phiếu nhập - xuất</h4>
+                    <p class="text-muted mb-0">Chọn sản phẩm, nhập số lượng theo từng biến thể và lưu phiếu kho.</p>
+                </div>
+                <a href="/Admin/StockManager/Transactions" class="btn btn-light border">
+                    Quay lại Nhập - Xuất Kho
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <form method="post" action="/Admin/StockManager/SaveBatchTransaction" class="stock-transaction-page__form" id="batchTransactionForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="ProductPayloadJson" id="ProductPayloadJson" />
+                <div id="BatchTransactionModelInputs" class="d-none"></div>
+                <input type="hidden" asp-for="ReturnPage" />
+                <input type="hidden" asp-for="ReturnSku" />
+                <input type="hidden" asp-for="ReturnName" />
+                <input type="hidden" asp-for="ReturnStatus" />
+                <input type="hidden" asp-for="ReturnCategoryId" />
+                <input type="hidden" asp-for="ReturnBrandId" />
+                <input type="hidden" asp-for="ReturnStockFrom" />
+                <input type="hidden" asp-for="ReturnStockTo" />
+
+                <div class="row g-3 brand-admin__filters stock-transaction-page__filters mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold text-secondary">Loại phiếu</label>
+                        <select name="Type" class="form-select" id="batchTransactionType">
+                            @if (string.Equals(Model.Type, "Export", StringComparison.OrdinalIgnoreCase))
+                            {
+                                <option value="Import">Phiếu nhập kho</option>
+                                <option value="Export" selected>Phiếu xuất kho</option>
+                            }
+                            else
+                            {
+                                <option value="Import" selected>Phiếu nhập kho</option>
+                                <option value="Export">Phiếu xuất kho</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4" id="batchTransactionSupplierField">
+                        <label class="form-label fw-semibold text-secondary">Nhà cung cấp</label>
+                        <select name="SupplierId" class="form-select" id="batchTransactionSupplier">
+                            <option value="">Chọn nhà cung cấp</option>
+                            @foreach (var supplier in Model.Suppliers)
+                            {
+                                if (Model.SupplierId == supplier.SupplierId)
+                                {
+                                    <option value="@supplier.SupplierId" selected>@supplier.Code - @supplier.Name</option>
+                                }
+                                else
+                                {
+                                    <option value="@supplier.SupplierId">@supplier.Code - @supplier.Name</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold text-secondary">Ghi chú vận hành</label>
+                        <textarea asp-for="Note" class="form-control" rows="3" placeholder="Ví dụ: nhập đợt hàng, xuất điều chuyển, điều chỉnh sau kiểm kê..."></textarea>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+                    <div>
+                        <div class="fw-semibold">Danh sách sản phẩm trong phiếu</div>
+                        <div class="text-muted small">Mỗi sản phẩm hiển thị sẵn các biến thể để nhập hoặc xuất số lượng.</div>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="openStockProductPicker">
+                        Thêm sản phẩm
+                    </button>
+                </div>
+
+                <div id="batchTransactionEmptyState" class="text-center py-5 border rounded bg-light-subtle">
+                    <div class="fw-semibold mb-2">Chưa có sản phẩm nào trong phiếu</div>
+                    <div class="text-muted mb-3">Bấm "Thêm sản phẩm" để bắt đầu tạo phiếu nhập - xuất.</div>
+                    <button type="button" class="btn btn-light border" id="openStockProductPickerEmpty">
+                        Thêm sản phẩm
+                    </button>
+                </div>
+
+                <div id="batchTransactionProductsContainer" class="d-none"></div>
+
+                <div class="stock-transaction-page__footer mt-4">
+                    <div class="stock-transaction-page__footer-note">
+                        Phiếu chỉ được lưu khi có ít nhất một biến thể có số lượng lớn hơn 0.
+                    </div>
+                    <div class="stock-transaction-page__footer-actions">
+                        <button type="submit" class="btn btn-primary">Lưu phiếu nhập - xuất</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="stockProductPickerModal" tabindex="-1" aria-labelledby="stockProductPickerLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="stockProductPickerLabel">Thêm sản phẩm vào phiếu</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3 align-items-end mb-3">
+                    <div class="col-md-8">
+                        <label class="form-label fw-semibold text-secondary">Tìm sản phẩm</label>
+                        <input type="text" class="form-control" id="stockProductPickerKeyword" placeholder="Tìm theo tên hoặc SKU sản phẩm..." />
+                    </div>
+                    <div class="col-md-4 d-grid">
+                        <button type="button" class="btn btn-light border" id="clearStockProductSelection">Bỏ chọn tất cả</button>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="fw-semibold mb-2">Đã chọn <span id="stockProductPickerSelectedCount">0</span> sản phẩm</div>
+                    <div class="d-flex flex-wrap gap-2" id="stockProductPickerSelectedSummary"></div>
+                </div>
+
+                <div id="stockProductPickerResults">
+                    <div class="text-muted">Đang tải danh sách sản phẩm...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" id="confirmStockProductSelection">Cập nhật danh sách</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            const productPickerModalElement = document.getElementById('stockProductPickerModal');
+            const productPickerModal = productPickerModalElement ? bootstrap.Modal.getOrCreateInstance(productPickerModalElement) : null;
+            const $productPickerResults = $('#stockProductPickerResults');
+            const $productPickerKeyword = $('#stockProductPickerKeyword');
+            const $selectedCount = $('#stockProductPickerSelectedCount');
+            const $selectedSummary = $('#stockProductPickerSelectedSummary');
+            const $productsContainer = $('#batchTransactionProductsContainer');
+            const $emptyState = $('#batchTransactionEmptyState');
+            const $type = $('#batchTransactionType');
+            const $supplierField = $('#batchTransactionSupplierField');
+            const $supplier = $('#batchTransactionSupplier');
+            const $payload = $('#ProductPayloadJson');
+            const $modelInputs = $('#BatchTransactionModelInputs');
+            const selectedProducts = new Map();
+            const defaultImageUrl = '@Url.Content("~/Upload/Products/no-image.png")';
+            let transactionProducts = @Html.Raw(initialProductsJson);
+            let pickerSearchTimer = null;
+            let currentPickerPage = 1;
+
+            function escapeHtml(value) {
+                return $('<div/>').text(value || '').html();
+            }
+
+            function resolveImageUrl(imageUrl) {
+                if (!imageUrl) {
+                    return defaultImageUrl;
+                }
+
+                if (String(imageUrl).toLowerCase().startsWith('http')) {
+                    return imageUrl;
+                }
+
+                return `/Upload/Products/${imageUrl}`;
+            }
+
+            function syncSupplierField() {
+                const isImport = $type.val() === 'Import';
+                $supplierField.toggleClass('d-none', !isImport);
+                if (!isImport) {
+                    $supplier.val('');
+                }
+            }
+
+            function captureCurrentQuantities() {
+                const domProducts = buildPayloadFromDom();
+                if (domProducts.length > 0) {
+                    transactionProducts = domProducts;
+                }
+            }
+
+            function renderEmptyState() {
+                const hasProducts = transactionProducts.length > 0;
+                $emptyState.toggleClass('d-none', hasProducts);
+                $productsContainer.toggleClass('d-none', !hasProducts);
+            }
+
+            function renderTransactionProducts() {
+                renderEmptyState();
+
+                if (transactionProducts.length === 0) {
+                    $productsContainer.empty();
+                    return;
+                }
+
+                const html = transactionProducts.map((product, productIndex) => {
+                    const imageUrl = resolveImageUrl(product.productImageUrl);
+                    const rows = (product.variants || []).map((variant, variantIndex) => `
+                        <tr>
+                            <td><div class="fw-semibold text-dark">${escapeHtml(variant.sku)}</div></td>
+                            <td>${escapeHtml(variant.attributeSummary)}</td>
+                            <td>${variant.price ? Number(variant.price).toLocaleString('vi-VN') + ' đ' : '-'}</td>
+                            <td>${variant.currentStock ?? 0}</td>
+                            <td>
+                                <input type="number"
+                                       class="form-control js-variant-quantity"
+                                       min="0"
+                                       value="${variant.quantity || 0}"
+                                       data-product-index="${productIndex}"
+                                       data-variant-index="${variantIndex}"
+                                       data-product-id="${product.productId}"
+                                       data-variant-id="${variant.variantId}"
+                                       data-variant-sku="${escapeHtml(variant.sku)}"
+                                       data-variant-attribute-summary="${escapeHtml(variant.attributeSummary)}"
+                                       data-variant-price="${variant.price ?? ''}"
+                                       data-variant-current-stock="${variant.currentStock ?? 0}" />
+                            </td>
+                        </tr>
+                    `).join('');
+
+                    return `
+                        <div class="card border-0 shadow-sm mb-4 js-transaction-product-card"
+                             data-product-card="${product.productId}"
+                             data-product-id="${product.productId}"
+                             data-product-name="${escapeHtml(product.productName)}"
+                             data-product-sku="${escapeHtml(product.productSku)}"
+                             data-product-image="${escapeHtml(product.productImageUrl || '')}">
+                            <div class="card-header bg-white border-0 d-flex align-items-center justify-content-between gap-3">
+                                <div class="d-flex align-items-center gap-3">
+                                    <img src="${imageUrl}" alt="${escapeHtml(product.productName)}" style="width: 44px; height: 44px; object-fit: cover; border-radius: 12px;" />
+                                    <div>
+                                        <div class="fw-semibold">${escapeHtml(product.productName)}</div>
+                                        <div class="text-muted small">SKU gốc: ${escapeHtml(product.productSku)} · ${(product.variants || []).length} biến thể</div>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-light border btn-sm js-remove-product" data-product-id="${product.productId}">
+                                    Bỏ khỏi phiếu
+                                </button>
+                            </div>
+                            <div class="card-body pt-0">
+                                <div class="table-responsive reusable-admin-table">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>SKU biến thể</th>
+                                                <th>Phân loại</th>
+                                                <th style="width: 160px;">Giá bán</th>
+                                                <th style="width: 120px;">Tồn hiện tại</th>
+                                                <th style="width: 170px;">Số lượng nhập/xuất</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>${rows}</tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                $productsContainer.html(html);
+            }
+
+            function renderSelectedProducts() {
+                $selectedCount.text(selectedProducts.size);
+                $selectedSummary.empty();
+
+                if (selectedProducts.size === 0) {
+                    $selectedSummary.append('<span class="text-muted small">Chưa có sản phẩm nào được chọn.</span>');
+                    return;
+                }
+
+                selectedProducts.forEach(function (product, id) {
+                    $selectedSummary.append(`
+                        <span class="badge bg-light text-dark border d-inline-flex align-items-center gap-2 px-2 py-2">
+                            <img src="${resolveImageUrl(product.imageUrl)}" alt="${escapeHtml(product.name)}" style="width: 24px; height: 24px; object-fit: cover; border-radius: 8px;" />
+                            <span>${escapeHtml(product.name)} (${escapeHtml(product.sku || 'Không có SKU')})</span>
+                            <button type="button" class="btn-close btn-close-sm js-remove-selected-product" data-id="${id}" aria-label="Bỏ chọn"></button>
+                        </span>
+                    `);
+                });
+            }
+
+            function buildPayloadFromDom() {
+                return $productsContainer.find('.js-transaction-product-card').map(function () {
+                    const $card = $(this);
+                    const variants = $card.find('.js-variant-quantity').map(function () {
+                        const $input = $(this);
+                        const rawPrice = $input.data('variant-price');
+
+                        return {
+                            variantId: Number($input.data('variant-id')),
+                            sku: String($input.data('variant-sku') || ''),
+                            attributeSummary: String($input.data('variant-attribute-summary') || ''),
+                            price: rawPrice === '' || rawPrice === undefined ? null : Number(rawPrice),
+                            currentStock: Number($input.data('variant-current-stock') || 0),
+                            quantity: Number($input.val() || 0)
+                        };
+                    }).get();
+
+                    return {
+                        productId: Number($card.data('product-id')),
+                        productName: String($card.data('product-name') || ''),
+                        productSku: String($card.data('product-sku') || ''),
+                        productImageUrl: String($card.data('product-image') || ''),
+                        variants: variants
+                    };
+                }).get();
+            }
+
+            function appendModelInput(name, value) {
+                $('<input/>', {
+                    type: 'hidden',
+                    name: name,
+                    value: value ?? ''
+                }).appendTo($modelInputs);
+            }
+
+            function syncModelInputs(products) {
+                $modelInputs.empty();
+
+                (products || []).forEach(function (product, productIndex) {
+                    appendModelInput(`Products[${productIndex}].ProductId`, product.productId);
+                    appendModelInput(`Products[${productIndex}].ProductName`, product.productName);
+                    appendModelInput(`Products[${productIndex}].ProductSku`, product.productSku);
+                    appendModelInput(`Products[${productIndex}].ProductImageUrl`, product.productImageUrl);
+
+                    (product.variants || []).forEach(function (variant, variantIndex) {
+                        appendModelInput(`Products[${productIndex}].Variants[${variantIndex}].VariantId`, variant.variantId);
+                        appendModelInput(`Products[${productIndex}].Variants[${variantIndex}].Sku`, variant.sku);
+                        appendModelInput(`Products[${productIndex}].Variants[${variantIndex}].AttributeSummary`, variant.attributeSummary);
+                        appendModelInput(`Products[${productIndex}].Variants[${variantIndex}].Price`, variant.price);
+                        appendModelInput(`Products[${productIndex}].Variants[${variantIndex}].CurrentStock`, variant.currentStock);
+                        appendModelInput(`Products[${productIndex}].Variants[${variantIndex}].Quantity`, variant.quantity);
+                    });
+                });
+            }
+
+            function syncPickerSelectionState() {
+                $productPickerResults.find('.js-product-picker-checkbox').each(function () {
+                    const $checkbox = $(this);
+                    const productId = Number($checkbox.val());
+                    $checkbox.prop('checked', selectedProducts.has(productId));
+                });
+            }
+
+            function loadProductPicker(page) {
+                currentPickerPage = page || 1;
+                $productPickerResults.html('<div class="text-muted">Đang tải danh sách sản phẩm...</div>');
+
+                $.ajax({
+                    method: 'GET',
+                    url: '/Admin/StockManager/ProductPicker',
+                    data: {
+                        keyword: $productPickerKeyword.val(),
+                        page: currentPickerPage
+                    },
+                    success: function (html) {
+                        $productPickerResults.html(html);
+                        syncPickerSelectionState();
+                    },
+                    error: function () {
+                        $productPickerResults.html('<div class="alert alert-danger mb-0">Không thể tải danh sách sản phẩm.</div>');
+                    }
+                });
+            }
+
+            function hydrateSelectedProductsFromTransactionProducts() {
+                selectedProducts.clear();
+                transactionProducts.forEach(function (product) {
+                    selectedProducts.set(product.productId, {
+                        id: product.productId,
+                        name: product.productName,
+                        sku: product.productSku,
+                        imageUrl: product.productImageUrl
+                    });
+                });
+                renderSelectedProducts();
+            }
+
+            function mergeFetchedProducts(products) {
+                const existingMap = new Map();
+
+                transactionProducts.forEach(function (product) {
+                    existingMap.set(product.productId, product);
+                });
+
+                transactionProducts = products.map(function (product) {
+                    const existingProduct = existingMap.get(product.productId);
+                    if (!existingProduct) {
+                        return product;
+                    }
+
+                    const existingVariantMap = new Map();
+                    (existingProduct.variants || []).forEach(function (variant) {
+                        existingVariantMap.set(variant.variantId, variant.quantity || 0);
+                    });
+
+                    (product.variants || []).forEach(function (variant) {
+                        if (existingVariantMap.has(variant.variantId)) {
+                            variant.quantity = existingVariantMap.get(variant.variantId);
+                        }
+                    });
+
+                    return {
+                        ...product,
+                        productImageUrl: product.productImageUrl || existingProduct.productImageUrl
+                    };
+                });
+            }
+
+            function fetchSelectedProducts() {
+                const ids = Array.from(selectedProducts.keys());
+                if (ids.length === 0) {
+                    transactionProducts = [];
+                    renderTransactionProducts();
+                    return;
+                }
+
+                captureCurrentQuantities();
+
+                $.ajax({
+                    method: 'GET',
+                    url: '/Admin/StockManager/BatchTransactionProducts',
+                    traditional: true,
+                    data: {
+                        selectedProductIds: ids
+                    },
+                    success: function (response) {
+                        if (!response || !response.success) {
+                            Swal.fire('Lỗi', 'Danh sách sản phẩm vừa chọn không thể tải được.', 'error');
+                            return;
+                        }
+
+                        mergeFetchedProducts(response.products || []);
+                        renderTransactionProducts();
+                    },
+                    error: function () {
+                        Swal.fire('Lỗi', 'Danh sách sản phẩm vừa chọn không thể tải được.', 'error');
+                    }
+                });
+            }
+
+            function openPicker() {
+                if (!productPickerModal) {
+                    return;
+                }
+
+                captureCurrentQuantities();
+                hydrateSelectedProductsFromTransactionProducts();
+                productPickerModal.show();
+                loadProductPicker(1);
+            }
+
+            $('#openStockProductPicker, #openStockProductPickerEmpty').on('click', openPicker);
+
+            $productPickerKeyword.on('input', function () {
+                window.clearTimeout(pickerSearchTimer);
+                pickerSearchTimer = window.setTimeout(function () {
+                    loadProductPicker(1);
+                }, 250);
+            });
+
+            $productPickerResults.on('change', '.js-product-picker-checkbox', function () {
+                const $checkbox = $(this);
+                const productId = Number($checkbox.val());
+
+                if ($checkbox.is(':checked')) {
+                    selectedProducts.set(productId, {
+                        id: productId,
+                        name: $checkbox.data('name'),
+                        sku: $checkbox.data('sku'),
+                        imageUrl: $checkbox.data('image')
+                    });
+                } else {
+                    selectedProducts.delete(productId);
+                }
+
+                renderSelectedProducts();
+            });
+
+            $productPickerResults.on('click', '.js-product-picker-page', function () {
+                const page = Number($(this).data('page'));
+                if (page > 0) {
+                    loadProductPicker(page);
+                }
+            });
+
+            $selectedSummary.on('click', '.js-remove-selected-product', function () {
+                const id = Number($(this).data('id'));
+                selectedProducts.delete(id);
+                renderSelectedProducts();
+                syncPickerSelectionState();
+            });
+
+            $('#clearStockProductSelection').on('click', function () {
+                selectedProducts.clear();
+                renderSelectedProducts();
+                syncPickerSelectionState();
+            });
+
+            $('#confirmStockProductSelection').on('click', function () {
+                fetchSelectedProducts();
+                productPickerModal.hide();
+            });
+
+            $productsContainer.on('click', '.js-remove-product', function () {
+                const productId = Number($(this).data('product-id'));
+                transactionProducts = transactionProducts.filter(x => x.productId !== productId);
+                renderTransactionProducts();
+            });
+
+            $('#batchTransactionForm').on('submit', function (event) {
+                const payloadProducts = buildPayloadFromDom();
+                if (payloadProducts.length > 0) {
+                    transactionProducts = payloadProducts;
+                }
+                event.preventDefault();
+
+                if (transactionProducts.length === 0) {
+                    Swal.fire('Thiếu sản phẩm', 'Hãy thêm ít nhất một sản phẩm vào phiếu trước khi lưu.', 'warning');
+                    return;
+                }
+
+                const hasPositiveQuantity = transactionProducts.some(product =>
+                    (product.variants || []).some(variant => Number(variant.quantity || 0) > 0));
+
+                if (!hasPositiveQuantity) {
+                    Swal.fire('Thiếu số lượng', 'Cần nhập ít nhất một biến thể có số lượng lớn hơn 0.', 'warning');
+                    return;
+                }
+
+                if ($type.val() === 'Import' && !$supplier.val()) {
+                    Swal.fire('Thiếu nhà cung cấp', 'Phiếu nhập kho cần chọn nhà cung cấp trước khi lưu.', 'warning');
+                    return;
+                }
+
+                $payload.val(JSON.stringify(transactionProducts));
+                syncModelInputs(transactionProducts);
+
+                const formData = new FormData(this);
+
+                $.ajax({
+                    method: 'POST',
+                    url: this.action,
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    beforeSend: function () {
+                        $('.loading-container').show();
+                    },
+                    success: function (response) {
+                        if (response && response.success && response.redirectUrl) {
+                            window.location.href = response.redirectUrl;
+                            return;
+                        }
+
+                        Swal.fire('Lỗi', (response && response.message) || 'Không thể lưu phiếu kho.', 'error');
+                    },
+                    error: function (xhr) {
+                        const responseMessage = xhr.responseJSON && xhr.responseJSON.message
+                            ? xhr.responseJSON.message
+                            : 'Không thể lưu phiếu kho.';
+                        Swal.fire('Lỗi', responseMessage, 'error');
+                    },
+                    complete: function () {
+                        $('.loading-container').hide();
+                    }
+                });
+            });
+
+            syncSupplierField();
+            $type.on('change', syncSupplierField);
+            hydrateSelectedProductsFromTransactionProducts();
+            renderTransactionProducts();
+
+            const errorMessage = @Html.Raw(JsonSerializer.Serialize(TempData["error"]?.ToString() ?? string.Empty));
+            if (errorMessage) {
+                Swal.fire('Lỗi', errorMessage, 'error');
+            }
+        });
+    </script>
+}

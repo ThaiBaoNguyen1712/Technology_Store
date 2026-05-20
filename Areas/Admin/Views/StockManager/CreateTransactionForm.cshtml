@@ -1,0 +1,384 @@
+﻿@model Tech_Store.Models.ViewModel.AdminStockTransactionFormViewModel
+@using System.Globalization
+@using System.Text.Json
+@using Tech_Store.Helpers
+@{
+    ViewData["Title"] = "Tạo phiếu kho";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+    var returnUrl = string.Equals(Model.ReturnSource, "history", StringComparison.OrdinalIgnoreCase)
+        ? $"/Admin/StockManager/Transactions?page={Model.ReturnPage}&pageSize={Model.ReturnPageSize}" +
+          $"{(string.IsNullOrWhiteSpace(Model.ReturnHistoryFilterCode) ? string.Empty : $"&filterCode={Uri.EscapeDataString(Model.ReturnHistoryFilterCode)}")}" +
+          $"{(string.IsNullOrWhiteSpace(Model.ReturnHistoryFilterType) ? string.Empty : $"&filterType={Uri.EscapeDataString(Model.ReturnHistoryFilterType)}")}" +
+          $"{(Model.ReturnHistoryStartDate.HasValue ? $"&startDate={Model.ReturnHistoryStartDate.Value:yyyy-MM-dd}" : string.Empty)}" +
+          $"{(Model.ReturnHistoryEndDate.HasValue ? $"&endDate={Model.ReturnHistoryEndDate.Value:yyyy-MM-dd}" : string.Empty)}"
+        : Url.Action("Index", "StockManager", new
+        {
+            area = "Admin",
+            page = Model.ReturnPage,
+            sku = Model.ReturnSku,
+            name = Model.ReturnName,
+            status = Model.ReturnStatus,
+            categoryId = Model.ReturnCategoryId,
+            brandId = Model.ReturnBrandId,
+            stockFrom = Model.ReturnStockFrom,
+            stockTo = Model.ReturnStockTo
+        });
+    var saveUrl = "/Admin/StockManager/SaveCreateTransaction";
+}
+
+<div class="py-3 stock-transaction-page">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div>
+                    <h4 class="card-title mb-1">Tạo phiếu nhập - xuất</h4>
+                </div>
+                <a href="@returnUrl" class="btn btn-light border">
+                    @(string.Equals(Model.ReturnSource, "history", StringComparison.OrdinalIgnoreCase) ? "Quay láº¡i Nháº­p - Xuáº¥t Kho" : "Quay láº¡i Tá»“n kho")
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <form method="post" action="@saveUrl" class="stock-transaction-page__form" id="stockTransactionForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="InventoryTransId" id="InventoryTransId" />
+                <input type="hidden" asp-for="ProductId" />
+                <input type="hidden" asp-for="ProductPayloadJson" id="ProductPayloadJson" />
+                <div id="TransactionModelInputs" class="d-none"></div>
+                <input type="hidden" asp-for="ReturnPage" />
+                <input type="hidden" asp-for="ReturnPageSize" />
+                <input type="hidden" asp-for="ReturnSku" />
+                <input type="hidden" asp-for="ReturnName" />
+                <input type="hidden" asp-for="ReturnStatus" />
+                <input type="hidden" asp-for="ReturnCategoryId" />
+                <input type="hidden" asp-for="ReturnBrandId" />
+                <input type="hidden" asp-for="ReturnStockFrom" />
+                <input type="hidden" asp-for="ReturnStockTo" />
+                <input type="hidden" asp-for="ReturnSource" />
+                <input type="hidden" asp-for="ReturnHistoryFilterCode" />
+                <input type="hidden" asp-for="ReturnHistoryFilterType" />
+                <input type="hidden" asp-for="ReturnHistoryStartDate" />
+                <input type="hidden" asp-for="ReturnHistoryEndDate" />
+
+                <div class="row g-3 brand-admin__filters stock-transaction-page__filters mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold text-secondary">Loáº¡i phiáº¿u</label>
+                        <select asp-for="Type" class="form-select js-stock-transaction-type">
+                            @if (string.Equals(Model.Type, "Import", StringComparison.OrdinalIgnoreCase))
+                            {
+                                <option value="Import" selected>Phiáº¿u nháº­p kho</option>
+                                <option value="Export">Phiáº¿u xuáº¥t kho</option>
+                            }
+                            else
+                            {
+                                <option value="Import">Phiáº¿u nháº­p kho</option>
+                                <option value="Export" selected>Phiáº¿u xuáº¥t kho</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4 js-stock-supplier-field">
+                        <label class="form-label fw-semibold text-secondary">NhÃ  cung cáº¥p</label>
+                        <select name="SupplierId" id="SupplierId" class="form-select">
+                            <option value="">Chá»n nhÃ  cung cáº¥p</option>
+                            @foreach (var supplier in Model.Suppliers)
+                            {
+                                if (Model.SupplierId == supplier.SupplierId)
+                                {
+                                    <option value="@supplier.SupplierId" selected>@supplier.Code - @supplier.Name</option>
+                                }
+                                else
+                                {
+                                    <option value="@supplier.SupplierId">@supplier.Code - @supplier.Name</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold text-secondary">Ghi chÃº váº­n hÃ nh</label>
+                        <textarea asp-for="Note" class="form-control" rows="3" placeholder="VÃ­ dá»¥: nháº­p Ä‘á»£t hÃ ng, xuáº¥t Ä‘iá»u chuyá»ƒn, Ä‘iá»u chá»‰nh sau kiá»ƒm kÃª..."></textarea>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+                    <div>
+                        <div class="fw-semibold">Danh sÃ¡ch sáº£n pháº©m trong phiáº¿u</div>
+                        <div class="text-muted small">@Model.Products.Count sáº£n pháº©m, nháº­p sá»‘ lÆ°á»£ng theo tá»«ng biáº¿n thá»ƒ.</div>
+                    </div>
+                </div>
+
+                @for (var productIndex = 0; productIndex < Model.Products.Count; productIndex++)
+                {
+                    var product = Model.Products[productIndex];
+                    var productImage = string.IsNullOrWhiteSpace(product.ProductImageUrl)
+                        ? Url.Content("~/Upload/Products/no-image.png")
+                        : product.ProductImageUrl!.Contains("http", StringComparison.OrdinalIgnoreCase)
+                            ? ResizeCDN.Cdn(product.ProductImageUrl, 80, 80)
+                            : Url.Content($"~/Upload/Products/{product.ProductImageUrl}");
+
+                    <div class="card border-0 shadow-sm mb-4 js-transaction-product-card"
+                         data-product-id="@product.ProductId"
+                         data-product-name="@product.ProductName"
+                         data-product-sku="@product.ProductSku"
+                         data-product-image="@(product.ProductImageUrl ?? string.Empty)">
+                        <div class="card-header bg-white border-0">
+                            <div class="d-flex align-items-center gap-3">
+                                <img src="@productImage" alt="@product.ProductName" style="width: 44px; height: 44px; object-fit: cover; border-radius: 12px;" />
+                                <div>
+                                    <div class="fw-semibold">@product.ProductName</div>
+                                    <div class="text-muted small">SKU gá»‘c: @product.ProductSku Â· @product.Variants.Count biáº¿n thá»ƒ</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body pt-0">
+                            <input type="hidden" asp-for="Products[@productIndex].ProductId" />
+                            <input type="hidden" asp-for="Products[@productIndex].ProductName" />
+                            <input type="hidden" asp-for="Products[@productIndex].ProductSku" />
+                            <input type="hidden" asp-for="Products[@productIndex].ProductImageUrl" />
+
+                            <div class="table-responsive reusable-admin-table">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>SKU biáº¿n thá»ƒ</th>
+                                            <th>PhÃ¢n loáº¡i</th>
+                                            <th style="width: 160px;">GiÃ¡ bÃ¡n</th>
+                                            <th style="width: 120px;">Tá»“n hiá»‡n táº¡i</th>
+                                            @if (Model.IsEdit)
+                                            {
+                                                <th style="width: 120px;">SL cÅ©</th>
+                                            }
+                                            <th style="width: 170px;">Sá»‘ lÆ°á»£ng nháº­p/xuáº¥t</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @for (var variantIndex = 0; variantIndex < product.Variants.Count; variantIndex++)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <div class="fw-semibold text-dark">@product.Variants[variantIndex].Sku</div>
+                                                </td>
+                                                <td>@product.Variants[variantIndex].AttributeSummary</td>
+                                                <td class="order-admin__amount">@(product.Variants[variantIndex].Price?.ToString("C0", new CultureInfo("vi-VN")) ?? "-")</td>
+                                                <td>@product.Variants[variantIndex].CurrentStock</td>
+                                                @if (Model.IsEdit)
+                                                {
+                                                    <td>
+                                                        <span class="badge bg-light text-dark border">@product.Variants[variantIndex].PreviousQuantity</span>
+                                                    </td>
+                                                }
+                                                <td>
+                                                    <input type="hidden" asp-for="Products[@productIndex].Variants[@variantIndex].VariantId" />
+                                                    <input type="hidden" asp-for="Products[@productIndex].Variants[@variantIndex].Sku" />
+                                                    <input type="hidden" asp-for="Products[@productIndex].Variants[@variantIndex].AttributeSummary" />
+                                                    <input type="hidden" asp-for="Products[@productIndex].Variants[@variantIndex].Price" />
+                                                    <input type="hidden" asp-for="Products[@productIndex].Variants[@variantIndex].CurrentStock" />
+                                                    <input type="hidden" asp-for="Products[@productIndex].Variants[@variantIndex].PreviousQuantity" />
+                                                    <input asp-for="Products[@productIndex].Variants[@variantIndex].Quantity"
+                                                           class="form-control js-transaction-quantity js-variant-quantity"
+                                                           min="0"
+                                                           data-variant-id="@product.Variants[variantIndex].VariantId"
+                                                           data-variant-sku="@product.Variants[variantIndex].Sku"
+                                                           data-variant-attribute-summary="@product.Variants[variantIndex].AttributeSummary"
+                                                           data-variant-price="@product.Variants[variantIndex].Price"
+                                                           data-variant-current-stock="@product.Variants[variantIndex].CurrentStock"
+                                                           data-variant-previous-quantity="@product.Variants[variantIndex].PreviousQuantity" />
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <div class="stock-transaction-page__footer">
+                    <div class="stock-transaction-page__footer-note">
+                        Phiáº¿u chá»‰ Ä‘Æ°á»£c lÆ°u khi cÃ²n Ã­t nháº¥t má»™t biáº¿n thá»ƒ cÃ³ sá»‘ lÆ°á»£ng lá»›n hÆ¡n 0.
+                    </div>
+                    <div class="stock-transaction-page__footer-actions">
+                        <button type="submit" class="btn btn-primary">Tạo phiếu kho</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            const $form = $('#stockTransactionForm');
+            const $type = $('.js-stock-transaction-type');
+            const $supplierField = $('.js-stock-supplier-field');
+            const $supplierSelect = $('#SupplierId');
+            const $payload = $('#ProductPayloadJson');
+            const $modelInputs = $('#TransactionModelInputs');
+            const $inventoryTransId = $('#InventoryTransId');
+
+            function syncSupplierField() {
+                const isImport = $type.val() === 'Import';
+                $supplierField.toggleClass('d-none', !isImport);
+                if (!isImport) {
+                    $supplierSelect.val('');
+                }
+            }
+
+            function hasPositiveQuantity() {
+                return $('.js-transaction-quantity').toArray().some(function (input) {
+                    return Number($(input).val() || 0) > 0;
+                });
+            }
+
+            function parseNumber(value) {
+                if (value === '' || value === undefined || value === null) {
+                    return 0;
+                }
+
+                return Number(String(value).replace(',', '.')) || 0;
+            }
+
+            function buildPayloadFromDom() {
+                return $('.js-transaction-product-card').map(function () {
+                    const $card = $(this);
+                    const variants = $card.find('.js-variant-quantity').map(function () {
+                        const $input = $(this);
+
+                        return {
+                            variantId: Number($input.data('variant-id')),
+                            sku: String($input.data('variant-sku') || ''),
+                            attributeSummary: String($input.data('variant-attribute-summary') || ''),
+                            price: parseNumber($input.data('variant-price')),
+                            currentStock: Number($input.data('variant-current-stock') || 0),
+                            previousQuantity: Number($input.data('variant-previous-quantity') || 0),
+                            quantity: Number($input.val() || 0)
+                        };
+                    }).get();
+
+                    return {
+                        productId: Number($card.data('product-id')),
+                        productName: String($card.data('product-name') || ''),
+                        productSku: String($card.data('product-sku') || ''),
+                        productImageUrl: String($card.data('product-image') || ''),
+                        variants: variants
+                    };
+                }).get();
+            }
+
+            function appendModelInput(name, value) {
+                $('<input/>', {
+                    type: 'hidden',
+                    name: name,
+                    value: value ?? ''
+                }).appendTo($modelInputs);
+            }
+
+            function syncModelInputs(products) {
+                $modelInputs.empty();
+
+                (products || []).forEach(function (product, productIndex) {
+                    appendModelInput(`Products[${productIndex}].ProductId`, product.productId);
+                    appendModelInput(`Products[${productIndex}].ProductName`, product.productName);
+                    appendModelInput(`Products[${productIndex}].ProductSku`, product.productSku);
+                    appendModelInput(`Products[${productIndex}].ProductImageUrl`, product.productImageUrl);
+
+                    (product.variants || []).forEach(function (variant, variantIndex) {
+                        appendModelInput(`Products[${productIndex}].Variants[${variantIndex}].VariantId`, variant.variantId);
+                        appendModelInput(`Products[${productIndex}].Variants[${variantIndex}].Sku`, variant.sku);
+                        appendModelInput(`Products[${productIndex}].Variants[${variantIndex}].AttributeSummary`, variant.attributeSummary);
+                        appendModelInput(`Products[${productIndex}].Variants[${variantIndex}].Price`, variant.price);
+                        appendModelInput(`Products[${productIndex}].Variants[${variantIndex}].CurrentStock`, variant.currentStock);
+                        appendModelInput(`Products[${productIndex}].Variants[${variantIndex}].PreviousQuantity`, variant.previousQuantity);
+                        appendModelInput(`Products[${productIndex}].Variants[${variantIndex}].Quantity`, variant.quantity);
+                    });
+                });
+            }
+
+            $form.on('submit', function (event) {
+                event.preventDefault();
+                const payloadProducts = buildPayloadFromDom();
+                $payload.val(JSON.stringify(payloadProducts));
+                syncModelInputs(payloadProducts);
+
+                const hasPayloadQuantity = payloadProducts.some(product =>
+                    (product.variants || []).some(variant => Number(variant.quantity || 0) > 0));
+
+                if (!hasPayloadQuantity && !hasPositiveQuantity()) {
+                    Swal.fire('Thiáº¿u sá»‘ lÆ°á»£ng', 'Cáº§n nháº­p Ã­t nháº¥t má»™t biáº¿n thá»ƒ cÃ³ sá»‘ lÆ°á»£ng lá»›n hÆ¡n 0.', 'warning');
+                    return;
+                }
+
+                if ($type.val() === 'Import' && !$supplierSelect.val()) {
+                    Swal.fire('Thiáº¿u nhÃ  cung cáº¥p', 'Phiáº¿u nháº­p kho cáº§n chá»n nhÃ  cung cáº¥p trÆ°á»›c khi lÆ°u.', 'warning');
+                    return;
+                }
+
+                const formData = new FormData(this);
+                formData.set('InventoryTransId', $inventoryTransId.val() || '');
+                formData.set('Type', $type.val() || '');
+                formData.set('SupplierId', $type.val() === 'Import' ? ($supplierSelect.val() || '') : '');
+
+                $.ajax({
+                    method: 'POST',
+                    url: this.action,
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    beforeSend: function () {
+                        $('.loading-container').show();
+                    },
+                    success: function (response) {
+                        if (response && response.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'ThÃ nh cÃ´ng',
+                                text: response.message || 'Phiáº¿u kho Ä‘Ã£ Ä‘Æ°á»£c lÆ°u.',
+                                confirmButtonText: 'OK'
+                            }).then(function () {
+                                if (response.redirectUrl) {
+                                    window.location.href = response.redirectUrl;
+                                }
+                            });
+                            return;
+                        }
+
+                        if (response && response.debug) {
+                            console.warn('Stock transaction rejected by server:', response.debug);
+                        }
+
+                        Swal.fire('Lá»—i', (response && response.message) || 'KhÃ´ng thá»ƒ lÆ°u phiáº¿u kho.', 'error');
+                    },
+                    error: function (xhr) {
+                        const responseMessage = xhr.responseJSON && xhr.responseJSON.message
+                            ? xhr.responseJSON.message
+                            : 'KhÃ´ng thá»ƒ lÆ°u phiáº¿u kho.';
+                        if (xhr.responseJSON && xhr.responseJSON.debug) {
+                            console.warn('Stock transaction rejected by server:', xhr.responseJSON.debug);
+                        }
+
+                        Swal.fire('Lá»—i', responseMessage, 'error');
+                    },
+                    complete: function () {
+                        $('.loading-container').hide();
+                    }
+                });
+            });
+
+            const errorMessage = @Html.Raw(JsonSerializer.Serialize(TempData["error"]?.ToString() ?? string.Empty));
+            if (errorMessage) {
+                Swal.fire('Lá»—i', errorMessage, 'error');
+            }
+
+            const successMessage = @Html.Raw(JsonSerializer.Serialize(TempData["success"]?.ToString() ?? string.Empty));
+            if (successMessage) {
+                Swal.fire('ThÃ nh cÃ´ng', successMessage, 'success');
+            }
+
+            $type.on('change', syncSupplierField);
+            syncSupplierField();
+        });
+    </script>
+}

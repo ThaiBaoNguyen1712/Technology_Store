@@ -12,5 +12,7 @@ public class AdminStockTransactionVariantViewModel
 
     public int CurrentStock { get; set; }
 
+    public int PreviousQuantity { get; set; }
+
     public int Quantity { get; set; }
 }

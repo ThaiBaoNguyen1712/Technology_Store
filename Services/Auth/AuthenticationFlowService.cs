@@ -577,7 +577,7 @@ namespace Tech_Store.Services.Auth
 
         private async Task CreateCartAsync(User user)
         {
-            var cart = new Cart
+            var cart = new Models.Cart
             {
                 UserId = user.UserId,
                 CreatedAt = DateTime.Now,

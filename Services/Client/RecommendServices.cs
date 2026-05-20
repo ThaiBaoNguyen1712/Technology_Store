@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using Tech_Store.Services.Admin.ProductServices;
 using Tech_Store.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace Tech_Store.Services.Client.RecommendServices
 {
@@ -14,13 +15,11 @@ namespace Tech_Store.Services.Client.RecommendServices
         private readonly ProductServices _productServices;
         private readonly ApplicationDbContext _context;
 
-        public RecommendServices(HttpClient http, ProductServices productServices, ApplicationDbContext context)
+        public RecommendServices(HttpClient http, ProductServices productServices, ApplicationDbContext context, IConfiguration configuration)
         {
             _http = http;
-            //http://ml-api:8000/
-            //http://127.0.0.1:8000/
-            //_http.BaseAddress = new Uri("");
-            _http.BaseAddress = new Uri("http://127.0.0.1:8000/");
+            var recommendApiBaseUrl = configuration["RecommendApi:BaseUrl"] ?? "http://127.0.0.1:8000/";
+            _http.BaseAddress = new Uri(recommendApiBaseUrl);
             _http.Timeout = TimeSpan.FromSeconds(15);
             _productServices = productServices;
             _context = context;
@@ -40,7 +39,7 @@ namespace Tech_Store.Services.Client.RecommendServices
             List<string> ids = new();
             try
             {
-                var url = $"api/v1/recommendation/homepage/{userId}?top_n={topN}";
+                var url = BuildRecommendationUrl("homepage", userId, null, topN);
                 // Gọi AI lấy ID
                 var aiResult = await _http.GetFromJsonAsync<RecommendRawResponse>(url, _jsonOptions);
                 if (aiResult?.Recommendations != null) ids = aiResult.Recommendations;
@@ -72,15 +71,7 @@ namespace Tech_Store.Services.Client.RecommendServices
             List<string> ids = new();
             try
             {
-                string? url = scene switch
-                {
-                    "detail" when !string.IsNullOrWhiteSpace(productSysId)
-                        => $"content_based_filter/{productSysId}?top_n={topN}",
-                    "cart" => $"api/v1/recommendation/cart/{userId}?top_n={topN}",
-                    "wishlist" => $"api/v1/recommendation/wishlist/{userId}?top_n={topN}",
-                    "homepage" => $"api/v1/recommendation/homepage/{userId}?top_n={topN}",
-                    _ => null
-                };
+                var url = BuildRecommendationUrl(scene, userId, productSysId, topN);
 
                 if (string.IsNullOrWhiteSpace(url))
                 {
@@ -139,6 +130,22 @@ namespace Tech_Store.Services.Client.RecommendServices
                 return await _productServices.GetRelatedProductsAsync(productSysId, topN);
             }
             return await _productServices.GetHotSaleProducts(topN);
+        }
+
+        private static string? BuildRecommendationUrl(string scene, int userId, string? productSysId, int limit)
+        {
+            return scene switch
+            {
+                "detail" when !string.IsNullOrWhiteSpace(productSysId)
+                    => $"api/v1/recommendations/users/{userId}/detail/{productSysId}?limit={limit}",
+                "cart"
+                    => $"api/v1/recommendations/users/{userId}/cart?limit={limit}",
+                "wishlist"
+                    => $"api/v1/recommendations/users/{userId}/wishlist?limit={limit}",
+                "homepage"
+                    => $"api/v1/recommendations/users/{userId}/homepage?limit={limit}",
+                _ => null
+            };
         }
     }
 }

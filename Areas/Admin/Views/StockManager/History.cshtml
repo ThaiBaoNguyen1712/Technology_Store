@@ -1,7 +1,9 @@
 @using System.Globalization
+@using System.Text.Json
+@using Tech_Store.Helpers
 @model Tech_Store.Models.ViewModel.AdminStockHistoryIndexViewModel
 @{
-    ViewData["Title"] = "Lịch sử kho";
+    ViewData["Title"] = "Nhập - Xuất Kho";
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
 }
 
@@ -10,19 +12,22 @@
         <div class="card-header bg-white border-0 pb-0">
             <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
                 <div>
-                    <h4 class="card-title mb-1">Lịch sử nhập xuất kho</h4>
+                    <h4 class="card-title mb-1">Nhập - Xuất Kho</h4>
                 </div>
                 <div class="order-admin__header-meta">
                     <span class="order-admin__header-pill">Tổng phiếu: @Model.TotalItems</span>
                     <span class="order-admin__header-pill">Nhập kho: @Model.ImportCount</span>
                     <span class="order-admin__header-pill">Xuất kho: @Model.ExportCount</span>
                     <span class="order-admin__header-pill">Trang @Model.Page/@Model.TotalPages</span>
+                    <a href="/Admin/StockManager/BatchTransaction" class="btn btn-primary">
+                        Tạo phiếu nhập - xuất
+                    </a>
                 </div>
             </div>
         </div>
 
         <div class="card-body">
-            <form method="get" action="/Admin/StockManager/History" class="brand-admin__filters order-admin__filters row g-3 align-items-end mb-4">
+            <form method="get" action="/Admin/StockManager/Transactions" class="brand-admin__filters order-admin__filters row g-3 align-items-end mb-4">
                 <input type="hidden" name="page" value="1" />
                 <input type="hidden" name="pageSize" value="@Model.PageSize" />
 
@@ -63,7 +68,7 @@
                     <div class="admin-search-actions-row">
                         <div class="admin-search-actions">
                             <button type="submit" class="btn btn-primary">Tìm kiếm</button>
-                            <a href="/Admin/StockManager/History" class="btn btn-light border">Làm mới</a>
+                            <a href="/Admin/StockManager/Transactions" class="btn btn-light border">Làm mới</a>
                         </div>
                     </div>
                 </div>
@@ -94,12 +99,17 @@
                         {
                             foreach (var item in Model.Items)
                             {
-                                var totalQuantity = item.InventoryTransactionDetail?.Sum(x => x.Quantity) ?? 0;
                                 var isImport = string.Equals(item.Type, "Import", StringComparison.OrdinalIgnoreCase);
                                 var supplierText = isImport
                                     ? (string.IsNullOrWhiteSpace(item.SupplierName) ? "Chưa gắn nhà cung cấp" : $"{item.SupplierCode} - {item.SupplierName}")
                                     : "-";
                                 var noteText = string.IsNullOrWhiteSpace(item.Note) ? "Không có ghi chú" : item.Note;
+                                var leadProduct = item.Products.FirstOrDefault();
+                                var productImage = string.IsNullOrWhiteSpace(leadProduct?.ProductImageUrl)
+                                    ? Url.Content("~/Upload/Products/no-image.png")
+                                    : leadProduct!.ProductImageUrl!.Contains("http", StringComparison.OrdinalIgnoreCase)
+                                        ? ResizeCDN.Cdn(leadProduct.ProductImageUrl, 64, 64)
+                                        : Url.Content($"~/Upload/Products/{leadProduct.ProductImageUrl}");
                                 var editUrl = Url.Action("EditTransaction", "StockManager", new
                                 {
                                     area = "Admin",
@@ -130,12 +140,21 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="fw-semibold text-dark">@item.Product.Name</div>
-                                        <div class="small text-muted">SKU: @(string.IsNullOrWhiteSpace(item.Product.Sku) ? "-" : item.Product.Sku)</div>
-                                        <div class="small text-muted text-truncate">@noteText</div>
+                                        <div class="d-flex align-items-start gap-3">
+                                            <img src="@productImage" alt="@(leadProduct?.ProductName ?? "Sản phẩm")" style="width: 44px; height: 44px; object-fit: cover; border-radius: 12px;" />
+                                            <div>
+                                                <div class="fw-semibold text-dark">@(leadProduct?.ProductName ?? "Không xác định")</div>
+                                                <div class="small text-muted">SKU: @(string.IsNullOrWhiteSpace(leadProduct?.ProductSku) ? "-" : leadProduct?.ProductSku)</div>
+                                                @if (item.ProductCount > 1)
+                                                {
+                                                    <div class="small text-primary">+ @(item.ProductCount - 1) sản phẩm khác</div>
+                                                }
+                                                <div class="small text-muted text-truncate">@noteText</div>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td class="text-muted">@supplierText</td>
-                                    <td class="text-end fw-semibold">@totalQuantity</td>
+                                    <td class="text-end fw-semibold">@item.TotalQuantity</td>
                                     <td>
                                         <div class="fw-semibold text-dark">@item.UserName</div>
                                         <div class="small text-muted">@item.UserRole</div>
@@ -155,7 +174,7 @@
             {
                 CurrentPage = Model.Page,
                 TotalPages = Model.TotalPages,
-                BaseUrl = "/Admin/StockManager/History",
+                BaseUrl = "/Admin/StockManager/Transactions",
                 QueryString = Model.QueryString
             })
         </div>
@@ -177,81 +196,53 @@
         const drawerElement = document.getElementById('stockHistoryDrawer');
         const drawerBody = $('#stockHistoryDrawerBody');
         const stockHistoryDrawer = drawerElement ? bootstrap.Offcanvas.getOrCreateInstance(drawerElement) : null;
+        const defaultImageUrl = '@Url.Content("~/Upload/Products/no-image.png")';
 
-        function buildDrawerHtml(history) {
-            const isImport = history.type === 'Import';
-            const supplierText = isImport
-                ? (history.supplierCode && history.supplierName
-                    ? `${history.supplierCode} - ${history.supplierName}`
-                    : 'Chưa gắn nhà cung cấp')
-                : 'Phiếu xuất không áp dụng';
+        function escapeHtml(value) {
+            return $('<div/>').text(value || '').html();
+        }
 
-            const detailRows = history.inventoryTransactionDetail && history.inventoryTransactionDetail.length
-                ? history.inventoryTransactionDetail.map(detail => `
-                    <tr>
-                        <td>${detail.varientSku || '-'}</td>
-                        <td>${detail.varientName || '-'}</td>
-                        <td class="text-end">${detail.quantity}</td>
-                    </tr>
-                `).join('')
-                : `
-                    <tr>
-                        <td colspan="3" class="text-center text-muted py-4">Không có chi tiết biến thể.</td>
-                    </tr>
-                `;
+        function resolveImageUrl(imageUrl) {
+            if (!imageUrl) {
+                return defaultImageUrl;
+            }
 
-            return `
-                <div class="transaction-drawer">
-                    <div class="transaction-drawer__summary">
-                        <div class="transaction-drawer__summary-card">
-                            <span>Mã phiếu</span>
-                            <strong>#${history.id}</strong>
-                        </div>
-                        <div class="transaction-drawer__summary-card">
-                            <span>Loại phiếu</span>
-                            <strong>${isImport ? 'Nhập kho' : 'Xuất kho'}</strong>
-                        </div>
-                        <div class="transaction-drawer__summary-card">
-                            <span>Người tạo</span>
-                            <strong>${history.userName || '-'}</strong>
-                        </div>
-                        <div class="transaction-drawer__summary-card">
-                            <span>Thời gian</span>
-                            <strong>${new Date(history.createdAt).toLocaleString('vi-VN')}</strong>
-                        </div>
-                    </div>
+            if (String(imageUrl).toLowerCase().startsWith('http')) {
+                return imageUrl;
+            }
 
+            return `/Upload/Products/${imageUrl}`;
+        }
+
+        function buildProductSections(products) {
+            if (!products || !products.length) {
+                return '<div class="text-muted">Không có sản phẩm trong phiếu này.</div>';
+            }
+
+            return products.map(product => {
+                const detailRows = product.details && product.details.length
+                    ? product.details.map(detail => `
+                        <tr>
+                            <td>${escapeHtml(detail.varientSku || '-')}</td>
+                            <td>${escapeHtml(detail.varientName || '-')}</td>
+                            <td class="text-end">${detail.quantity}</td>
+                        </tr>
+                    `).join('')
+                    : `
+                        <tr>
+                            <td colspan="3" class="text-center text-muted py-4">Không có chi tiết biến thể.</td>
+                        </tr>
+                    `;
+
+                return `
                     <section class="transaction-drawer__section">
-                        <div class="transaction-drawer__section-head">
-                            <h6>Thông tin phiếu</h6>
-                        </div>
-                        <div class="transaction-drawer__info-list">
-                            <div class="transaction-drawer__info-row">
-                                <span>Sản phẩm</span>
-                                <strong>${history.product?.name || '-'}</strong>
+                        <div class="d-flex align-items-start gap-3 mb-3">
+                            <img src="${resolveImageUrl(product.productImageUrl)}" alt="${escapeHtml(product.productName)}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 12px;" />
+                            <div>
+                                <div class="fw-semibold">${escapeHtml(product.productName)}</div>
+                                <div class="text-muted small">SKU: ${escapeHtml(product.productSku || '-')}</div>
+                                <div class="text-muted small">Tổng số lượng: ${product.totalQuantity}</div>
                             </div>
-                            <div class="transaction-drawer__info-row">
-                                <span>SKU</span>
-                                <strong>${history.product?.sku || '-'}</strong>
-                            </div>
-                            <div class="transaction-drawer__info-row">
-                                <span>Nhà cung cấp</span>
-                                <strong>${supplierText}</strong>
-                            </div>
-                            <div class="transaction-drawer__info-row">
-                                <span>Vai trò</span>
-                                <strong>${history.userRole || '-'}</strong>
-                            </div>
-                            <div class="transaction-drawer__info-row">
-                                <span>Ghi chú</span>
-                                <strong>${history.note && history.note.trim() ? history.note : 'Không có ghi chú'}</strong>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section class="transaction-drawer__section">
-                        <div class="transaction-drawer__section-head">
-                            <h6>Chi tiết biến thể</h6>
                         </div>
                         <div class="table-responsive reusable-admin-table">
                             <table class="table table-hover align-middle mb-0">
@@ -266,6 +257,68 @@
                             </table>
                         </div>
                     </section>
+                `;
+            }).join('');
+        }
+
+        function buildDrawerHtml(history) {
+            const isImport = history.type === 'Import';
+            const supplierText = isImport
+                ? (history.supplierCode && history.supplierName
+                    ? `${history.supplierCode} - ${history.supplierName}`
+                    : 'Chưa gắn nhà cung cấp')
+                : 'Phiếu xuất không áp dụng';
+
+            return `
+                <div class="transaction-drawer">
+                    <div class="transaction-drawer__summary">
+                        <div class="transaction-drawer__summary-card">
+                            <span>Mã phiếu</span>
+                            <strong>#${history.inventoryTransId}</strong>
+                        </div>
+                        <div class="transaction-drawer__summary-card">
+                            <span>Loại phiếu</span>
+                            <strong>${isImport ? 'Nhập kho' : 'Xuất kho'}</strong>
+                        </div>
+                        <div class="transaction-drawer__summary-card">
+                            <span>Sản phẩm</span>
+                            <strong>${history.productCount}</strong>
+                        </div>
+                        <div class="transaction-drawer__summary-card">
+                            <span>Tổng số lượng</span>
+                            <strong>${history.totalQuantity}</strong>
+                        </div>
+                    </div>
+
+                    <section class="transaction-drawer__section">
+                        <div class="transaction-drawer__section-head">
+                            <h6>Thông tin phiếu</h6>
+                        </div>
+                        <div class="transaction-drawer__info-list">
+                            <div class="transaction-drawer__info-row">
+                                <span>Nhà cung cấp</span>
+                                <strong>${supplierText}</strong>
+                            </div>
+                            <div class="transaction-drawer__info-row">
+                                <span>Người tạo</span>
+                                <strong>${history.userName || '-'}</strong>
+                            </div>
+                            <div class="transaction-drawer__info-row">
+                                <span>Vai trò</span>
+                                <strong>${history.userRole || '-'}</strong>
+                            </div>
+                            <div class="transaction-drawer__info-row">
+                                <span>Thời gian</span>
+                                <strong>${new Date(history.createdAt).toLocaleString('vi-VN')}</strong>
+                            </div>
+                            <div class="transaction-drawer__info-row">
+                                <span>Ghi chú</span>
+                                <strong>${history.note && history.note.trim() ? history.note : 'Không có ghi chú'}</strong>
+                            </div>
+                        </div>
+                    </section>
+
+                    ${buildProductSections(history.products)}
 
                     <section class="transaction-drawer__section">
                         <div class="transaction-drawer__section-head">
@@ -327,5 +380,15 @@
             event.stopPropagation();
             openHistoryDetail($(this).closest('.js-stock-history-row'));
         });
+
+        const successMessage = @Html.Raw(JsonSerializer.Serialize(TempData["success"]?.ToString() ?? string.Empty));
+        if (successMessage) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Thành công',
+                text: successMessage,
+                confirmButtonText: 'OK'
+            });
+        }
     });
 </script>

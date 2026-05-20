@@ -1,0 +1,458 @@
+﻿@model Tech_Store.Models.ViewModel.AdminStockTransactionFormViewModel
+@using System.Globalization
+@using System.Text.Json
+@using Tech_Store.Helpers
+@{
+    ViewData["Title"] = "Cập nhật phiếu kho";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+    var returnUrl = string.Equals(Model.ReturnSource, "history", StringComparison.OrdinalIgnoreCase)
+        ? $"/Admin/StockManager/Transactions?page={Model.ReturnPage}&pageSize={Model.ReturnPageSize}" +
+          $"{(string.IsNullOrWhiteSpace(Model.ReturnHistoryFilterCode) ? string.Empty : $"&filterCode={Uri.EscapeDataString(Model.ReturnHistoryFilterCode)}")}" +
+          $"{(string.IsNullOrWhiteSpace(Model.ReturnHistoryFilterType) ? string.Empty : $"&filterType={Uri.EscapeDataString(Model.ReturnHistoryFilterType)}")}" +
+          $"{(Model.ReturnHistoryStartDate.HasValue ? $"&startDate={Model.ReturnHistoryStartDate.Value:yyyy-MM-dd}" : string.Empty)}" +
+          $"{(Model.ReturnHistoryEndDate.HasValue ? $"&endDate={Model.ReturnHistoryEndDate.Value:yyyy-MM-dd}" : string.Empty)}"
+        : Url.Action("Index", "StockManager", new
+        {
+            area = "Admin",
+            page = Model.ReturnPage,
+            sku = Model.ReturnSku,
+            name = Model.ReturnName,
+            status = Model.ReturnStatus,
+            categoryId = Model.ReturnCategoryId,
+            brandId = Model.ReturnBrandId,
+            stockFrom = Model.ReturnStockFrom,
+            stockTo = Model.ReturnStockTo
+        });
+    var routeInventoryTransId = ViewData["InventoryTransId"] is int routedInventoryTransId
+        ? routedInventoryTransId
+        : Model.InventoryTransId.GetValueOrDefault();
+    var saveUrl = $"/Admin/StockManager/UpdateTransaction/{routeInventoryTransId}";
+    var deleteUrl = $"/Admin/StockManager/DeleteTransaction/{routeInventoryTransId}";
+}
+
+<div class="py-3 stock-transaction-page">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div>
+                    <h4 class="card-title mb-1">Cập nhật phiếu nhập - xuất</h4>
+                </div>
+                <a href="@returnUrl" class="btn btn-light border">
+                    @(string.Equals(Model.ReturnSource, "history", StringComparison.OrdinalIgnoreCase) ? "Quay lại Nhập - Xuất Kho" : "Quay lại Tồn kho")
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <form method="post" action="@saveUrl" class="stock-transaction-page__form" id="stockTransactionForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="InventoryTransId" id="InventoryTransId" value="@routeInventoryTransId" />
+                <input type="hidden" asp-for="ProductId" />
+                <input type="hidden" asp-for="ProductPayloadJson" id="ProductPayloadJson" />
+                <div id="TransactionModelInputs" class="d-none"></div>
+                <input type="hidden" asp-for="ReturnPage" />
+                <input type="hidden" asp-for="ReturnPageSize" />
+                <input type="hidden" asp-for="ReturnSku" />
+                <input type="hidden" asp-for="ReturnName" />
+                <input type="hidden" asp-for="ReturnStatus" />
+                <input type="hidden" asp-for="ReturnCategoryId" />
+                <input type="hidden" asp-for="ReturnBrandId" />
+                <input type="hidden" asp-for="ReturnStockFrom" />
+                <input type="hidden" asp-for="ReturnStockTo" />
+                <input type="hidden" asp-for="ReturnSource" />
+                <input type="hidden" asp-for="ReturnHistoryFilterCode" />
+                <input type="hidden" asp-for="ReturnHistoryFilterType" />
+                <input type="hidden" asp-for="ReturnHistoryStartDate" />
+                <input type="hidden" asp-for="ReturnHistoryEndDate" />
+
+                <div class="row g-3 brand-admin__filters stock-transaction-page__filters mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold text-secondary">Loại phiếu</label>
+                        <select asp-for="Type" class="form-select js-stock-transaction-type">
+                            @if (string.Equals(Model.Type, "Import", StringComparison.OrdinalIgnoreCase))
+                            {
+                                <option value="Import" selected>Phiếu nhập kho</option>
+                                <option value="Export">Phiếu xuất kho</option>
+                            }
+                            else
+                            {
+                                <option value="Import">Phiếu nhập kho</option>
+                                <option value="Export" selected>Phiếu xuất kho</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4 js-stock-supplier-field">
+                        <label class="form-label fw-semibold text-secondary">Nhà cung cấp</label>
+                        <select name="SupplierId" id="SupplierId" class="form-select">
+                            <option value="">Chọn nhà cung cấp</option>
+                            @foreach (var supplier in Model.Suppliers)
+                            {
+                                if (Model.SupplierId == supplier.SupplierId)
+                                {
+                                    <option value="@supplier.SupplierId" selected>@supplier.Code - @supplier.Name</option>
+                                }
+                                else
+                                {
+                                    <option value="@supplier.SupplierId">@supplier.Code - @supplier.Name</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold text-secondary">Ghi chú vận hành</label>
+                        <textarea asp-for="Note" class="form-control" rows="3" placeholder="Ví dụ: nhập đợt hàng, xuất điều chuyển, điều chỉnh sau kiểm kê..."></textarea>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+                    <div>
+                        <div class="fw-semibold">Danh sách sản phẩm trong phiếu</div>
+                        <div class="text-muted small">@Model.Products.Count sản phẩm, nhập số lượng theo từng biến thể.</div>
+                    </div>
+                </div>
+
+                @for (var productIndex = 0; productIndex < Model.Products.Count; productIndex++)
+                {
+                    var product = Model.Products[productIndex];
+                    var productImage = string.IsNullOrWhiteSpace(product.ProductImageUrl)
+                        ? Url.Content("~/Upload/Products/no-image.png")
+                        : product.ProductImageUrl!.Contains("http", StringComparison.OrdinalIgnoreCase)
+                            ? ResizeCDN.Cdn(product.ProductImageUrl, 80, 80)
+                            : Url.Content($"~/Upload/Products/{product.ProductImageUrl}");
+
+                    <div class="card border-0 shadow-sm mb-4 js-transaction-product-card"
+                         data-product-id="@product.ProductId"
+                         data-product-name="@product.ProductName"
+                         data-product-sku="@product.ProductSku"
+                         data-product-image="@(product.ProductImageUrl ?? string.Empty)">
+                        <div class="card-header bg-white border-0">
+                            <div class="d-flex align-items-center gap-3">
+                                <img src="@productImage" alt="@product.ProductName" style="width: 44px; height: 44px; object-fit: cover; border-radius: 12px;" />
+                                <div>
+                                    <div class="fw-semibold">@product.ProductName</div>
+                                    <div class="text-muted small">SKU gốc: @product.ProductSku · @product.Variants.Count biến thể</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body pt-0">
+                            <input type="hidden" asp-for="Products[@productIndex].ProductId" />
+                            <input type="hidden" asp-for="Products[@productIndex].ProductName" />
+                            <input type="hidden" asp-for="Products[@productIndex].ProductSku" />
+                            <input type="hidden" asp-for="Products[@productIndex].ProductImageUrl" />
+
+                            <div class="table-responsive reusable-admin-table">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>SKU biến thể</th>
+                                            <th>Phân loại</th>
+                                            <th style="width: 160px;">Giá bán</th>
+                                            <th style="width: 120px;">Tồn hiện tại</th>
+                                            @if (Model.IsEdit)
+                                            {
+                                                <th style="width: 120px;">SL cũ</th>
+                                            }
+                                            <th style="width: 170px;">Số lượng nhập/xuất</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @for (var variantIndex = 0; variantIndex < product.Variants.Count; variantIndex++)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <div class="fw-semibold text-dark">@product.Variants[variantIndex].Sku</div>
+                                                </td>
+                                                <td>@product.Variants[variantIndex].AttributeSummary</td>
+                                                <td class="order-admin__amount">@(product.Variants[variantIndex].Price?.ToString("C0", new CultureInfo("vi-VN")) ?? "-")</td>
+                                                <td>@product.Variants[variantIndex].CurrentStock</td>
+                                                @if (Model.IsEdit)
+                                                {
+                                                    <td>
+                                                        <span class="badge bg-light text-dark border">@product.Variants[variantIndex].PreviousQuantity</span>
+                                                    </td>
+                                                }
+                                                <td>
+                                                    <input type="hidden" asp-for="Products[@productIndex].Variants[@variantIndex].VariantId" />
+                                                    <input type="hidden" asp-for="Products[@productIndex].Variants[@variantIndex].Sku" />
+                                                    <input type="hidden" asp-for="Products[@productIndex].Variants[@variantIndex].AttributeSummary" />
+                                                    <input type="hidden" asp-for="Products[@productIndex].Variants[@variantIndex].Price" />
+                                                    <input type="hidden" asp-for="Products[@productIndex].Variants[@variantIndex].CurrentStock" />
+                                                    <input type="hidden" asp-for="Products[@productIndex].Variants[@variantIndex].PreviousQuantity" />
+                                                    <input asp-for="Products[@productIndex].Variants[@variantIndex].Quantity"
+                                                           class="form-control js-transaction-quantity js-variant-quantity"
+                                                           min="0"
+                                                           data-variant-id="@product.Variants[variantIndex].VariantId"
+                                                           data-variant-sku="@product.Variants[variantIndex].Sku"
+                                                           data-variant-attribute-summary="@product.Variants[variantIndex].AttributeSummary"
+                                                           data-variant-price="@product.Variants[variantIndex].Price"
+                                                           data-variant-current-stock="@product.Variants[variantIndex].CurrentStock"
+                                                           data-variant-previous-quantity="@product.Variants[variantIndex].PreviousQuantity" />
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <div class="stock-transaction-page__footer">
+                    <div class="stock-transaction-page__footer-note">
+                        Phiếu chỉ được lưu khi còn ít nhất một biến thể có số lượng lớn hơn 0.
+                    </div>
+                    <div class="stock-transaction-page__footer-actions">
+                        <button type="button" class="btn btn-outline-danger js-delete-transaction">Xóa phiếu</button>
+                        <button type="submit" class="btn btn-primary">Lưu cập nhật</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            const $form = $('#stockTransactionForm');
+            const $type = $('.js-stock-transaction-type');
+            const $supplierField = $('.js-stock-supplier-field');
+            const $supplierSelect = $('#SupplierId');
+            const $payload = $('#ProductPayloadJson');
+            const $modelInputs = $('#TransactionModelInputs');
+            const $inventoryTransId = $('#InventoryTransId');
+            const deleteUrl = @Html.Raw(JsonSerializer.Serialize(deleteUrl));
+
+            function syncSupplierField() {
+                const isImport = $type.val() === 'Import';
+                $supplierField.toggleClass('d-none', !isImport);
+                if (!isImport) {
+                    $supplierSelect.val('');
+                }
+            }
+
+            function hasPositiveQuantity() {
+                return $('.js-transaction-quantity').toArray().some(function (input) {
+                    return Number($(input).val() || 0) > 0;
+                });
+            }
+
+            function parseNumber(value) {
+                if (value === '' || value === undefined || value === null) {
+                    return 0;
+                }
+
+                return Number(String(value).replace(',', '.')) || 0;
+            }
+
+            function buildPayloadFromDom() {
+                return $('.js-transaction-product-card').map(function () {
+                    const $card = $(this);
+                    const variants = $card.find('.js-variant-quantity').map(function () {
+                        const $input = $(this);
+
+                        return {
+                            variantId: Number($input.data('variant-id')),
+                            sku: String($input.data('variant-sku') || ''),
+                            attributeSummary: String($input.data('variant-attribute-summary') || ''),
+                            price: parseNumber($input.data('variant-price')),
+                            currentStock: Number($input.data('variant-current-stock') || 0),
+                            previousQuantity: Number($input.data('variant-previous-quantity') || 0),
+                            quantity: Number($input.val() || 0)
+                        };
+                    }).get();
+
+                    return {
+                        productId: Number($card.data('product-id')),
+                        productName: String($card.data('product-name') || ''),
+                        productSku: String($card.data('product-sku') || ''),
+                        productImageUrl: String($card.data('product-image') || ''),
+                        variants: variants
+                    };
+                }).get();
+            }
+
+            function appendModelInput(name, value) {
+                $('<input/>', {
+                    type: 'hidden',
+                    name: name,
+                    value: value ?? ''
+                }).appendTo($modelInputs);
+            }
+
+            function syncModelInputs(products) {
+                $modelInputs.empty();
+
+                (products || []).forEach(function (product, productIndex) {
+                    appendModelInput(`Products[${productIndex}].ProductId`, product.productId);
+                    appendModelInput(`Products[${productIndex}].ProductName`, product.productName);
+                    appendModelInput(`Products[${productIndex}].ProductSku`, product.productSku);
+                    appendModelInput(`Products[${productIndex}].ProductImageUrl`, product.productImageUrl);
+
+                    (product.variants || []).forEach(function (variant, variantIndex) {
+                        appendModelInput(`Products[${productIndex}].Variants[${variantIndex}].VariantId`, variant.variantId);
+                        appendModelInput(`Products[${productIndex}].Variants[${variantIndex}].Sku`, variant.sku);
+                        appendModelInput(`Products[${productIndex}].Variants[${variantIndex}].AttributeSummary`, variant.attributeSummary);
+                        appendModelInput(`Products[${productIndex}].Variants[${variantIndex}].Price`, variant.price);
+                        appendModelInput(`Products[${productIndex}].Variants[${variantIndex}].CurrentStock`, variant.currentStock);
+                        appendModelInput(`Products[${productIndex}].Variants[${variantIndex}].PreviousQuantity`, variant.previousQuantity);
+                        appendModelInput(`Products[${productIndex}].Variants[${variantIndex}].Quantity`, variant.quantity);
+                    });
+                });
+            }
+
+            $form.on('submit', function (event) {
+                event.preventDefault();
+                const editId = Number($inventoryTransId.val() || 0);
+                if (editId > 0 && String(this.action || '').endsWith('/0')) {
+                    this.action = `/Admin/StockManager/UpdateTransaction/${editId}`;
+                }
+
+                if (!String(this.action || '').includes('/Admin/StockManager/UpdateTransaction/')) {
+                    Swal.fire('Lỗi', 'Form cập nhật đang trỏ sai endpoint. Vui lòng tải lại trang cập nhật phiếu.', 'error');
+                    return;
+                }
+
+                if (editId <= 0) {
+                    Swal.fire('Lỗi', 'Không xác định được mã phiếu kho cần cập nhật. Vui lòng quay lại danh sách và mở lại phiếu.', 'error');
+                    return;
+                }
+
+                const payloadProducts = buildPayloadFromDom();
+                $payload.val(JSON.stringify(payloadProducts));
+                syncModelInputs(payloadProducts);
+
+                const hasPayloadQuantity = payloadProducts.some(product =>
+                    (product.variants || []).some(variant => Number(variant.quantity || 0) > 0));
+
+                if (!hasPayloadQuantity && !hasPositiveQuantity()) {
+                    Swal.fire('Thiếu số lượng', 'Cần nhập ít nhất một biến thể có số lượng lớn hơn 0.', 'warning');
+                    return;
+                }
+
+                if ($type.val() === 'Import' && !$supplierSelect.val()) {
+                    Swal.fire('Thiếu nhà cung cấp', 'Phiếu nhập kho cần chọn nhà cung cấp trước khi lưu.', 'warning');
+                    return;
+                }
+
+                const formData = new FormData(this);
+                formData.set('InventoryTransId', $inventoryTransId.val() || '');
+                formData.set('Type', $type.val() || '');
+                formData.set('SupplierId', $type.val() === 'Import' ? ($supplierSelect.val() || '') : '');
+
+                $.ajax({
+                    method: 'POST',
+                    url: this.action,
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    beforeSend: function () {
+                        $('.loading-container').show();
+                    },
+                    success: function (response) {
+                        if (response && response.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Thành công',
+                                text: response.message || 'Phiếu kho đã được lưu.',
+                                confirmButtonText: 'OK'
+                            }).then(function () {
+                                if (response.redirectUrl) {
+                                    window.location.href = response.redirectUrl;
+                                }
+                            });
+                            return;
+                        }
+
+                        if (response && response.debug) {
+                            console.warn('Stock transaction rejected by server:', response.debug);
+                        }
+
+                        Swal.fire('Lỗi', (response && response.message) || 'Không thể lưu phiếu kho.', 'error');
+                    },
+                    error: function (xhr) {
+                        const responseMessage = xhr.responseJSON && xhr.responseJSON.message
+                            ? xhr.responseJSON.message
+                            : 'Không thể lưu phiếu kho.';
+                        if (xhr.responseJSON && xhr.responseJSON.debug) {
+                            console.warn('Stock transaction rejected by server:', xhr.responseJSON.debug);
+                        }
+
+                        Swal.fire('Lỗi', responseMessage, 'error');
+                    },
+                    complete: function () {
+                        $('.loading-container').hide();
+                    }
+                });
+            });
+
+            $('.js-delete-transaction').on('click', function () {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Xóa phiếu kho?',
+                    text: 'Thao tác này sẽ hoàn lại tác động tồn kho của phiếu và không thể khôi phục.',
+                    showCancelButton: true,
+                    confirmButtonText: 'Xóa phiếu',
+                    cancelButtonText: 'Hủy',
+                    confirmButtonColor: '#dc3545'
+                }).then(function (result) {
+                    if (!result.isConfirmed) {
+                        return;
+                    }
+
+                    const token = $form.find('input[name="__RequestVerificationToken"]').val();
+                    $.ajax({
+                        method: 'POST',
+                        url: deleteUrl,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'RequestVerificationToken': token
+                        },
+                        beforeSend: function () {
+                            $('.loading-container').show();
+                        },
+                        success: function (response) {
+                            if (response && response.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Thành công',
+                                    text: response.message || 'Đã xóa phiếu kho.',
+                                    confirmButtonText: 'OK'
+                                }).then(function () {
+                                    window.location.href = response.redirectUrl || '/Admin/StockManager/Transactions';
+                                });
+                                return;
+                            }
+
+                            Swal.fire('Lỗi', (response && response.message) || 'Không thể xóa phiếu kho.', 'error');
+                        },
+                        error: function (xhr) {
+                            const responseMessage = xhr.responseJSON && xhr.responseJSON.message
+                                ? xhr.responseJSON.message
+                                : 'Không thể xóa phiếu kho.';
+                            Swal.fire('Lỗi', responseMessage, 'error');
+                        },
+                        complete: function () {
+                            $('.loading-container').hide();
+                        }
+                    });
+                });
+            });
+
+            const errorMessage = @Html.Raw(JsonSerializer.Serialize(TempData["error"]?.ToString() ?? string.Empty));
+            if (errorMessage) {
+                Swal.fire('Lỗi', errorMessage, 'error');
+            }
+
+            const successMessage = @Html.Raw(JsonSerializer.Serialize(TempData["success"]?.ToString() ?? string.Empty));
+            if (successMessage) {
+                Swal.fire('Thành công', successMessage, 'success');
+            }
+
+            $type.on('change', syncSupplierField);
+            syncSupplierField();
+        });
+    </script>
+}
