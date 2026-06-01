@@ -222,65 +222,25 @@ namespace Tech_Store.Areas.Admin.Controllers
         //Gửi email tới khách hàng khi hoàn tất và đã thanh toán đơn hàng
         private async Task SendEmailToCusOrderCompleted(Order order)
         {
-         
-            var address = await _context.Addresses.FirstOrDefaultAsync(x => x.UserId == order.UserId);
-            if (!string.IsNullOrEmpty(address.AddressLine) &&
-                !string.IsNullOrEmpty(address.Province) &&
-                !string.IsNullOrEmpty(address.Ward) &&
-                !string.IsNullOrEmpty(address.District))
-            {
-                // Read the JSON file
-                var jsonString = await System.IO.File.ReadAllTextAsync("wwwroot/Province_VN.json");
-                var provinces = JsonConvert.DeserializeObject<List<Province>>(jsonString);
+            var hydratedOrder = await _context.Orders
+                .AsNoTracking()
+                .Include(x => x.OrderItems)
+                    .ThenInclude(oi => oi.Product)
+                .Include(x => x.OrderItems)
+                    .ThenInclude(oi => oi.VarientProduct)
+                        .ThenInclude(vp => vp.VariantAttributes)
+                            .ThenInclude(va => va.AttributeValue)
+                .Include(x => x.Payments)
+                .Include(x => x.ShippingAddress)
+                .Include(x => x.User)
+                .FirstOrDefaultAsync(x => x.OrderId == order.OrderId);
 
-                // Find the province, district, and ward by ID
-                var province = provinces?.FirstOrDefault(p => p.Code == int.Parse(address.Province));
-                var district = province?.Districts?.FirstOrDefault(d => d.Code == int.Parse(address.District));
-                var ward = district?.Wards?.FirstOrDefault(w => w.Code == int.Parse(address.Ward));
-                // Assign to ViewBag
-                ViewBag.Address = $"{address.AddressLine},{ward?.Name}, {district?.Name}, {province?.Name}";
+            if (hydratedOrder == null || string.IsNullOrWhiteSpace(hydratedOrder.User.Email))
+            {
+                return;
             }
-            
-            var payment = await _context.Payments.FirstOrDefaultAsync(s=>s.OrderId == order.OrderId);
-            var company_infomation = await _context.Settings.ToListAsync();
-            List<ProductItem> ListProducts = new();
 
-            foreach (var orderitem in order.OrderItems)
-            {
-                ListProducts.Add(new ProductItem
-                {
-                    Name = orderitem.Product.Name,
-                    Quantity = orderitem.Quantity,
-                    Price = orderitem.Price
-                });
-            }
-            //Lấy URL gốc
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
-            //Lấy Logo 
-            var logoUrl = company_infomation.Where(w => w.Key == "LogoUrl").Select(s => s.Value).FirstOrDefault();
-            var invoiceEmail = new InvoiceEmail
-            {
-                ToEmail = order.User.Email,
-                CustomerName = order.User.LastName + " " + order.User.FirstName,
-                CustomerAddress = address.ToString(),
-                CustomerPhone = order.User.PhoneNumber,
-                InvoiceNumber = order.OrderId.ToString(),
-                Products = ListProducts,
-                ShippingFee = 30000,
-                PaymentMethod = payment.PaymentMethod,
-                IsPaid = true,
-                CompanyName = company_infomation.Where(w => w.Key == "NameCompany").Select(s=>s.Value).FirstOrDefault(),
-                CompanyAddress = company_infomation.Where(w => w.Key == "Address").Select(s => s.Value).FirstOrDefault(),
-                CompanyEmail = company_infomation.Where(w => w.Key == "Email").Select(s => s.Value).FirstOrDefault(),
-                CompanyPhone = company_infomation.Where(w => w.Key == "PhoneNumber").Select(s => s.Value).FirstOrDefault(),
-                CompanyWebsite = "techshop-c4cafccbh0dmcwdp.eastasia-01.azurewebsites.net",
-                SupportEmail = company_infomation.Where(w => w.Key == "Email").Select(s => s.Value).FirstOrDefault(),
-                SupportPhone = company_infomation.Where(w => w.Key == "PhoneNumber").Select(s => s.Value).FirstOrDefault(),
-                InvoicePdfUrl = "https://abc.com/invoices/INV-2025-001.pdf",
-                LogoPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Upload","Logo", logoUrl),
-                Subject = $"Cảm ơn quý khách - Hóa đơn #{order.OrderId}"
-            };
-
+            var invoiceEmail = await BuildInvoiceEmailAsync(hydratedOrder);
             await _emailService.SendEmailOrderCompleted(invoiceEmail);
         }
 
@@ -409,6 +369,84 @@ namespace Tech_Store.Areas.Admin.Controllers
             }
 
             return string.IsNullOrWhiteSpace(variant.Attributes) ? "-" : variant.Attributes;
+        }
+
+        private async Task<InvoiceEmail> BuildInvoiceEmailAsync(Order order)
+        {
+            var settings = await _context.Settings.AsNoTracking().ToListAsync();
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var logoUrl = GetAbsoluteLogoUrl(baseUrl, settings.FirstOrDefault(x => x.Key == "LogoUrl")?.Value);
+            var customerAddress = await BuildFullAddressAsync(order.ShippingAddress);
+            var payment = order.Payments
+                .OrderByDescending(x => x.PaymentDate ?? x.CreatedAt)
+                .FirstOrDefault();
+
+            return new InvoiceEmail
+            {
+                ToEmail = order.User.Email,
+                CustomerName = $"{order.User.LastName} {order.User.FirstName}".Trim(),
+                CustomerAddress = customerAddress,
+                CustomerPhone = order.User.PhoneNumber ?? string.Empty,
+                InvoiceNumber = order.OrderId.ToString(),
+                OrderDate = order.OrderDate,
+                Products = order.OrderItems.Select(orderItem => new ProductItem
+                {
+                    Name = BuildEmailProductName(orderItem),
+                    Quantity = orderItem.Quantity,
+                    Price = orderItem.Price
+                }).ToList(),
+                ShippingFee = order.ShippingAmount ?? 0,
+                ShippingAmount = order.ShippingAmount ?? 0,
+                PaymentMethod = MapPaymentMethodLabel(payment?.PaymentMethod),
+                IsPaid = string.Equals(payment?.Status, "Paid", StringComparison.OrdinalIgnoreCase),
+                CompanyName = settings.FirstOrDefault(x => x.Key == "NameCompany")?.Value ?? settings.FirstOrDefault(x => x.Key == "NameWebsite")?.Value ?? "Tech Store",
+                CompanyAddress = settings.FirstOrDefault(x => x.Key == "Address")?.Value ?? string.Empty,
+                CompanyEmail = settings.FirstOrDefault(x => x.Key == "Email")?.Value ?? string.Empty,
+                CompanyPhone = settings.FirstOrDefault(x => x.Key == "PhoneNumber")?.Value ?? string.Empty,
+                CompanyWebsite = baseUrl,
+                SupportEmail = settings.FirstOrDefault(x => x.Key == "Email")?.Value ?? string.Empty,
+                SupportPhone = settings.FirstOrDefault(x => x.Key == "PhoneNumber")?.Value ?? string.Empty,
+                InvoicePdfUrl = $"{baseUrl}/Admin/POS/Print-Invoice?id={order.OrderId}",
+                LogoPath = logoUrl,
+                Subject = $"Cảm ơn quý khách - Hóa đơn #{order.OrderId}",
+                OriginAmount = order.OriginAmount ?? order.OrderItems.Sum(x => x.Price * x.Quantity),
+                DiscountAmount = order.DiscountAmount ?? 0,
+                DeductAmount = order.DeductAmount ?? 0,
+                TotalAmount = order.TotalAmount
+            };
+        }
+
+        private static string BuildEmailProductName(OrderItem orderItem)
+        {
+            var variantDisplay = BuildVariantDisplay(orderItem.VarientProduct);
+            return variantDisplay == "-"
+                ? orderItem.Product.Name
+                : $"{orderItem.Product.Name} ({variantDisplay})";
+        }
+
+        private static string GetAbsoluteLogoUrl(string baseUrl, string? logoPath)
+        {
+            if (string.IsNullOrWhiteSpace(logoPath))
+            {
+                return string.Empty;
+            }
+
+            if (Uri.TryCreate(logoPath, UriKind.Absolute, out _))
+            {
+                return logoPath;
+            }
+
+            return $"{baseUrl}/Upload/Logo/{logoPath.TrimStart('/')}";
+        }
+
+        private static string MapPaymentMethodLabel(string? paymentMethod)
+        {
+            return (paymentMethod ?? string.Empty).Trim().ToLowerInvariant() switch
+            {
+                "cash" => "Tiền mặt",
+                "card" => "Thẻ",
+                _ => string.IsNullOrWhiteSpace(paymentMethod) ? "-" : paymentMethod
+            };
         }
 
         private async Task<string> BuildFullAddressAsync(Address? shippingAddress)

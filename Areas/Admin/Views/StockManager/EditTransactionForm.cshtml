@@ -67,7 +67,7 @@
                 <div class="row g-3 brand-admin__filters stock-transaction-page__filters mb-4">
                     <div class="col-md-4">
                         <label class="form-label fw-semibold text-secondary">Loại phiếu</label>
-                        <select asp-for="Type" class="form-select js-stock-transaction-type">
+                        <select name="Type" id="Type" class="form-select js-stock-transaction-type">
                             @if (string.Equals(Model.Type, "Import", StringComparison.OrdinalIgnoreCase))
                             {
                                 <option value="Import" selected>Phiếu nhập kho</option>
@@ -99,7 +99,10 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold text-secondary">Ghi chú vận hành</label>
-                        <textarea asp-for="Note" class="form-control" rows="3" placeholder="Ví dụ: nhập đợt hàng, xuất điều chuyển, điều chỉnh sau kiểm kê..."></textarea>
+                        <textarea asp-for="Note"
+                                  class="form-control js-transaction-note"
+                                  rows="3"
+                                  placeholder="Ví dụ: nhập đợt hàng, xuất điều chuyển, điều chỉnh sau kiểm kê..."></textarea>
                     </div>
                 </div>
 
@@ -147,10 +150,7 @@
                                             <th>Phân loại</th>
                                             <th style="width: 160px;">Giá bán</th>
                                             <th style="width: 120px;">Tồn hiện tại</th>
-                                            @if (Model.IsEdit)
-                                            {
-                                                <th style="width: 120px;">SL cũ</th>
-                                            }
+                                            <th style="width: 120px;">SL cũ</th>
                                             <th style="width: 170px;">Số lượng nhập/xuất</th>
                                         </tr>
                                     </thead>
@@ -164,12 +164,9 @@
                                                 <td>@product.Variants[variantIndex].AttributeSummary</td>
                                                 <td class="order-admin__amount">@(product.Variants[variantIndex].Price?.ToString("C0", new CultureInfo("vi-VN")) ?? "-")</td>
                                                 <td>@product.Variants[variantIndex].CurrentStock</td>
-                                                @if (Model.IsEdit)
-                                                {
-                                                    <td>
-                                                        <span class="badge bg-light text-dark border">@product.Variants[variantIndex].PreviousQuantity</span>
-                                                    </td>
-                                                }
+                                                <td>
+                                                    <span class="badge bg-light text-dark border">@product.Variants[variantIndex].PreviousQuantity</span>
+                                                </td>
                                                 <td>
                                                     <input type="hidden" asp-for="Products[@productIndex].Variants[@variantIndex].VariantId" />
                                                     <input type="hidden" asp-for="Products[@productIndex].Variants[@variantIndex].Sku" />
@@ -177,7 +174,9 @@
                                                     <input type="hidden" asp-for="Products[@productIndex].Variants[@variantIndex].Price" />
                                                     <input type="hidden" asp-for="Products[@productIndex].Variants[@variantIndex].CurrentStock" />
                                                     <input type="hidden" asp-for="Products[@productIndex].Variants[@variantIndex].PreviousQuantity" />
-                                                    <input asp-for="Products[@productIndex].Variants[@variantIndex].Quantity"
+                                                    <input type="number"
+                                                           name="Products[@productIndex].Variants[@variantIndex].Quantity"
+                                                           value="@product.Variants[variantIndex].PreviousQuantity"
                                                            class="form-control js-transaction-quantity js-variant-quantity"
                                                            min="0"
                                                            data-variant-id="@product.Variants[variantIndex].VariantId"
@@ -225,15 +224,10 @@
             function syncSupplierField() {
                 const isImport = $type.val() === 'Import';
                 $supplierField.toggleClass('d-none', !isImport);
+                $supplierSelect.prop('required', isImport);
                 if (!isImport) {
                     $supplierSelect.val('');
                 }
-            }
-
-            function hasPositiveQuantity() {
-                return $('.js-transaction-quantity').toArray().some(function (input) {
-                    return Number($(input).val() || 0) > 0;
-                });
             }
 
             function parseNumber(value) {
@@ -300,92 +294,17 @@
                 });
             }
 
-            $form.on('submit', function (event) {
-                event.preventDefault();
+            $form.on('submit', function () {
                 const editId = Number($inventoryTransId.val() || 0);
                 if (editId > 0 && String(this.action || '').endsWith('/0')) {
                     this.action = `/Admin/StockManager/UpdateTransaction/${editId}`;
-                }
-
-                if (!String(this.action || '').includes('/Admin/StockManager/UpdateTransaction/')) {
-                    Swal.fire('Lỗi', 'Form cập nhật đang trỏ sai endpoint. Vui lòng tải lại trang cập nhật phiếu.', 'error');
-                    return;
-                }
-
-                if (editId <= 0) {
-                    Swal.fire('Lỗi', 'Không xác định được mã phiếu kho cần cập nhật. Vui lòng quay lại danh sách và mở lại phiếu.', 'error');
-                    return;
                 }
 
                 const payloadProducts = buildPayloadFromDom();
                 $payload.val(JSON.stringify(payloadProducts));
                 syncModelInputs(payloadProducts);
 
-                const hasPayloadQuantity = payloadProducts.some(product =>
-                    (product.variants || []).some(variant => Number(variant.quantity || 0) > 0));
-
-                if (!hasPayloadQuantity && !hasPositiveQuantity()) {
-                    Swal.fire('Thiếu số lượng', 'Cần nhập ít nhất một biến thể có số lượng lớn hơn 0.', 'warning');
-                    return;
-                }
-
-                if ($type.val() === 'Import' && !$supplierSelect.val()) {
-                    Swal.fire('Thiếu nhà cung cấp', 'Phiếu nhập kho cần chọn nhà cung cấp trước khi lưu.', 'warning');
-                    return;
-                }
-
-                const formData = new FormData(this);
-                formData.set('InventoryTransId', $inventoryTransId.val() || '');
-                formData.set('Type', $type.val() || '');
-                formData.set('SupplierId', $type.val() === 'Import' ? ($supplierSelect.val() || '') : '');
-
-                $.ajax({
-                    method: 'POST',
-                    url: this.action,
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    beforeSend: function () {
-                        $('.loading-container').show();
-                    },
-                    success: function (response) {
-                        if (response && response.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Thành công',
-                                text: response.message || 'Phiếu kho đã được lưu.',
-                                confirmButtonText: 'OK'
-                            }).then(function () {
-                                if (response.redirectUrl) {
-                                    window.location.href = response.redirectUrl;
-                                }
-                            });
-                            return;
-                        }
-
-                        if (response && response.debug) {
-                            console.warn('Stock transaction rejected by server:', response.debug);
-                        }
-
-                        Swal.fire('Lỗi', (response && response.message) || 'Không thể lưu phiếu kho.', 'error');
-                    },
-                    error: function (xhr) {
-                        const responseMessage = xhr.responseJSON && xhr.responseJSON.message
-                            ? xhr.responseJSON.message
-                            : 'Không thể lưu phiếu kho.';
-                        if (xhr.responseJSON && xhr.responseJSON.debug) {
-                            console.warn('Stock transaction rejected by server:', xhr.responseJSON.debug);
-                        }
-
-                        Swal.fire('Lỗi', responseMessage, 'error');
-                    },
-                    complete: function () {
-                        $('.loading-container').hide();
-                    }
-                });
+                $('.loading-container').show();
             });
 
             $('.js-delete-transaction').on('click', function () {

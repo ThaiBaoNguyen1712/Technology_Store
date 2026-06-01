@@ -7,9 +7,14 @@
     <div class="offcanvas-header admin-right-drawer__header">
         <div>
             <h5 class="offcanvas-title admin-right-drawer__title" id="@(Model.DrawerId)Label">@Model.Title</h5>
-            @if (!string.IsNullOrWhiteSpace(Model.Subtitle))
+            @{
+                var drawerDescription = !string.IsNullOrWhiteSpace(Model.Description)
+                    ? Model.Description
+                    : Model.Subtitle;
+            }
+            @if (!string.IsNullOrWhiteSpace(drawerDescription))
             {
-                <div class="admin-right-drawer__subtitle">@Model.Subtitle</div>
+                <div class="admin-right-drawer__subtitle">@drawerDescription</div>
             }
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>

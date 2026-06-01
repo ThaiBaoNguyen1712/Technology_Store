@@ -96,21 +96,42 @@
                 </div>
             </form>
 
-            <form method="post" action="/Admin/StockManager/ExportSelection">
+            <form method="post" action="/Admin/StockManager/ExportSelection" id="exportSelectionForm" data-selection-scope="@Model.QueryString">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="keyword" value="@Model.Keyword" />
                 <input type="hidden" name="categoryId" value="@Model.CategoryId" />
                 <input type="hidden" name="status" value="@Model.Status" />
                 <input type="hidden" name="stockFrom" value="@Model.StockFrom" />
                 <input type="hidden" name="stockTo" value="@Model.StockTo" />
+                <input type="hidden" name="exportMode" id="exportMode" value="selected" />
+                <div id="selectedVariantInputs" class="d-none"></div>
 
                 <div class="stock-export-page__toolbar">
                     <a class="btn btn-light border" href="/Admin/StockManager/Inventory">
                         Quay lại tồn kho
                     </a>
-                    <button type="submit" class="btn btn-success">
-                        Xuất Excel đã chọn
-                    </button>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <span class="text-muted small">Checkbox đầu bảng chỉ áp dụng cho trang hiện tại.</span>
+                        <span class="badge bg-light text-dark border" id="selectedVariantCount">Đã chọn: 0</span>
+                        <button type="submit" class="btn btn-outline-success js-export-submit" data-export-mode="selected">
+                            Xuất các dòng đã chọn
+                        </button>
+                        <button type="submit" class="btn btn-success js-export-submit" data-export-mode="filtered">
+                            Xuất toàn bộ theo bộ lọc
+                        </button>
+                        <button type="button" class="btn btn-light border" id="clearSelectedVariants">
+                            Bỏ chọn tất cả
+                        </button>
+                    </div>
+                </div>
+
+                <div class="alert alert-light border d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3 mb-3">
+                    <div>
+                        <strong>@Model.TotalItems</strong> biến thể phù hợp bộ lọc hiện tại.
+                    </div>
+                    <div class="text-muted small">
+                        Dùng "Xuất toàn bộ theo bộ lọc" nếu cần đầy đủ kết quả qua nhiều trang.
+                    </div>
                 </div>
 
                 <div class="table-responsive reusable-admin-table">
@@ -118,7 +139,7 @@
                         <thead class="table-light">
                             <tr>
                                 <th style="width: 56px;">
-                                    <input type="checkbox" class="form-check-input js-select-all-export" />
+                                    <input type="checkbox" class="form-check-input js-select-all-export" title="Chọn tất cả trong trang hiện tại" />
                                 </th>
                                 <th style="width: 72px;">Ảnh</th>
                                 <th>Sản phẩm</th>
@@ -150,7 +171,7 @@
 
                                     <tr>
                                         <td>
-                                            <input type="checkbox" class="form-check-input js-export-row" name="selectedVariantIds" value="@item.VariantId" />
+                                            <input type="checkbox" class="form-check-input js-export-row" value="@item.VariantId" />
                                         </td>
                                         <td>
                                             <div class="brand-admin__logo-shell">
@@ -187,8 +208,64 @@
 @section Scripts {
     <script>
         $(function () {
+            const $form = $('#exportSelectionForm');
             const $selectAll = $('.js-select-all-export');
             const $rows = $('.js-export-row');
+            const $exportMode = $('#exportMode');
+            const $selectedVariantInputs = $('#selectedVariantInputs');
+            const $selectedVariantCount = $('#selectedVariantCount');
+            const $clearSelectedVariants = $('#clearSelectedVariants');
+            const selectionScope = String($form.data('selection-scope') || '');
+            const selectionStorageKey = `stock-export-selection:${window.location.pathname}?${selectionScope}`;
+            let selectedVariantIds = new Set();
+
+            function loadSelectedVariantIds() {
+                try {
+                    const rawValue = window.sessionStorage.getItem(selectionStorageKey);
+                    if (!rawValue) {
+                        return new Set();
+                    }
+
+                    const parsedValues = JSON.parse(rawValue);
+                    if (!Array.isArray(parsedValues)) {
+                        return new Set();
+                    }
+
+                    return new Set(parsedValues.map(function (value) {
+                        return String(value || '').trim();
+                    }).filter(Boolean));
+                } catch {
+                    return new Set();
+                }
+            }
+
+            function persistSelectedVariantIds() {
+                window.sessionStorage.setItem(selectionStorageKey, JSON.stringify(Array.from(selectedVariantIds)));
+            }
+
+            function syncSelectedVariantInputs() {
+                $selectedVariantInputs.empty();
+
+                Array.from(selectedVariantIds).forEach(function (variantId) {
+                    $('<input/>', {
+                        type: 'hidden',
+                        name: 'selectedVariantIds',
+                        value: variantId
+                    }).appendTo($selectedVariantInputs);
+                });
+            }
+
+            function syncSelectedCount() {
+                $selectedVariantCount.text(`Đã chọn: ${selectedVariantIds.size}`);
+            }
+
+            function syncCheckedRowsFromSelection() {
+                $rows.each(function () {
+                    const $row = $(this);
+                    const variantId = String($row.val() || '').trim();
+                    $row.prop('checked', selectedVariantIds.has(variantId));
+                });
+            }
 
             function syncSelectAllState() {
                 const totalRows = $rows.length;
@@ -203,14 +280,64 @@
 
             $selectAll.on('change', function () {
                 $selectAll.prop('indeterminate', false);
-                $rows.prop('checked', $(this).is(':checked'));
+                const shouldCheck = $(this).is(':checked');
+                $rows.each(function () {
+                    const $row = $(this);
+                    const variantId = String($row.val() || '').trim();
+                    $row.prop('checked', shouldCheck);
+
+                    if (!variantId) {
+                        return;
+                    }
+
+                    if (shouldCheck) {
+                        selectedVariantIds.add(variantId);
+                    } else {
+                        selectedVariantIds.delete(variantId);
+                    }
+                });
+
+                persistSelectedVariantIds();
+                syncSelectedVariantInputs();
+                syncSelectedCount();
                 syncSelectAllState();
             });
 
             $rows.on('change', function () {
+                const $row = $(this);
+                const variantId = String($row.val() || '').trim();
+                if (variantId) {
+                    if ($row.is(':checked')) {
+                        selectedVariantIds.add(variantId);
+                    } else {
+                        selectedVariantIds.delete(variantId);
+                    }
+                }
+
+                persistSelectedVariantIds();
+                syncSelectedVariantInputs();
+                syncSelectedCount();
                 syncSelectAllState();
             });
 
+            $form.on('click', '.js-export-submit', function () {
+                $exportMode.val($(this).data('export-mode') || 'selected');
+                syncSelectedVariantInputs();
+            });
+
+            $clearSelectedVariants.on('click', function () {
+                selectedVariantIds.clear();
+                persistSelectedVariantIds();
+                syncSelectedVariantInputs();
+                syncSelectedCount();
+                syncCheckedRowsFromSelection();
+                syncSelectAllState();
+            });
+
+            selectedVariantIds = loadSelectedVariantIds();
+            syncSelectedVariantInputs();
+            syncSelectedCount();
+            syncCheckedRowsFromSelection();
             syncSelectAllState();
         });
     </script>

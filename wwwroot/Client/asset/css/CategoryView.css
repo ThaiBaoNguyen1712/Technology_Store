@@ -130,14 +130,21 @@
 
 .product-card .product-title,
 .product-card-ct .product-title {
-    min-height: 2.75rem;
-    height: 2.75rem;
+    display: -webkit-box !important;
+    min-height: 2.7em;
+    height: 2.7em;
+    max-height: 2.7em;
     margin-bottom: 0.65rem !important;
     color: #111827;
     font-size: 0.92rem !important;
     font-weight: 650;
     line-height: 1.35;
-    word-break: break-word;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
 }
 
 .product-card .price-wrapper,

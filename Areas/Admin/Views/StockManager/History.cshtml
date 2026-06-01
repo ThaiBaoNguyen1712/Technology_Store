@@ -19,7 +19,7 @@
                     <span class="order-admin__header-pill">Nhập kho: @Model.ImportCount</span>
                     <span class="order-admin__header-pill">Xuất kho: @Model.ExportCount</span>
                     <span class="order-admin__header-pill">Trang @Model.Page/@Model.TotalPages</span>
-                    <a href="/Admin/StockManager/BatchTransaction" class="btn btn-primary">
+                    <a href="/Admin/StockManager/CreateTransaction" class="btn btn-primary">
                         Tạo phiếu nhập - xuất
                     </a>
                 </div>
@@ -185,6 +185,7 @@
 {
     DrawerId = "stockHistoryDrawer",
     Title = "Chi tiết phiếu kho",
+    Description = "Theo dõi nhanh thông tin phiếu nhập/xuất, số lượng sản phẩm và thao tác cập nhật liên quan.",
     BodyId = "stockHistoryDrawerBody",
     WidthClass = "admin-right-drawer--lg"
 })
@@ -318,6 +319,15 @@
                         </div>
                     </section>
 
+                    <section class="transaction-drawer__section">
+                        <div class="transaction-drawer__section-head">
+                            <h6>HÃ nh Ä‘á»™ng</h6>
+                        </div>
+                        <div class="transaction-drawer__actions">
+                            <a href="${history.editUrl}" class="btn btn-primary">Chá»‰nh sá»­a phiáº¿u</a>
+                        </div>
+                    </section>
+
                     ${buildProductSections(history.products)}
 
                     <section class="transaction-drawer__section">
@@ -330,6 +340,31 @@
                     </section>
                 </div>
             `;
+        }
+
+        function normalizeDrawerActions() {
+            const $drawer = drawerBody.find('.transaction-drawer');
+            const $actionSections = $drawer.find('.transaction-drawer__section').filter(function () {
+                return $(this).find('.transaction-drawer__actions').length > 0;
+            });
+
+            if (!$actionSections.length) {
+                return;
+            }
+
+            const $actionSection = $actionSections.first();
+            $actionSection.find('h6').text('Hanh dong');
+            $actionSection.find('.btn').text('Chi tiết phiếu kho');
+
+            const $productSection = $drawer.find('.transaction-drawer__section').filter(function () {
+                return $(this).find('table').length > 0 || $(this).find('.transaction-drawer__product').length > 0;
+            }).first();
+
+            if ($productSection.length) {
+                $actionSection.insertBefore($productSection);
+            }
+
+            $actionSections.not($actionSection).remove();
         }
 
         function openHistoryDetail($row) {
@@ -357,6 +392,7 @@
                     $rows.removeClass('table-active');
                     $row.addClass('table-active');
                     drawerBody.html(buildDrawerHtml(response.history));
+                    normalizeDrawerActions();
                 },
                 error: function () {
                     drawerBody.html('<div class="alert alert-danger mb-0">Không thể tải dữ liệu phiếu kho.</div>');

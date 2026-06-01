@@ -83,6 +83,7 @@
                         <div class="col-md-7">
                             <label class="form-label pos-field-label">Khách hàng</label>
                             <input type="hidden" id="selectedCustomerId" name="selectCustomer" />
+                            <input type="hidden" id="selectedCustomerEmail" />
                             <button type="button"
                                     class="btn btn-outline-secondary w-100 text-start d-flex align-items-center justify-content-between"
                                     data-bs-toggle="modal"
@@ -115,6 +116,10 @@
                             <div class="pos-customer-card__row">
                                 <span>Số điện thoại</span>
                                 <strong id="phoneCustomer">-</strong>
+                            </div>
+                            <div class="pos-customer-card__row">
+                                <span>Email</span>
+                                <strong id="emailCustomer">-</strong>
                             </div>
                             <div class="pos-customer-card__row pos-customer-card__row--full">
                                 <span>Địa chỉ</span>
@@ -219,12 +224,17 @@
                     </div>
 
                     <div class="row g-3 pt-2">
-                        <div class="col-6">
+                        <div class="col-md-4">
                             <button class="btn btn-outline-danger w-100" type="button" onclick="confirm('Bạn có chắc chắn muốn hủy đơn hàng?') ? cancelOrder() : '';">
                                 Hủy đơn hàng
                             </button>
                         </div>
-                        <div class="col-6">
+                        <div class="col-md-4">
+                            <button class="btn btn-outline-primary w-100" type="button" id="PreviewInvoiceBtn">
+                                Xem trÆ°á»›c hÃ³a Ä‘Æ¡n
+                            </button>
+                        </div>
+                        <div class="col-md-4">
                             <button class="btn btn-success w-100 btn-Order" type="button">
                                 Đặt đơn hàng
                             </button>
@@ -232,6 +242,24 @@
                     </div>
                 </div>
             </section>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="InvoicePreviewModal" tabindex="-1" aria-labelledby="InvoicePreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="InvoicePreviewModalLabel">Xem trÆ°á»›c hÃ³a Ä‘Æ¡n</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="invoicePreviewContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light border" data-bs-dismiss="modal">ÄÃ³ng</button>
+                <button type="button" class="btn btn-success" id="ConfirmOrderFromPreviewBtn">XÃ¡c nháº­n Ä‘áº·t hÃ ng</button>
+            </div>
         </div>
     </div>
 </div>

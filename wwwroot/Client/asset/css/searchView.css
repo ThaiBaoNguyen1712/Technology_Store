@@ -81,9 +81,18 @@
 }
 
 .search-product-card .product-title {
-    min-height: 2.55em;
+    display: -webkit-box !important;
+    min-height: 2.6em;
+    height: 2.6em;
+    max-height: 2.6em;
     font-size: 0.84rem !important;
     line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
 }
 
 .search-product-card .price-text {

@@ -4,6 +4,7 @@ using MailKit.Security;
 using Microsoft.Extensions.Options;
 using MimeKit;
 using System.Text;
+using System.Globalization;
 
 
 namespace Tech_Store.Services
@@ -61,12 +62,12 @@ namespace Tech_Store.Services
                 string htmlBody = await File.ReadAllTextAsync(templatePath);
 
                 // Thay thế các placeholder trong template với dữ liệu thực tế
-                htmlBody = htmlBody.Replace("{Tên khách hàng}", invoiceEmail.CustomerName)
-                                   .Replace("{Số hóa đơn}", invoiceEmail.InvoiceNumber)
-                                   .Replace("{Ngày lập hóa đơn}", DateTime.Now.ToString("dd/MM/yyyy"))
-                                   .Replace("{Địa chỉ}", invoiceEmail.CustomerAddress)
-                                   .Replace("{Email}", invoiceEmail.ToEmail)
-                                   .Replace("{Số điện thoại}", invoiceEmail.CustomerPhone);
+                htmlBody = htmlBody.Replace("{Tên khách hàng}", invoiceEmail.CustomerName ?? string.Empty)
+                                   .Replace("{Số hóa đơn}", invoiceEmail.InvoiceNumber ?? string.Empty)
+                                   .Replace("{Ngày lập hóa đơn}", (invoiceEmail.OrderDate ?? DateTime.Now).ToString("dd/MM/yyyy HH:mm"))
+                                   .Replace("{Địa chỉ}", invoiceEmail.CustomerAddress ?? string.Empty)
+                                   .Replace("{Email}", invoiceEmail.ToEmail ?? string.Empty)
+                                   .Replace("{Số điện thoại}", invoiceEmail.CustomerPhone ?? string.Empty);
 
                 // Tạo bảng sản phẩm từ danh sách sản phẩm
                 StringBuilder productRows = new StringBuilder();
@@ -89,31 +90,36 @@ namespace Tech_Store.Services
 
                 var originAmount = invoiceEmail.OriginAmount ?? productSubtotal;
                 var discountAmount = invoiceEmail.DiscountAmount ?? 0;
-                var shippingFee = invoiceEmail.ShippingFee;
-                var grandTotal = invoiceEmail.TotalAmount ?? Math.Max(0, originAmount - discountAmount + shippingFee);
+                var deductAmount = invoiceEmail.DeductAmount ?? 0;
+                var shippingFee = invoiceEmail.ShippingAmount ?? invoiceEmail.ShippingFee;
+                var grandTotal = invoiceEmail.TotalAmount ?? Math.Max(0, originAmount - discountAmount - deductAmount + shippingFee);
                 var discountRowHtml = discountAmount > 0
-                    ? $@"<p>Giảm giá: {discountAmount.ToString("N0")} VNĐ</p>"
+                    ? $@"<p>Giảm giá khuyến mãi: {discountAmount.ToString("N0", CultureInfo.InvariantCulture)} VNĐ</p>"
+                    : string.Empty;
+                var deductRowHtml = deductAmount > 0
+                    ? $@"<p>Giảm giá thêm: {deductAmount.ToString("N0", CultureInfo.InvariantCulture)} VNĐ</p>"
                     : string.Empty;
 
                 // Thay thế thông tin tổng tiền
                 htmlBody = htmlBody.Replace("{Tổng tiền hàng}", originAmount.ToString("N0") + " VNĐ")
                                    .Replace("{Dòng giảm giá}", discountRowHtml)
+                                   .Replace("{Dòng giảm thêm}", deductRowHtml)
                                    .Replace("{Phí vận chuyển}", shippingFee.ToString("N0") + " VNĐ")
                                    .Replace("{Tổng thanh toán}", grandTotal.ToString("N0") + " VNĐ")
-                                   .Replace("{Phương thức thanh toán}", invoiceEmail.PaymentMethod)
+                                   .Replace("{Phương thức thanh toán}", invoiceEmail.PaymentMethod ?? string.Empty)
                                    .Replace("{ProductRows}",productRows.ToString())
                                    .Replace("{Đã thanh toán/Chưa thanh toán}", invoiceEmail.IsPaid ? "Đã thanh toán" : "Chưa thanh toán");
 
                 // Thay thế thông tin công ty
-                htmlBody = htmlBody.Replace("{Tên công ty}", invoiceEmail.CompanyName)
-                                    .Replace("{logoUrl}",invoiceEmail.LogoPath)
+                htmlBody = htmlBody.Replace("{Tên công ty}", invoiceEmail.CompanyName ?? string.Empty)
+                                    .Replace("{logoUrl}",invoiceEmail.LogoPath ?? string.Empty)
                                    .Replace("{Năm hiện tại}", DateTime.Now.Year.ToString())
-                                   .Replace("{Địa chỉ công ty}", invoiceEmail.CompanyAddress)
-                                   .Replace("{Email công ty}", invoiceEmail.CompanyEmail)
-                                   .Replace("{Số điện thoại công ty}", invoiceEmail.CompanyPhone)
-                                   .Replace("{Website công ty}", invoiceEmail.CompanyWebsite)
-                                   .Replace("{email hỗ trợ}", invoiceEmail.SupportEmail)
-                                   .Replace("{số điện thoại hỗ trợ}", invoiceEmail.SupportPhone);
+                                   .Replace("{Địa chỉ công ty}", invoiceEmail.CompanyAddress ?? string.Empty)
+                                   .Replace("{Email công ty}", invoiceEmail.CompanyEmail ?? string.Empty)
+                                   .Replace("{Số điện thoại công ty}", invoiceEmail.CompanyPhone ?? string.Empty)
+                                   .Replace("{Website công ty}", invoiceEmail.CompanyWebsite ?? string.Empty)
+                                   .Replace("{email hỗ trợ}", invoiceEmail.SupportEmail ?? string.Empty)
+                                   .Replace("{số điện thoại hỗ trợ}", invoiceEmail.SupportPhone ?? string.Empty);
 
                 // Lưu URL của hóa đơn PDF (nếu có)
                 if (!string.IsNullOrEmpty(invoiceEmail.InvoicePdfUrl))
@@ -155,9 +161,9 @@ namespace Tech_Store.Services
                     smtp.Disconnect(true);
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                Console.WriteLine($"Lỗi: {ex.Message}");
+                throw;
             }
         }
 

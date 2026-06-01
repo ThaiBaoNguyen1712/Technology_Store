@@ -10,111 +10,73 @@
 
         body {
             margin: 0;
-            padding: 24px;
+            padding: 0;
             font-family: Arial, Helvetica, sans-serif;
-            color: #1f2937;
-            font-size: 14px;
-            line-height: 1.45;
+            color: #111827;
+            font-size: 12px;
+            line-height: 1.5;
             background: #ffffff;
         }
 
-        .invoice-shell {
-            max-width: 900px;
+        .page {
+            width: 100%;
+            max-width: 760px;
             margin: 0 auto;
-            border: 1px solid #dbe3ef;
-            border-radius: 18px;
-            overflow: hidden;
+            padding: 28px 32px 24px;
         }
 
-        .invoice-header {
-            padding: 28px 32px 20px;
-            background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
-            border-bottom: 1px solid #dbe3ef;
-        }
-
-        .invoice-brand {
-            display: flex;
-            justify-content: space-between;
-            gap: 24px;
-            align-items: flex-start;
+        .header {
+            border-bottom: 1px solid #cbd5e1;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
         }
 
         .brand-name {
-            margin: 0 0 6px;
-            font-size: 26px;
+            margin: 0 0 4px;
+            font-size: 24px;
             font-weight: 700;
-            color: #0f172a;
-            text-transform: uppercase;
             letter-spacing: 0.04em;
+            text-transform: uppercase;
         }
 
-        .brand-subtitle,
         .brand-meta {
             margin: 0;
-            color: #64748b;
-        }
-
-        .invoice-title-wrap {
-            text-align: right;
+            color: #475569;
         }
 
         .invoice-title {
-            margin: 0 0 8px;
-            font-size: 28px;
-            font-weight: 800;
-            color: #0f172a;
+            margin: 18px 0 6px;
+            font-size: 22px;
+            font-weight: 700;
+            text-transform: uppercase;
         }
 
         .invoice-code {
-            display: inline-block;
-            padding: 8px 14px;
-            background: #0f172a;
-            color: #ffffff;
-            border-radius: 999px;
-            font-weight: 700;
+            margin: 0;
             font-size: 13px;
-        }
-
-        .invoice-body {
-            padding: 28px 32px 32px;
-        }
-
-        .info-grid {
-            display: table;
-            width: 100%;
-            margin-bottom: 24px;
-        }
-
-        .info-col {
-            display: table-cell;
-            width: 50%;
-            vertical-align: top;
-            padding-right: 16px;
-        }
-
-        .info-col:last-child {
-            padding-right: 0;
-            padding-left: 16px;
-        }
-
-        .info-card {
-            border: 1px solid #e5e7eb;
-            border-radius: 14px;
-            padding: 16px 18px;
-            height: 100%;
-        }
-
-        .section-label {
-            margin: 0 0 12px;
-            font-size: 12px;
             font-weight: 700;
-            color: #64748b;
+        }
+
+        .section {
+            margin-bottom: 18px;
+        }
+
+        .section-title {
+            margin: 0 0 8px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #475569;
             text-transform: uppercase;
             letter-spacing: 0.08em;
         }
 
+        .info-box {
+            border: 1px solid #dbe3ef;
+            padding: 12px 14px;
+        }
+
         .info-line {
-            margin: 0 0 8px;
+            margin: 0 0 6px;
         }
 
         .info-line:last-child {
@@ -122,29 +84,28 @@
         }
 
         .info-line strong {
-            color: #0f172a;
+            display: inline-block;
+            min-width: 120px;
         }
 
         .product-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 24px;
+            margin-top: 8px;
+        }
+
+        .product-table th,
+        .product-table td {
+            border: 1px solid #cbd5e1;
+            padding: 9px 8px;
+            vertical-align: top;
         }
 
         .product-table thead th {
-            padding: 12px 10px;
-            background: #0f172a;
-            color: #ffffff;
-            font-size: 12px;
+            background: #f8fafc;
+            font-size: 11px;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.06em;
-            border: none;
-        }
-
-        .product-table tbody td {
-            padding: 12px 10px;
-            border-bottom: 1px solid #e5e7eb;
-            vertical-align: top;
         }
 
         .text-center {
@@ -155,114 +116,88 @@
             text-align: right;
         }
 
-        .summary {
-            width: 100%;
-            display: table;
-        }
-
-        .summary-empty {
-            display: table-cell;
-            width: 45%;
-        }
-
-        .summary-card {
-            display: table-cell;
-            width: 55%;
-            vertical-align: top;
-        }
-
         .summary-box {
-            border: 1px solid #e5e7eb;
-            border-radius: 14px;
-            padding: 16px 18px;
+            width: 100%;
+            border: 1px solid #dbe3ef;
+            padding: 12px 14px;
+            margin-top: 14px;
         }
 
         .summary-row {
-            display: table;
             width: 100%;
-            margin-bottom: 10px;
-            color: #475569;
+            margin-bottom: 8px;
+            overflow: hidden;
         }
 
         .summary-row:last-child {
             margin-bottom: 0;
         }
 
-        .summary-row span {
-            display: table-cell;
+        .summary-row .label {
+            float: left;
+            color: #475569;
         }
 
-        .summary-row span:last-child {
-            text-align: right;
-            font-weight: 600;
-            color: #0f172a;
+        .summary-row .value {
+            float: right;
+            font-weight: 700;
+            color: #111827;
         }
 
         .summary-total {
-            margin-top: 14px;
-            padding-top: 14px;
-            border-top: 1px solid #dbe3ef;
-            font-size: 18px;
-            font-weight: 800;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #cbd5e1;
+            font-size: 15px;
         }
 
-        .summary-total span {
-            color: #0f172a;
-        }
-
-        .invoice-footer {
-            margin-top: 28px;
-            padding-top: 18px;
-            border-top: 1px dashed #cbd5e1;
-            text-align: center;
+        .footer {
+            margin-top: 24px;
+            padding-top: 12px;
+            border-top: 1px solid #cbd5e1;
             color: #64748b;
-            font-size: 13px;
+            text-align: center;
+            font-size: 11px;
         }
     </style>
 </head>
 <body>
-    <div class="invoice-shell">
-        <div class="invoice-header">
-            <div class="invoice-brand">
-                <div>
-                    <p class="brand-name">TechStore</p>
-                    <p class="brand-subtitle">Hệ thống bán lẻ thiết bị công nghệ</p>
-                    <p class="brand-meta">Website: techstore.com</p>
-                </div>
-                <div class="invoice-title-wrap">
-                    <h1 class="invoice-title">HÓA ĐƠN BÁN HÀNG</h1>
-                    <div class="invoice-code">Số hóa đơn: #{{orderID}}</div>
-                </div>
+    <div class="page">
+        <div class="header">
+            <p class="brand-name">TechStore</p>
+            <p class="brand-meta">Hệ thống bán lẻ thiết bị công nghệ</p>
+            <p class="brand-meta">Website: techstore.com</p>
+            <h1 class="invoice-title">Hóa đơn bán hàng</h1>
+            <p class="invoice-code">Số hóa đơn: #{{orderID}}</p>
+        </div>
+
+        <div class="section">
+            <p class="section-title">Thông tin người mua</p>
+            <div class="info-box">
+                <p class="info-line"><strong>Khách hàng:</strong> {{name}}</p>
+                <p class="info-line"><strong>Địa chỉ:</strong> {{address}}</p>
+                <p class="info-line"><strong>Số điện thoại:</strong> {{phoneNumber}}</p>
             </div>
         </div>
 
-        <div class="invoice-body">
-            <div class="info-grid">
-                <div class="info-col">
-                    <div class="info-card">
-                        <p class="section-label">Thông tin người mua</p>
-                        <p class="info-line"><strong>Khách hàng:</strong> {{name}}</p>
-                        <p class="info-line"><strong>Địa chỉ:</strong> {{address}}</p>
-                        <p class="info-line"><strong>Số điện thoại:</strong> {{phoneNumber}}</p>
-                    </div>
-                </div>
-                <div class="info-col">
-                    <div class="info-card">
-                        <p class="section-label">Thông tin đơn hàng</p>
-                        <p class="info-line"><strong>Mã đơn hàng:</strong> #{{orderID}}</p>
-                        <p class="info-line"><strong>Ngày đặt:</strong> {{orderDate}}</p>
-                    </div>
-                </div>
+        <div class="section">
+            <p class="section-title">Thông tin đơn hàng</p>
+            <div class="info-box">
+                <p class="info-line"><strong>Mã đơn hàng:</strong> #{{orderID}}</p>
+                <p class="info-line"><strong>Ngày đặt:</strong> {{orderDate}}</p>
             </div>
+        </div>
 
+        <div class="section">
+            <p class="section-title">Chi tiết hàng hóa</p>
             <table class="product-table">
                 <thead>
                     <tr>
-                        <th style="width: 7%;" class="text-center">STT</th>
-                        <th style="width: 43%;">Tên hàng hóa</th>
+                        <th style="width: 8%;" class="text-center">STT</th>
+                        <th style="width: 46%;">Tên hàng hóa</th>
                         <th style="width: 12%;" class="text-center">SL</th>
-                        <th style="width: 19%;" class="text-end">Đơn giá</th>
-                        <th style="width: 19%;" class="text-end">Thành tiền</th>
+                        <th style="width: 17%;" class="text-end">Đơn giá</th>
+                        <th style="width: 17%;" class="text-end">Thành tiền</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -270,33 +205,28 @@
                 </tbody>
             </table>
 
-            <div class="summary">
-                <div class="summary-empty"></div>
-                <div class="summary-card">
-                    <div class="summary-box">
-                        <div class="summary-row">
-                            <span>Tổng tiền hàng</span>
-                            <span>{{originAmount}}</span>
-                        </div>
-                        <div class="summary-row">
-                            <span>Giảm giá khuyến mãi</span>
-                            <span>{{discountAmount}}</span>
-                        </div>
-                        <div class="summary-row">
-                            <span>Giảm giá thêm</span>
-                            <span>{{deductAmount}}</span>
-                        </div>
-                        <div class="summary-row summary-total">
-                            <span>Tổng thanh toán</span>
-                            <span>{{amount}}</span>
-                        </div>
-                    </div>
+            <div class="summary-box">
+                <div class="summary-row">
+                    <span class="label">Tổng tiền hàng</span>
+                    <span class="value">{{originAmount}}</span>
+                </div>
+                <div class="summary-row">
+                    <span class="label">Giảm giá khuyến mãi</span>
+                    <span class="value">{{discountAmount}}</span>
+                </div>
+                <div class="summary-row">
+                    <span class="label">Giảm giá thêm</span>
+                    <span class="value">{{deductAmount}}</span>
+                </div>
+                <div class="summary-row summary-total">
+                    <span class="label">Tổng thanh toán</span>
+                    <span class="value">{{amount}}</span>
                 </div>
             </div>
+        </div>
 
-            <div class="invoice-footer">
-                Cảm ơn Quý khách đã mua sắm tại TechStore.
-            </div>
+        <div class="footer">
+            Cảm ơn Quý khách đã mua sắm tại TechStore.
         </div>
     </div>
 </body>

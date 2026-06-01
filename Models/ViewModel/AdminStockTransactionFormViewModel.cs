@@ -12,7 +12,7 @@ public class AdminStockTransactionFormViewModel
 
     public string? ProductImageUrl { get; set; }
 
-    public string Type { get; set; } = "Import";
+    public string Type { get; set; } = string.Empty;
 
     public int? SupplierId { get; set; }
 
@@ -25,8 +25,6 @@ public class AdminStockTransactionFormViewModel
     public List<AdminStockBatchImportProductViewModel> Products { get; set; } = new();
 
     public string? ProductPayloadJson { get; set; }
-
-    public bool IsEdit => InventoryTransId.HasValue && InventoryTransId.Value > 0;
 
     public int ReturnPage { get; set; } = 1;
 

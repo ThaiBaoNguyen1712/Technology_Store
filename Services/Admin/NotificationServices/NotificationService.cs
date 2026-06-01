@@ -20,6 +20,11 @@ namespace Tech_Store.Services.Admin.NotificationServices
         // Phương thức chung để gửi thông báo
         public async Task NotifyAsync(NotificationTarget target, string title, string message, string type, string redirectUrl, List<int>? userIds = null)
         {
+            if (!await ShouldDispatchAsync(target, type, redirectUrl))
+            {
+                return;
+            }
+
             List<int> targetUserIds = await GetTargetUserIdsAsync(target, userIds);
 
             if (targetUserIds.Any())
@@ -60,6 +65,38 @@ namespace Tech_Store.Services.Admin.NotificationServices
         private List<int> GetOnlineUserIds()
         {
             return OnlineUserTracker.GetOnlineUserIds();
+        }
+
+        private async Task<bool> ShouldDispatchAsync(NotificationTarget target, string type, string redirectUrl)
+        {
+            if (target != NotificationTarget.Admins ||
+                !string.Equals(type, "new register", StringComparison.OrdinalIgnoreCase) ||
+                string.IsNullOrWhiteSpace(redirectUrl))
+            {
+                return true;
+            }
+
+            var userIdToken = redirectUrl
+                .TrimEnd('/')
+                .Split('/', StringSplitOptions.RemoveEmptyEntries)
+                .LastOrDefault();
+
+            if (!int.TryParse(userIdToken, out var userId))
+            {
+                return true;
+            }
+
+            var user = await _context.Users
+                .AsNoTracking()
+                .Where(x => x.UserId == userId)
+                .Select(x => new
+                {
+                    x.IsActive,
+                    x.IsVerified
+                })
+                .FirstOrDefaultAsync();
+
+            return user?.IsActive == true && user.IsVerified == true;
         }
     }
 }

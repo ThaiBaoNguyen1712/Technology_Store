@@ -6,6 +6,8 @@ namespace Tech_Store.Models.ViewModel
 
         public string Title { get; set; } = string.Empty;
 
+        public string? Description { get; set; }
+
         public string? Subtitle { get; set; }
 
         public string BodyId { get; set; } = "adminRightDrawerBody";

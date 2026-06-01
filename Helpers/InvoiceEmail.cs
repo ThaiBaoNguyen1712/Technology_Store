@@ -22,8 +22,11 @@
         public string LogoPath { get; set; }
         public string Subject { get; set; }
         public string Body { get; set; }
+        public DateTime? OrderDate { get; set; }
         public decimal? OriginAmount { get; set; }
         public decimal? DiscountAmount { get; set; }
+        public decimal? DeductAmount { get; set; }
+        public decimal? ShippingAmount { get; set; }
         public decimal? TotalAmount { get; set; }
     }
 

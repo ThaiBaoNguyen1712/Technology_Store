@@ -83,15 +83,18 @@ $(document).ready(function () {
         $("#customerInfoEmpty").removeClass("d-none");
         $("#nameCustomer").text("-");
         $("#phoneCustomer").text("-");
+        $("#emailCustomer").text("-");
         $("#addressCustomer").text("-");
+        $("#selectedCustomerEmail").val("");
     }
 
-    function showCustomerInfo(name, phone, address) {
+    function showCustomerInfo(name, phone, email, address) {
         $("#customerInfoGrid").attr("style", "");
         $("#customerInfoEmpty").addClass("d-none");
         $("#customerInfoGrid").removeClass("d-none");
         $("#nameCustomer").text(name || "-");
         $("#phoneCustomer").text(phone || "-");
+        $("#emailCustomer").text(email || "-");
         $("#addressCustomer").text(address || "-");
     }
 
@@ -222,6 +225,419 @@ $(document).ready(function () {
 
         const total = Math.max(totalPrice - deductPrice - discountPrice, 0);
         $("#TotalPayment").text(formatMoney(total));
+    }
+
+    function getPaymentMethodLabel() {
+        const paymentMethod = $('input[name="type"]:checked').val();
+        if (paymentMethod === "cash") {
+            return "Tiền mặt";
+        }
+
+        if (paymentMethod === "card") {
+            return "Thẻ";
+        }
+
+        return paymentMethod || "-";
+    }
+
+    function getCartItemsSnapshot() {
+        return $("#shoppingCartBody")
+            .find("tr")
+            .not(".cart-empty-state")
+            .map(function () {
+                const $row = $(this);
+                const quantity = Number($row.find(".pos-cart-quantity").text() || 0);
+                const unitPrice = Number($row.find(".price-cell").data("price") || 0);
+                return {
+                    productName: $row.find(".pos-cart-product__name").text().trim(),
+                    sku: $row.find(".pos-cart-product__sku").text().trim(),
+                    variant: $row.find(".pos-cart-variant").text().trim() || "-",
+                    quantity: quantity,
+                    unitPrice: unitPrice,
+                    lineTotal: unitPrice * quantity
+                };
+            })
+            .get();
+    }
+
+    function buildOrderPayload() {
+        const userId = $("#selectedCustomerId").val();
+        return {
+            UserId: userId,
+            TotalPrice: parseMoney($("#TotalPayment").text()),
+            OriginTotalPrice: parseMoney($("#TotalPrice").text()),
+            DeductPrice: $("#Deduct").text().replace(/[^\d]/g, ""),
+            DiscountPrice: $("#Discount").text().includes("%")
+                ? $("#Discount").text().trim()
+                : $("#Discount").text().replace(/[^\d]/g, ""),
+            ListVarientProduct: productSelections,
+            PaymentMethod: $('input[name="type"]:checked').val(),
+            Voucher: $('input[name="Voucher"]').val()
+        };
+    }
+
+    function validateOrderPayload(payload) {
+        if (!payload.UserId) {
+            Swal.fire({
+                icon: "warning",
+                title: "Chưa chọn khách hàng",
+                text: "Bạn cần chọn khách hàng trước khi đặt đơn."
+            });
+            return false;
+        }
+
+        if (!payload.ListVarientProduct.length) {
+            Swal.fire({
+                icon: "warning",
+                title: "Giỏ hàng đang trống",
+                text: "Bạn cần thêm ít nhất một sản phẩm."
+            });
+            return false;
+        }
+
+        return true;
+    }
+
+    function renderInvoicePreview() {
+        const items = getCartItemsSnapshot();
+        const voucherCode = $('input[name="Voucher"]').val().trim();
+        const voucherSummary = $("#selectedVoucherSummary .fw-semibold").text().trim();
+        const customerName = $("#nameCustomer").text().trim() || "-";
+        const customerPhone = $("#phoneCustomer").text().trim() || "-";
+        const customerEmail = $("#emailCustomer").text().trim() || "-";
+        const customerAddress = $("#addressCustomer").text().trim() || "-";
+        const totalPrice = $("#TotalPrice").text().trim();
+        const discount = $("#Discount").text().trim();
+        const deduct = $("#Deduct").text().trim();
+        const totalPayment = $("#TotalPayment").text().trim();
+        const voucherDisplay = voucherSummary || (voucherCode ? voucherCode : "Không áp dụng");
+        const itemRows = items.length
+            ? items.map(function (item, index) {
+                return `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>
+                            <div class="fw-semibold">${escapeHtml(item.productName)}</div>
+                            <div class="small text-muted">${escapeHtml(item.sku)}</div>
+                        </td>
+                        <td>${escapeHtml(item.variant)}</td>
+                        <td>${item.quantity}</td>
+                        <td>${formatMoney(item.unitPrice)}</td>
+                        <td>${formatMoney(item.lineTotal)}</td>
+                    </tr>
+                `;
+            }).join("")
+            : `<tr><td colspan="6" class="text-center text-muted py-4">Chưa có sản phẩm trong giỏ hàng.</td></tr>`;
+
+        $("#invoicePreviewContent").html(`
+            <div class="row g-4">
+                <div class="col-lg-5">
+                    <div class="card border-0 bg-light h-100">
+                        <div class="card-body">
+                            <h5 class="mb-3">Khách hàng</h5>
+                            <div class="small text-muted mb-1">Tên khách hàng</div>
+                            <div class="fw-semibold mb-3">${escapeHtml(customerName)}</div>
+                            <div class="small text-muted mb-1">Số điện thoại</div>
+                            <div class="fw-semibold mb-3">${escapeHtml(customerPhone)}</div>
+                            <div class="small text-muted mb-1">Email</div>
+                            <div class="fw-semibold mb-3">${escapeHtml(customerEmail)}</div>
+                            <div class="small text-muted mb-1">Địa chỉ</div>
+                            <div class="fw-semibold">${escapeHtml(customerAddress)}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="card border-0 bg-light h-100">
+                        <div class="card-body">
+                            <h5 class="mb-3">Tóm tắt thanh toán</h5>
+                            <div class="d-flex justify-content-between py-2 border-bottom"><span>Voucher</span><strong>${escapeHtml(voucherDisplay)}</strong></div>
+                            <div class="d-flex justify-content-between py-2 border-bottom"><span>Phương thức thanh toán</span><strong>${escapeHtml(getPaymentMethodLabel())}</strong></div>
+                            <div class="d-flex justify-content-between py-2 border-bottom"><span>Tổng phụ</span><strong>${escapeHtml(totalPrice)}</strong></div>
+                            <div class="d-flex justify-content-between py-2 border-bottom"><span>Giảm giá khuyến mãi</span><strong>${escapeHtml(discount)}</strong></div>
+                            <div class="d-flex justify-content-between py-2 border-bottom"><span>Giảm giá thêm</span><strong>${escapeHtml(deduct)}</strong></div>
+                            <div class="d-flex justify-content-between py-2 pt-3"><span class="fw-bold">Tổng thanh toán</span><strong class="fs-5">${escapeHtml(totalPayment)}</strong></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="table-responsive reusable-admin-table">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width:60px;">#</th>
+                                    <th>Sản phẩm</th>
+                                    <th style="width:180px;">Biến thể</th>
+                                    <th style="width:100px;">SL</th>
+                                    <th style="width:140px;">Đơn giá</th>
+                                    <th style="width:160px;">Thành tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody>${itemRows}</tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `);
+    }
+
+    function submitOrder() {
+        const payload = buildOrderPayload();
+        if (!validateOrderPayload(payload)) {
+            return;
+        }
+
+        showLoading(true);
+
+        $.ajax({
+            method: "POST",
+            url: "/Admin/POS/Order",
+            contentType: "application/json",
+            data: JSON.stringify(payload),
+            success: function (res) {
+                if (res.success) {
+                    $("#InvoicePreviewModal").modal("hide");
+                    Swal.fire({
+                        icon: "success",
+                        title: "Đặt hàng thành công!",
+                        text: res.message || "Đơn hàng của bạn đã được tạo thành công. Chuyển đến hóa đơn...",
+                        confirmButtonText: "Xem hóa đơn"
+                    }).then(function () {
+                        window.location.href = "/Admin/POS/Invoice/" + res.id;
+                    });
+                } else {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Đặt hàng không thành công",
+                        text: res.message || "Vui lòng thử lại sau."
+                    });
+                }
+            },
+            error: function (res) {
+                Swal.fire({
+                    icon: "error",
+                    title: "Đã có lỗi xảy ra",
+                    text: res.responseJSON ? res.responseJSON.message : "Vui lòng thử lại."
+                });
+            },
+            complete: function () {
+                showLoading(false);
+            }
+        });
+    }
+
+    function showInvoicePreviewModal() {
+        const modalElement = document.getElementById("InvoicePreviewModal");
+        if (!modalElement) {
+            return;
+        }
+
+        if (window.bootstrap && window.bootstrap.Modal) {
+            window.bootstrap.Modal.getOrCreateInstance(modalElement).show();
+            return;
+        }
+
+        $("#InvoicePreviewModal").modal("show");
+    }
+
+    function renderInvoicePreviewTemplate() {
+        const items = getCartItemsSnapshot();
+        const voucherCode = $('input[name="Voucher"]').val().trim();
+        const voucherSummary = $("#selectedVoucherSummary .fw-semibold").text().trim();
+        const customerName = $("#nameCustomer").text().trim() || "-";
+        const customerPhone = $("#phoneCustomer").text().trim() || "-";
+        const customerEmail = $("#emailCustomer").text().trim() || "-";
+        const customerAddress = $("#addressCustomer").text().trim() || "-";
+        const totalPrice = $("#TotalPrice").text().trim();
+        const discount = $("#Discount").text().trim();
+        const deduct = $("#Deduct").text().trim();
+        const totalPayment = $("#TotalPayment").text().trim();
+        const voucherDisplay = voucherSummary || (voucherCode ? voucherCode : "Không áp dụng");
+
+        const itemRows = items.length
+            ? items.map(function (item, index) {
+                return `
+                    <tr>
+                        <td class="text-muted">${index + 1}</td>
+                        <td>
+                            <div class="fw-semibold">${escapeHtml(item.productName)}</div>
+                            <div class="small text-muted">${escapeHtml(item.sku || "-")}</div>
+                        </td>
+                        <td>${escapeHtml(item.variant)}</td>
+                        <td class="text-center">${item.quantity}</td>
+                        <td class="text-end">${formatMoney(item.unitPrice)}</td>
+                        <td class="text-end fw-semibold">${formatMoney(item.lineTotal)}</td>
+                    </tr>
+                `;
+            }).join("")
+            : `<tr><td colspan="6" class="text-center text-muted py-4">Chưa có sản phẩm trong giỏ hàng.</td></tr>`;
+
+        const itemCards = items.length
+            ? items.map(function (item, index) {
+                return `
+                    <div class="pos-preview-item-card">
+                        <div class="pos-preview-item-card__head">
+                            <div>
+                                <div class="fw-semibold">${index + 1}. ${escapeHtml(item.productName)}</div>
+                                <div class="small text-muted">${escapeHtml(item.sku || "-")}</div>
+                            </div>
+                            <div class="text-end fw-semibold">${formatMoney(item.lineTotal)}</div>
+                        </div>
+                        <div class="pos-preview-item-card__meta">
+                            <span>Biến thể: <strong>${escapeHtml(item.variant)}</strong></span>
+                            <span>Số lượng: <strong>${item.quantity}</strong></span>
+                            <span>Đơn giá: <strong>${formatMoney(item.unitPrice)}</strong></span>
+                        </div>
+                    </div>
+                `;
+            }).join("")
+            : `<div class="text-center text-muted py-4">Chưa có sản phẩm trong giỏ hàng.</div>`;
+
+        $("#invoicePreviewContent").html(`
+            <div class="pos-preview-invoice">
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center pos-preview-hero">
+                                <i class="fas fa-receipt fs-4"></i>
+                            </div>
+                            <div>
+                                <h4 class="card-title mb-1">Xem trước hóa đơn</h4>
+                                <p class="text-muted mb-0">Rà soát khách hàng, voucher và sản phẩm trước khi xác nhận đơn hàng.</p>
+                            </div>
+                        </div>
+                        <div class="pos-preview-badge">
+                            <span class="small text-muted d-block">Phương thức thanh toán</span>
+                            <strong>${escapeHtml(getPaymentMethodLabel())}</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-4">
+                    <div class="col-xl-8">
+                        <div class="card shadow-sm border-0 mb-4">
+                            <div class="card-header bg-white border-0">
+                                <h5 class="card-title mb-0">Thông tin khách hàng</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <div class="small text-muted mb-1">Tên khách hàng</div>
+                                        <div class="fw-semibold text-dark">${escapeHtml(customerName)}</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="small text-muted mb-1">Số điện thoại</div>
+                                        <div class="fw-semibold text-dark">${escapeHtml(customerPhone)}</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="small text-muted mb-1">Email</div>
+                                        <div class="fw-semibold text-dark">${escapeHtml(customerEmail)}</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="small text-muted mb-1">Địa chỉ giao hàng</div>
+                                        <div class="fw-semibold text-dark">${escapeHtml(customerAddress)}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card shadow-sm border-0">
+                            <div class="card-header bg-white border-0">
+                                <h5 class="card-title mb-0">Chi tiết đơn hàng</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="pos-preview-items-desktop">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th style="width:60px;">#</th>
+                                                    <th>Sản phẩm</th>
+                                                    <th style="width:180px;">Biến thể</th>
+                                                    <th style="width:90px;" class="text-center">SL</th>
+                                                    <th style="width:140px;" class="text-end">Đơn giá</th>
+                                                    <th style="width:160px;" class="text-end">Thành tiền</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>${itemRows}</tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="pos-preview-items-mobile">
+                                    ${itemCards}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-4">
+                        <div class="card shadow-sm border-0 mb-4">
+                            <div class="card-header bg-white border-0">
+                                <h5 class="card-title mb-0">Tóm tắt hóa đơn</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between py-2 border-bottom">
+                                    <span class="text-muted">Voucher</span>
+                                    <strong class="text-end ms-3">${escapeHtml(voucherDisplay)}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between py-2 border-bottom">
+                                    <span class="text-muted">Tổng phụ</span>
+                                    <strong>${escapeHtml(totalPrice)}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between py-2 border-bottom">
+                                    <span class="text-muted">Giảm giá khuyến mãi</span>
+                                    <strong>${escapeHtml(discount)}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between py-2 border-bottom">
+                                    <span class="text-muted">Giảm giá thêm</span>
+                                    <strong>${escapeHtml(deduct)}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between py-2 pt-3 mt-2 border-top">
+                                    <span class="fw-bold fs-5">Tổng thanh toán</span>
+                                    <strong class="fs-5">${escapeHtml(totalPayment)}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card shadow-sm border-0">
+                            <div class="card-body">
+                                <div class="text-center mb-4">
+                                    <h5 class="mb-1">Hóa đơn tạm</h5>
+                                    <div class="text-muted">Bản xem trước trước khi tạo đơn</div>
+                                </div>
+                                <div class="row g-3 mb-4">
+                                    <div class="col-12">
+                                        <div class="small text-muted">Người nhận</div>
+                                        <div class="fw-semibold">${escapeHtml(customerName)}</div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="small text-muted">Địa chỉ</div>
+                                        <div class="fw-semibold">${escapeHtml(customerAddress)}</div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="small text-muted">Số điện thoại</div>
+                                        <div class="fw-semibold">${escapeHtml(customerPhone)}</div>
+                                    </div>
+                                </div>
+                                <div class="border-top pt-3">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="text-muted">Tổng tiền hàng</span>
+                                        <strong>${escapeHtml(totalPrice)}</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="text-muted">Giảm giá khuyến mãi</span>
+                                        <strong>${escapeHtml(discount)}</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="text-muted">Giảm giá thêm</span>
+                                        <strong>${escapeHtml(deduct)}</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between pt-2 mt-2 border-top">
+                                        <span class="fw-bold">Tổng thanh toán</span>
+                                        <strong class="fs-5">${escapeHtml(totalPayment)}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `);
     }
 
     function renderCustomerRows(customers) {
@@ -427,11 +843,13 @@ $(document).ready(function () {
                 const resolvedAddress = await resolveAddress(res.addresses || []);
                 const resolvedName = fullName || `${res.lastName || ""} ${res.firstName || ""}`.trim() || "-";
                 const resolvedPhone = res.phoneNumber || "-";
+                const resolvedEmail = res.email || "-";
                 const resolvedAddressText = resolvedAddress || "-";
 
                 $("#selectedCustomerId").val(res.userId);
+                $("#selectedCustomerEmail").val(res.email || "");
                 $("#selectedCustomerLabel").text(resolvedName);
-                showCustomerInfo(resolvedName, resolvedPhone, resolvedAddressText);
+                showCustomerInfo(resolvedName, resolvedPhone, resolvedEmail, resolvedAddressText);
                 $("#CustomerPickerModal").modal("hide");
             },
             error: function (xhr) {
@@ -903,6 +1321,48 @@ $(document).ready(function () {
             });
         });
     });
+
+    $("#PreviewInvoiceBtn").click(function () {
+        const payload = buildOrderPayload();
+        if (!validateOrderPayload(payload)) {
+            return;
+        }
+
+        renderInvoicePreviewTemplate();
+        showInvoicePreviewModal();
+    });
+
+    $("#ConfirmOrderFromPreviewBtn").click(function () {
+        submitOrder();
+    });
+
+    $(".btn-Order").off("click").on("click", function () {
+        const payload = buildOrderPayload();
+        if (!validateOrderPayload(payload)) {
+            return;
+        }
+
+        Swal.fire({
+            title: "Bạn có chắc chắn muốn đặt đơn hàng này?",
+            text: "Hãy kiểm tra lại thông tin trước khi xác nhận.",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Đặt hàng",
+            cancelButtonText: "Hủy",
+            reverseButtons: true
+        }).then(function (result) {
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            submitOrder();
+        });
+    });
+
+    $("#PreviewInvoiceBtn").text("Xem trước hóa đơn");
+    $("#InvoicePreviewModalLabel").text("Xem trước hóa đơn");
+    $("#InvoicePreviewModal [data-bs-dismiss='modal']").text("Đóng");
+    $("#ConfirmOrderFromPreviewBtn").text("Xác nhận đặt hàng");
 
     showCustomerInfoEmpty();
     updateCartEmptyState();

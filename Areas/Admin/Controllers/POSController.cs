@@ -9,6 +9,8 @@ using System.Text;
 using Tech_Store.Models;
 using Tech_Store.Models.DTO;
 using Tech_Store.Models.DTO.Payment.Admin;
+using Tech_Store.Helpers;
+using Tech_Store.Services;
 using Tech_Store.Services.Admin.NotificationServices;
 using ZXing.QrCode.Internal;
 using static Tech_Store.Models.DTO.Province;
@@ -20,8 +22,10 @@ namespace Tech_Store.Areas.Admin.Controllers
     public class POSController : BaseAdminController
     {
         private readonly NotificationService _notificationService;
-        public POSController(ApplicationDbContext context, NotificationService notificationService) : base(context) {
+        private readonly IEmailService _emailService;
+        public POSController(ApplicationDbContext context, NotificationService notificationService, IEmailService emailService) : base(context) {
             _notificationService = notificationService;
+            _emailService = emailService;
         }
     
         [Route("")]
@@ -604,6 +608,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                         OrderId = order.OrderId,
                         PaymentMethod = invoice.PaymentMethod,
                         Amount = invoice.TotalPrice,
+                        PaymentDate = DateTime.Now,
                         Status = "Paid", // Đánh dấu thanh toán thành công
                     };
                     _context.Payments.Add(payment);
@@ -630,7 +635,15 @@ namespace Tech_Store.Areas.Admin.Controllers
                     await _notificationService.NotifyAsync(Events.NotificationTarget.Admins, "Đơn hàng hoàn tất", $"Đơn hàng {order.OrderId} đã được thanh toán hoàn tất ", "success", $"/Admin/Orders/View/{order.OrderId}");
                     await _notificationService.NotifyAsync(Events.NotificationTarget.SpecificUsers, "Đơn hàng hoàn tất", $"Đơn hàng {order.OrderId} đã được thanh toán hoàn tất ", "success", $"/Admin/Orders/View/{order.OrderId}",new List<int> { invoice.UserId});
 
-                    return Json(new { success = true, message = "Đặt hàng Thành công",id = order.OrderId });
+                    try
+                    {
+                        await SendInvoiceEmailAsync(order.OrderId);
+                        return Json(new { success = true, message = "Đặt hàng thành công và đã gửi email hóa đơn cho khách hàng", id = order.OrderId });
+                    }
+                    catch
+                    {
+                        return Json(new { success = true, message = "Đặt hàng thành công nhưng chưa gửi được email hóa đơn cho khách hàng", id = order.OrderId });
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -721,6 +734,12 @@ namespace Tech_Store.Areas.Admin.Controllers
 
             // Tạo PDF từ HTML
             var converter = new SelectPdf.HtmlToPdf();
+            converter.Options.PdfPageSize = PdfPageSize.A4;
+            converter.Options.PdfPageOrientation = PdfPageOrientation.Portrait;
+            converter.Options.MarginTop = 18;
+            converter.Options.MarginBottom = 18;
+            converter.Options.MarginLeft = 16;
+            converter.Options.MarginRight = 16;
             var doc = converter.ConvertHtmlString(htmlTemplate);
 
             // Trả về PDF để tải xuống
@@ -729,6 +748,163 @@ namespace Tech_Store.Areas.Admin.Controllers
 
             return File(pdf, "application/pdf", $"invoice_{id}.pdf");
 
+        }
+
+        private async Task SendInvoiceEmailAsync(int orderId)
+        {
+            var order = await _context.Orders
+                .AsNoTracking()
+                .Include(x => x.OrderItems)
+                    .ThenInclude(oi => oi.Product)
+                .Include(x => x.OrderItems)
+                    .ThenInclude(oi => oi.VarientProduct)
+                        .ThenInclude(vp => vp.VariantAttributes)
+                            .ThenInclude(va => va.AttributeValue)
+                .Include(x => x.Payments)
+                .Include(x => x.ShippingAddress)
+                .Include(x => x.User)
+                .FirstOrDefaultAsync(x => x.OrderId == orderId);
+
+            if (order == null || string.IsNullOrWhiteSpace(order.User.Email))
+            {
+                return;
+            }
+
+            var settings = await _context.Settings.AsNoTracking().ToListAsync();
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var payment = order.Payments
+                .OrderByDescending(x => x.PaymentDate ?? x.CreatedAt)
+                .FirstOrDefault();
+
+            var email = new InvoiceEmail
+            {
+                ToEmail = order.User.Email,
+                CustomerName = $"{order.User.LastName} {order.User.FirstName}".Trim(),
+                CustomerAddress = await BuildFullAddressAsync(order.ShippingAddress),
+                CustomerPhone = order.User.PhoneNumber ?? string.Empty,
+                InvoiceNumber = order.OrderId.ToString(),
+                OrderDate = order.OrderDate,
+                Products = order.OrderItems.Select(item => new ProductItem
+                {
+                    Name = BuildEmailProductName(item),
+                    Quantity = item.Quantity,
+                    Price = item.Price
+                }).ToList(),
+                ShippingFee = order.ShippingAmount ?? 0,
+                ShippingAmount = order.ShippingAmount ?? 0,
+                PaymentMethod = MapPaymentMethodLabel(payment?.PaymentMethod),
+                IsPaid = string.Equals(payment?.Status, "Paid", StringComparison.OrdinalIgnoreCase),
+                CompanyName = settings.FirstOrDefault(x => x.Key == "NameCompany")?.Value ?? settings.FirstOrDefault(x => x.Key == "NameWebsite")?.Value ?? "Tech Store",
+                CompanyAddress = settings.FirstOrDefault(x => x.Key == "Address")?.Value ?? string.Empty,
+                CompanyEmail = settings.FirstOrDefault(x => x.Key == "Email")?.Value ?? string.Empty,
+                CompanyPhone = settings.FirstOrDefault(x => x.Key == "PhoneNumber")?.Value ?? string.Empty,
+                CompanyWebsite = baseUrl,
+                SupportEmail = settings.FirstOrDefault(x => x.Key == "Email")?.Value ?? string.Empty,
+                SupportPhone = settings.FirstOrDefault(x => x.Key == "PhoneNumber")?.Value ?? string.Empty,
+                InvoicePdfUrl = $"{baseUrl}/Admin/POS/Print-Invoice?id={order.OrderId}",
+                LogoPath = GetAbsoluteLogoUrl(baseUrl, settings.FirstOrDefault(x => x.Key == "LogoUrl")?.Value),
+                Subject = $"Cảm ơn quý khách - Hóa đơn #{order.OrderId}",
+                OriginAmount = order.OriginAmount ?? order.OrderItems.Sum(x => x.Price * x.Quantity),
+                DiscountAmount = order.DiscountAmount ?? 0,
+                DeductAmount = order.DeductAmount ?? 0,
+                TotalAmount = order.TotalAmount
+            };
+
+            await _emailService.SendEmailOrderCompleted(email);
+        }
+
+        private async Task<string> BuildFullAddressAsync(Address? shippingAddress)
+        {
+            if (shippingAddress == null)
+            {
+                return "-";
+            }
+
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(shippingAddress.AddressLine))
+            {
+                parts.Add(shippingAddress.AddressLine.Trim());
+            }
+
+            if (string.IsNullOrWhiteSpace(shippingAddress.Province) ||
+                string.IsNullOrWhiteSpace(shippingAddress.District) ||
+                string.IsNullOrWhiteSpace(shippingAddress.Ward))
+            {
+                return parts.Count > 0 ? string.Join(", ", parts) : "-";
+            }
+
+            var jsonString = await System.IO.File.ReadAllTextAsync("wwwroot/Province_VN.json");
+            var provinces = JsonConvert.DeserializeObject<List<Province>>(jsonString);
+
+            var province = provinces?.FirstOrDefault(p => p.Code == int.Parse(shippingAddress.Province));
+            var district = province?.Districts?.FirstOrDefault(d => d.Code == int.Parse(shippingAddress.District));
+            var ward = district?.Wards?.FirstOrDefault(w => w.Code == int.Parse(shippingAddress.Ward));
+
+            if (!string.IsNullOrWhiteSpace(ward?.Name))
+            {
+                parts.Add(ward.Name);
+            }
+
+            if (!string.IsNullOrWhiteSpace(district?.Name))
+            {
+                parts.Add(district.Name);
+            }
+
+            if (!string.IsNullOrWhiteSpace(province?.Name))
+            {
+                parts.Add(province.Name);
+            }
+
+            return parts.Count > 0 ? string.Join(", ", parts) : "-";
+        }
+
+        private static string BuildEmailProductName(OrderItem orderItem)
+        {
+            var variantDisplay = BuildVariantDisplay(orderItem.VarientProduct);
+            return variantDisplay == "-"
+                ? orderItem.Product.Name
+                : $"{orderItem.Product.Name} ({variantDisplay})";
+        }
+
+        private static string BuildVariantDisplay(VarientProduct variant)
+        {
+            var values = variant.VariantAttributes
+                .OrderBy(x => x.VariantAttributeId)
+                .Select(x => x.AttributeValue.Value)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .ToList();
+
+            if (values.Count > 0)
+            {
+                return string.Join(" / ", values);
+            }
+
+            return string.IsNullOrWhiteSpace(variant.Attributes) ? "-" : variant.Attributes;
+        }
+
+        private static string GetAbsoluteLogoUrl(string baseUrl, string? logoPath)
+        {
+            if (string.IsNullOrWhiteSpace(logoPath))
+            {
+                return string.Empty;
+            }
+
+            if (Uri.TryCreate(logoPath, UriKind.Absolute, out _))
+            {
+                return logoPath;
+            }
+
+            return $"{baseUrl}/Upload/Logo/{logoPath.TrimStart('/')}";
+        }
+
+        private static string MapPaymentMethodLabel(string? paymentMethod)
+        {
+            return (paymentMethod ?? string.Empty).Trim().ToLowerInvariant() switch
+            {
+                "cash" => "Tiền mặt",
+                "card" => "Thẻ",
+                _ => string.IsNullOrWhiteSpace(paymentMethod) ? "-" : paymentMethod
+            };
         }
     }
 }

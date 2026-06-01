@@ -1,6 +1,5 @@
 @model Tech_Store.Models.ViewModel.AdminStockBatchImportFormViewModel
 @using System.Text.Json
-@using Tech_Store.Helpers
 @{
     ViewData["Title"] = "Tạo phiếu nhập - xuất";
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
@@ -24,7 +23,12 @@
             </div>
         </div>
         <div class="card-body">
-            <form method="post" action="/Admin/StockManager/SaveBatchTransaction" class="stock-transaction-page__form" id="batchTransactionForm">
+            <form method="post"
+                  asp-area="Admin"
+                  asp-controller="StockManager"
+                  asp-action="CreateTransaction"
+                  class="stock-transaction-page__form"
+                  id="batchTransactionForm">
                 @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="ProductPayloadJson" id="ProductPayloadJson" />
                 <div id="BatchTransactionModelInputs" class="d-none"></div>
@@ -71,8 +75,12 @@
                         </select>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label fw-semibold text-secondary">Ghi chú vận hành</label>
-                        <textarea asp-for="Note" class="form-control" rows="3" placeholder="Ví dụ: nhập đợt hàng, xuất điều chuyển, điều chỉnh sau kiểm kê..."></textarea>
+                        <label class="form-label fw-semibold text-secondary" for="Note">Ghi chú vận hành</label>
+                        <textarea name="Note"
+                                  id="Note"
+                                  class="form-control"
+                                  rows="3"
+                                  placeholder="Ví dụ: nhập đợt hàng, xuất điều chuyển, điều chỉnh sau kiểm kê...">@Model.Note</textarea>
                     </div>
                 </div>
 
@@ -187,9 +195,38 @@
             function syncSupplierField() {
                 const isImport = $type.val() === 'Import';
                 $supplierField.toggleClass('d-none', !isImport);
+                $supplier.prop('required', isImport);
+
                 if (!isImport) {
                     $supplier.val('');
                 }
+            }
+
+            function buildPayloadFromDom() {
+                return $productsContainer.find('.js-transaction-product-card').map(function () {
+                    const $card = $(this);
+                    const variants = $card.find('.js-variant-quantity').map(function () {
+                        const $input = $(this);
+                        const rawPrice = $input.data('variant-price');
+
+                        return {
+                            variantId: Number($input.data('variant-id')),
+                            sku: String($input.data('variant-sku') || ''),
+                            attributeSummary: String($input.data('variant-attribute-summary') || ''),
+                            price: rawPrice === '' || rawPrice === undefined ? null : Number(rawPrice),
+                            currentStock: Number($input.data('variant-current-stock') || 0),
+                            quantity: Number($input.val() || 0)
+                        };
+                    }).get();
+
+                    return {
+                        productId: Number($card.data('product-id')),
+                        productName: String($card.data('product-name') || ''),
+                        productSku: String($card.data('product-sku') || ''),
+                        productImageUrl: String($card.data('product-image') || ''),
+                        variants: variants
+                    };
+                }).get();
             }
 
             function captureCurrentQuantities() {
@@ -298,33 +335,6 @@
                         </span>
                     `);
                 });
-            }
-
-            function buildPayloadFromDom() {
-                return $productsContainer.find('.js-transaction-product-card').map(function () {
-                    const $card = $(this);
-                    const variants = $card.find('.js-variant-quantity').map(function () {
-                        const $input = $(this);
-                        const rawPrice = $input.data('variant-price');
-
-                        return {
-                            variantId: Number($input.data('variant-id')),
-                            sku: String($input.data('variant-sku') || ''),
-                            attributeSummary: String($input.data('variant-attribute-summary') || ''),
-                            price: rawPrice === '' || rawPrice === undefined ? null : Number(rawPrice),
-                            currentStock: Number($input.data('variant-current-stock') || 0),
-                            quantity: Number($input.val() || 0)
-                        };
-                    }).get();
-
-                    return {
-                        productId: Number($card.data('product-id')),
-                        productName: String($card.data('product-name') || ''),
-                        productSku: String($card.data('product-sku') || ''),
-                        productImageUrl: String($card.data('product-image') || ''),
-                        variants: variants
-                    };
-                }).get();
             }
 
             function appendModelInput(name, value) {
@@ -529,66 +539,15 @@
                 renderTransactionProducts();
             });
 
-            $('#batchTransactionForm').on('submit', function (event) {
+            $('#batchTransactionForm').on('submit', function () {
                 const payloadProducts = buildPayloadFromDom();
                 if (payloadProducts.length > 0) {
                     transactionProducts = payloadProducts;
                 }
-                event.preventDefault();
-
-                if (transactionProducts.length === 0) {
-                    Swal.fire('Thiếu sản phẩm', 'Hãy thêm ít nhất một sản phẩm vào phiếu trước khi lưu.', 'warning');
-                    return;
-                }
-
-                const hasPositiveQuantity = transactionProducts.some(product =>
-                    (product.variants || []).some(variant => Number(variant.quantity || 0) > 0));
-
-                if (!hasPositiveQuantity) {
-                    Swal.fire('Thiếu số lượng', 'Cần nhập ít nhất một biến thể có số lượng lớn hơn 0.', 'warning');
-                    return;
-                }
-
-                if ($type.val() === 'Import' && !$supplier.val()) {
-                    Swal.fire('Thiếu nhà cung cấp', 'Phiếu nhập kho cần chọn nhà cung cấp trước khi lưu.', 'warning');
-                    return;
-                }
 
                 $payload.val(JSON.stringify(transactionProducts));
                 syncModelInputs(transactionProducts);
-
-                const formData = new FormData(this);
-
-                $.ajax({
-                    method: 'POST',
-                    url: this.action,
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    beforeSend: function () {
-                        $('.loading-container').show();
-                    },
-                    success: function (response) {
-                        if (response && response.success && response.redirectUrl) {
-                            window.location.href = response.redirectUrl;
-                            return;
-                        }
-
-                        Swal.fire('Lỗi', (response && response.message) || 'Không thể lưu phiếu kho.', 'error');
-                    },
-                    error: function (xhr) {
-                        const responseMessage = xhr.responseJSON && xhr.responseJSON.message
-                            ? xhr.responseJSON.message
-                            : 'Không thể lưu phiếu kho.';
-                        Swal.fire('Lỗi', responseMessage, 'error');
-                    },
-                    complete: function () {
-                        $('.loading-container').hide();
-                    }
-                });
+                $('.loading-container').show();
             });
 
             syncSupplierField();

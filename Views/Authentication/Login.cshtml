@@ -71,7 +71,133 @@
             justify-content: center;
         }
 
+        .demo-accounts {
+            margin-top: 1rem;
+            border: 1px solid #ffe1e1;
+            border-radius: 10px;
+            background: #fff8f8;
+            overflow: hidden;
+        }
+
+        .demo-accounts__toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0.75rem 0.9rem;
+            border: 0;
+            background: transparent;
+            color: #b02a37;
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-align: left;
+        }
+
+        .demo-accounts__toggle-text {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            min-width: 0;
+        }
+
+        .demo-accounts__toggle-icon {
+            transition: transform 0.18s ease;
+        }
+
+        .demo-accounts__toggle[aria-expanded="true"] .demo-accounts__toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        .demo-accounts__body {
+            padding: 0 0.9rem 0.9rem;
+        }
+
+        .demo-accounts__hint {
+            margin-bottom: 0.65rem;
+            color: #b02a37;
+            font-size: 0.78rem;
+            line-height: 1.35;
+        }
+
+        .demo-accounts__grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.55rem;
+        }
+
+        .demo-account {
+            padding: 0.65rem;
+            border: 1px solid #f3d7d7;
+            border-radius: 8px;
+            background: #ffffff;
+        }
+
+        .demo-account__role {
+            margin-bottom: 0.35rem;
+            color: #212529;
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+
+        .demo-account__line {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.35rem;
+            margin-bottom: 0.2rem;
+            color: #495057;
+            font-size: 0.8rem;
+            line-height: 1.35;
+            word-break: break-word;
+        }
+
+        .demo-account__line:last-child {
+            margin-bottom: 0;
+        }
+
+        .demo-account__label {
+            flex: 0 0 auto;
+            font-weight: 600;
+        }
+
+        .demo-account__value {
+            min-width: 0;
+            font-family: Consolas, "Courier New", monospace;
+        }
+
+        .demo-account__actions {
+            margin-top: 0.6rem;
+        }
+
+        .demo-account__actions .btn {
+            width: 100%;
+            min-height: 34px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
+        @@media (min-width: 576px) {
+            .login-container {
+                max-width: 460px;
+            }
+        }
+
         @@media (max-width: 400px) {
+            body {
+                padding: 20px 0;
+            }
+
+            .card {
+                border-radius: 8px;
+            }
+
+            .demo-accounts__toggle {
+                padding: 0.7rem 0.75rem;
+            }
+
+            .demo-accounts__body {
+                padding: 0 0.75rem 0.75rem;
+            }
+
             .turnstile-box {
                 transform: scale(0.92);
                 transform-origin: center;
@@ -86,6 +212,55 @@
                 <div class="mx-auto" style="width: 90%;">
                     <div class="logo">Tech Store</div>
                     <h4 class="text-center mb-1">Đăng nhập</h4>
+
+                    <div class="demo-accounts" aria-label="Tai khoan demo">
+                        <button class="demo-accounts__toggle" type="button" data-bs-toggle="collapse" data-bs-target="#demoAccountsPanel" aria-expanded="false" aria-controls="demoAccountsPanel">
+                            <span class="demo-accounts__toggle-text">
+                            <i class="fa fa-circle-info"></i>
+                            <span>Tài khoản demo</span>
+                            </span>
+                            <i class="fa fa-chevron-down demo-accounts__toggle-icon"></i>
+                        </button>
+                        <div class="collapse" id="demoAccountsPanel">
+                            <div class="demo-accounts__body">
+                                <div class="demo-accounts__hint">B&#7845;m D&#249;ng &#273;&#7875; t&#7921; &#273;i&#7873;n email v&#224; m&#7853;t kh&#7849;u v&#224;o form.</div>
+                                <div class="demo-accounts__grid">
+                            <div class="demo-account">
+                                <div class="demo-account__role">Admin</div>
+                                <div class="demo-account__line">
+                                    <span class="demo-account__label">Email:</span>
+                                    <span class="demo-account__value">nthaibao1712@gmail.com</span>
+                                </div>
+                                <div class="demo-account__line">
+                                    <span class="demo-account__label">Mật khẩu:</span>
+                                    <span class="demo-account__value">ntbao123</span>
+                                </div>
+                                <div class="demo-account__actions">
+                                    <button class="btn btn-danger btn-sm demo-fill-account" type="button" data-email="nthaibao1712@gmail.com" data-password="ntbao123">
+                                        <i class="fa fa-bolt me-1"></i>D&#249;ng
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="demo-account">
+                                <div class="demo-account__role">Client</div>
+                                <div class="demo-account__line">
+                                    <span class="demo-account__label">Email:</span>
+                                    <span class="demo-account__value">24410266@gmail.com</span>
+                                </div>
+                                <div class="demo-account__line">
+                                    <span class="demo-account__label">Mật khẩu:</span>
+                                    <span class="demo-account__value">ntbao123</span>
+                                </div>
+                                <div class="demo-account__actions">
+                                    <button class="btn btn-danger btn-sm demo-fill-account" type="button" data-email="24410266@gmail.com" data-password="ntbao123">
+                                        <i class="fa fa-bolt me-1"></i>D&#249;ng
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                    </div>
 
                     <form method="post" action="@Url.Action("Login", "Authentication")">
                         @Html.AntiForgeryToken()
@@ -175,13 +350,31 @@
         document.addEventListener("DOMContentLoaded", function () {
             const togglePassword = document.getElementById("togglePassword");
             const passwordInput = document.getElementById("passwordInput");
+            const emailInput = document.querySelector('input[name="Email"]');
             const eyeIcon = document.getElementById("eyeIcon");
 
-            togglePassword.addEventListener("click", function () {
-                const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
-                passwordInput.setAttribute("type", type);
-                eyeIcon.setAttribute("fill", type === "text" ? "green" : "currentColor");
+            if (togglePassword && passwordInput && eyeIcon) {
+                togglePassword.addEventListener("click", function () {
+                    const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
+                    passwordInput.setAttribute("type", type);
+                    eyeIcon.setAttribute("fill", type === "text" ? "green" : "currentColor");
+                });
+            }
+
+            document.querySelectorAll(".demo-fill-account").forEach(function (button) {
+                button.addEventListener("click", function () {
+                    if (emailInput) {
+                        emailInput.value = button.dataset.email || "";
+                        emailInput.dispatchEvent(new Event("input", { bubbles: true }));
+                    }
+
+                    if (passwordInput) {
+                        passwordInput.value = button.dataset.password || "";
+                        passwordInput.dispatchEvent(new Event("input", { bubbles: true }));
+                    }
+                });
             });
+
         });
     </script>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onLoginTurnstileLoad" async defer></script>
