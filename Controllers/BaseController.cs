@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using System.Security.Claims;
 using Tech_Store.Models;
 
@@ -8,6 +9,12 @@ namespace Tech_Store.Controllers
 {
     public abstract class BaseController : Controller
     {
+        private static readonly TimeSpan SharedLayoutCacheDuration = TimeSpan.FromMinutes(5);
+        private const string HeaderNavigationCacheKey = "layout:header-navigation";
+        private const string SiteInfoCacheKey = "layout:site-info";
+        private static readonly SemaphoreSlim HeaderNavigationCacheLock = new(1, 1);
+        private static readonly SemaphoreSlim SiteInfoCacheLock = new(1, 1);
+
         protected readonly ApplicationDbContext _context;
 
         public BaseController(ApplicationDbContext context)
@@ -22,7 +29,7 @@ namespace Tech_Store.Controllers
             LoadUser();
             LoadProductsAndCategories();
             SiteInfor();
-            if (User.Identity.IsAuthenticated)
+            if (User.Identity?.IsAuthenticated == true)
             {
                 GetUserNotifications();
                 ViewBag.UserInfoRequire = CheckUserInfoRequire();
@@ -30,38 +37,62 @@ namespace Tech_Store.Controllers
         }
         protected virtual void LoadProductsAndCategories()
         {
-            var categories = _context.Categories
-                .Where(x => x.Visible == 1)
-                .OrderBy(x => x.SortOrder)
-                .ThenBy(x => x.Name)
-                .ToList();
-            var smartphone_products = _context.Products.Where(x => x.CategoryId == 1).OrderByDescending(x => x.CreatedAt).Take(10).ToList();
-            var laptop_products = _context.Products.Where(x => x.CategoryId == 2).OrderByDescending(x => x.CreatedAt).Take(10).ToList();
-            var tablet_products = _context.Products.Where(x => x.CategoryId == 3).OrderByDescending(x => x.CreatedAt).Take(10).ToList();
-            var watch_products = _context.Products.Where(x => x.CategoryId == 4).OrderByDescending(x => x.CreatedAt).Take(10).ToList();
-            var accessory_products = _context.Products.Where(x => x.CategoryId == 5).OrderByDescending(x => x.CreatedAt).Take(10).ToList();
+            var memoryCache = HttpContext.RequestServices.GetService<IMemoryCache>();
+            if (memoryCache == null || !memoryCache.TryGetValue(HeaderNavigationCacheKey, out HeaderNavigationData? navigationData))
+            {
+                HeaderNavigationCacheLock.Wait();
+                try
+                {
+                    if (memoryCache == null || !memoryCache.TryGetValue(HeaderNavigationCacheKey, out navigationData))
+                    {
+                        navigationData = new HeaderNavigationData
+                        {
+                            Categories = _context.Categories
+                                .AsNoTracking()
+                                .Where(x => x.Visible == 1)
+                                .OrderBy(x => x.SortOrder)
+                                .ThenBy(x => x.Name)
+                                .ToList(),
+                            PhoneProducts = GetLatestProductsByCategory(1),
+                            LaptopProducts = GetLatestProductsByCategory(2),
+                            TabletProducts = GetLatestProductsByCategory(3),
+                            WatchProducts = GetLatestProductsByCategory(4),
+                            AccessoryProducts = GetLatestProductsByCategory(5)
+                        };
+
+                        memoryCache?.Set(HeaderNavigationCacheKey, navigationData, SharedLayoutCacheDuration);
+                    }
+                }
+                finally
+                {
+                    HeaderNavigationCacheLock.Release();
+                }
+            }
 
             //Cart_item count
             var cart_items_count = 0;
             var wishlistProductIds = new List<int>();
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId != null)
+            if (int.TryParse(userId, out var parsedUserId))
             {
-                var parsedUserId = int.Parse(userId);
-                cart_items_count = _context.CartItems.Where(x=>x.Cart.UserId == parsedUserId).Count();
+                cart_items_count = _context.CartItems
+                    .AsNoTracking()
+                    .Count(x=>x.Cart.UserId == parsedUserId);
                 wishlistProductIds = _context.Wishlists
+                    .AsNoTracking()
                     .Where(x => x.UserId == parsedUserId && x.ProductId.HasValue)
                     .Select(x => x.ProductId!.Value)
                     .ToList();
             }
+            navigationData ??= new HeaderNavigationData();
 
         
-            ViewBag.Categories = categories;
-            ViewBag.phone = smartphone_products;
-            ViewBag.laptop = laptop_products;
-            ViewBag.tablet = tablet_products;
-            ViewBag.watch = watch_products;
-            ViewBag.accessory = accessory_products;
+            ViewBag.Categories = navigationData.Categories;
+            ViewBag.phone = navigationData.PhoneProducts;
+            ViewBag.laptop = navigationData.LaptopProducts;
+            ViewBag.tablet = navigationData.TabletProducts;
+            ViewBag.watch = navigationData.WatchProducts;
+            ViewBag.accessory = navigationData.AccessoryProducts;
             ViewBag.cart_numb = cart_items_count;
             ViewBag.WishlistProductIds = wishlistProductIds;
       
@@ -69,7 +100,7 @@ namespace Tech_Store.Controllers
 
         protected virtual void LoadUser()
         {
-            if (!User.Identity.IsAuthenticated)
+            if (User.Identity?.IsAuthenticated != true)
             {
                 ViewBag.User = null;
                 return;
@@ -82,37 +113,73 @@ namespace Tech_Store.Controllers
                 return;
             }
 
+            if (!int.TryParse(userId, out var parsedUserId))
+            {
+                ViewBag.User = null;
+                return;
+            }
+
             var user = _context.Users
+                .AsNoTracking()
                 .Include(r => r.Roles)
                 .Include(u => u.Addresses)
-                .FirstOrDefault(u => u.UserId == int.Parse(userId));
+                .FirstOrDefault(u => u.UserId == parsedUserId);
 
             ViewBag.User = user;
         }
         protected virtual void SiteInfor()
         {
-            var settings = _context.Settings.ToList();
+            var memoryCache = HttpContext.RequestServices.GetService<IMemoryCache>();
+            if (memoryCache == null || !memoryCache.TryGetValue(SiteInfoCacheKey, out Dictionary<string, string?>? settings))
+            {
+                SiteInfoCacheLock.Wait();
+                try
+                {
+                    if (memoryCache == null || !memoryCache.TryGetValue(SiteInfoCacheKey, out settings))
+                    {
+                        settings = _context.Settings
+                            .AsNoTracking()
+                            .ToList()
+                            .GroupBy(s => s.Key)
+                            .ToDictionary(g => g.Key, g => g.FirstOrDefault()?.Value);
+
+                        memoryCache?.Set(SiteInfoCacheKey, settings, SharedLayoutCacheDuration);
+                    }
+                }
+                finally
+                {
+                    SiteInfoCacheLock.Release();
+                }
+            }
+            settings ??= new Dictionary<string, string?>();
 
             // Gán giá trị vào ViewBag
-            ViewBag.LogoUrl = settings.FirstOrDefault(s => s.Key == "LogoUrl")?.Value ?? "";
-            ViewBag.NameWebsite = settings.FirstOrDefault(s => s.Key == "NameWebsite")?.Value ?? "";
-            ViewBag.Slogan = settings.FirstOrDefault(s => s.Key == "Slogan")?.Value ?? "";
-            ViewBag.Description = settings.FirstOrDefault(s => s.Key == "Description")?.Value ?? "";
-            ViewBag.FacebookUrl = settings.FirstOrDefault(s => s.Key == "FacebookUrl")?.Value ?? "";
-            ViewBag.InstagramUrl = settings.FirstOrDefault(s => s.Key == "InstagramUrl")?.Value ?? "";
-            ViewBag.TwitterUrl = settings.FirstOrDefault(s => s.Key == "TwitterUrl")?.Value ?? "";
-            ViewBag.YoutubeUrl = settings.FirstOrDefault(s => s.Key == "YoutubeUrl")?.Value ?? "";
-            ViewBag.NameCompany = settings.FirstOrDefault(s => s.Key == "NameCompany")?.Value ?? "";
-            ViewBag.PhoneNumber = settings.FirstOrDefault(s => s.Key == "PhoneNumber")?.Value ?? "";
-            ViewBag.Email = settings.FirstOrDefault(s => s.Key == "Email")?.Value ?? "";
-            ViewBag.AddressCompany = settings.FirstOrDefault(s => s.Key == "Address")?.Value ?? "";
-            ViewBag.MoreInfo = settings.FirstOrDefault(s => s.Key == "MoreInfo")?.Value ?? "";
+            ViewBag.LogoUrl = GetSetting(settings, "LogoUrl");
+            ViewBag.NameWebsite = GetSetting(settings, "NameWebsite");
+            ViewBag.Slogan = GetSetting(settings, "Slogan");
+            ViewBag.Description = GetSetting(settings, "Description");
+            ViewBag.FacebookUrl = GetSetting(settings, "FacebookUrl");
+            ViewBag.InstagramUrl = GetSetting(settings, "InstagramUrl");
+            ViewBag.TwitterUrl = GetSetting(settings, "TwitterUrl");
+            ViewBag.YoutubeUrl = GetSetting(settings, "YoutubeUrl");
+            ViewBag.NameCompany = GetSetting(settings, "NameCompany");
+            ViewBag.PhoneNumber = GetSetting(settings, "PhoneNumber");
+            ViewBag.Email = GetSetting(settings, "Email");
+            ViewBag.AddressCompany = GetSetting(settings, "Address");
+            ViewBag.MoreInfo = GetSetting(settings, "MoreInfo");
         }
 
         protected virtual void GetUserNotifications()
         {
-            int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            {
+                ViewBag.Notifications = new List<object>();
+                ViewBag.Notification_count = 0;
+                return;
+            }
+
             var notifications = _context.UserNotifications
+                .AsNoTracking()
                 .Where(un => un.UserId == userId)
                 .Include(un => un.Notification)
                 .OrderByDescending(un => un.Notification.CreatedAt)
@@ -136,8 +203,15 @@ namespace Tech_Store.Controllers
 
         protected bool CheckUserInfoRequire()
         {
-            int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
-            var user = _context.Users.FirstOrDefault(x=>x.UserId == userId);  
+            if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            {
+                return false;
+            }
+
+            var user = _context.Users
+                .AsNoTracking()
+                .Include(x => x.Addresses)
+                .FirstOrDefault(x=>x.UserId == userId);  
             if(user == null)
             {
                 return false;
@@ -148,11 +222,36 @@ namespace Tech_Store.Controllers
             {
                 return false;
             }
-            if (string.IsNullOrEmpty(user.FirstName) || string.IsNullOrEmpty(user.LastName) || string.IsNullOrEmpty(user.PhoneNumber) || user.Addresses.Any() == null)
+            if (string.IsNullOrEmpty(user.FirstName) || string.IsNullOrEmpty(user.LastName) || string.IsNullOrEmpty(user.PhoneNumber))
             {
                 return false;
             }
             return true;
+        }
+
+        private List<Product> GetLatestProductsByCategory(int categoryId)
+        {
+            return _context.Products
+                .AsNoTracking()
+                .Where(x => x.CategoryId == categoryId)
+                .OrderByDescending(x => x.CreatedAt)
+                .Take(10)
+                .ToList();
+        }
+
+        private static string GetSetting(Dictionary<string, string?> settings, string key)
+        {
+            return settings.TryGetValue(key, out var value) ? value ?? "" : "";
+        }
+
+        private sealed class HeaderNavigationData
+        {
+            public List<Category> Categories { get; init; } = new();
+            public List<Product> PhoneProducts { get; init; } = new();
+            public List<Product> LaptopProducts { get; init; } = new();
+            public List<Product> TabletProducts { get; init; } = new();
+            public List<Product> WatchProducts { get; init; } = new();
+            public List<Product> AccessoryProducts { get; init; } = new();
         }
     }
 }

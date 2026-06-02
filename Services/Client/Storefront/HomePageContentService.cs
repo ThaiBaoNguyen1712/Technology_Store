@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Tech_Store.Extensions;
 using Tech_Store.Models;
 using Tech_Store.Services.Client;
@@ -7,25 +8,58 @@ namespace Tech_Store.Services.Client.Storefront
 {
     public class HomePageContentService : IHomePageContentService
     {
+        private static readonly TimeSpan StorefrontContentCacheDuration = TimeSpan.FromMinutes(5);
+        private const string HomePageContentCacheKey = "storefront:home-page-content";
+        private const string CategoryLandingContentCacheKey = "storefront:category-landing-content";
+        private static readonly SemaphoreSlim HomePageContentCacheLock = new(1, 1);
+        private static readonly SemaphoreSlim CategoryLandingContentCacheLock = new(1, 1);
+
         private readonly ApplicationDbContext _context;
         private readonly RedisService _redisService;
         private readonly IBannerQueryService _bannerQueryService;
+        private readonly IMemoryCache _memoryCache;
 
         public HomePageContentService(
             ApplicationDbContext context,
             RedisService redisService,
-            IBannerQueryService bannerQueryService)
+            IBannerQueryService bannerQueryService,
+            IMemoryCache memoryCache)
         {
             _context = context;
             _redisService = redisService;
             _bannerQueryService = bannerQueryService;
+            _memoryCache = memoryCache;
         }
 
         public async Task<HomePageContentResult> GetHomePageContentAsync()
         {
+            if (_memoryCache.TryGetValue(HomePageContentCacheKey, out HomePageContentResult? cachedContent))
+            {
+                return cachedContent;
+            }
+
+            await HomePageContentCacheLock.WaitAsync();
+            try
+            {
+                if (_memoryCache.TryGetValue(HomePageContentCacheKey, out cachedContent))
+                {
+                    return cachedContent;
+                }
+
+                var content = await BuildHomePageContentAsync();
+                _memoryCache.Set(HomePageContentCacheKey, content, StorefrontContentCacheDuration);
+                return content;
+            }
+            finally
+            {
+                HomePageContentCacheLock.Release();
+            }
+        }
+
+        private async Task<HomePageContentResult> BuildHomePageContentAsync()
+        {
             var categories = await _context.Categories
                 .AsNoTracking()
-                .Include(p => p.Products)
                 .Where(x => x.Visible == 1)
                 .ToListAsync();
 
@@ -103,6 +137,31 @@ namespace Tech_Store.Services.Client.Storefront
         }
 
         public async Task<CategoryLandingContentResult> GetCategoryLandingContentAsync()
+        {
+            if (_memoryCache.TryGetValue(CategoryLandingContentCacheKey, out CategoryLandingContentResult? cachedContent))
+            {
+                return cachedContent;
+            }
+
+            await CategoryLandingContentCacheLock.WaitAsync();
+            try
+            {
+                if (_memoryCache.TryGetValue(CategoryLandingContentCacheKey, out cachedContent))
+                {
+                    return cachedContent;
+                }
+
+                var content = await BuildCategoryLandingContentAsync();
+                _memoryCache.Set(CategoryLandingContentCacheKey, content, StorefrontContentCacheDuration);
+                return content;
+            }
+            finally
+            {
+                CategoryLandingContentCacheLock.Release();
+            }
+        }
+
+        private async Task<CategoryLandingContentResult> BuildCategoryLandingContentAsync()
         {
             var categories = await _context.Categories
                 .AsNoTracking()

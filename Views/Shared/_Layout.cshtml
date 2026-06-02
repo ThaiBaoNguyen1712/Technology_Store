@@ -68,20 +68,10 @@
                             </div>
                         </a>
                     </li>
-                    <li class="nav-item position-relative">
-                        <a class="nav-link text-white d-flex align-items-center" href="~/User/Cart">
-                            <div class="position-relative">
-                                <i class="fa fa-shopping-cart" aria-hidden="true"></i>
-                                <span id="Cart_numb_mobile" class="badge bg-danger position-absolute top-0 start-100 translate-middle rounded-circle p-1 badge-counter-compact">
-                                    @ViewBag.cart_numb
-                                </span>
-                            </div>
-                        </a>
-                    </li>
                     @if (ViewBag.User != null)
                     {
-                        <li class="nav-item dropdown">
-                            <button class="btn account-menu-trigger account-menu-trigger--mobile dropdown-toggle" type="button" id="accountDropdownMobile" data-bs-toggle="dropdown" aria-expanded="false">
+                        <li class="nav-item dropdown account-dropdown-mobile">
+                            <button class="btn account-menu-trigger account-menu-trigger--mobile" type="button" id="accountDropdownMobile" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false" aria-label="Tài khoản">
                                 <img class="account-menu-trigger__avatar" width="30" height="30" src="~/Upload/Avatar/@ViewBag.User.Img" />
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end account-menu account-menu--mobile" aria-labelledby="accountDropdownMobile">
@@ -94,7 +84,7 @@
                                 </li>
                                 @if (userRoles != null && userRoles.Any(r => r.RoleName == "Admin"))
                                 {
-                                    <li><a class="dropdown-item account-menu__item" href="/admin"><i class="fa fa-grid-2"></i><span>Trang quản lý</span></a></li>
+                                    <li><a class="dropdown-item account-menu__item" href="/admin"><i class="fa fa-cog"></i><span>Trang quản lý</span></a></li>
                                 }
                                 else
                                 {
@@ -114,11 +104,6 @@
                             </a>
                         </li>
                     }
-                    <li class="nav-item">
-                        <button class="navbar-toggler navbar-toggler-header" type="button" data-bs-toggle="collapse" data-bs-target="#navbarTogglerDemo01" aria-controls="navbarTogglerDemo01" aria-expanded="false" aria-label="Toggle navigation">
-                            <span class="navbar-toggler-icon"></span>
-                        </button>
-                    </li>
                 </ul>
 
                 <button class="navbar-toggler d-none d-lg-inline-flex navbar-toggler-header" type="button" data-bs-toggle="collapse" data-bs-target="#navbarTogglerDemo01" aria-controls="navbarTogglerDemo01" aria-expanded="false" aria-label="Toggle navigation">
@@ -126,21 +111,46 @@
                 </button>
             </div>
 
-            <form action="~/Search" method="get" class="search-form search-form-mobile position-relative d-lg-none" data-search-form>
-                <div class="input-group">
-                    <input type="search"
-                           class="form-control search-input search-input-mobile rounded-start-3 ps-3 js-search-input"
-                           placeholder="Bạn đang tìm kiếm gì ? "
-                           aria-label="Search"
-                           autocomplete="off"
-                           name="key" required>
-                    <button class="btn border bg-white search-btn rounded-end-3" type="submit">
-                        <i class="fa fa-search text-danger"></i>
+            <div class="mobile-commerce-bar d-lg-none">
+                <div class="dropdown mobile-category-dropdown">
+                    <button class="mobile-category-toggle" type="button" id="categoryMenuMobile" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Mở danh mục">
+                        <i class="fa fa-list"></i>
                     </button>
+                    <ul class="dropdown-menu dropdown-menu-light mobile-category-menu animate slideIn" aria-labelledby="categoryMenuMobile">
+                        @foreach (var cate in ViewBag.Categories)
+                        {
+                            <li>
+                                <a class="dropdown-item" href="~/Category/@cate.EngTitle">
+                                    <img src="/Upload/Logo/@cate.Image" width="30px" height="30px" class="rounded" /> @cate.Name
+                                </a>
+                            </li>
+                        }
+                    </ul>
                 </div>
-                <ul class="list-group position-absolute w-100 mt-1 shadow-sm rounded-3 d-none search-suggestions js-search-suggestions">
-                </ul>
-            </form>
+
+                <form action="~/Search" method="get" class="search-form search-form-mobile position-relative" data-search-form>
+                    <div class="input-group">
+                        <input type="search"
+                               class="form-control search-input search-input-mobile rounded-start-3 ps-3 js-search-input"
+                               placeholder="Bạn đang tìm kiếm gì ? "
+                               aria-label="Search"
+                               autocomplete="off"
+                               name="key" required>
+                        <button class="btn border bg-white search-btn rounded-end-3" type="submit" aria-label="Tìm kiếm">
+                            <i class="fa fa-search text-danger"></i>
+                        </button>
+                    </div>
+                    <ul class="list-group position-absolute w-100 mt-1 shadow-sm rounded-3 d-none search-suggestions js-search-suggestions">
+                    </ul>
+                </form>
+
+                <a class="mobile-cart-link" href="~/User/Cart" aria-label="Giỏ hàng">
+                    <i class="fa fa-shopping-cart" aria-hidden="true"></i>
+                    <span id="Cart_numb_mobile_searchbar" class="badge bg-danger rounded-circle mobile-cart-badge">
+                        @ViewBag.cart_numb
+                    </span>
+                </a>
+            </div>
 
             <div class="collapse navbar-collapse navbar-collapse-custom" id="navbarTogglerDemo01">
                 <!-- Category Dropdown -->
@@ -225,7 +235,7 @@
                                 </li>
                                 @if (userRoles != null && userRoles.Any(r => r.RoleName == "Admin"))
                                 {
-                                    <li><a class="dropdown-item account-menu__item" href="/admin"><i class="fa fa-grid-2"></i><span>Trang quản lý</span></a></li>
+                                    <li><a class="dropdown-item account-menu__item" href="/admin"><i class="fa fa-cog"></i><span>Trang quản lý</span></a></li>
                                 }
                                 else
                                 {
@@ -491,6 +501,51 @@
 
 
             $('.loading-container').hide();
+
+            const $mobileCommerceBar = $('.mobile-commerce-bar');
+            const $mobileCommerceNavbar = $mobileCommerceBar.closest('.custom-navbar');
+            let mobileCommerceBarTop = 0;
+
+            function refreshMobileCommerceBarTop() {
+                if (!$mobileCommerceBar.length || window.innerWidth >= 992) {
+                    $mobileCommerceBar.removeClass('is-fixed');
+                    $mobileCommerceNavbar.removeClass('mobile-commerce-is-fixed');
+                    return;
+                }
+
+                const wasFixed = $mobileCommerceBar.hasClass('is-fixed');
+                if (wasFixed) {
+                    $mobileCommerceBar.removeClass('is-fixed');
+                    $mobileCommerceNavbar.removeClass('mobile-commerce-is-fixed');
+                }
+
+                mobileCommerceBarTop = $mobileCommerceBar.offset().top;
+
+                if (wasFixed) {
+                    $mobileCommerceBar.addClass('is-fixed');
+                    $mobileCommerceNavbar.addClass('mobile-commerce-is-fixed');
+                }
+            }
+
+            function updateMobileCommerceBarPosition() {
+                if (!$mobileCommerceBar.length || window.innerWidth >= 992) {
+                    $mobileCommerceBar.removeClass('is-fixed');
+                    $mobileCommerceNavbar.removeClass('mobile-commerce-is-fixed');
+                    return;
+                }
+
+                const shouldFixCommerceBar = window.scrollY > mobileCommerceBarTop;
+                $mobileCommerceBar.toggleClass('is-fixed', shouldFixCommerceBar);
+                $mobileCommerceNavbar.toggleClass('mobile-commerce-is-fixed', shouldFixCommerceBar);
+            }
+
+            refreshMobileCommerceBarTop();
+            updateMobileCommerceBarPosition();
+            $(window).on('scroll', updateMobileCommerceBarPosition);
+            $(window).on('resize', function () {
+                refreshMobileCommerceBarTop();
+                updateMobileCommerceBarPosition();
+            });
 
 
             $(document).ajaxStart(function () {

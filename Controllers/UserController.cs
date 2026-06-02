@@ -690,8 +690,11 @@ namespace Tech_Store.Controllers
             var order = _context.Orders
                 .Include(x => x.Payments)
                 .Include(x => x.User)
+                .Include(x => x.ShippingAddress)
                 .Include(x => x.OrderItems)
                     .ThenInclude(x => x.VarientProduct)
+                    .ThenInclude(x => x.Product)
+                .Include(x => x.OrderItems)
                     .ThenInclude(x => x.Product)
                 .FirstOrDefault(x => x.OrderId == orderId); // Lọc theo orderId
 
@@ -704,9 +707,32 @@ namespace Tech_Store.Controllers
             var provinces = JsonConvert.DeserializeObject<List<Province>>(jsonString);
 
             // Find the province, district, and ward by ID
-            var province = provinces?.FirstOrDefault(p => p.Code == int.Parse(order.ShippingAddress.Province));
-            var district = province?.Districts?.FirstOrDefault(d => d.Code == int.Parse(order.ShippingAddress.District));
-            var ward = district?.Wards?.FirstOrDefault(w => w.Code == int.Parse(order.ShippingAddress.Ward));
+            var shippingAddress = order.ShippingAddress;
+            var provinceCode = TryParseAddressCode(shippingAddress?.Province);
+            var districtCode = TryParseAddressCode(shippingAddress?.District);
+            var wardCode = TryParseAddressCode(shippingAddress?.Ward);
+
+            var province = provinceCode.HasValue
+                ? provinces?.FirstOrDefault(p => p.Code == provinceCode.Value)
+                : null;
+            var district = districtCode.HasValue
+                ? province?.Districts?.FirstOrDefault(d => d.Code == districtCode.Value)
+                : null;
+            var ward = wardCode.HasValue
+                ? district?.Wards?.FirstOrDefault(w => w.Code == wardCode.Value)
+                : null;
+
+            var displayAddressParts = new[]
+            {
+                shippingAddress?.AddressLine,
+                ward?.Name,
+                district?.Name,
+                province?.Name
+            }.Where(part => !string.IsNullOrWhiteSpace(part));
+
+            var displayAddress = displayAddressParts.Any()
+                ? string.Join(", ", displayAddressParts)
+                : "Chưa có địa chỉ giao hàng";
             // Map dữ liệu sang ViewModel
             var result = new OrderDetailVM
             {
@@ -719,25 +745,30 @@ namespace Tech_Store.Controllers
                 OrderStatus = order.OrderStatus,
                 User = new Generate_User
                 {
-                    FullName = order.User.LastName + " " + order.User.FirstName,
-                    PhoneNumber = order.User.PhoneNumber,
-                    Address = order.ShippingAddress.AddressLine + ", " + province?.Name + ", " + district.Name + ", " + ward.Name,
+                    FullName = string.Join(" ", new[] { order.User?.LastName, order.User?.FirstName }.Where(part => !string.IsNullOrWhiteSpace(part))),
+                    PhoneNumber = order.User?.PhoneNumber,
+                    Address = displayAddress,
                 },
                 ListVarientProduct = order.OrderItems.Select(item => new ProductVariant
                 {
                     ProductId = item.ProductId,
                     VarientProductId = item.VarientProduct.VarientId,
                     Price = item.Price.ToString("C0", new CultureInfo("vi-VN")),
-                    ImageUrl = item.Product.Image,
+                    ImageUrl = item.Product?.Image ?? item.VarientProduct?.Product?.Image,
                     Quantity = item.Quantity,
-                    NameProduct = item.Product.Name,
+                    NameProduct = item.Product?.Name ?? item.VarientProduct?.Product?.Name,
                     Attributes = item.VarientProduct.Attributes,
-                    Slug = item.Product.Slug
+                    Slug = item.Product?.Slug ?? item.VarientProduct?.Product?.Slug
                 }).ToList()
             };
 
             // Truyền ViewModel sang view
             return View(result);
+        }
+
+        private static int? TryParseAddressCode(string? code)
+        {
+            return int.TryParse(code, out var parsedCode) ? parsedCode : null;
         }
 
         #endregion

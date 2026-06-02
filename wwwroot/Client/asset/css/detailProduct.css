@@ -1,6 +1,6 @@
 ﻿/* Variables */
 :root {
-    --primary-color: #007bff;
+    --primary-color: #dc2626;
     --secondary-color: orangered;
     --text-color: #333;
     --light-bg: #f8f9fa;
@@ -544,8 +544,8 @@
 
     .comments-product-comment-input:focus {
         outline: none;
-        border-color: #4299e1;
-        box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15);
+        border-color: #dc2626;
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
     }
 
 .comments-product-send-btn {
@@ -636,7 +636,7 @@
 }
 
 .comments-product-reply-link {
-    color: #4299e1;
+    color: #dc2626;
     cursor: pointer;
     font-size: 14px;
     display: inline-flex;
