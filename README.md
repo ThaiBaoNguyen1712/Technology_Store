@@ -100,7 +100,6 @@ dotnet run --launch-profile https
 The repository now includes a full multi-container setup for:
 
 - ASP.NET Core MVC storefront/admin app
-- Python recommendation API
 - SQL Server
 - Redis
 
@@ -118,14 +117,13 @@ docker compose up --build
 ### Endpoints
 
 - Web app: `http://localhost:8080`
-- Recommendation API: `http://localhost:8000`
 
 ### Notes
 
 - The default Docker setup connects to the host SQL Server via `host.docker.internal`.
 - The expected default host database is `Electronics_Shop`.
 - `web` does not bootstrap a blank SQL container by default because the repo does not include a complete fresh-database seed path.
-- The recommendation API source is bundled under `services/recommend-api`.
+- Recommendation widgets fall back to database-backed product lists when no external recommendation API is configured.
 - If you change the SQL password in `.env`, use a strong password that satisfies SQL Server container rules.
 - An optional `sqlserver` service is still available behind the `with-sqlserver` profile for teams that already have a backup/restore flow.
 

@@ -14,13 +14,18 @@ namespace Tech_Store.Services.Client.RecommendServices
         private readonly HttpClient _http;
         private readonly ProductServices _productServices;
         private readonly ApplicationDbContext _context;
+        private readonly bool _recommendApiEnabled;
 
         public RecommendServices(HttpClient http, ProductServices productServices, ApplicationDbContext context, IConfiguration configuration)
         {
             _http = http;
-            var recommendApiBaseUrl = configuration["RecommendApi:BaseUrl"] ?? "http://127.0.0.1:8000/";
-            _http.BaseAddress = new Uri(recommendApiBaseUrl);
-            _http.Timeout = TimeSpan.FromSeconds(15);
+            var recommendApiBaseUrl = configuration["RecommendApi:BaseUrl"];
+            _recommendApiEnabled = !string.IsNullOrWhiteSpace(recommendApiBaseUrl);
+            if (_recommendApiEnabled)
+            {
+                _http.BaseAddress = new Uri(recommendApiBaseUrl!);
+                _http.Timeout = TimeSpan.FromSeconds(5);
+            }
             _productServices = productServices;
             _context = context;
         }
@@ -37,14 +42,17 @@ namespace Tech_Store.Services.Client.RecommendServices
         public async Task<RecommendResponse> GetHomepageRecommend(int userId, int topN = 15)
         {
             List<string> ids = new();
-            try
+            if (_recommendApiEnabled)
             {
-                var url = BuildRecommendationUrl("homepage", userId, null, topN);
-                // Gọi AI lấy ID
-                var aiResult = await _http.GetFromJsonAsync<RecommendRawResponse>(url, _jsonOptions);
-                if (aiResult?.Recommendations != null) ids = aiResult.Recommendations;
+                try
+                {
+                    var url = BuildRecommendationUrl("homepage", userId, null, topN);
+                    // Gọi AI lấy ID
+                    var aiResult = await _http.GetFromJsonAsync<RecommendRawResponse>(url, _jsonOptions);
+                    if (aiResult?.Recommendations != null) ids = aiResult.Recommendations;
+                }
+                catch { /* Log error if needed */ }
             }
-            catch { /* Log error if needed */ }
 
             if (!ids.Any())
             {
@@ -69,26 +77,29 @@ namespace Tech_Store.Services.Client.RecommendServices
         public async Task<RecommendResponse> GetSceneRecommend(int userId, string scene, string? productSysId = null, int topN = 15)
         {
             List<string> ids = new();
-            try
+            if (_recommendApiEnabled)
             {
-                var url = BuildRecommendationUrl(scene, userId, productSysId, topN);
-
-                if (string.IsNullOrWhiteSpace(url))
+                try
                 {
-                    return new RecommendResponse
+                    var url = BuildRecommendationUrl(scene, userId, productSysId, topN);
+
+                    if (string.IsNullOrWhiteSpace(url))
                     {
-                        Scene = scene,
-                        Products = await BuildBackupProducts(scene, productSysId, topN)
-                    };
-                }
+                        return new RecommendResponse
+                        {
+                            Scene = scene,
+                            Products = await BuildBackupProducts(scene, productSysId, topN)
+                        };
+                    }
 
-                var aiResult = await _http.GetFromJsonAsync<RecommendRawResponse>(url, _jsonOptions);
-                if (aiResult?.Recommendations != null)
-                {
-                    ids = aiResult.Recommendations;
+                    var aiResult = await _http.GetFromJsonAsync<RecommendRawResponse>(url, _jsonOptions);
+                    if (aiResult?.Recommendations != null)
+                    {
+                        ids = aiResult.Recommendations;
+                    }
                 }
+                catch { }
             }
-            catch { }
 
             if (ids.Any())
             {

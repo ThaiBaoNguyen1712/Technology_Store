@@ -31,36 +31,6 @@
       timeout: 3s
       retries: 10
 
-  recommend-api:
-    build:
-      context: ./services/recommend-api
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    environment:
-      DB_SERVER: ${DB_HOST}
-      DB_NAME: ${APP_DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ""
-      REDIS_SSL: "false"
-    depends_on:
-      redis:
-        condition: service_healthy
-    ports:
-      - "8000:8000"
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health').read()"
-      interval: 20s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
-
   web:
     build:
       context: .
@@ -80,7 +50,6 @@
       Redis__Port: 6379
       Redis__Password: ""
       Redis__Ssl: "false"
-      RecommendApi__BaseUrl: http://recommend-api:8000/
     ports:
       - "8080:8080"
 
