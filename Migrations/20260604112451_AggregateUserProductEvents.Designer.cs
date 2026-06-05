@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tech_Store.Models;
 
@@ -11,9 +12,11 @@ using Tech_Store.Models;
 namespace Tech_Store.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260604112451_AggregateUserProductEvents")]
+    partial class AggregateUserProductEvents
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1533,10 +1536,6 @@ namespace Tech_Store.Migrations
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("slug");
 
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("int")
-                        .HasColumnName("sortOrder");
-
                     b.Property<string>("Status")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
@@ -1586,8 +1585,6 @@ namespace Tech_Store.Migrations
                     b.HasIndex("Slug")
                         .IsUnique()
                         .HasFilter("[slug] IS NOT NULL");
-
-                    b.HasIndex("SortOrder");
 
                     b.HasIndex(new[] { "Sku" }, "UQ__Product__CA1ECF0D40802956")
                         .IsUnique()

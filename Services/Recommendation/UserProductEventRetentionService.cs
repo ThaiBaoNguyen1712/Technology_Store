@@ -34,7 +34,7 @@ public sealed class UserProductEventRetentionService : BackgroundService
     {
         try
         {
-            var cutoff = DateTime.Now.AddDays(-UserProductEventRetentionPolicy.RawEventRetentionDays);
+            var cutoff = DateTime.Now.AddDays(-UserProductEventRetentionPolicy.AggregateRetentionDays);
             var totalDeleted = 0;
 
             while (!cancellationToken.IsCancellationRequested)
@@ -44,7 +44,7 @@ public sealed class UserProductEventRetentionService : BackgroundService
 
                 var expiredIds = await dbContext.UserProductEvents
                     .AsNoTracking()
-                    .Where(x => x.CreatedAt < cutoff)
+                    .Where(x => x.LastInteractedAt < cutoff)
                     .OrderBy(x => x.Id)
                     .Select(x => x.Id)
                     .Take(BatchSize)
@@ -70,9 +70,9 @@ public sealed class UserProductEventRetentionService : BackgroundService
             if (totalDeleted > 0)
             {
                 _logger.LogInformation(
-                    "Deleted {DeletedCount} raw user product events older than {RetentionDays} days.",
+                    "Deleted {DeletedCount} aggregated user product rows older than {RetentionDays} days.",
                     totalDeleted,
-                    UserProductEventRetentionPolicy.RawEventRetentionDays);
+                    UserProductEventRetentionPolicy.AggregateRetentionDays);
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -80,7 +80,7 @@ public sealed class UserProductEventRetentionService : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to enforce retention for raw user product events.");
+            _logger.LogError(ex, "Failed to enforce retention for aggregated user product rows.");
         }
     }
 }

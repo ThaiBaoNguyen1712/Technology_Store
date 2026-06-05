@@ -837,6 +837,7 @@ public partial class ApplicationDbContext : DbContext
                 .HasMaxLength(50)
                 .HasColumnName("status");
             entity.Property(e => e.Stock).HasColumnName("stock");
+            entity.Property(e => e.SortOrder).HasColumnName("sortOrder");
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
@@ -868,6 +869,7 @@ public partial class ApplicationDbContext : DbContext
             entity.HasIndex(p => p.BrandId);
 
             //Index SortOrder
+            entity.HasIndex(p => p.SortOrder);
             entity.HasIndex(p => p.SellPrice);
         });
 
@@ -1185,14 +1187,18 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasKey(e => e.Id);
 
-            entity.HasIndex(e => new { e.UserId, e.CreatedAt })
-                .HasDatabaseName("IX_UserProductEvent_UserId_CreatedAt");
-            entity.HasIndex(e => new { e.SessionId, e.CreatedAt })
-                .HasDatabaseName("IX_UserProductEvent_SessionId_CreatedAt");
-            entity.HasIndex(e => new { e.ProductId, e.CreatedAt })
-                .HasDatabaseName("IX_UserProductEvent_ProductId_CreatedAt");
-            entity.HasIndex(e => new { e.EventType, e.CreatedAt })
-                .HasDatabaseName("IX_UserProductEvent_EventType_CreatedAt");
+            entity.HasIndex(e => new { e.UserId, e.ProductId })
+                .IsUnique()
+                .HasFilter("[user_id] IS NOT NULL")
+                .HasDatabaseName("IX_UserProductEvent_UserId_ProductId");
+            entity.HasIndex(e => new { e.SessionId, e.ProductId })
+                .IsUnique()
+                .HasFilter("[session_id] IS NOT NULL")
+                .HasDatabaseName("IX_UserProductEvent_SessionId_ProductId");
+            entity.HasIndex(e => e.LastInteractedAt)
+                .HasDatabaseName("IX_UserProductEvent_LastInteractedAt");
+            entity.HasIndex(e => new { e.ProductId, e.LastInteractedAt })
+                .HasDatabaseName("IX_UserProductEvent_ProductId_LastInteractedAt");
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.UserId).HasColumnName("user_id");
@@ -1200,20 +1206,26 @@ public partial class ApplicationDbContext : DbContext
                 .HasMaxLength(100)
                 .HasColumnName("session_id");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
-            entity.Property(e => e.EventType)
-                .HasMaxLength(50)
-                .HasColumnName("event_type");
-            entity.Property(e => e.Weight)
+            entity.Property(e => e.ViewCount)
+                .HasDefaultValue(0)
+                .HasColumnName("view_count");
+            entity.Property(e => e.AddToCartCount)
+                .HasDefaultValue(0)
+                .HasColumnName("add_to_cart_count");
+            entity.Property(e => e.WishlistCount)
+                .HasDefaultValue(0)
+                .HasColumnName("wishlist_count");
+            entity.Property(e => e.PurchaseCount)
+                .HasDefaultValue(0)
+                .HasColumnName("purchase_count");
+            entity.Property(e => e.InteractionScore)
                 .HasColumnType("float")
-                .HasColumnName("weight");
-            entity.Property(e => e.Source)
-                .HasMaxLength(50)
-                .HasColumnName("source");
-            entity.Property(e => e.MetadataJson).HasColumnName("metadata_json");
-            entity.Property(e => e.CreatedAt)
+                .HasDefaultValue(0d)
+                .HasColumnName("interaction_score");
+            entity.Property(e => e.LastInteractedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime2")
-                .HasColumnName("created_at");
+                .HasColumnName("last_interacted_at");
 
             entity.HasOne(d => d.Product).WithMany(p => p.UserProductEvents)
                 .HasForeignKey(d => d.ProductId)

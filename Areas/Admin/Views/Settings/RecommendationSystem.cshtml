@@ -1,0 +1,94 @@
+﻿@{
+    ViewData["Title"] = "Hệ thống gợi ý";
+    Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
+}
+
+<div class="page-inner settings-page">
+    <div class="settings-page__hero">
+        <div>
+            <span class="settings-page__eyebrow">Recommendation</span>
+            <h1 class="settings-page__title">Hệ thống gợi ý</h1>
+        </div>
+    </div>
+
+    <div class="settings-panel">
+        <div class="settings-panel__header">
+            <div>
+                <span class="settings-panel__eyebrow">Vận hành</span>
+                <h2>Tối ưu hệ thống gợi ý</h2>
+            </div>
+        </div>
+        <div class="settings-panel__body">
+            <div class="settings-page__actions">
+                <div class="settings-page__actions-copy">
+                    <strong>Rebuild lại artifact recommendation từ MSSQL.</strong>
+                </div>
+                <button type="button" id="rebuildRecommendationIndexButton" class="btn btn-primary btn-lg">
+                    <i class="fas fa-sync-alt me-2"></i>Tối ưu hệ thống gợi ý
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="rebuildRecommendationIndexForm" class="d-none">
+    @Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#rebuildRecommendationIndexButton').on('click', function () {
+                const token = $('#rebuildRecommendationIndexForm input[name="__RequestVerificationToken"]').val();
+                const $button = $(this);
+
+                Swal.fire({
+                    title: 'Tối ưu hệ thống gợi ý?',
+                    text: 'Thao tác này sẽ rebuild lại toàn bộ dữ liệu gợi ý từ MSSQL.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Bắt đầu tối ưu',
+                    cancelButtonText: 'Hủy'
+                }).then((result) => {
+                    if (!result.isConfirmed) {
+                        return;
+                    }
+
+                    $button.prop('disabled', true);
+                    $('.loading-container').show();
+
+                    $.ajax({
+                        url: '/Admin/Settings/RebuildRecommendationIndex',
+                        type: 'POST',
+                        headers: {
+                            'RequestVerificationToken': token
+                        },
+                        success: function (response) {
+                            $('.loading-container').hide();
+                            $button.prop('disabled', false);
+
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Tối ưu thành công',
+                                text: response.message || 'Hệ thống gợi ý đã được cập nhật thành công.',
+                                confirmButtonText: 'Đóng'
+                            });
+                        },
+                        error: function (xhr) {
+                            $('.loading-container').hide();
+                            $button.prop('disabled', false);
+
+                            const response = xhr.responseJSON || {};
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Không thể tối ưu',
+                                text: response.message || 'Đã xảy ra lỗi khi tối ưu hệ thống gợi ý.',
+                                confirmButtonText: 'Đóng'
+                            });
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+}

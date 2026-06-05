@@ -49,7 +49,7 @@ namespace Tech_Store.Extensions
                 "price" => query.OrderBy(x => x.SellPrice),
                 "price_desc" => query.OrderByDescending(x => x.SellPrice),
                 "care" => query.OrderByDescending(x => x.Reviews),
-                _ => query.OrderByDescending(x => x.ProductId)
+                _ => query.OrderBy(x => x.SortOrder).ThenByDescending(x => x.ProductId)
             };
         }
 

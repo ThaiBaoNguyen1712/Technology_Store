@@ -102,6 +102,13 @@
                             <option value="StopSell" @(Model.Status == "discontinued" ? "selected" : "")> Ngưng bán </option>
                         </select>
                     </div>
+                    <div class="col-md-6 mb-3">
+                        <label name="SortOrder" class="form-label">Sắp xếp hiển thị</label>
+                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Số nhỏ hơn sẽ được ưu tiên hiển thị trước trên danh sách mặc định.">
+                            <i class="fas fa-info-circle text-info"></i>
+                        </span>
+                        <input value="@Model.SortOrder" name="SortOrder" type="number" min="0" class="form-control" />
+                    </div>
                 </div>
             </div>
         </div>
@@ -898,14 +905,35 @@ Ckeditor *@
                         processData: false,
                         contentType: false,
                         headers: {
+                            "X-Requested-With": "XMLHttpRequest",
                             "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val()
                         },
                         success: function (res) {
                             $('.loading-container').hide();
+                            let icon = 'success';
+                            let title = 'Cập nhật thành công!';
+                            let text = 'Sản phẩm đã được cập nhật. Dữ liệu gợi ý đã được cập nhật.';
+
+                            if (res && res.systemSyncSuccess === false) {
+                                icon = 'warning';
+                                title = 'Đã cập nhật sản phẩm';
+                                text = 'Sản phẩm đã được cập nhật nhưng đồng bộ nội bộ thất bại.';
+                                if (res.systemSyncMessage) {
+                                    text += ' ' + res.systemSyncMessage;
+                                }
+                            } else if (res && res.recommendationSyncSuccess === false) {
+                                icon = 'warning';
+                                title = 'Đã cập nhật sản phẩm';
+                                text = 'Sản phẩm đã được cập nhật nhưng đồng bộ ML thất bại.';
+                                if (res.recommendationSyncMessage) {
+                                    text += ' ' + res.recommendationSyncMessage;
+                                }
+                            }
+
                             Swal.fire({
-                                icon: 'success',
-                                title: 'Cập nhật thành công!',
-                                text: 'Sản phẩm đã được cập nhật.',
+                                icon: icon,
+                                title: title,
+                                text: text,
                                 confirmButtonText: 'OK'
                             }).then(() => {
                                 const params = new URLSearchParams();
@@ -934,10 +962,11 @@ Ckeditor *@
                         },
                         error: function (xhr, error, status) {
                             $('.loading-container').hide();
+                            const response = xhr.responseJSON;
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Đã xảy ra lỗi!',
-                                text: 'Vui lòng thử lại sau.',
+                                text: response?.message || 'Vui lòng thử lại sau.',
                                 confirmButtonText: 'OK'
                             });
                             console.error('Error details:', error);
@@ -992,10 +1021,30 @@ Ckeditor *@
                         return;
                     }
 
+                    let deleteIcon = 'success';
+                    let deleteTitle = 'Đã xóa sản phẩm';
+                    let deleteText = response.message;
+
+                    if (response.systemSyncSuccess === false) {
+                        deleteIcon = 'warning';
+                        deleteTitle = 'Đã xóa sản phẩm';
+                        deleteText = 'Sản phẩm đã được xóa nhưng đồng bộ nội bộ thất bại.';
+                        if (response.systemSyncMessage) {
+                            deleteText += ' ' + response.systemSyncMessage;
+                        }
+                    } else if (response.recommendationSyncSuccess === false) {
+                        deleteIcon = 'warning';
+                        deleteTitle = 'Đã xóa sản phẩm';
+                        deleteText = 'Sản phẩm đã được xóa nhưng đồng bộ ML thất bại.';
+                        if (response.recommendationSyncMessage) {
+                            deleteText += ' ' + response.recommendationSyncMessage;
+                        }
+                    }
+
                     Swal.fire({
-                        icon: 'success',
-                        title: 'Đã xóa sản phẩm',
-                        text: response.message,
+                        icon: deleteIcon,
+                        title: deleteTitle,
+                        text: deleteText,
                         confirmButtonText: 'OK'
                     }).then(() => {
                         const params = new URLSearchParams();

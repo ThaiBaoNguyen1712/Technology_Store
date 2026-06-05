@@ -5,6 +5,7 @@ using Tech_Store.Models.DTO;
 using Tech_Store.Models.DTO.Payment.Admin;
 using Tech_Store.Models.ViewModel;
 using Tech_Store.Services.Payment;
+using Tech_Store.Services.Recommendation;
 
 namespace Tech_Store.Areas.Admin.Controllers
 {
@@ -14,15 +15,18 @@ namespace Tech_Store.Areas.Admin.Controllers
     {
         private readonly IConfiguration _configuration;
         private readonly IPaymentGatewaySettingsService _paymentGatewaySettingsService;
+        private readonly IRecommendationAdminService _recommendationAdminService;
         private const int FallbackPageSize = 20;
 
         public SettingsController(
             ApplicationDbContext context,
             IConfiguration configuration,
-            IPaymentGatewaySettingsService paymentGatewaySettingsService) : base(context)
+            IPaymentGatewaySettingsService paymentGatewaySettingsService,
+            IRecommendationAdminService recommendationAdminService) : base(context)
         {
             _configuration = configuration;
             _paymentGatewaySettingsService = paymentGatewaySettingsService;
+            _recommendationAdminService = recommendationAdminService;
         }
 
         private int GetDefaultAdminPageSize()
@@ -68,6 +72,12 @@ namespace Tech_Store.Areas.Admin.Controllers
             };
 
             return View(model);
+        }
+
+        [HttpGet("RecommendationSystem")]
+        public IActionResult RecommendationSystem()
+        {
+            return View();
         }
 
         [HttpGet("ProductSpecs")]
@@ -335,6 +345,31 @@ namespace Tech_Store.Areas.Admin.Controllers
                 dto.IsVnPayEnabled,
                 dto.IsSePayEnabled);
             return Json(new { success = true, message = "Đã cập nhật trạng thái cổng thanh toán." });
+        }
+
+        [HttpPost("RebuildRecommendationIndex")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RebuildRecommendationIndex(CancellationToken cancellationToken)
+        {
+            var result = await _recommendationAdminService.RebuildIndexAsync(cancellationToken);
+            if (result.Success)
+            {
+                return Json(new
+                {
+                    success = true,
+                    message = "Hệ thống gợi ý đã được tối ưu thành công.",
+                    data = result.ResponseBody
+                });
+            }
+
+            return StatusCode(result.IsDisabled ? 503 : result.StatusCode ?? 502, new
+            {
+                success = false,
+                message = string.IsNullOrWhiteSpace(result.Message)
+                    ? "Không thể tối ưu hệ thống gợi ý lúc này."
+                    : result.Message,
+                data = result.ResponseBody
+            });
         }
 
         private SettingDTo BuildGeneralSettingsModel()

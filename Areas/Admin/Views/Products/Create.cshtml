@@ -88,6 +88,13 @@
 
                         </select>
                     </div>
+                    <div class="col-md-6 mb-3">
+                        <label name="SortOrder" class="form-label">Sắp xếp hiển thị</label>
+                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Số nhỏ hơn sẽ được ưu tiên hiển thị trước trên danh sách mặc định.">
+                             <i class="fas fa-info-circle text-info"></i>
+                        </span>
+                        <input name="SortOrder" type="number" min="0" class="form-control" value="@((int?)ViewBag.NextSortOrder ?? 0)" />
+                    </div>
                 </div>
             </div>
         </div>
@@ -635,15 +642,37 @@ Ckeditor CDN*@
                 processData: false, // Không xử lý dữ liệu
                 contentType: false, // Không đặt content type, để trình duyệt tự làm
                 headers: {
+                    "X-Requested-With": "XMLHttpRequest",
                     "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() // Lấy token xác thực nếu có
                 },
                 success: function (res) {
                     $('.loading-container').hide(); // Ẩn loading
-                    // Hiển thị alert SweetAlert
+                    let icon = 'success';
+                    let title = 'Thành công!';
+                    let text = 'Sản phẩm đã được lưu.';
+
+                    if (res && res.systemSyncSuccess === false) {
+                        icon = 'warning';
+                        title = 'Đã lưu sản phẩm';
+                        text = 'Sản phẩm đã được lưu nhưng đồng bộ nội bộ thất bại.';
+                        if (res.systemSyncMessage) {
+                            text += ' ' + res.systemSyncMessage;
+                        }
+                    } else if (res && res.recommendationSyncSuccess === false) {
+                        icon = 'warning';
+                        title = 'Đã lưu sản phẩm';
+                        text = 'Sản phẩm đã được lưu nhưng đồng bộ ML thất bại.';
+                        if (res.recommendationSyncMessage) {
+                            text += ' ' + res.recommendationSyncMessage;
+                        }
+                    } else {
+                        text = 'Sản phẩm đã được lưu. Dữ liệu gợi ý đã được cập nhật.';
+                    }
+
                     Swal.fire({
-                        icon: 'success',
-                        title: 'Thành công!',
-                        text: 'Sản phẩm đã được thêm thành công.',
+                        icon: icon,
+                        title: title,
+                        text: text,
                         confirmButtonText: 'OK'
                     }).then(function () {
                         const params = new URLSearchParams();
@@ -672,7 +701,14 @@ Ckeditor CDN*@
                 },
                 error: function (xhr, error, status) {
                     $('.loading-container').hide(); // Ẩn loading
-                    alert('Đã xảy ra lỗi: ' + xhr.responseText); // Thông báo lỗi
+                    const response = xhr.responseJSON;
+                    const errorMessage = response?.message || 'Đã xảy ra lỗi khi lưu sản phẩm.';
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Không thể lưu sản phẩm',
+                        text: errorMessage,
+                        confirmButtonText: 'OK'
+                    });
                     console.error('Error details:', error); // Log chi tiết lỗi
                 }
             });

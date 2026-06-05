@@ -10,6 +10,7 @@ namespace Tech_Store.Services.Admin.Interfaces
         Task<AdminProductIndexData> GetIndexDataAsync(AdminProductFilterRequest request);
         Task<List<ProductViewModel>> FilterAsync(AdminProductFilterRequest request);
         Task<AdminProductLookupData> GetLookupDataAsync();
+        Task<int> GetNextSortOrderAsync();
         Task<AdminProductEditData?> GetEditDataAsync(int id);
         Task<AdminProductActionResult> CreateAsync(ProductDTo productDto);
         Task<AdminProductActionResult> UpdateAsync(ProductDTo productDto);

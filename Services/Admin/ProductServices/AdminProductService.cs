@@ -10,6 +10,7 @@ using Tech_Store.Models.DTO;
 using Tech_Store.Models.ViewModel;
 using Tech_Store.Services.Admin.Interfaces;
 using Tech_Store.Services.Admin.NotificationServices;
+using Tech_Store.Services.Recommendation;
 using Product = Tech_Store.Models.Product;
 
 namespace Tech_Store.Services.Admin.ProductServices
@@ -19,15 +20,21 @@ namespace Tech_Store.Services.Admin.ProductServices
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly NotificationService _notificationService;
+        private readonly IRecommendationAdminService _recommendationAdminService;
+        private readonly ILogger<AdminProductService> _logger;
 
         public AdminProductService(
             ApplicationDbContext context,
             IWebHostEnvironment webHostEnvironment,
-            NotificationService notificationService)
+            NotificationService notificationService,
+            IRecommendationAdminService recommendationAdminService,
+            ILogger<AdminProductService> logger)
         {
             _context = context;
             _webHostEnvironment = webHostEnvironment;
             _notificationService = notificationService;
+            _recommendationAdminService = recommendationAdminService;
+            _logger = logger;
         }
 
         public async Task<AdminProductDetailData> GetDetailAsync(int id)
@@ -96,7 +103,9 @@ namespace Tech_Store.Services.Admin.ProductServices
 
             var page = request.Page < 1 ? 1 : request.Page;
             var pageSize = request.PageSize <= 0 ? 25 : Math.Min(request.PageSize, 100);
-            var orderedQuery = query.OrderByDescending(p => p.ProductId);
+            var orderedQuery = query
+                .OrderByDescending(p => p.CreatedAt)
+                .ThenByDescending(p => p.ProductId);
             var totalItems = await orderedQuery.CountAsync();
             var totalPages = Math.Max(1, (int)Math.Ceiling(totalItems / (double)pageSize));
             page = Math.Min(page, totalPages);
@@ -141,7 +150,8 @@ namespace Tech_Store.Services.Admin.ProductServices
                 products = products.Where(p => p.Stock <= request.StockTo.Value);
 
             return await products
-                .OrderByDescending(p => p.ProductId)
+                .OrderByDescending(p => p.CreatedAt)
+                .ThenByDescending(p => p.ProductId)
                 .Take(100)
                 .Select(p => new ProductViewModel
                 {
@@ -197,6 +207,11 @@ namespace Tech_Store.Services.Admin.ProductServices
                     .ThenBy(x => x.Name)
                     .ToListAsync()
             };
+        }
+
+        public async Task<int> GetNextSortOrderAsync()
+        {
+            return (await _context.Products.MaxAsync(x => (int?)x.SortOrder) ?? 0) + 1;
         }
 
         public async Task<AdminProductEditData?> GetEditDataAsync(int id)
@@ -261,10 +276,12 @@ namespace Tech_Store.Services.Admin.ProductServices
         public async Task<AdminProductActionResult> CreateAsync(ProductDTo productDto)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
+            Product? product = null;
             try
             {
-                var product = new Product
+                product = new Product
                 {
+                    ProductSysId = ProductServices.GenerateProductSysId(),
                     Name = productDto.Name,
                     Slug = GenerateSlug(productDto.Name),
                     Sku = productDto.Sku,
@@ -278,6 +295,7 @@ namespace Tech_Store.Services.Admin.ProductServices
                     CategoryId = productDto.CategoryId,
                     BrandId = productDto.BrandId,
                     Status = productDto.Status,
+                    SortOrder = productDto.SortOrder,
                     WarrantyPeriod = productDto.WarrantyPeriod,
                     UrlYoutube = productDto.UrlYoutube,
                     Weight = productDto.Weight,
@@ -356,34 +374,54 @@ namespace Tech_Store.Services.Admin.ProductServices
                 await SyncProductSpecsAsync(product.ProductId, productDto.SpecValues);
 
                 await transaction.CommitAsync();
-                await GenerateProductsJsonAsync();
-
-                await _notificationService.NotifyAsync(
-                    Events.NotificationTarget.Admins,
-                    "Sản phẩm mới",
-                    $"Sản phẩm {product.Name} được thêm vào danh sách",
-                    "product added",
-                    $"/admin/products/views/{product.ProductId}");
-
-                return new AdminProductActionResult { Success = true };
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
+                _logger.LogError(ex, "Create product failed for SKU={Sku}", productDto.Sku);
                 return new AdminProductActionResult
                 {
                     Success = false,
                     Message = "Đã xảy ra lỗi trong quá trình lưu trữ: " + ex.Message
                 };
             }
+
+            var postCommitResult = await RunProductPostCommitTasksAsync(
+                product?.ProductSysId,
+                "upsert",
+                async () =>
+                {
+                    if (product == null)
+                    {
+                        return;
+                    }
+
+                    await _notificationService.NotifyAsync(
+                        Events.NotificationTarget.Admins,
+                        "Sản phẩm mới",
+                        $"Sản phẩm {product.Name} được thêm vào danh sách",
+                        "product added",
+                        $"/admin/products/views/{product.ProductId}");
+                });
+
+            return new AdminProductActionResult
+            {
+                Success = true,
+                SystemSyncSuccess = postCommitResult.SystemSyncSuccess,
+                SystemSyncMessage = postCommitResult.SystemSyncMessage,
+                RecommendationSyncSuccess = postCommitResult.RecommendationSyncSuccess,
+                RecommendationSyncSkipped = postCommitResult.RecommendationSyncSkipped,
+                RecommendationSyncMessage = postCommitResult.RecommendationSyncMessage
+            };
         }
 
         public async Task<AdminProductActionResult> UpdateAsync(ProductDTo productDto)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
+            Product? product = null;
             try
             {
-                var product = await _context.Products.FindAsync(productDto.ProductId);
+                product = await _context.Products.FindAsync(productDto.ProductId);
                 if (product == null)
                 {
                     return new AdminProductActionResult { NotFound = true, Message = "Không tìm thấy sản phẩm" };
@@ -394,6 +432,7 @@ namespace Tech_Store.Services.Admin.ProductServices
                     await UpdateMainImageAsync(product, productDto.Image);
                 }
 
+                EnsureProductSysId(product);
                 UpdateProductCoreFields(product, productDto);
                 await ProcessVariantsAsync(productDto);
 
@@ -407,19 +446,28 @@ namespace Tech_Store.Services.Admin.ProductServices
                 product.UpdatedAt = DateTime.Now;
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
-
-                await GenerateProductsJsonAsync();
-                return new AdminProductActionResult { Success = true };
             }
-            catch
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync();
+                _logger.LogError(ex, "Update product failed for ProductId={ProductId}", productDto.ProductId);
                 return new AdminProductActionResult
                 {
                     Success = false,
                     Message = "Có lỗi xảy ra khi cập nhật"
                 };
             }
+
+            var postCommitResult = await RunProductPostCommitTasksAsync(product?.ProductSysId, "upsert");
+            return new AdminProductActionResult
+            {
+                Success = true,
+                SystemSyncSuccess = postCommitResult.SystemSyncSuccess,
+                SystemSyncMessage = postCommitResult.SystemSyncMessage,
+                RecommendationSyncSuccess = postCommitResult.RecommendationSyncSuccess,
+                RecommendationSyncSkipped = postCommitResult.RecommendationSyncSkipped,
+                RecommendationSyncMessage = postCommitResult.RecommendationSyncMessage
+            };
         }
 
         public async Task<AdminProductActionResult> ChangeVisibleAsync(int productId)
@@ -437,6 +485,7 @@ namespace Tech_Store.Services.Admin.ProductServices
 
             product.Visible = product.Visible == false ? true : false;
             await _context.SaveChangesAsync();
+            await SyncRecommendationAfterCommitAsync(product.ProductSysId, "upsert");
 
             return new AdminProductActionResult
             {
@@ -470,14 +519,21 @@ namespace Tech_Store.Services.Admin.ProductServices
                 product.Status = "discontinued";
                 product.Visible = false;
                 await _context.SaveChangesAsync();
+                var postCommitResult = await RunProductPostCommitTasksAsync(product.ProductSysId, "upsert");
                 return new AdminProductActionResult
                 {
                     Success = true,
-                    Message = "Sản phẩm đã được giao dịch, chỉ có thể Khóa/Ẩn"
+                    Message = "Sản phẩm đã được giao dịch, chỉ có thể Khóa/Ẩn",
+                    SystemSyncSuccess = postCommitResult.SystemSyncSuccess,
+                    SystemSyncMessage = postCommitResult.SystemSyncMessage,
+                    RecommendationSyncSuccess = postCommitResult.RecommendationSyncSuccess,
+                    RecommendationSyncSkipped = postCommitResult.RecommendationSyncSkipped,
+                    RecommendationSyncMessage = postCommitResult.RecommendationSyncMessage
                 };
             }
 
             using var transaction = await _context.Database.BeginTransactionAsync();
+            var productSysId = product.ProductSysId;
             try
             {
                 if (variantProductAttrs.Any())
@@ -506,31 +562,37 @@ namespace Tech_Store.Services.Admin.ProductServices
 
                 _context.Products.Remove(product);
                 await _context.SaveChangesAsync();
-
-                await GenerateProductsJsonAsync();
                 await transaction.CommitAsync();
-
-                DeletePhysicalFile(product.Image);
-                foreach (var gallery in galleries)
-                {
-                    DeletePhysicalFile(gallery.Path);
-                }
-
-                return new AdminProductActionResult
-                {
-                    Success = true,
-                    Message = "Sản phẩm đã được xóa thành công khỏi danh sách."
-                };
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
+                _logger.LogError(ex, "Delete product failed for ProductId={ProductId}", id);
                 return new AdminProductActionResult
                 {
                     Success = false,
                     Message = "Lỗi khi xóa sản phẩm: " + ex.Message
                 };
             }
+
+            DeletePhysicalFile(product.Image);
+            foreach (var gallery in galleries)
+            {
+                DeletePhysicalFile(gallery.Path);
+            }
+
+            var deletePostCommitResult = await RunProductPostCommitTasksAsync(productSysId, "delete");
+
+            return new AdminProductActionResult
+            {
+                Success = true,
+                Message = "Sản phẩm đã được xóa thành công khỏi danh sách.",
+                SystemSyncSuccess = deletePostCommitResult.SystemSyncSuccess,
+                SystemSyncMessage = deletePostCommitResult.SystemSyncMessage,
+                RecommendationSyncSuccess = deletePostCommitResult.RecommendationSyncSuccess,
+                RecommendationSyncSkipped = deletePostCommitResult.RecommendationSyncSkipped,
+                RecommendationSyncMessage = deletePostCommitResult.RecommendationSyncMessage
+            };
         }
 
         public async Task<AdminProductActionResult> DeleteMainImageAsync(DeleteFileViewModel model)
@@ -659,6 +721,14 @@ namespace Tech_Store.Services.Admin.ProductServices
             product.Image = await SaveProductFileAsync(newImage, fileName);
         }
 
+        private void EnsureProductSysId(Product product)
+        {
+            if (string.IsNullOrWhiteSpace(product.ProductSysId))
+            {
+                product.ProductSysId = ProductServices.GenerateProductSysId();
+            }
+        }
+
         private void UpdateProductCoreFields(Product product, ProductDTo dto)
         {
             product.Name = dto.Name;
@@ -669,6 +739,7 @@ namespace Tech_Store.Services.Admin.ProductServices
             product.SellPrice = dto.SellPrice;
             product.WarrantyPeriod = dto.WarrantyPeriod;
             product.Status = dto.Status;
+            product.SortOrder = dto.SortOrder;
             product.BrandId = dto.BrandId;
             product.Stock = dto.Stock;
             product.Weight = dto.Weight;
@@ -1005,6 +1076,108 @@ namespace Tech_Store.Services.Admin.ProductServices
 
             var filePath = Path.Combine(path, "products.json");
             await File.WriteAllTextAsync(filePath, JsonSerializer.Serialize(productsList));
+        }
+
+        private async Task<ProductPostCommitResult> RunProductPostCommitTasksAsync(
+            string? productSysId,
+            string recommendationAction,
+            Func<Task>? additionalTask = null)
+        {
+            var result = new ProductPostCommitResult();
+
+            var systemSyncResult = await TryRunPostCommitStepAsync("generate products json", GenerateProductsJsonAsync);
+            result.SystemSyncSuccess = systemSyncResult.Success;
+            result.SystemSyncMessage = systemSyncResult.Message;
+
+            if (additionalTask != null)
+            {
+                await TryRunPostCommitStepAsync("run additional post-commit task", additionalTask);
+            }
+
+            if (!result.SystemSyncSuccess)
+            {
+                result.RecommendationSyncSuccess = false;
+                result.RecommendationSyncSkipped = true;
+                result.RecommendationSyncMessage = "Bỏ qua đồng bộ ML vì đồng bộ nội bộ thất bại.";
+                return result;
+            }
+
+            var recommendationResult = await SyncRecommendationAfterCommitAsync(productSysId, recommendationAction);
+            if (recommendationResult.IsDisabled)
+            {
+                result.RecommendationSyncSuccess = true;
+                result.RecommendationSyncSkipped = true;
+                result.RecommendationSyncMessage = recommendationResult.Message;
+                return result;
+            }
+
+            result.RecommendationSyncSuccess = recommendationResult.Success;
+            result.RecommendationSyncSkipped = false;
+            result.RecommendationSyncMessage = recommendationResult.Success
+                ? null
+                : recommendationResult.Message;
+
+            return result;
+        }
+
+        private async Task<PostCommitStepResult> TryRunPostCommitStepAsync(string stepName, Func<Task> action)
+        {
+            try
+            {
+                await action();
+                return new PostCommitStepResult
+                {
+                    Success = true
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Post-commit step failed: {StepName}", stepName);
+                return new PostCommitStepResult
+                {
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        private async Task<RecommendationAdminOperationResult> SyncRecommendationAfterCommitAsync(string? productSysId, string action)
+        {
+            if (string.IsNullOrWhiteSpace(productSysId))
+            {
+                _logger.LogWarning("Skip recommendation sync because ProductSysId is missing. Action={Action}", action);
+                return new RecommendationAdminOperationResult
+                {
+                    Message = "ProductSysId is missing."
+                };
+            }
+
+            var result = await _recommendationAdminService.SyncProductAsync(productSysId, action);
+            if (!result.Success && !result.IsDisabled)
+            {
+                _logger.LogWarning(
+                    "Recommendation sync failed for ProductSysId={ProductSysId}, Action={Action}. Message={Message}",
+                    productSysId,
+                    action,
+                    result.Message);
+            }
+
+            return result;
+        }
+
+        private sealed class ProductPostCommitResult
+        {
+            public bool SystemSyncSuccess { get; set; } = true;
+            public string? SystemSyncMessage { get; set; }
+            public bool RecommendationSyncSuccess { get; set; } = true;
+            public bool RecommendationSyncSkipped { get; set; }
+            public string? RecommendationSyncMessage { get; set; }
+        }
+
+        private sealed class PostCommitStepResult
+        {
+            public bool Success { get; set; }
+            public string? Message { get; set; }
         }
     }
 }

@@ -1112,9 +1112,16 @@
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             document.querySelectorAll(".tags-input").forEach(function (input) {
+                if (input.dataset.tagifyInitialized === "true" || input.nextElementSibling?.classList?.contains("tagify")) {
+                    return;
+                }
+
                 let tagify = new Tagify(input, {
                     originalInputValueFormat: valuesArr => valuesArr.map(item => item.value).join(",")
                 });
+
+                input.dataset.tagifyInitialized = "true";
+                input._tagify = tagify;
             });
         });
     </script>

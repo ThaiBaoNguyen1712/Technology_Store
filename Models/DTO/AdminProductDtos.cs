@@ -53,6 +53,11 @@ namespace Tech_Store.Models.DTO
         public string Message { get; set; } = string.Empty;
         public bool? Visible { get; set; }
         public string? Html { get; set; }
+        public bool SystemSyncSuccess { get; set; } = true;
+        public string? SystemSyncMessage { get; set; }
+        public bool RecommendationSyncSuccess { get; set; } = true;
+        public bool RecommendationSyncSkipped { get; set; }
+        public string? RecommendationSyncMessage { get; set; }
     }
 
     public class AdminProductFilterRequest

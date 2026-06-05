@@ -1,14 +1,49 @@
-@model Tech_Store.Models.Product
+﻿@model Tech_Store.Models.Product
 @{
-    ViewData["Title"] = Model.Name;
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 @using System.Globalization;
 @using Tech_Store.Helpers
+@using Tech_Store.Models
+@using Tech_Store.Models.ViewModel
 
 
 
 @functions {
+    public string BuildProductImageUrl(string? path, int width = 0, int height = 0)
+    {
+        const string fallbackImage = "/Upload/Products/none.png";
+
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return fallbackImage;
+        }
+
+        var trimmedPath = path.Trim();
+
+        if (trimmedPath.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            trimmedPath.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            return width > 0 || height > 0
+                ? ResizeCDN.Cdn(trimmedPath, width, height)
+                : trimmedPath;
+        }
+
+        if (trimmedPath.StartsWith("/Upload/", StringComparison.OrdinalIgnoreCase))
+        {
+            return trimmedPath;
+        }
+
+        return $"/Upload/Products/{trimmedPath.TrimStart('/')}";
+    }
+
+    public string BuildAvatarUrl(string? avatarFileName)
+    {
+        return string.IsNullOrWhiteSpace(avatarFileName)
+            ? "/Upload/Avatar/none.png"
+            : $"/Upload/Avatar/{avatarFileName.Trim()}";
+    }
+
     public string extractVideoID(string url)
     {
         if (string.IsNullOrEmpty(url)) return string.Empty;
@@ -23,17 +58,85 @@
     }
 }
 @{
+    var productName = string.IsNullOrWhiteSpace(Model?.Name) ? "Chi tiết sản phẩm" : Model.Name;
+    ViewData["Title"] = productName;
+
     var productSpecs = ViewBag.specs as IEnumerable<Tech_Store.Models.Specs>;
     List<(string Name, string? Value)> productSpecEntries = productSpecs?
         .SelectMany(spec => (spec.SpecValues ?? Enumerable.Empty<Tech_Store.Models.SpecValue>())
             .OrderBy(x => x.SortOrder)
-            .Select(v => (Name: spec.Name, Value: (string?)v.Value)))
+            .Select(v => (Name: spec.Name ?? "Thông số", Value: (string?)v.Value)))
         .ToList() ?? new List<(string Name, string? Value)>();
+
+    var categoryName = string.IsNullOrWhiteSpace(Model.Category?.Name) ? "Danh mục đang cập nhật" : Model.Category.Name;
+    var categorySlug = Model.Category?.EngTitle;
+    var brandName = string.IsNullOrWhiteSpace(Model.Brand?.Name) ? "Thương hiệu đang cập nhật" : Model.Brand.Name;
+    var productStatus = string.IsNullOrWhiteSpace(Model.Status) ? "Đang cập nhật" : Model.Status;
+    var descriptionHtml = string.IsNullOrWhiteSpace(Model.Description)
+        ? "<p class=\"text-muted mb-0\">Thông tin sản phẩm đang được cập nhật.</p>"
+        : Model.Description;
+
+    var fallbackProductImage = "/Upload/Products/none.png";
+    var galleryImages = new List<string> { BuildProductImageUrl(Model.Image, 358, 358) };
+    galleryImages.AddRange((Model.Galleries ?? Enumerable.Empty<Gallery>())
+        .Select(g => BuildProductImageUrl(g.Path, 358, 358))
+        .Where(url => !string.IsNullOrWhiteSpace(url)));
+    galleryImages = galleryImages
+        .Where(url => !string.IsNullOrWhiteSpace(url))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToList();
+
+    if (!galleryImages.Any())
+    {
+        galleryImages.Add(fallbackProductImage);
+    }
+
+    var displayMainImageUrl = galleryImages.FirstOrDefault() ?? fallbackProductImage;
+    var hasThumbnailGallery = galleryImages.Count > 1;
+    var variants = (Model.VarientProducts ?? Enumerable.Empty<VarientProduct>())
+        .OrderBy(v => v.Price ?? decimal.MaxValue)
+        .ToList();
+    var firstAvailableVariant = variants.FirstOrDefault(v => (v.Stock ?? 0) > 0 && (v.Price ?? 0) > 0);
+    var showBasePrice = variants.Any(v => string.IsNullOrWhiteSpace(v.Attributes));
+    var sellPrice = Model.SellPrice ?? 0m;
+    var originalPrice = Model.OriginalPrice ?? 0m;
+    var hasDiscount = originalPrice > 0 && sellPrice > 0 && originalPrice > sellPrice;
+    var discountPercent = hasDiscount ? Math.Round((double)(100 - (sellPrice / originalPrice * 100m))) : 0d;
     var hasSpecs = productSpecEntries.Any();
     var compactSpecLimit = 8;
     var youtubeVideoId = extractVideoID(Model.UrlYoutube ?? string.Empty);
     var hasYoutubeVideo = !string.IsNullOrWhiteSpace(youtubeVideoId);
+    var reviewCount = ViewBag.review_count is int count ? count : 0;
+    var averageRating = ViewBag.averageRating is double avgDouble
+        ? avgDouble
+        : ViewBag.averageRating is decimal avgDecimal
+            ? (double)avgDecimal
+            : 0d;
+    var ratingSummary = ViewBag.ratingSummary as IDictionary<int, int> ?? new Dictionary<int, int>();
+    var reviews = ViewBag.reviews as IEnumerable<Review> ?? Enumerable.Empty<Review>();
+    var comments = ViewBag.comments as IEnumerable<CommentVM> ?? Enumerable.Empty<CommentVM>();
 }
+
+<style>
+    .gallery-wrapper--single .product-gallery {
+        width: 100%;
+    }
+
+    .thumbnail {
+        border: 0;
+        padding: 0;
+        background: transparent;
+        display: block;
+        width: 100%;
+    }
+
+    .thumbnail img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+</style>
 
 <div class="container my-3">
     <!-- Breadcrumb -->
@@ -41,88 +144,97 @@
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/" class="text-decoration-none">Trang chủ</a></li>
             <li class="breadcrumb-item"><a href="/Category" class="text-decoration-none">Danh mục</a></li>
-            <li class="breadcrumb-item"><a href="/Category/@Model.Category?.EngTitle" class="text-decoration-none">@Model.Category?.Name</a></li>
-            <li class="breadcrumb-item"><a href="/Brand/@Model.Brand?.Name" class="text-decoration-none">@Model.Brand?.Name</a></li>
-            <li class="breadcrumb-item active" aria-current="page">@Model.Name</li>
+            <li class="breadcrumb-item">
+                @if (!string.IsNullOrWhiteSpace(categorySlug))
+                {
+                    <a href="/Category/@categorySlug" class="text-decoration-none">@categoryName</a>
+                }
+                else
+                {
+                    <span>@categoryName</span>
+                }
+            </li>
+            <li class="breadcrumb-item">
+                @if (!string.IsNullOrWhiteSpace(Model.Brand?.Name))
+                {
+                    <a href="/Brand/@Model.Brand.Name" class="text-decoration-none">@brandName</a>
+                }
+                else
+                {
+                    <span>@brandName</span>
+                }
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">@productName</li>
 
         </ol>
     </nav>
     <div class="row">
         <div class="col-md-6">
-            <div class="gallery-wrapper">
-                <div class="thumbnail-container-wrapper">
-                    <button class="thumbnail-control prev">
-                        <i class="fas fa-chevron-up"></i>
-                    </button>
-                    <div class="thumbnail-container">
-                        @if(Model.Image.Contains("http"))
-                        {
-                            <div class="thumbnail active" data-src="@ResizeCDN.Cdn(Model.Image,0,358)"
-                                 style="background-image: url('@ResizeCDN.Cdn(Model.Image,0,358)')"></div>
-                        }
-                        else
-                        {
-                            <div class="thumbnail active" data-src="~/Upload/Products/@Model.Image"
-                                 style="background-image: url('~/Upload/Products/@Model.Image')"></div>
-                        }
-                        @foreach (var img in Model.Galleries)
-                        {
-                            @if(img.Path.Contains("http"))
+            <div class="gallery-wrapper @(hasThumbnailGallery ? string.Empty : "gallery-wrapper--single")">
+                @if (hasThumbnailGallery)
+                {
+                    <div class="thumbnail-container-wrapper">
+                        <button type="button" class="thumbnail-control prev">
+                            <i class="fas fa-chevron-up"></i>
+                        </button>
+                        <div class="thumbnail-container">
+                            @for (var imageIndex = 0; imageIndex < galleryImages.Count; imageIndex++)
                             {
-                                <div class="thumbnail" data-src="@ResizeCDN.Cdn(img.Path,0,358)"
-                                style="background-image: url('@ResizeCDN.Cdn(img.Path,0,358)')"></div>
+                                var imageUrl = galleryImages[imageIndex];
+                                <button type="button"
+                                        class="thumbnail @(imageIndex == 0 ? "active" : string.Empty)"
+                                        data-src="@imageUrl"
+                                        aria-label="Ảnh sản phẩm @(imageIndex + 1)">
+                                    <img src="@imageUrl"
+                                         alt="@productName"
+                                         loading="lazy"
+                                         onerror="this.onerror=null; this.src='@fallbackProductImage'; this.closest('.thumbnail').setAttribute('data-src', '@fallbackProductImage');" />
+                                </button>
                             }
-                            else
-                            {
-                                <div class="thumbnail" data-src="@img.Path"
-                                     style="background-image: url('@img.Path')"></div>
-                            }
-                        }
+                        </div>
+                        <button type="button" class="thumbnail-control next">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
                     </div>
-                    <button class="thumbnail-control next">
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
-                </div>
+                }
 
                 <div class="product-gallery">
-                    @if(Model.Image.Contains("http"))
-                    {
-                        <img id="mainImage" src="@ResizeCDN.Cdn(Model.Image,358)" alt="Product Image" onclick="openFullscreen(this)">
-                    }
-                    else
-                    {
-                        <img id="mainImage" src="~/Upload/Products/@Model.Image" alt="Product Image" onclick="openFullscreen(this)">
-                    }
+                    <img id="mainImage"
+                         src="@displayMainImageUrl"
+                         alt="@productName"
+                         data-fallback-src="@fallbackProductImage"
+                         onerror="this.onerror=null; this.src=this.dataset.fallbackSrc || '@fallbackProductImage';"
+                         onclick="openFullscreen(this)">
                 </div>
             </div>
 
         </div>
 
         <div class="col-md-6 product-info">
-            <h3>@Model.Name</h3>
+            <h3>@productName</h3>
             <div class="rating pb-3">
-                <span class="text-muted">(@ViewBag.review_count Đánh giá)</span>
-                <span class="text-muted">(@Model.Status)</span>
+                <span class="text-muted">(@reviewCount đánh giá)</span>
+                <span class="text-muted">(@productStatus)</span>
             </div>
 
-            @if (Model.VarientProducts.Any(s => string.IsNullOrEmpty(s.Attributes)))
+            @if (showBasePrice)
             {
                 <div class="product-price-box d-flex align-items-center gap-3 p-3 border rounded-3 mb-3 bg-light">
                     <div class="main-price">
                         <div class="text-secondary fs-6">Giá sản phẩm</div>
                         <div class="d-flex align-items-baseline gap-2">
                             <span class="text-danger fw-bold fs-2">
-                                @Model.SellPrice?.ToString("N0", new CultureInfo("vi-VN"))₫
+                                @(sellPrice > 0 ? $"{sellPrice.ToString("N0", new CultureInfo("vi-VN"))}₫" : "Liên hệ")
                             </span>
 
-                            @if (Model.OriginalPrice > Model.SellPrice)
+                            @if (hasDiscount)
                             {
                                 <span class="text-decoration-line-through text-secondary fs-6">
-                                    @Model.OriginalPrice?.ToString("N0", new CultureInfo("vi-VN"))₫
+                                    @originalPrice.ToString("N0", new CultureInfo("vi-VN"))₫
                                 </span>
 
                                 <span class="badge bg-danger">
-                                    -@Math.Round((double)(100 - (Model.SellPrice / Model.OriginalPrice * 100)))%
+                                    -@discountPercent%
                                 </span>
                             }
                         </div>
@@ -132,50 +244,53 @@
 
 
             <div class="d-flex flex-wrap gap-3">
-                @foreach (var varient in Model.VarientProducts.OrderBy(v=>v.Price))
+                @foreach (var varient in variants)
                 {
-                    var isFirst = Model.VarientProducts.FirstOrDefault(x=>x.Stock > 0) == varient; // Kiểm tra phần tử đầu tiên
+                    var isFirst = firstAvailableVariant == varient;
+                    var variantImageUrl = BuildProductImageUrl(varient.ImageUrl, 358, 358);
+                    var variantFullImageUrl = BuildProductImageUrl(varient.ImageUrl);
+                    var variantStock = varient.Stock ?? 0;
+                    var variantPrice = varient.Price ?? 0m;
+                    var variantAttributeValues = (varient.VariantAttributes ?? Enumerable.Empty<Tech_Store.Models.VariantAttribute>())
+                        .Select(attr => attr.AttributeValue?.Value)
+                        .Where(value => !string.IsNullOrWhiteSpace(value))
+                        .ToList();
 
-                    @if (varient.Attributes != null)  // Chỉ hiển thị khung khi sản phẩm có biến thể
+                    @if (!string.IsNullOrWhiteSpace(varient.Attributes))
                     {
-                        <div class="card mb-3 varient-card @(varient.Stock <= 0 || varient.Price <= 0 ? "disabled" : "") @(isFirst ? "selected" : "")"
+                        <div class="card mb-3 varient-card @(variantStock <= 0 || variantPrice <= 0 ? "disabled" : "") @(isFirst ? "selected" : "")"
                              data-id="@varient.VarientId"
-                             @(varient.Stock <= 0 ? "style='pointer-events: none; opacity: 0.5;'" : "")>
+                             @(variantStock <= 0 ? "style='pointer-events: none; opacity: 0.5;'" : "")>
 
                             <div class="d-flex align-items-center gap-3 p-2">
-                                @if (varient.ImageUrl!= null && varient.ImageUrl.Contains("http"))
-                                {
-                                    <img src="@ResizeCDN.Cdn(varient.ImageUrl,358,358)" alt="Alternate Text"
-                                         style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;"
-                                         data-full="@ResizeCDN.Cdn(varient.ImageUrl, 0, 0)"
-                                         class="variant-thumb" />
-                                }
-                                else
-                                {
-                                    <img src="~/Upload/Products/@varient.ImageUrl" alt="Alternate Text"
-                                         style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;"
-                                         data-full="/Upload/Products/@varient.ImageUrl"
-                                         class="variant-thumb" />
-                                }
-                               
+                                <img src="@variantImageUrl"
+                                     alt="@productName"
+                                     style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;"
+                                     data-full="@variantFullImageUrl"
+                                     onerror="this.onerror=null; this.src='@fallbackProductImage'; this.dataset.full='@fallbackProductImage';"
+                                     class="variant-thumb" />
 
                                 <div class="flex-grow-1">
                                     <div class="varient-attributes mb-1">
-                                        @foreach (var attrValue in varient.VariantAttributes)
+                                        @if (variantAttributeValues.Any())
                                         {
-                                            <span>@string.Join("-", attrValue.AttributeValue.Value)</span>
+                                            <span>@string.Join(" - ", variantAttributeValues)</span>
+                                        }
+                                        else
+                                        {
+                                            <span>Phiên bản đang cập nhật</span>
                                         }
                                     </div>
 
                                     <div class="varient-price">
-                                        @if (varient.Stock <= 0 || varient.Price <= 0)
+                                        @if (variantStock <= 0 || variantPrice <= 0)
                                         {
                                             <p class="price" style="font-size: 14px !important; margin: 0;">(Hết hàng)</p>
                                         }
                                         else
                                         {
                                             <span class="price" style="font-size: 14px !important;">
-                                                @varient.Price?.ToString("C0", new CultureInfo("vi-VN"))
+                                                @variantPrice.ToString("C0", new CultureInfo("vi-VN"))
                                             </span>
                                         }
                                     </div>
@@ -265,7 +380,7 @@
                                         </div>
                                         <div class="video-container">
                                             <iframe src="https://www.youtube.com/embed/@youtubeVideoId"
-                                                    title="Video @Model.Name"
+                                                    title="Video @productName"
                                                     loading="lazy"
                                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                                     allowfullscreen>
@@ -280,7 +395,7 @@
 
                 <div class="product-detail">
                     <div class="description-content">
-                        <div class="product-description">@Html.Raw(Model.Description)</div>
+                        <div class="product-description">@Html.Raw(descriptionHtml)</div>
                     </div>
                 
                   
@@ -321,15 +436,15 @@
             </div>
             <div class="rating-summary">
                 <div class="average-rating">
-                    <span class="rating-number">@ViewBag.averageRating.ToString("F1")</span>
+                    <span class="rating-number">@averageRating.ToString("F1", CultureInfo.InvariantCulture)</span>
                     <div class="stars rating-stars">
                         @for (int i = 1; i <= 5; i++)
                         {
-                            if (i <= Math.Floor((decimal)ViewBag.averageRating))
+                            if (i <= Math.Floor(averageRating))
                             {
                                 <i class="fas fa-star"></i>
                             }
-                            else if (i - ViewBag.averageRating < 1)
+                            else if (i - averageRating < 1)
                             {
                                 <i class="fas fa-star-half-alt"></i>
                             }
@@ -339,57 +454,55 @@
                             }
                         }
                     </div>
-                    <span class="total-reviews">(@ViewBag.review_count đánh giá)</span>
+                    <span class="total-reviews">(@reviewCount đánh giá)</span>
                 </div>
 
                 <div class="rating-bars">
                     @for (int i = 5; i >= 1; i--)
                     {
-                        var count = ViewBag.ratingSummary.ContainsKey(i) ? ViewBag.ratingSummary[i] : 0;
-                        var percentage = (ViewBag.review_count > 0) ? (count * 100 / ViewBag.review_count) : 0;
+                        var ratingCount = ratingSummary.ContainsKey(i) ? ratingSummary[i] : 0;
+                        var percentage = reviewCount > 0 ? (ratingCount * 100 / reviewCount) : 0;
 
                         <div class="rating-bar-item">
                             <span class="star-count">@i <i class="fas fa-star stars"></i></span>
                             <div class="progress">
                                 <div class="progress-bar" style="width: @percentage%"></div>
                             </div>
-                            <span class="rating-count">@count</span>
+                            <span class="rating-count">@ratingCount</span>
                         </div>
                     }
                 </div>
             </div>
 
             <div class="review-list">
-                @foreach (var review in ViewBag.reviews)
+                @if (reviews.Any())
                 {
-                    <div class="review-item">
-                        <div class="review-item__inner">
-                            <img src="/Upload/Avatar/@(review.User.Img ?? "none.png")" class="user-avatar" alt="User Avatar">
+                    @foreach (var review in reviews)
+                    {
+                        <div class="review-item">
+                            <div class="review-item__inner">
+                            <img src="@BuildAvatarUrl(review.User?.Img)" class="user-avatar" alt="Ảnh người dùng">
 
-                            <div class="review-content">
-                                <div class="review-header">
-                                    <h5>@review.User.LastName @review.User.FirstName</h5>
-                                    <div class="review-rating">
-                                        <span class="review-rating__value">@review.Rating</span>
-                                        <i class="fas fa-star stars"></i>
+                                <div class="review-content">
+                                    <div class="review-header">
+                                        <h5>@(string.IsNullOrWhiteSpace($"{review.User?.LastName} {review.User?.FirstName}".Trim()) ? "Khách hàng" : $"{review.User?.LastName} {review.User?.FirstName}".Trim())</h5>
+                                        <div class="review-rating">
+                                            <span class="review-rating__value">@review.Rating</span>
+                                            <i class="fas fa-star stars"></i>
+                                        </div>
+                                        <small class="review-date">
+                                            @(review.ReviewDate != default ? review.ReviewDate.TimeAgo() : "Không xác định")
+                                        </small>
                                     </div>
-                                    <small class="review-date">
-                                        @((review.ReviewDate as DateTime?)?.TimeAgo() ?? "Không xác định")
-                                    </small>
+                                    <p class="review-text">@(string.IsNullOrWhiteSpace(review.Comment) ? "Người dùng chưa để lại nội dung đánh giá." : review.Comment)</p>
                                 </div>
-                                <p class="review-text">@review.Comment</p>
-                               @*  @if (review.Images?.Any() == true)
-                                {
-                                    <div class="review-images">
-                                        @foreach (var img in review.Images)
-                                        {
-                                            <img src="@img.Url" alt="Review Image">
-                                        }
-                                    </div>
-                                } *@
                             </div>
                         </div>
-                    </div>
+                    }
+                }
+                else
+                {
+                    <p class="text-center text-muted">Chưa có đánh giá nào cho sản phẩm này.</p>
                 }
             </div>
         </div>
@@ -403,15 +516,15 @@
             <div class="comments-product-new-comment">
                 @if (ViewBag.User != null)
                 {
-                    <img src="~/Upload/Avatar/@ViewBag.User.Img"
+                    <img src="@BuildAvatarUrl(ViewBag.User.Img)"
                          class="comments-product-new-comment-avatar"
-                         alt="User Avatar">
+                         alt="Ảnh người dùng">
                 }
                 else
                 {
-                    <img src="~/Upload/Avatar/none.png"
+                    <img src="/Upload/Avatar/none.png"
                          class="comments-product-new-comment-avatar"
-                         alt="User Avatar">
+                         alt="Ảnh người dùng">
                 }
                 <input type="text"
                        class="comments-product-comment-input"
@@ -428,19 +541,19 @@
             </div>
 
             <div class="comments-product-list">
-                @if (ViewBag.comments != null)
+                @if (comments.Any())
                 {
-                    @foreach (var parentComment in ViewBag.comments)
+                    @foreach (var parentComment in comments)
                     {
                         <div class="comments-product-item">
-                            <img src="/Upload/Avatar/@parentComment.UserAvatar"
+                            <img src="@BuildAvatarUrl(parentComment.UserAvatar)"
                                  class="comments-product-item-avatar"
-                                 alt="User Avatar">
+                                 alt="Ảnh người dùng">
 
                             <div class="comments-product-item-content">
                                 <div class="comments-product-item-header">
                                     <div class="comments-product-item-meta">
-                                        <h5 class="comments-product-item-username">@parentComment.UserName</h5>
+                                        <h5 class="comments-product-item-username">@(string.IsNullOrWhiteSpace(parentComment.UserName) ? "Khách hàng" : parentComment.UserName)</h5>
                                         <small class="comments-product-item-date">
                                             @((parentComment.CreatedAt as DateTime?)?.TimeAgo() ?? "Không xác định")
                                         </small>
@@ -472,9 +585,7 @@
                                     }
                                 </div>
 
-                                <p class="comments-product-item-text">
-                                    @parentComment.Content
-                                </p>
+                                <p class="comments-product-item-text">@(string.IsNullOrWhiteSpace(parentComment.Content) ? "Bình luận đang được cập nhật." : parentComment.Content)</p>
 
                                 <div class="comments-product-reply-container">
                                     <button type="button" class="comments-product-reply-link">
@@ -501,16 +612,16 @@
                                         @foreach (var reply in parentComment.Replies)
                                         {
                                             <div class="comments-product-item comments-product-reply">
-                                                <img src="/Upload/Avatar/@reply.UserAvatar"
+                                                <img src="@BuildAvatarUrl(reply.UserAvatar)"
                                                      class="comments-product-item-avatar"
-                                                     alt="User Avatar">
+                                                     alt="Ảnh người dùng">
                                                 <div class="comments-product-item-content">
                                                     <div class="comments-product-item-header">
                                                         <div class="comments-product-item-meta">
-                                                            <h6 class="comments-product-item-username">@reply.UserName</h6>
+                                                            <h6 class="comments-product-item-username">@(string.IsNullOrWhiteSpace(reply.UserName) ? "Khách hàng" : reply.UserName)</h6>
                                                             <span class="comments-product-item-replying-to">
                                                                 đã trả lời bình luận của
-                                                                <span>@parentComment.UserName</span>
+                                                                <span>@(string.IsNullOrWhiteSpace(parentComment.UserName) ? "Khách hàng" : parentComment.UserName)</span>
                                                             </span>
                                                             <small class="comments-product-item-date">
                                                                 @((reply.CreatedAt as DateTime?)?.TimeAgo() ?? "Không xác định")
@@ -543,7 +654,7 @@
                                                             </div>
                                                         }
                                                     </div>
-                                                    <p class="comments-product-item-text">@reply.Content</p>
+                                                    <p class="comments-product-item-text">@(string.IsNullOrWhiteSpace(reply.Content) ? "Bình luận đang được cập nhật." : reply.Content)</p>
                                                 </div>
                                             </div>
                                         }
@@ -566,7 +677,7 @@
 <script>
     $(document).ready(function () {
         // Gọi API render 
-        RecommendationManager.init('detail', '@Model.ProductSysId', 12);
+        RecommendationManager.init('detail', '@(Model.ProductSysId ?? string.Empty)', 12);
 
         // Cập nhật ảnh chính khi click vào thumbnail
         $('.thumbnail').click(function () {
@@ -608,6 +719,10 @@
 
         function checkScrollPosition() {
             const container = $('.thumbnail-container');
+            if (!container.length || !container[0]) {
+                return;
+            }
+
             const scrollTop = container.scrollTop();
             const maxScroll = container[0].scrollHeight - container.height();
 

@@ -234,7 +234,8 @@ namespace Tech_Store.Controllers
             return _context.Products
                 .AsNoTracking()
                 .Where(x => x.CategoryId == categoryId)
-                .OrderByDescending(x => x.CreatedAt)
+                .OrderBy(x => x.SortOrder)
+                .ThenByDescending(x => x.CreatedAt)
                 .Take(10)
                 .ToList();
         }

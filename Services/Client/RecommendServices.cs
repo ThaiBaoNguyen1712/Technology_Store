@@ -47,9 +47,8 @@ namespace Tech_Store.Services.Client.RecommendServices
                 try
                 {
                     var url = BuildRecommendationUrl("homepage", userId, null, topN);
-                    // Gọi AI lấy ID
                     var aiResult = await _http.GetFromJsonAsync<RecommendRawResponse>(url, _jsonOptions);
-                    if (aiResult?.Recommendations != null) ids = aiResult.Recommendations;
+                    ids = ExtractProductSysIds(aiResult);
                 }
                 catch { /* Log error if needed */ }
             }
@@ -93,10 +92,7 @@ namespace Tech_Store.Services.Client.RecommendServices
                     }
 
                     var aiResult = await _http.GetFromJsonAsync<RecommendRawResponse>(url, _jsonOptions);
-                    if (aiResult?.Recommendations != null)
-                    {
-                        ids = aiResult.Recommendations;
-                    }
+                    ids = ExtractProductSysIds(aiResult);
                 }
                 catch { }
             }
@@ -123,6 +119,11 @@ namespace Tech_Store.Services.Client.RecommendServices
         // ===============================
         private async Task<List<Product>> GetFullProductsFromIds(List<string> ids)
         {
+            ids = ids
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
             // Lấy toàn bộ sản phẩm có trong danh sách ID từ Database
             var products = await _context.Products
                 .Where(p => ids.Contains(p.ProductSysId))
@@ -141,6 +142,24 @@ namespace Tech_Store.Services.Client.RecommendServices
                 return await _productServices.GetRelatedProductsAsync(productSysId, topN);
             }
             return await _productServices.GetHotSaleProducts(topN);
+        }
+
+        private static List<string> ExtractProductSysIds(RecommendRawResponse? response)
+        {
+            if (response?.RecommendationItems?.Count > 0)
+            {
+                return response.RecommendationItems
+                    .Select(x => x.ProductSysId)
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+            }
+
+            return response?.Recommendations?
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList()
+                ?? new List<string>();
         }
 
         private static string? BuildRecommendationUrl(string scene, int userId, string? productSysId, int limit)
