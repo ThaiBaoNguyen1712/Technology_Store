@@ -73,7 +73,7 @@ namespace Tech_Store.Areas.Admin.Controllers
 
             if (!string.IsNullOrWhiteSpace(paymentStatus))
             {
-                query = query.Where(x => x.Payments.Any(p => p.Status == paymentStatus));
+                query = query.Where(x => x.Payments.Any(p => p.PaymentStatus == paymentStatus));
             }
 
             if (dateFrom.HasValue)
@@ -124,10 +124,10 @@ namespace Tech_Store.Areas.Admin.Controllers
                 Orders = orders.Select(order =>
                 {
                     var payment = order.Payments
-                        .OrderByDescending(x => x.PaymentDate ?? x.CreatedAt)
+                        .OrderByDescending(x => x.TransactionDate ?? x.CreatedAt)
                         .FirstOrDefault();
                     var (orderBadgeClass, orderLabel) = GetOrderStatusPresentation(order.OrderStatus);
-                    var (paymentBadgeClass, paymentLabel) = GetPaymentStatusPresentation(payment?.Status);
+                    var (paymentBadgeClass, paymentLabel) = GetPaymentStatusPresentation(payment?.PaymentStatus);
 
                     return new AdminOrderIndexItemViewModel
                     {
@@ -139,10 +139,10 @@ namespace Tech_Store.Areas.Admin.Controllers
                         OrderStatus = order.OrderStatus,
                         OrderStatusLabel = orderLabel,
                         OrderStatusBadgeClass = orderBadgeClass,
-                        PaymentStatus = payment?.Status ?? "Unpaid",
+                        PaymentStatus = payment?.PaymentStatus ?? "Unpaid",
                         PaymentStatusLabel = paymentLabel,
                         PaymentStatusBadgeClass = paymentBadgeClass,
-                        PaymentMethod = payment?.PaymentMethod ?? "-",
+                        PaymentMethod = payment?.Gateway ?? "-",
                         TotalAmount = order.TotalAmount,
                         ItemCount = order.OrderItems.Sum(x => x.Quantity),
                         ProductSummary = BuildProductSummary(order)
@@ -265,11 +265,11 @@ namespace Tech_Store.Areas.Admin.Controllers
             }
 
             var payment = order.Payments
-                .OrderByDescending(x => x.PaymentDate ?? x.CreatedAt)
+                .OrderByDescending(x => x.TransactionDate ?? x.CreatedAt)
                 .FirstOrDefault();
             var address = await BuildFullAddressAsync(order.ShippingAddress);
             var (orderBadgeClass, orderLabel) = GetOrderStatusPresentation(order.OrderStatus);
-            var (paymentBadgeClass, paymentLabel) = GetPaymentStatusPresentation(payment?.Status);
+            var (paymentBadgeClass, paymentLabel) = GetPaymentStatusPresentation(payment?.PaymentStatus);
 
             return new AdminOrderDetailViewModel
             {
@@ -284,11 +284,11 @@ namespace Tech_Store.Areas.Admin.Controllers
                 OrderStatus = order.OrderStatus,
                 OrderStatusLabel = orderLabel,
                 OrderStatusBadgeClass = orderBadgeClass,
-                PaymentStatus = payment?.Status ?? "Unpaid",
+                PaymentStatus = payment?.PaymentStatus ?? "Unpaid",
                 PaymentStatusLabel = paymentLabel,
                 PaymentStatusBadgeClass = paymentBadgeClass,
-                PaymentMethod = payment?.PaymentMethod ?? "-",
-                PaymentDate = payment?.PaymentDate,
+                PaymentMethod = payment?.Gateway ?? "-",
+                PaymentDate = payment?.TransactionDate,
                 ItemCount = order.OrderItems.Sum(x => x.Quantity),
                 OriginAmount = order.OriginAmount ?? order.OrderItems.Sum(x => x.Price * x.Quantity),
                 DiscountAmount = order.DiscountAmount ?? 0,
@@ -378,7 +378,7 @@ namespace Tech_Store.Areas.Admin.Controllers
             var logoUrl = GetAbsoluteLogoUrl(baseUrl, settings.FirstOrDefault(x => x.Key == "LogoUrl")?.Value);
             var customerAddress = await BuildFullAddressAsync(order.ShippingAddress);
             var payment = order.Payments
-                .OrderByDescending(x => x.PaymentDate ?? x.CreatedAt)
+                .OrderByDescending(x => x.TransactionDate ?? x.CreatedAt)
                 .FirstOrDefault();
 
             return new InvoiceEmail
@@ -397,8 +397,8 @@ namespace Tech_Store.Areas.Admin.Controllers
                 }).ToList(),
                 ShippingFee = order.ShippingAmount ?? 0,
                 ShippingAmount = order.ShippingAmount ?? 0,
-                PaymentMethod = MapPaymentMethodLabel(payment?.PaymentMethod),
-                IsPaid = string.Equals(payment?.Status, "Paid", StringComparison.OrdinalIgnoreCase),
+                PaymentMethod = MapPaymentMethodLabel(payment?.Gateway),
+                IsPaid = string.Equals(payment?.PaymentStatus, "Paid", StringComparison.OrdinalIgnoreCase),
                 CompanyName = settings.FirstOrDefault(x => x.Key == "NameCompany")?.Value ?? settings.FirstOrDefault(x => x.Key == "NameWebsite")?.Value ?? "Tech Store",
                 CompanyAddress = settings.FirstOrDefault(x => x.Key == "Address")?.Value ?? string.Empty,
                 CompanyEmail = settings.FirstOrDefault(x => x.Key == "Email")?.Value ?? string.Empty,

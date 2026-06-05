@@ -88,6 +88,21 @@
 
                         </select>
                     </div>
+                    <div class="col-md-6 mb-3">
+                        <label name="SortOrder" class="form-label">Sắp xếp hiển thị</label>
+                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Số nhỏ hơn sẽ được ưu tiên hiển thị trước trên danh sách mặc định.">
+                             <i class="fas fa-info-circle text-info"></i>
+                        </span>
+                        <input name="SortOrder" type="number" min="0" class="form-control" value="@((int?)ViewBag.NextSortOrder ?? 0)" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label d-block">Tính phí ship</label>
+                        <input type="hidden" name="IsShippingFee" value="false" />
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="IsShippingFee" name="IsShippingFee" value="true" checked />
+                            <label class="form-check-label" for="IsShippingFee">Tính phí ship cho sản phẩm này</label>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -114,10 +129,10 @@
                     </div>
                     <div class="col-md-3 mb-3">
                         <label name="Stock" class="form-label">Số Lượng</label>
-                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Thêm số lượng tồn kho hiện tại cho sản phẩm này">
+                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Nếu sản phẩm dùng biến thể, tồn kho tổng sẽ tự đồng bộ bằng tổng tồn kho của tất cả biến thể.">
                              <i class="fas fa-info-circle text-info"></i>
                         </span>
-                        <input name="Stock" type="number" class="form-control" />
+                        <input id="productStockInput" name="Stock" type="number" class="form-control" />
                     </div>
                     <div class="col-md-3 mb-3">
                         <label name="Stock" class="form-label">Khối Lượng (KG)</label>
@@ -284,7 +299,7 @@
                                     <th>Biến thể</th>
                                     <th style="width: 180px;">Giá bán</th>
                                     <th style="width: 220px;">SKU</th>
-                                    <th style="width: 160px;">Tồn kho</th>
+                                    <th style="width: 160px;">Tồn kho <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Tổng tồn kho của tất cả biến thể phải bằng tồn kho tổng của sản phẩm."><i class="fas fa-info-circle text-info"></i></span></th>
                                     <th style="width: 240px;">Ảnh biến thể</th>
                                     <th style="width: 96px;" class="text-center">Xóa</th>
                                 </tr>
@@ -382,6 +397,32 @@ Ckeditor CDN*@
     $(document).ready(function () {
         $('.selectpicker').selectpicker();
 
+        function buildAttributeValueIdInputs(variant, rowIndex) {
+            var selectedAttributes = $('#variantSelect').val() || [];
+            var hiddenInputs = '';
+
+            selectedAttributes.forEach(function (attributeCode, attributeIndex) {
+                var selectedValue = variant[attributeCode];
+                if (!selectedValue) {
+                    return;
+                }
+
+                var optionSelector = `#${attributeCode}Select option`;
+                var option = $(optionSelector).filter(function () {
+                    return $(this).val() === selectedValue;
+                }).first();
+
+                var attributeValueId = option.data('id');
+                if (!attributeValueId) {
+                    return;
+                }
+
+                hiddenInputs += '<input type="hidden" name="VarientProducts[' + rowIndex + '].AttributeValueIds[' + attributeIndex + ']" value="' + attributeValueId + '"/>';
+            });
+
+            return hiddenInputs;
+        }
+
         function updateVariantTable() {
             // Get all selected attributes and their values
             var selectedAttributes = $('#variantSelect').val() || [];
@@ -426,7 +467,8 @@ Ckeditor CDN*@
                 var row = $('<tr>');
                 row.append($('<td class="text-center fw-semibold">').text(index + 1));
                 row.append($('<td style="display:none">').html(
-                    '<input type="hidden" name="VarientProducts[' + index + '].Attributes" value="' + variantString + '"/>'
+                    '<input type="hidden" name="VarientProducts[' + index + '].Attributes" value="' + variantString + '"/>' +
+                    buildAttributeValueIdInputs(variant, index)
                 ));
                 row.append($('<td>').html('<div class="product-form__variant-name">' + variantString + '</div>'));
                 row.append($('<td>').html(
@@ -436,7 +478,7 @@ Ckeditor CDN*@
                     '<input type="text" class="form-control" name="VarientProducts[' + index + '].Sku" value="' + sku + '" readonly/>'
                 ));
                 row.append($('<td>').html(
-                    '<input type="number" class="form-control" name="VarientProducts[' + index + '].Stock" value="1" required/>'
+                    '<input type="number" class="form-control variant-stock-input" name="VarientProducts[' + index + '].Stock" value="1" min="0" required/>'
                 ));
                 row.append($('<td>').html(
                     '<input type="file" class="form-control form-control-sm" name="VarientProducts[' + index + '].Image" accept="image/*"/>'
@@ -450,7 +492,7 @@ Ckeditor CDN*@
             });
 
             $('.table-Varient').show();
-  
+            syncVariantStockSummary();
             updateRowNumbers();
         }
 
@@ -496,11 +538,65 @@ Ckeditor CDN*@
                 }
             });
         });
+
+        syncVariantStockSummary();
     }
 
     $(document).on('click', '.delete-btn', function () {
         $(this).closest('tr').remove();
         updateRowNumbers();
+    });
+
+    function isVariantEnabled() {
+        return $('#useVariant').is(':checked');
+    }
+
+    function getVariantStockTotal() {
+        var total = 0;
+        $('#variantTableBody').find('.variant-stock-input').each(function () {
+            total += parseInt($(this).val(), 10) || 0;
+        });
+        return total;
+    }
+
+    function syncVariantStockSummary() {
+        var $productStockInput = $('#productStockInput');
+        if (!$productStockInput.length) {
+            return true;
+        }
+
+        if (!isVariantEnabled()) {
+            $productStockInput.prop('readonly', false);
+            return true;
+        }
+
+        var total = getVariantStockTotal();
+        $productStockInput.val(total);
+        $productStockInput.prop('readonly', true);
+        return true;
+    }
+
+    function validateVariantStockConsistency() {
+        if (!isVariantEnabled()) {
+            return true;
+        }
+
+        var rowCount = $('#variantTableBody tr').length;
+        if (rowCount === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Thiếu biến thể',
+                text: 'Bạn đã bật biến thể nhưng chưa tạo dòng biến thể nào.'
+            });
+            return false;
+        }
+
+        syncVariantStockSummary();
+        return true;
+    }
+
+    $(document).on('input change', '.variant-stock-input', function () {
+        syncVariantStockSummary();
     });
 </script>
 @* Handle URL youtube *@
@@ -625,6 +721,9 @@ Ckeditor CDN*@
             e.preventDefault(); // Ngăn chặn submit form thông thường
 
             CKEDITOR.instances.description.updateElement(); // Cập nhật lại CKEditor
+            if (!validateVariantStockConsistency()) {
+                return;
+            }
             $('.loading-container').show(); // Hiển thị loading
 
             var formData = new FormData(this); // Thu thập dữ liệu từ form
@@ -635,15 +734,37 @@ Ckeditor CDN*@
                 processData: false, // Không xử lý dữ liệu
                 contentType: false, // Không đặt content type, để trình duyệt tự làm
                 headers: {
+                    "X-Requested-With": "XMLHttpRequest",
                     "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() // Lấy token xác thực nếu có
                 },
                 success: function (res) {
                     $('.loading-container').hide(); // Ẩn loading
-                    // Hiển thị alert SweetAlert
+                    let icon = 'success';
+                    let title = 'Thành công!';
+                    let text = 'Sản phẩm đã được lưu. Đồng bộ ML đang chạy nền.';
+
+                    if (res && res.systemSyncSuccess === false) {
+                        icon = 'warning';
+                        title = 'Đã lưu sản phẩm';
+                        text = 'Sản phẩm đã được lưu nhưng đồng bộ nội bộ thất bại.';
+                        if (res.systemSyncMessage) {
+                            text += ' ' + res.systemSyncMessage;
+                        }
+                    } else if (res && res.recommendationSyncSuccess === false) {
+                        icon = 'warning';
+                        title = 'Đã lưu sản phẩm';
+                        text = 'Sản phẩm đã được lưu nhưng đồng bộ ML thất bại.';
+                        if (res.recommendationSyncMessage) {
+                            text += ' ' + res.recommendationSyncMessage;
+                        }
+                    } else if (res && res.recommendationSyncMessage) {
+                        text = 'Sản phẩm đã được lưu. ' + res.recommendationSyncMessage;
+                    }
+
                     Swal.fire({
-                        icon: 'success',
-                        title: 'Thành công!',
-                        text: 'Sản phẩm đã được thêm thành công.',
+                        icon: icon,
+                        title: title,
+                        text: text,
                         confirmButtonText: 'OK'
                     }).then(function () {
                         const params = new URLSearchParams();
@@ -672,7 +793,14 @@ Ckeditor CDN*@
                 },
                 error: function (xhr, error, status) {
                     $('.loading-container').hide(); // Ẩn loading
-                    alert('Đã xảy ra lỗi: ' + xhr.responseText); // Thông báo lỗi
+                    const response = xhr.responseJSON;
+                    const errorMessage = response?.message || 'Đã xảy ra lỗi khi lưu sản phẩm.';
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Không thể lưu sản phẩm',
+                        text: errorMessage,
+                        confirmButtonText: 'OK'
+                    });
                     console.error('Error details:', error); // Log chi tiết lỗi
                 }
             });
@@ -693,14 +821,18 @@ Ckeditor CDN*@
             if ($(this).is(':checked')) {
                 // Nếu checkbox được check thì enable select box
                 $('#variantSelect').prop('disabled', false);
+                syncVariantStockSummary();
             } else {
                 // Nếu checkbox không được check thì disable select box
                 $('#variantSelect').prop('disabled', true);
+                $('#productStockInput').prop('readonly', false);
             }
 
             // Refresh selectpicker để cập nhật giao diện (nếu bạn đang sử dụng bootstrap-select)
             $('#variantSelect').selectpicker('refresh');
         });
+
+        syncVariantStockSummary();
     });
 </script>
 <script>

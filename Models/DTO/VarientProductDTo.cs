@@ -8,6 +8,8 @@
 
         public string? Attributes { get; set; }
 
+        public List<int> AttributeValueIds { get; set; } = new();
+
         public string Sku { get; set; } = null!;
 
         public decimal? Price { get; set; }

@@ -3892,7 +3892,7 @@ footer {
     }
 
     .site-footer__title {
-        font-size: 0.92rem;
+        font-size: 1rem;
         margin-bottom: 0 !important;
     }
 
@@ -3914,24 +3914,24 @@ footer {
     }
 
     .site-footer__contact-row span {
-        font-size: 0.72rem;
+        font-size: 0.8rem;
     }
 
     .site-footer__contact-row strong {
-        font-size: 0.82rem;
+        font-size: 0.9rem;
         word-break: break-word;
     }
 
     .site-footer__heading {
         margin-bottom: 0.45rem;
-        font-size: 0.78rem;
+        font-size: 0.86rem;
         letter-spacing: 0.02em;
     }
 
     .site-footer__links,
     .site-footer__info {
         gap: 0.38rem;
-        font-size: 0.82rem;
+        font-size: 0.9rem;
     }
 
     .site-footer__links a {
@@ -3945,7 +3945,7 @@ footer {
 
     .site-footer__info i {
         margin-top: 0.1rem;
-        font-size: 0.78rem;
+        font-size: 0.84rem;
     }
 
     .site-footer__social {
@@ -3963,7 +3963,7 @@ footer {
         padding: 0.65rem 0 0.75rem;
         flex-direction: column;
         gap: 0;
-        font-size: 0.78rem;
+        font-size: 0.86rem;
     }
 }
 

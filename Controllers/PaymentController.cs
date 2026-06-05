@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Tech_Store.Models;
@@ -173,14 +173,68 @@ namespace Tech_Store.Controllers
             return View();
         }
 
-        [AllowAnonymous]
-        [HttpPost("SePayIpn")]
-        public IActionResult SePayIpn()
+        [HttpGet("SePayCheckout/{checkoutId:int}")]
+        public async Task<IActionResult> SePayCheckout(int checkoutId, CancellationToken cancellationToken)
         {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+            {
+                return Unauthorized("User không hợp lệ");
+            }
+
+            var result = await _clientPaymentService.BuildSePayCheckoutAsync(checkoutId, userId.Value, cancellationToken);
+            if (!result.Success)
+            {
+                return StatusCode(result.StatusCode, result.ErrorMessage);
+            }
+
+            return View(result.Model);
+        }
+
+        [HttpPost("CheckSePayPaymentStatus")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CheckSePayPaymentStatus(int checkoutId, CancellationToken cancellationToken)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+            {
+                return Unauthorized(new { success = false, message = "User không hợp lệ." });
+            }
+
+            var result = await _clientPaymentService.GetSePayPaymentStatusAsync(checkoutId, userId.Value, cancellationToken);
+            if (!result.Success)
+            {
+                return StatusCode(result.StatusCode, new { success = false, message = result.ErrorMessage });
+            }
+
             return Ok(new
             {
                 success = true,
-                message = "Đã nhận thông báo IPN từ SePay.",
+                payment_status = result.PaymentStatus,
+                order_status = result.OrderStatus,
+                order_id = result.OrderId
+            });
+        }
+
+        [AllowAnonymous]
+        [HttpPost("SePayIpn")]
+        public async Task<IActionResult> SePayIpn(CancellationToken cancellationToken)
+        {
+            var result = await _clientPaymentService.HandleSePayIpnAsync(HttpContext, cancellationToken);
+
+            if (!result.Success)
+            {
+                return StatusCode(result.StatusCode, new
+                {
+                    success = false,
+                    message = result.ErrorMessage ?? result.GatewayFailureMessage ?? "Không thể xử lý IPN từ SePay."
+                });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                message = "Đã nhận và xử lý IPN từ SePay.",
                 ipnUrl = _sePayService.GetIpnUrl()
             });
         }

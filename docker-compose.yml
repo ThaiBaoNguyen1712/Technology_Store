@@ -50,6 +50,7 @@
       Redis__Port: 6379
       Redis__Password: ""
       Redis__Ssl: "false"
+      RecommendApi__BaseUrl: https://products-recommendation-4yj8.vercel.app/
     ports:
       - "8080:8080"
 

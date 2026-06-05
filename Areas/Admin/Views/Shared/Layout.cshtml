@@ -325,7 +325,7 @@
 
                         <li class="nav-section admin-sidebar__section">
                             <span class="sidebar-mini-icon"><i class="fa fa-ellipsis-h"></i></span>
-                            <h4 class="text-section">Cài đặt chiến dịch</h4>
+                            <h4 class="text-section">Cài đặt hiển thị</h4>
                         </li>
 
                         <li class="nav-item admin-sidebar__item admin-sidebar__item--has-submenu" data-route-prefixes="/admin/banners">
@@ -1112,9 +1112,16 @@
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             document.querySelectorAll(".tags-input").forEach(function (input) {
+                if (input.dataset.tagifyInitialized === "true" || input.nextElementSibling?.classList?.contains("tagify")) {
+                    return;
+                }
+
                 let tagify = new Tagify(input, {
                     originalInputValueFormat: valuesArr => valuesArr.map(item => item.value).join(",")
                 });
+
+                input.dataset.tagifyInitialized = "true";
+                input._tagify = tagify;
             });
         });
     </script>

@@ -102,6 +102,21 @@
                             <option value="StopSell" @(Model.Status == "discontinued" ? "selected" : "")> Ngưng bán </option>
                         </select>
                     </div>
+                    <div class="col-md-6 mb-3">
+                        <label name="SortOrder" class="form-label">Sắp xếp hiển thị</label>
+                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Số nhỏ hơn sẽ được ưu tiên hiển thị trước trên danh sách mặc định.">
+                            <i class="fas fa-info-circle text-info"></i>
+                        </span>
+                        <input value="@Model.SortOrder" name="SortOrder" type="number" min="0" class="form-control" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label d-block">Tính phí ship</label>
+                        <input type="hidden" name="IsShippingFee" value="false" />
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="IsShippingFee" name="IsShippingFee" value="true" @(Model.IsShippingFee ? "checked" : "") />
+                            <label class="form-check-label" for="IsShippingFee">Tính phí ship cho sản phẩm này</label>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -128,10 +143,10 @@
                     </div>
                     <div class="col-md-3 mb-3">
                         <label name="Stock" class="form-label">Số Lượng</label>
-                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Thêm số lượng tồn kho hiện tại cho sản phẩm này">
+                        <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Nếu sản phẩm dùng biến thể, tồn kho tổng sẽ tự đồng bộ bằng tổng tồn kho của tất cả biến thể.">
                             <i class="fas fa-info-circle text-info"></i>
                         </span>
-                        <input value="@Model.Stock" name="Stock" type="number" class="form-control" />
+                        <input id="productStockInput" value="@Model.Stock" name="Stock" type="number" class="form-control" />
                     </div>
                     <div class="col-md-3 mb-3">
                         <label name="Stock" class="form-label">Khối Lượng (KG)</label>
@@ -318,30 +333,28 @@
             </div>
             <div class="card-body">
                 @{
-                    // Dictionary để lưu các thuộc tính và danh sách giá trị của chúng
                     Dictionary<string, List<string>> attributeMap = new Dictionary<string, List<string>>();
 
-                    foreach (var attr in Model.VarientProducts)
+                    foreach (var variant in Model.VarientProducts)
                     {
-                        if (attr.Attributes != null)
+                        foreach (var variantAttribute in variant.VariantAttributes)
                         {
-                            var attributePairs = attr.Attributes.Split(',');
+                            var attributeCode = variantAttribute.AttributeValue?.Attribute?.Code;
+                            var attributeValue = variantAttribute.AttributeValue?.Value;
 
-                            foreach (var attributePair in attributePairs)
+                            if (string.IsNullOrWhiteSpace(attributeCode) || string.IsNullOrWhiteSpace(attributeValue))
                             {
-                                var attrParts = attributePair.Split(':');
-                                if (attrParts.Length != 2) continue; // Nếu không đúng định dạng thì bỏ qua
+                                continue;
+                            }
 
-                                string attrKey = attrParts[0].Trim(); // Tên thuộc tính (e.g., "ROM")
-                                string attrValue = attrParts[1].Trim(); // Giá trị thuộc tính (e.g., "64GB")
+                            if (!attributeMap.ContainsKey(attributeCode))
+                            {
+                                attributeMap[attributeCode] = new List<string>();
+                            }
 
-                                // Nếu key chưa tồn tại, thêm mới
-                                if (!attributeMap.ContainsKey(attrKey))
-                                {
-                                    attributeMap[attrKey] = new List<string>();
-                                }
-                                // Thêm giá trị vào danh sách của thuộc tính đó
-                                attributeMap[attrKey].Add(attrValue);
+                            if (!attributeMap[attributeCode].Contains(attributeValue))
+                            {
+                                attributeMap[attributeCode].Add(attributeValue);
                             }
                         }
                     }
@@ -396,7 +409,7 @@
                                 <th>Biến thể</th>
                                 <th style="width: 180px;">Giá bán</th>
                                 <th style="width: 220px;">SKU</th>
-                                <th style="width: 160px;">Tồn kho</th>
+                                <th style="width: 160px;">Tồn kho <span class="input-label-secondary cursor-pointer" data-bs-toggle="tooltip" title="Tổng tồn kho của tất cả biến thể phải bằng tồn kho tổng của sản phẩm."><i class="fas fa-info-circle text-info"></i></span></th>
                                 <th style="width: 240px;">Ảnh biến thể</th>
                                 <th style="width: 96px;" class="text-center">Xóa</th>
                             </tr>
@@ -414,6 +427,13 @@
                                         <input type="hidden" name="VarientProducts[@index].VarientId" value="@varient.VarientId" />
                                         <input type="hidden" name="VarientProducts[@index].ProductId" value="@varient.ProductId" />
                                         <input type="hidden" name="VarientProducts[@index].Attributes" value="@(varient.Attributes?.ToString() ?? "")" />
+                                        @{
+                                            var variantAttributeValueIds = varient.VariantAttributes.Select(x => x.AttributeValueId).Distinct().ToList();
+                                        }
+                                        @for (var attributeValueIndex = 0; attributeValueIndex < variantAttributeValueIds.Count; attributeValueIndex++)
+                                        {
+                                            <input type="hidden" name="VarientProducts[@index].AttributeValueIds[@attributeValueIndex]" value="@variantAttributeValueIds[attributeValueIndex]" />
+                                        }
 
                                     </td>
                                     <td><div class="product-form__variant-name">@varient.Attributes</div></td>
@@ -424,7 +444,7 @@
                                         <input type="text" class="form-control" name="VarientProducts[@index].Sku" value="@varient.Sku" readonly />
                                     </td>
                                     <td>
-                                        <input type="number" class="form-control" name="VarientProducts[@index].Stock" value="@varient.Stock" required />
+                                        <input type="number" class="form-control variant-stock-input" name="VarientProducts[@index].Stock" value="@varient.Stock" min="0" required />
                                     </td>
                                      <td class="align-middle text-center">
                                       <div class="d-flex flex-column align-items-center gap-2">
@@ -678,6 +698,32 @@ Ckeditor *@
     $(document).ready(function () {
         $('.selectpicker').selectpicker();
 
+        function buildAttributeValueIdInputs(variant, rowIndex) {
+            var selectedAttributes = $('#variantSelect').val() || [];
+            var hiddenInputs = '';
+
+            selectedAttributes.forEach(function (attributeCode, attributeIndex) {
+                var selectedValue = variant[attributeCode];
+                if (!selectedValue) {
+                    return;
+                }
+
+                var optionSelector = `#${attributeCode}Select option`;
+                var option = $(optionSelector).filter(function () {
+                    return $(this).val() === selectedValue;
+                }).first();
+
+                var attributeValueId = option.data('id');
+                if (!attributeValueId) {
+                    return;
+                }
+
+                hiddenInputs += '<input type="hidden" name="VarientProducts[' + rowIndex + '].AttributeValueIds[' + attributeIndex + ']" value="' + attributeValueId + '"/>';
+            });
+
+            return hiddenInputs;
+        }
+
         function updateVariantTable() {
             // Get all selected attributes and their values
             var selectedAttributes = $('#variantSelect').val() || [];
@@ -719,7 +765,8 @@ Ckeditor *@
                 var row = $('<tr>');
                 row.append($('<td class="text-center fw-semibold">').text(index + 1));
                 row.append($('<td style="display:none">').html(
-                    '<input type="hidden" name="VarientProducts[' + index + '].Attributes" value="' + variantString + '"/>'
+                    '<input type="hidden" name="VarientProducts[' + index + '].Attributes" value="' + variantString + '"/>' +
+                    buildAttributeValueIdInputs(variant, index)
                 ));
                 row.append($('<td>').html('<div class="product-form__variant-name">' + variantString + '</div>'));
                 row.append($('<td>').html(
@@ -729,7 +776,7 @@ Ckeditor *@
                     '<input type="text" class="form-control" name="VarientProducts[' + index + '].Sku" value="' + sku + '" readonly/>'
                 ));
                 row.append($('<td>').html(
-                    '<input type="number" class="form-control" name="VarientProducts[' + index + '].Stock" value="1" required/>'
+                    '<input type="number" class="form-control variant-stock-input" name="VarientProducts[' + index + '].Stock" value="1" min="0" required/>'
                 ));
                 row.append($('<td>').html(
                     '<input type="file" class="form-control form-control-sm" name="VarientProducts[' + index + '].Image" accept="image/*"/>'
@@ -743,7 +790,7 @@ Ckeditor *@
             });
 
             $('.table-Varient').show();
-  
+            syncVariantStockSummary();
             updateRowNumbers();
         }
 
@@ -789,11 +836,65 @@ Ckeditor *@
                 }
             });
         });
+
+        syncVariantStockSummary();
     }
 
     $(document).on('click', '.delete-btn', function () {
         $(this).closest('tr').remove();
         updateRowNumbers();
+    });
+
+    function isVariantEnabled() {
+        return $('#useVariant').is(':checked') || $('input[name="IsUseVariant"][value="true"]').length > 0;
+    }
+
+    function getVariantStockTotal() {
+        var total = 0;
+        $('#variantTableBody').find('.variant-stock-input').each(function () {
+            total += parseInt($(this).val(), 10) || 0;
+        });
+        return total;
+    }
+
+    function syncVariantStockSummary() {
+        var $productStockInput = $('#productStockInput');
+        if (!$productStockInput.length) {
+            return true;
+        }
+
+        if (!isVariantEnabled()) {
+            $productStockInput.prop('readonly', false);
+            return true;
+        }
+
+        var total = getVariantStockTotal();
+        $productStockInput.val(total);
+        $productStockInput.prop('readonly', true);
+        return true;
+    }
+
+    function validateVariantStockConsistency() {
+        if (!isVariantEnabled()) {
+            return true;
+        }
+
+        var rowCount = $('#variantTableBody tr').length;
+        if (rowCount === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Thiếu biến thể',
+                text: 'Sản phẩm đang dùng biến thể nhưng chưa có dòng biến thể nào.'
+            });
+            return false;
+        }
+
+        syncVariantStockSummary();
+        return true;
+    }
+
+    $(document).on('input change', '.variant-stock-input', function () {
+        syncVariantStockSummary();
     });
 </script>
 <script>
@@ -875,6 +976,9 @@ Ckeditor *@
         $('#ProductForm').on('submit', function (e) {
             e.preventDefault();
             CKEDITOR.instances.description.updateElement();
+            if (!validateVariantStockConsistency()) {
+                return;
+            }
 
             Swal.fire({
                 title: 'Bạn có chắc chắn muốn cập nhật sản phẩm này?',
@@ -898,14 +1002,37 @@ Ckeditor *@
                         processData: false,
                         contentType: false,
                         headers: {
+                            "X-Requested-With": "XMLHttpRequest",
                             "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val()
                         },
                         success: function (res) {
                             $('.loading-container').hide();
+                            let icon = 'success';
+                            let title = 'Cập nhật thành công!';
+                            let text = 'Sản phẩm đã được cập nhật. Đồng bộ ML đang chạy nền.';
+
+                            if (res && res.systemSyncSuccess === false) {
+                                icon = 'warning';
+                                title = 'Đã cập nhật sản phẩm';
+                                text = 'Sản phẩm đã được cập nhật nhưng đồng bộ nội bộ thất bại.';
+                                if (res.systemSyncMessage) {
+                                    text += ' ' + res.systemSyncMessage;
+                                }
+                            } else if (res && res.recommendationSyncSuccess === false) {
+                                icon = 'warning';
+                                title = 'Đã cập nhật sản phẩm';
+                                text = 'Sản phẩm đã được cập nhật nhưng đồng bộ ML thất bại.';
+                                if (res.recommendationSyncMessage) {
+                                    text += ' ' + res.recommendationSyncMessage;
+                                }
+                            } else if (res && res.recommendationSyncMessage) {
+                                text = 'Sản phẩm đã được cập nhật. ' + res.recommendationSyncMessage;
+                            }
+
                             Swal.fire({
-                                icon: 'success',
-                                title: 'Cập nhật thành công!',
-                                text: 'Sản phẩm đã được cập nhật.',
+                                icon: icon,
+                                title: title,
+                                text: text,
                                 confirmButtonText: 'OK'
                             }).then(() => {
                                 const params = new URLSearchParams();
@@ -934,10 +1061,11 @@ Ckeditor *@
                         },
                         error: function (xhr, error, status) {
                             $('.loading-container').hide();
+                            const response = xhr.responseJSON;
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Đã xảy ra lỗi!',
-                                text: 'Vui lòng thử lại sau.',
+                                text: response?.message || 'Vui lòng thử lại sau.',
                                 confirmButtonText: 'OK'
                             });
                             console.error('Error details:', error);
@@ -992,10 +1120,32 @@ Ckeditor *@
                         return;
                     }
 
+                    let deleteIcon = 'success';
+                    let deleteTitle = 'Đã xóa sản phẩm';
+                    let deleteText = response.message || 'Sản phẩm đã được xóa.';
+
+                    if (response.systemSyncSuccess === false) {
+                        deleteIcon = 'warning';
+                        deleteTitle = 'Đã xóa sản phẩm';
+                        deleteText = 'Sản phẩm đã được xóa nhưng đồng bộ nội bộ thất bại.';
+                        if (response.systemSyncMessage) {
+                            deleteText += ' ' + response.systemSyncMessage;
+                        }
+                    } else if (response.recommendationSyncSuccess === false) {
+                        deleteIcon = 'warning';
+                        deleteTitle = 'Đã xóa sản phẩm';
+                        deleteText = 'Sản phẩm đã được xóa nhưng đồng bộ ML thất bại.';
+                        if (response.recommendationSyncMessage) {
+                            deleteText += ' ' + response.recommendationSyncMessage;
+                        }
+                    } else if (response.recommendationSyncMessage) {
+                        deleteText += ' ' + response.recommendationSyncMessage;
+                    }
+
                     Swal.fire({
-                        icon: 'success',
-                        title: 'Đã xóa sản phẩm',
-                        text: response.message,
+                        icon: deleteIcon,
+                        title: deleteTitle,
+                        text: deleteText,
                         confirmButtonText: 'OK'
                     }).then(() => {
                         const params = new URLSearchParams();
@@ -1045,14 +1195,18 @@ Ckeditor *@
             if ($(this).is(':checked')) {
                 // Nếu checkbox được check thì enable select box
                 $('#variantSelect').prop('disabled', false);
+                syncVariantStockSummary();
             } else {
                 // Nếu checkbox không được check thì disable select box
                 $('#variantSelect').prop('disabled', true);
+                $('#productStockInput').prop('readonly', false);
             }
 
             // Refresh selectpicker để cập nhật giao diện (nếu bạn đang sử dụng bootstrap-select)
             $('#variantSelect').selectpicker('refresh');
         });
+
+        syncVariantStockSummary();
     });
 </script>
 <script>

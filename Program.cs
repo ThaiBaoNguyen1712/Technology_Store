@@ -44,7 +44,6 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection"),
         sqlOptions =>
         {
-            sqlOptions.EnableRetryOnFailure();
             sqlOptions.CommandTimeout(15);
         }));
 
@@ -185,6 +184,10 @@ builder.Services.AddSingleton<UserProductEventBackgroundQueue>();
 builder.Services.AddSingleton<IUserProductEventQueue>(sp => sp.GetRequiredService<UserProductEventBackgroundQueue>());
 builder.Services.AddHostedService(sp => sp.GetRequiredService<UserProductEventBackgroundQueue>());
 builder.Services.AddScoped<IUserProductEventTrackingService, UserProductEventTrackingService>();
+builder.Services.AddSingleton<RecommendationAdminBackgroundQueue>();
+builder.Services.AddSingleton<IRecommendationAdminQueue>(sp => sp.GetRequiredService<RecommendationAdminBackgroundQueue>());
+builder.Services.AddHostedService(sp => sp.GetRequiredService<RecommendationAdminBackgroundQueue>());
+builder.Services.AddHttpClient<IRecommendationAdminService, RecommendationAdminService>();
 builder.Services.AddHostedService<UserProductEventRetentionService>();
 
 builder.Services.AddSignalR();

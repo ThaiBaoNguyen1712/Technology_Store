@@ -33,6 +33,11 @@ namespace Tech_Store.Areas.Admin.Controllers
             return pageSize.GetValueOrDefault(FallbackPageSize) > 0 ? pageSize.Value : FallbackPageSize;
         }
 
+        private bool IsAjaxRequest()
+        {
+            return string.Equals(Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase);
+        }
+
         [Route("View/{id}")]
         public async Task<IActionResult> View(int id)
         {
@@ -114,6 +119,7 @@ namespace Tech_Store.Areas.Admin.Controllers
             ViewBag.Brands = lookup.Brands;
             ViewBag.Attributes = lookup.Attributes;
             ViewBag.Specs = lookup.Specs;
+            ViewBag.NextSortOrder = await _adminProductService.GetNextSortOrderAsync();
             ViewBag.ReturnPage = Math.Max(1, page);
             ViewBag.ReturnPageSize = pageSize.GetValueOrDefault(GetDefaultAdminPageSize());
             ViewBag.ReturnStatus = status;
@@ -133,12 +139,26 @@ namespace Tech_Store.Areas.Admin.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest("Invalid");
+                return BadRequest(new { success = false, message = "Dữ liệu không hợp lệ." });
             }
 
             var result = await _adminProductService.CreateAsync(productDto);
             if (result.Success)
             {
+                if (IsAjaxRequest())
+                {
+                    return Json(new
+                    {
+                        success = true,
+                        message = result.Message,
+                        systemSyncSuccess = result.SystemSyncSuccess,
+                        systemSyncMessage = result.SystemSyncMessage,
+                        recommendationSyncSuccess = result.RecommendationSyncSuccess,
+                        recommendationSyncSkipped = result.RecommendationSyncSkipped,
+                        recommendationSyncMessage = result.RecommendationSyncMessage
+                    });
+                }
+
                 return RedirectToAction("Index", new
                 {
                     status = productDto.ReturnStatus,
@@ -150,6 +170,20 @@ namespace Tech_Store.Areas.Admin.Controllers
                     stockTo = productDto.ReturnStockTo,
                     page = productDto.ReturnPage,
                     pageSize = productDto.ReturnPageSize
+                });
+            }
+
+            if (IsAjaxRequest())
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = result.Message,
+                    systemSyncSuccess = result.SystemSyncSuccess,
+                    systemSyncMessage = result.SystemSyncMessage,
+                    recommendationSyncSuccess = result.RecommendationSyncSuccess,
+                    recommendationSyncSkipped = result.RecommendationSyncSkipped,
+                    recommendationSyncMessage = result.RecommendationSyncMessage
                 });
             }
 
@@ -188,7 +222,10 @@ namespace Tech_Store.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Update(ProductDTo productDto)
         {
-            if (!ModelState.IsValid) return BadRequest("Invalid model state");
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new { success = false, message = "Dữ liệu không hợp lệ." });
+            }
 
             var result = await _adminProductService.UpdateAsync(productDto);
             if (result.NotFound)
@@ -198,7 +235,30 @@ namespace Tech_Store.Areas.Admin.Controllers
 
             if (!result.Success)
             {
-                return StatusCode(500, result.Message);
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = result.Message,
+                    systemSyncSuccess = result.SystemSyncSuccess,
+                    systemSyncMessage = result.SystemSyncMessage,
+                    recommendationSyncSuccess = result.RecommendationSyncSuccess,
+                    recommendationSyncSkipped = result.RecommendationSyncSkipped,
+                    recommendationSyncMessage = result.RecommendationSyncMessage
+                });
+            }
+
+            if (IsAjaxRequest())
+            {
+                return Json(new
+                {
+                    success = true,
+                    message = result.Message,
+                    systemSyncSuccess = result.SystemSyncSuccess,
+                    systemSyncMessage = result.SystemSyncMessage,
+                    recommendationSyncSuccess = result.RecommendationSyncSuccess,
+                    recommendationSyncSkipped = result.RecommendationSyncSkipped,
+                    recommendationSyncMessage = result.RecommendationSyncMessage
+                });
             }
 
             return RedirectToAction("Index", new
@@ -219,7 +279,17 @@ namespace Tech_Store.Areas.Admin.Controllers
         public async Task<JsonResult> ChangeVisible(int productId)
         {
             var result = await _adminProductService.ChangeVisibleAsync(productId);
-            return Json(new { success = result.Success, message = result.Message, visible = result.Visible });
+            return Json(new
+            {
+                success = result.Success,
+                message = result.Message,
+                visible = result.Visible,
+                systemSyncSuccess = result.SystemSyncSuccess,
+                systemSyncMessage = result.SystemSyncMessage,
+                recommendationSyncSuccess = result.RecommendationSyncSuccess,
+                recommendationSyncSkipped = result.RecommendationSyncSkipped,
+                recommendationSyncMessage = result.RecommendationSyncMessage
+            });
         }
 
         [HttpPost("Delete/{id}")]
@@ -233,10 +303,28 @@ namespace Tech_Store.Areas.Admin.Controllers
 
             if (!result.Success)
             {
-                return BadRequest(new { success = false, message = result.Message });
+                return BadRequest(new
+                {
+                    success = false,
+                    message = result.Message,
+                    systemSyncSuccess = result.SystemSyncSuccess,
+                    systemSyncMessage = result.SystemSyncMessage,
+                    recommendationSyncSuccess = result.RecommendationSyncSuccess,
+                    recommendationSyncSkipped = result.RecommendationSyncSkipped,
+                    recommendationSyncMessage = result.RecommendationSyncMessage
+                });
             }
 
-            return Json(new { success = true, message = result.Message });
+            return Json(new
+            {
+                success = true,
+                message = result.Message,
+                systemSyncSuccess = result.SystemSyncSuccess,
+                systemSyncMessage = result.SystemSyncMessage,
+                recommendationSyncSuccess = result.RecommendationSyncSuccess,
+                recommendationSyncSkipped = result.RecommendationSyncSkipped,
+                recommendationSyncMessage = result.RecommendationSyncMessage
+            });
         }
 
         [HttpPost("DeleteFileImage")]

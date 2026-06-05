@@ -1400,16 +1400,40 @@ namespace Tech_Store.Migrations
 
             modelBuilder.Entity("Tech_Store.Models.Payment", b =>
                 {
-                    b.Property<int>("PaymentId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
-                        .HasColumnName("payment_id");
+                        .HasColumnName("id");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PaymentId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18 ,2)")
-                        .HasColumnName("amount");
+                    b.Property<string>("AccountNumber")
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("account_number");
+
+                    b.Property<decimal>("Accumulated")
+                        .HasColumnType("decimal(20,2)")
+                        .HasColumnName("accumulated");
+
+                    b.Property<decimal>("AmountIn")
+                        .HasColumnType("decimal(20,2)")
+                        .HasColumnName("amount_in");
+
+                    b.Property<decimal>("AmountOut")
+                        .HasColumnType("decimal(20,2)")
+                        .HasColumnName("amount_out");
+
+                    b.Property<string>("Body")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("body");
+
+                    b.Property<string>("Code")
+                        .HasMaxLength(250)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(250)")
+                        .HasColumnName("code");
 
                     b.Property<DateTime?>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -1417,29 +1441,45 @@ namespace Tech_Store.Migrations
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("(getdate())");
 
+                    b.Property<string>("Gateway")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("gateway");
+
                     b.Property<int?>("OrderId")
                         .HasColumnType("int")
                         .HasColumnName("order_id");
 
-                    b.Property<DateTime?>("PaymentDate")
+                    b.Property<string>("PaymentStatus")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("payment_status");
+
+                    b.Property<string>("ReferenceNumber")
+                        .HasMaxLength(255)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(255)")
+                        .HasColumnName("reference_number");
+
+                    b.Property<string>("SubAccount")
+                        .HasMaxLength(250)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(250)")
+                        .HasColumnName("sub_account");
+
+                    b.Property<string>("TransactionContent")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("transaction_content");
+
+                    b.Property<DateTime?>("TransactionDate")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
-                        .HasColumnName("payment_date")
+                        .HasColumnName("transaction_date")
                         .HasDefaultValueSql("(getdate())");
-
-                    b.Property<string>("PaymentMethod")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(50)")
-                        .HasColumnName("payment_method");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(50)")
-                        .HasColumnName("status");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .ValueGeneratedOnAdd()
@@ -1447,12 +1487,90 @@ namespace Tech_Store.Migrations
                         .HasColumnName("updated_at")
                         .HasDefaultValueSql("(getdate())");
 
-                    b.HasKey("PaymentId")
+                    b.HasKey("Id")
                         .HasName("PK__Payment__ED1FC9EAAA6E7EEE");
 
                     b.HasIndex("OrderId");
 
                     b.ToTable("Payment", (string)null);
+                });
+
+            modelBuilder.Entity("Tech_Store.Models.PendingSePayCheckout", b =>
+                {
+                    b.Property<int>("PendingSePayCheckoutId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("pending_sepay_checkout_id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PendingSePayCheckoutId"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(20,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<string>("CheckoutPayload")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("checkout_payload");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<string>("GatewayPayload")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("gateway_payload");
+
+                    b.Property<int?>("OrderId")
+                        .HasColumnType("int")
+                        .HasColumnName("order_id");
+
+                    b.Property<string>("OrderStatus")
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("order_status");
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("datetime")
+                        .HasColumnName("paid_at");
+
+                    b.Property<string>("PaymentContent")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("payment_content");
+
+                    b.Property<string>("PaymentStatus")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("payment_status");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("PendingSePayCheckoutId");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("PaymentContent")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PendingSePayCheckout", (string)null);
                 });
 
             modelBuilder.Entity("Tech_Store.Models.Product", b =>
@@ -1504,6 +1622,12 @@ namespace Tech_Store.Migrations
                         .HasColumnType("nvarchar(500)")
                         .HasColumnName("image");
 
+                    b.Property<bool>("IsShippingFee")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_shipping_fee");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -1532,6 +1656,10 @@ namespace Tech_Store.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("slug");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int")
+                        .HasColumnName("sortOrder");
 
                     b.Property<string>("Status")
                         .HasMaxLength(50)
@@ -1582,6 +1710,8 @@ namespace Tech_Store.Migrations
                     b.HasIndex("Slug")
                         .IsUnique()
                         .HasFilter("[slug] IS NOT NULL");
+
+                    b.HasIndex("SortOrder");
 
                     b.HasIndex(new[] { "Sku" }, "UQ__Product__CA1ECF0D40802956")
                         .IsUnique()
@@ -2084,57 +2214,72 @@ namespace Tech_Store.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<int>("AddToCartCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0)
+                        .HasColumnName("add_to_cart_count");
+
+                    b.Property<double>("InteractionScore")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("float")
+                        .HasDefaultValue(0.0)
+                        .HasColumnName("interaction_score");
+
+                    b.Property<DateTime>("LastInteractedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
-                        .HasColumnName("created_at")
+                        .HasColumnName("last_interacted_at")
                         .HasDefaultValueSql("(getdate())");
-
-                    b.Property<string>("EventType")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("event_type");
-
-                    b.Property<string>("MetadataJson")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("metadata_json");
 
                     b.Property<int>("ProductId")
                         .HasColumnType("int")
                         .HasColumnName("product_id");
+
+                    b.Property<int>("PurchaseCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0)
+                        .HasColumnName("purchase_count");
 
                     b.Property<string>("SessionId")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("session_id");
 
-                    b.Property<string>("Source")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("source");
-
                     b.Property<int?>("UserId")
                         .HasColumnType("int")
                         .HasColumnName("user_id");
 
-                    b.Property<double>("Weight")
-                        .HasColumnType("float")
-                        .HasColumnName("weight");
+                    b.Property<int>("ViewCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0)
+                        .HasColumnName("view_count");
+
+                    b.Property<int>("WishlistCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0)
+                        .HasColumnName("wishlist_count");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("EventType", "CreatedAt")
-                        .HasDatabaseName("IX_UserProductEvent_EventType_CreatedAt");
+                    b.HasIndex("LastInteractedAt")
+                        .HasDatabaseName("IX_UserProductEvent_LastInteractedAt");
 
-                    b.HasIndex("ProductId", "CreatedAt")
-                        .HasDatabaseName("IX_UserProductEvent_ProductId_CreatedAt");
+                    b.HasIndex("ProductId", "LastInteractedAt")
+                        .HasDatabaseName("IX_UserProductEvent_ProductId_LastInteractedAt");
 
-                    b.HasIndex("SessionId", "CreatedAt")
-                        .HasDatabaseName("IX_UserProductEvent_SessionId_CreatedAt");
+                    b.HasIndex("SessionId", "ProductId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_UserProductEvent_SessionId_ProductId")
+                        .HasFilter("[session_id] IS NOT NULL");
 
-                    b.HasIndex("UserId", "CreatedAt")
-                        .HasDatabaseName("IX_UserProductEvent_UserId_CreatedAt");
+                    b.HasIndex("UserId", "ProductId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_UserProductEvent_UserId_ProductId")
+                        .HasFilter("[user_id] IS NOT NULL");
 
                     b.ToTable("UserProductEvent", (string)null);
                 });

@@ -303,21 +303,21 @@
                         {
                             <tr>
                                 <td>
-                                    <a class="fw-semibold text-decoration-none" href="/Admin/Transactions/View/@transaction.PaymentId">#@transaction.PaymentId</a>
+                                    <a class="fw-semibold text-decoration-none" href="/Admin/Transactions/View/@transaction.Id">#@transaction.Id</a>
                                 </td>
                                 <td>
-                                    <div class="text-dark">@transaction.PaymentDate</div>
+                                    <div class="text-dark">@transaction.TransactionDate</div>
                                 </td>
                                 <td>
-                                    <div class="order-admin__amount">@transaction.Amount.ToString("C0", new CultureInfo("vi-VN"))</div>
+                                    <div class="order-admin__amount">@transaction.AmountIn.ToString("C0", new CultureInfo("vi-VN"))</div>
                                 </td>
-                                <td>@transaction.PaymentMethod</td>
+                                <td>@transaction.Gateway</td>
                                 <td>
                                     <div class="order-admin__state">
-                                        <span class="order-admin__state-dot @(transaction.Status.ToLower() == "paid" ? "order-admin__state-dot--success" : "order-admin__state-dot--danger")"></span>
+                                        <span class="order-admin__state-dot @(transaction.PaymentStatus?.ToLower() == "paid" ? "order-admin__state-dot--success" : "order-admin__state-dot--danger")"></span>
                                         <div class="order-admin__state-body">
-                                            <strong>@(transaction.Status.ToLower() == "paid" ? "Đã thanh toán" : "Chưa thanh toán")</strong>
-                                            <span>@transaction.Status</span>
+                                            <strong>@(transaction.PaymentStatus?.ToLower() == "paid" ? "Đã thanh toán" : "Chưa thanh toán")</strong>
+                                            <span>@transaction.PaymentStatus</span>
                                         </div>
                                     </div>
                                 </td>

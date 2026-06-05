@@ -108,7 +108,11 @@ namespace Tech_Store.Services.Payment
                         };
 
                 case PaymentMethodType.SePay:
-                    return _sePayService.ValidateCallback(httpContext);
+                    return new OnlinePaymentGatewayCallbackResult
+                    {
+                        Success = false,
+                        FailureMessage = "SePay callback must be validated from raw body."
+                    };
 
                 default:
                     return new OnlinePaymentGatewayCallbackResult

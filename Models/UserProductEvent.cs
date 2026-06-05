@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations.Schema;
-
 namespace Tech_Store.Models;
 
 public partial class UserProductEvent
@@ -12,16 +10,17 @@ public partial class UserProductEvent
 
     public int ProductId { get; set; }
 
-    public string EventType { get; set; } = null!;
+    public int ViewCount { get; set; }
 
-    [Column(TypeName = "float")]
-    public double Weight { get; set; }
+    public int AddToCartCount { get; set; }
 
-    public string? Source { get; set; }
+    public int WishlistCount { get; set; }
 
-    public string? MetadataJson { get; set; }
+    public int PurchaseCount { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+    public double InteractionScore { get; set; }
+
+    public DateTime LastInteractedAt { get; set; }
 
     public virtual Product Product { get; set; } = null!;
 

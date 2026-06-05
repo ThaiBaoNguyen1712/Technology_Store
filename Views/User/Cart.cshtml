@@ -73,9 +73,12 @@
                                     <div class="cart-page__item-info">
                                         <input type="hidden" name="ProductId" value="@item.ProductId" />
                                         <a class="cart-page__item-name" href="/view/@item.Product.Slug">@item.Product.Name</a>
-                                        @if (!string.IsNullOrWhiteSpace(item.VarientProduct.Attributes))
+                                        @{
+                                            var variantDisplay = VariantDisplayHelper.Format(item.VarientProduct);
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(variantDisplay))
                                         {
-                                            <p class="cart-page__item-variant">@item.VarientProduct.Attributes</p>
+                                            <p class="cart-page__item-variant">@variantDisplay</p>
                                         }
                                     </div>
                                 </div>

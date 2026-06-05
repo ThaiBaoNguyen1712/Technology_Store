@@ -44,6 +44,8 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<OrderItem> OrderItems { get; set; }
 
+    public virtual DbSet<PendingSePayCheckout> PendingSePayCheckouts { get; set; }
+
     public virtual DbSet<Payment> Payments { get; set; }
 
     public virtual DbSet<Product> Products { get; set; }
@@ -756,30 +758,99 @@ public partial class ApplicationDbContext : DbContext
                 .HasConstraintName("FK_OrderItem_VarientProduct");
         });
 
+        modelBuilder.Entity<PendingSePayCheckout>(entity =>
+        {
+            entity.HasKey(e => e.PendingSePayCheckoutId);
+
+            entity.ToTable("PendingSePayCheckout");
+            ConfigureTimestamps(entity);
+
+            entity.HasIndex(e => e.PaymentContent).IsUnique();
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.OrderId);
+
+            entity.Property(e => e.PendingSePayCheckoutId).HasColumnName("pending_sepay_checkout_id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.Amount)
+                .HasColumnType("decimal(20,2)")
+                .HasColumnName("amount");
+            entity.Property(e => e.PaymentContent)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnType("varchar(100)")
+                .HasColumnName("payment_content");
+            entity.Property(e => e.CheckoutPayload)
+                .IsRequired()
+                .HasColumnName("checkout_payload");
+            entity.Property(e => e.PaymentStatus)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnType("varchar(50)")
+                .HasColumnName("payment_status");
+            entity.Property(e => e.OrderStatus)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnType("varchar(50)")
+                .HasColumnName("order_status");
+            entity.Property(e => e.OrderId).HasColumnName("order_id");
+            entity.Property(e => e.PaidAt)
+                .HasColumnType("datetime")
+                .HasColumnName("paid_at");
+            entity.Property(e => e.GatewayPayload).HasColumnName("gateway_payload");
+        });
+
         modelBuilder.Entity<Payment>(entity =>
         {
-            entity.HasKey(e => e.PaymentId).HasName("PK__Payment__ED1FC9EAAA6E7EEE");
+            entity.HasKey(e => e.Id).HasName("PK__Payment__ED1FC9EAAA6E7EEE");
 
             entity.ToTable("Payment");
             ConfigureTimestamps(entity);
 
-            entity.Property(e => e.PaymentId).HasColumnName("payment_id");
-            entity.Property(e => e.Amount)
-                .HasColumnType("decimal(18 ,2)")
-                .HasColumnName("amount");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.AccountNumber)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("account_number");
+            entity.Property(e => e.Accumulated)
+                .HasColumnType("decimal(20,2)")
+                .HasColumnName("accumulated");
+            entity.Property(e => e.AmountIn)
+                .HasColumnType("decimal(20,2)")
+                .HasColumnName("amount_in");
+            entity.Property(e => e.AmountOut)
+                .HasColumnType("decimal(20,2)")
+                .HasColumnName("amount_out");
+            entity.Property(e => e.Body)
+                .HasColumnType("nvarchar(max)")
+                .HasColumnName("body");
+            entity.Property(e => e.Code)
+                .HasMaxLength(250)
+                .IsUnicode(false)
+                .HasColumnName("code");
+            entity.Property(e => e.Gateway)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("gateway");
             entity.Property(e => e.OrderId).HasColumnName("order_id");
-            entity.Property(e => e.PaymentDate)
+            entity.Property(e => e.PaymentStatus)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("payment_status");
+            entity.Property(e => e.ReferenceNumber)
+                .HasMaxLength(255)
+                .IsUnicode(false)
+                .HasColumnName("reference_number");
+            entity.Property(e => e.SubAccount)
+                .HasMaxLength(250)
+                .IsUnicode(false)
+                .HasColumnName("sub_account");
+            entity.Property(e => e.TransactionContent)
+                .HasColumnType("nvarchar(max)")
+                .HasColumnName("transaction_content");
+            entity.Property(e => e.TransactionDate)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
-                .HasColumnName("payment_date");
-            entity.Property(e => e.PaymentMethod)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasColumnName("payment_method");
-            entity.Property(e => e.Status)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasColumnName("status");
+                .HasColumnName("transaction_date");
 
             entity.HasOne(d => d.Order).WithMany(p => p.Payments)
                 .HasForeignKey(d => d.OrderId)
@@ -836,7 +907,11 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
                 .HasColumnName("status");
+            entity.Property(e => e.IsShippingFee)
+                .HasDefaultValue(true)
+                .HasColumnName("is_shipping_fee");
             entity.Property(e => e.Stock).HasColumnName("stock");
+            entity.Property(e => e.SortOrder).HasColumnName("sortOrder");
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
@@ -868,6 +943,7 @@ public partial class ApplicationDbContext : DbContext
             entity.HasIndex(p => p.BrandId);
 
             //Index SortOrder
+            entity.HasIndex(p => p.SortOrder);
             entity.HasIndex(p => p.SellPrice);
         });
 
@@ -1185,14 +1261,18 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasKey(e => e.Id);
 
-            entity.HasIndex(e => new { e.UserId, e.CreatedAt })
-                .HasDatabaseName("IX_UserProductEvent_UserId_CreatedAt");
-            entity.HasIndex(e => new { e.SessionId, e.CreatedAt })
-                .HasDatabaseName("IX_UserProductEvent_SessionId_CreatedAt");
-            entity.HasIndex(e => new { e.ProductId, e.CreatedAt })
-                .HasDatabaseName("IX_UserProductEvent_ProductId_CreatedAt");
-            entity.HasIndex(e => new { e.EventType, e.CreatedAt })
-                .HasDatabaseName("IX_UserProductEvent_EventType_CreatedAt");
+            entity.HasIndex(e => new { e.UserId, e.ProductId })
+                .IsUnique()
+                .HasFilter("[user_id] IS NOT NULL")
+                .HasDatabaseName("IX_UserProductEvent_UserId_ProductId");
+            entity.HasIndex(e => new { e.SessionId, e.ProductId })
+                .IsUnique()
+                .HasFilter("[session_id] IS NOT NULL")
+                .HasDatabaseName("IX_UserProductEvent_SessionId_ProductId");
+            entity.HasIndex(e => e.LastInteractedAt)
+                .HasDatabaseName("IX_UserProductEvent_LastInteractedAt");
+            entity.HasIndex(e => new { e.ProductId, e.LastInteractedAt })
+                .HasDatabaseName("IX_UserProductEvent_ProductId_LastInteractedAt");
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.UserId).HasColumnName("user_id");
@@ -1200,20 +1280,26 @@ public partial class ApplicationDbContext : DbContext
                 .HasMaxLength(100)
                 .HasColumnName("session_id");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
-            entity.Property(e => e.EventType)
-                .HasMaxLength(50)
-                .HasColumnName("event_type");
-            entity.Property(e => e.Weight)
+            entity.Property(e => e.ViewCount)
+                .HasDefaultValue(0)
+                .HasColumnName("view_count");
+            entity.Property(e => e.AddToCartCount)
+                .HasDefaultValue(0)
+                .HasColumnName("add_to_cart_count");
+            entity.Property(e => e.WishlistCount)
+                .HasDefaultValue(0)
+                .HasColumnName("wishlist_count");
+            entity.Property(e => e.PurchaseCount)
+                .HasDefaultValue(0)
+                .HasColumnName("purchase_count");
+            entity.Property(e => e.InteractionScore)
                 .HasColumnType("float")
-                .HasColumnName("weight");
-            entity.Property(e => e.Source)
-                .HasMaxLength(50)
-                .HasColumnName("source");
-            entity.Property(e => e.MetadataJson).HasColumnName("metadata_json");
-            entity.Property(e => e.CreatedAt)
+                .HasDefaultValue(0d)
+                .HasColumnName("interaction_score");
+            entity.Property(e => e.LastInteractedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime2")
-                .HasColumnName("created_at");
+                .HasColumnName("last_interacted_at");
 
             entity.HasOne(d => d.Product).WithMany(p => p.UserProductEvents)
                 .HasForeignKey(d => d.ProductId)

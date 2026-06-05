@@ -17,10 +17,34 @@ namespace Tech_Store.Controllers
         }
 
         [HttpGet("homepage")]
-        public async Task<IActionResult> RecommendHomepage([FromQuery] int topN = 15)
+        public async Task<IActionResult> RecommendHomepage([FromQuery] int limit = 15)
         {
             int userId = GetCurrentUserId();
-            var result = await _recommendServices.GetHomepageRecommend(userId, topN);
+            var result = await _recommendServices.GetHomepageRecommend(userId, limit);
+            return Ok(result);
+        }
+
+        [HttpGet("detail/{productSysId}")]
+        public async Task<IActionResult> RecommendDetail(string productSysId, [FromQuery] int limit = 15)
+        {
+            int userId = GetCurrentUserId();
+            var result = await _recommendServices.GetSceneRecommend(userId, "detail", productSysId, limit);
+            return Ok(result);
+        }
+
+        [HttpGet("cart")]
+        public async Task<IActionResult> RecommendCart([FromQuery] int limit = 15)
+        {
+            int userId = GetCurrentUserId();
+            var result = await _recommendServices.GetSceneRecommend(userId, "cart", null, limit);
+            return Ok(result);
+        }
+
+        [HttpGet("wishlist")]
+        public async Task<IActionResult> RecommendWishlist([FromQuery] int limit = 15)
+        {
+            int userId = GetCurrentUserId();
+            var result = await _recommendServices.GetSceneRecommend(userId, "wishlist", null, limit);
             return Ok(result);
         }
 

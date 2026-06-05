@@ -1,33 +1,182 @@
 @{
     ViewData["Title"] = "Thanh toán thành công";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    var successMessage = TempData["Message"]?.ToString() ?? "Khoản thanh toán của bạn đã được ghi nhận thành công.";
 }
 
-<section class="client-status-page">
+<section class="payment-success-page">
     <div class="container">
-        <div class="client-status-card client-status-card--success">
-            <div class="client-status-card__icon">
-                <i class="fas fa-check"></i>
+        <div class="payment-success-page__card">
+            <div class="payment-success-page__icon">
+                <i class="fas fa-circle-check"></i>
             </div>
-            <p class="client-status-card__eyebrow">Thanh toán thành công</p>
-            <h1 class="client-status-card__title">Đơn hàng đã được xác nhận</h1>
-            <p class="client-status-card__message">@(TempData["Message"]?.ToString() ?? "Khoản thanh toán của bạn đã được ghi nhận thành công.")</p>
+            <div class="payment-success-page__eyebrow">Thanh toán thành công</div>
+            <h1 class="payment-success-page__title">Đơn hàng đã được xác nhận</h1>
+            <p class="payment-success-page__message">@successMessage</p>
 
-            <div class="client-status-card__notes">
-                <div class="client-status-card__note">
+            <div class="payment-success-page__highlights">
+                <div class="payment-success-page__highlight">
+                    <span>Trạng thái</span>
+                    <strong>Đã thanh toán</strong>
+                </div>
+                <div class="payment-success-page__highlight">
+                    <span>Bước tiếp theo</span>
+                    <strong>Đang chờ xử lý đơn</strong>
+                </div>
+            </div>
+
+            <div class="payment-success-page__notes">
+                <div class="payment-success-page__note">
                     <i class="fas fa-wallet"></i>
-                    <span>Thanh toán đã hoàn tất và đơn hàng đang chờ xử lý.</span>
+                    <span>Khoản thanh toán đã được ghi nhận và đơn hàng đang vào quy trình xử lý.</span>
                 </div>
-                <div class="client-status-card__note">
+                <div class="payment-success-page__note">
+                    <i class="fas fa-box-open"></i>
+                    <span>Thông tin đơn mua sẽ tiếp tục được cập nhật trong trang chi tiết đơn hàng.</span>
+                </div>
+                <div class="payment-success-page__note">
                     <i class="fas fa-truck"></i>
-                    <span>Bạn có thể theo dõi tiến trình giao hàng trong đơn mua.</span>
+                    <span>Bạn có thể theo dõi tiến trình giao hàng trong mục đơn mua của mình.</span>
                 </div>
             </div>
 
-            <div class="client-status-card__actions">
+            <div class="payment-success-page__actions">
                 <a href="/user/MyOrders" class="btn btn-danger">Xem đơn hàng</a>
                 <a href="@Url.Action("Index", "Home")" class="btn btn-outline-secondary">Tiếp tục mua sắm</a>
             </div>
         </div>
     </div>
 </section>
+
+<style>
+    .payment-success-page {
+        padding: 24px 0 40px;
+    }
+
+    .payment-success-page__card {
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 32px 28px;
+        border-radius: 28px;
+        border: 1px solid #e7ecf3;
+        background: linear-gradient(180deg, #fffdfa 0%, #ffffff 58%, #f8fafc 100%);
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+        text-align: center;
+    }
+
+    .payment-success-page__icon {
+        width: 78px;
+        height: 78px;
+        margin: 0 auto 16px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #16a34a, #22c55e);
+        color: #fff;
+        font-size: 2rem;
+        box-shadow: 0 18px 40px rgba(34, 197, 94, 0.24);
+    }
+
+    .payment-success-page__eyebrow {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: #ecfdf3;
+        color: #15803d;
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+    }
+
+    .payment-success-page__title {
+        margin-bottom: 10px;
+        color: #111827;
+    }
+
+    .payment-success-page__message {
+        margin: 0 auto;
+        max-width: 640px;
+        color: #5b6472;
+        line-height: 1.7;
+    }
+
+    .payment-success-page__highlights {
+        margin-top: 24px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .payment-success-page__highlight {
+        padding: 16px 18px;
+        text-align: left;
+        border-radius: 18px;
+        border: 1px solid #e7ecf3;
+        background: rgba(255, 255, 255, 0.9);
+    }
+
+    .payment-success-page__highlight span {
+        display: block;
+        margin-bottom: 6px;
+        color: #6b7280;
+        font-size: 0.82rem;
+    }
+
+    .payment-success-page__highlight strong {
+        color: #111827;
+        font-size: 1rem;
+    }
+
+    .payment-success-page__notes {
+        margin-top: 18px;
+        display: grid;
+        gap: 10px;
+        text-align: left;
+    }
+
+    .payment-success-page__note {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        background: #fff;
+        border: 1px solid #edf2f7;
+        color: #4b5563;
+    }
+
+    .payment-success-page__note i {
+        color: #16a34a;
+        margin-top: 3px;
+    }
+
+    .payment-success-page__actions {
+        margin-top: 24px;
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    @@media (max-width: 767.98px) {
+        .payment-success-page__card {
+            padding: 24px 18px;
+            border-radius: 20px;
+        }
+
+        .payment-success-page__highlights {
+            grid-template-columns: 1fr;
+        }
+
+        .payment-success-page__icon {
+            width: 66px;
+            height: 66px;
+            font-size: 1.8rem;
+        }
+    }
+</style>

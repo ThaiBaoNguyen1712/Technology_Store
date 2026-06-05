@@ -116,6 +116,7 @@
                             <th style="width: 84px;">Ảnh</th>
                             <th>Sản phẩm</th>
                             <th style="width: 140px;">SKU</th>
+                            <th style="width: 90px;">Sắp xếp</th>
                             <th style="width: 160px;">Thương hiệu</th>
                             <th style="width: 160px;">Danh mục</th>
                             <th style="width: 140px;">Giá bán</th>
@@ -129,7 +130,7 @@
                         @if (Model.Products.Count == 0)
                         {
                             <tr>
-                                <td colspan="10" class="text-center text-muted py-5">
+                                <td colspan="11" class="text-center text-muted py-5">
                                     Không có sản phẩm phù hợp với bộ lọc hiện tại.
                                 </td>
                             </tr>
@@ -165,6 +166,7 @@
                                         <div class="small text-muted">Cập nhật: @(product.UpdatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "-")</div>
                                     </td>
                                     <td class="text-nowrap">@product.Sku</td>
+                                    <td class="text-center fw-semibold">@product.SortOrder</td>
                                     <td>@product.Brand?.Name</td>
                                     <td>@product.Category?.Name</td>
                                     <td class="text-nowrap">@product.SellPrice?.ToString("C0", new CultureInfo("vi-VN"))</td>

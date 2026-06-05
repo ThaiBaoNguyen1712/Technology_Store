@@ -606,10 +606,10 @@ namespace Tech_Store.Areas.Admin.Controllers
                     var payment = new Payment
                     {
                         OrderId = order.OrderId,
-                        PaymentMethod = invoice.PaymentMethod,
-                        Amount = invoice.TotalPrice,
-                        PaymentDate = DateTime.Now,
-                        Status = "Paid", // Đánh dấu thanh toán thành công
+                        Gateway = invoice.PaymentMethod,
+                        AmountIn = invoice.TotalPrice,
+                        TransactionDate = DateTime.Now,
+                        PaymentStatus = "Paid", // Đánh dấu thanh toán thành công
                     };
                     _context.Payments.Add(payment);
 
@@ -708,7 +708,7 @@ namespace Tech_Store.Areas.Admin.Controllers
             htmlTemplate = htmlTemplate.Replace("{{originAmount}}", invoice.OriginAmount?.ToString("C0", new CultureInfo("vi-VN")));
             htmlTemplate = htmlTemplate.Replace("{{discountAmount}}", invoice.DiscountAmount?.ToString("C0", new CultureInfo("vi-VN")));
             htmlTemplate = htmlTemplate.Replace("{{deductAmount}}", invoice.DeductAmount?.ToString("C0", new CultureInfo("vi-VN")));
-            htmlTemplate = htmlTemplate.Replace("{{amount}}", payment.Amount.ToString("C0", new CultureInfo("vi-VN")));
+            htmlTemplate = htmlTemplate.Replace("{{amount}}", payment.AmountIn.ToString("C0", new CultureInfo("vi-VN")));
 
             // Thay thế chi tiết sản phẩm
             var productRows = new StringBuilder();
@@ -773,7 +773,7 @@ namespace Tech_Store.Areas.Admin.Controllers
             var settings = await _context.Settings.AsNoTracking().ToListAsync();
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
             var payment = order.Payments
-                .OrderByDescending(x => x.PaymentDate ?? x.CreatedAt)
+                .OrderByDescending(x => x.TransactionDate ?? x.CreatedAt)
                 .FirstOrDefault();
 
             var email = new InvoiceEmail
@@ -792,8 +792,8 @@ namespace Tech_Store.Areas.Admin.Controllers
                 }).ToList(),
                 ShippingFee = order.ShippingAmount ?? 0,
                 ShippingAmount = order.ShippingAmount ?? 0,
-                PaymentMethod = MapPaymentMethodLabel(payment?.PaymentMethod),
-                IsPaid = string.Equals(payment?.Status, "Paid", StringComparison.OrdinalIgnoreCase),
+                PaymentMethod = MapPaymentMethodLabel(payment?.Gateway),
+                IsPaid = string.Equals(payment?.PaymentStatus, "Paid", StringComparison.OrdinalIgnoreCase),
                 CompanyName = settings.FirstOrDefault(x => x.Key == "NameCompany")?.Value ?? settings.FirstOrDefault(x => x.Key == "NameWebsite")?.Value ?? "Tech Store",
                 CompanyAddress = settings.FirstOrDefault(x => x.Key == "Address")?.Value ?? string.Empty,
                 CompanyEmail = settings.FirstOrDefault(x => x.Key == "Email")?.Value ?? string.Empty,

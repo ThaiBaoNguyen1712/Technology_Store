@@ -39,6 +39,24 @@ namespace Tech_Store.Services.Payment
         public string? GatewayFailureMessage { get; init; }
     }
 
+    public class SePayCheckoutPageResult
+    {
+        public bool Success { get; init; }
+        public int StatusCode { get; init; }
+        public string? ErrorMessage { get; init; }
+        public SePayCheckoutViewModel? Model { get; init; }
+    }
+
+    public class SePayPaymentStatusResult
+    {
+        public bool Success { get; init; }
+        public int StatusCode { get; init; }
+        public string? ErrorMessage { get; init; }
+        public string PaymentStatus { get; init; } = "Unpaid";
+        public string OrderStatus { get; init; } = string.Empty;
+        public int? OrderId { get; init; }
+    }
+
     public class VoucherCheckResult
     {
         public bool Success { get; init; }

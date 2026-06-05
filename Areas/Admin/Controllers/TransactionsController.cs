@@ -45,12 +45,12 @@ namespace Tech_Store.Areas.Admin.Controllers
                 .AsNoTracking()
                 .Select(x => new AdminTransactionQueryItem
                 {
-                    PaymentId = x.PaymentId,
+                    PaymentId = x.Id,
                     OrderId = x.OrderId ?? 0,
-                    PaymentMethod = x.PaymentMethod,
-                    Amount = x.Amount,
-                    Status = x.Status,
-                    PaymentDate = x.PaymentDate,
+                    PaymentMethod = x.Gateway,
+                    Amount = x.AmountIn,
+                    Status = x.PaymentStatus,
+                    PaymentDate = x.TransactionDate,
                     CreatedAt = x.CreatedAt,
                     CustomerName = x.Order != null && x.Order.User != null
                         ? (((x.Order.User.LastName ?? string.Empty) + " " + (x.Order.User.FirstName ?? string.Empty)).Trim())
@@ -257,20 +257,20 @@ namespace Tech_Store.Areas.Admin.Controllers
         {
             var payment = await _context.Payments
                 .AsNoTracking()
-                .Where(x => x.PaymentId == id)
+                .Where(x => x.Id == id)
                 .Select(x => new AdminTransactionQuickDrawerViewModel
                 {
-                    PaymentId = x.PaymentId,
+                    PaymentId = x.Id,
                     OrderId = x.OrderId ?? 0,
                     CustomerName = x.Order != null && x.Order.User != null
                         ? (((x.Order.User.LastName ?? string.Empty) + " " + (x.Order.User.FirstName ?? string.Empty)).Trim())
                         : string.Empty,
                     PhoneNumber = x.Order != null && x.Order.User != null ? x.Order.User.PhoneNumber ?? string.Empty : string.Empty,
                     Email = x.Order != null && x.Order.User != null ? x.Order.User.Email : string.Empty,
-                    PaymentMethod = x.PaymentMethod,
-                    Status = x.Status,
-                    Amount = x.Amount,
-                    PaymentDate = x.PaymentDate,
+                    PaymentMethod = x.Gateway,
+                    Status = x.PaymentStatus,
+                    Amount = x.AmountIn,
+                    PaymentDate = x.TransactionDate,
                     CreatedAt = x.CreatedAt,
                     OrderStatus = x.Order != null ? x.Order.OrderStatus : string.Empty
                 })
@@ -295,19 +295,19 @@ namespace Tech_Store.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateStatus(int paymentId)
         {
-            var payment = await _context.Payments.FirstOrDefaultAsync(x => x.PaymentId == paymentId);
+            var payment = await _context.Payments.FirstOrDefaultAsync(x => x.Id == paymentId);
             if (payment == null)
             {
                 return Json(new { success = false, message = "Không tìm thấy giao dịch." });
             }
 
-            if (string.Equals(payment.Status, "Paid", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(payment.PaymentStatus, "Paid", StringComparison.OrdinalIgnoreCase))
             {
                 return Json(new { success = false, message = "Giao dịch này đã được xác nhận thanh toán." });
             }
 
-            payment.Status = "Paid";
-            payment.PaymentDate ??= DateTime.Now;
+            payment.PaymentStatus = "Paid";
+            payment.TransactionDate ??= DateTime.Now;
             payment.UpdatedAt = DateTime.Now;
             await _context.SaveChangesAsync();
 
@@ -315,8 +315,8 @@ namespace Tech_Store.Areas.Admin.Controllers
             {
                 success = true,
                 message = "Đã xác nhận thanh toán.",
-                paymentStatusLabel = GetPaymentStatusLabel(payment.Status),
-                paymentDate = payment.PaymentDate?.ToString("dd/MM/yyyy HH:mm:ss")
+                paymentStatusLabel = GetPaymentStatusLabel(payment.PaymentStatus),
+                paymentDate = payment.TransactionDate?.ToString("dd/MM/yyyy HH:mm:ss")
             });
         }
 

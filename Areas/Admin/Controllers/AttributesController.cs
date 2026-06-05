@@ -56,7 +56,7 @@ namespace Tech_Store.Areas.Admin.Controllers
         }
 
         [HttpPost("Create")]
-        public JsonResult Create(AttributeDTo attributeDto)
+        public async Task<JsonResult> Create(AttributeDTo attributeDto)
         {
             if(!ModelState.IsValid)
             {
@@ -67,167 +67,135 @@ namespace Tech_Store.Areas.Admin.Controllers
                 return Json(new { success = false, message = "Lỗi dữ liệu",errors });
             }
 
-            // Sử dụng transaction để đảm bảo tính toàn vẹn của các thao tác
-            using (var transaction = _context.Database.BeginTransaction())
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                try
+                var attribute = new Models.Attribute
                 {
-                    // Tạo đối tượng Attribute mới
-                    var attribute = new Models.Attribute
+                    Code = attributeDto.Code,
+                    Name = attributeDto.Name,
+                    SortOrder = attributeDto.SortOrder,
+                    IsActive = attributeDto.IsActive
+                };
+                _context.Attributes.Add(attribute);
+                await _context.SaveChangesAsync();
+
+                var value_Array = SliceValueAttributeString(attributeDto.Value);
+
+                foreach (var value in value_Array)
+                {
+                    var attrValue = new AttributeValue
                     {
-                        Code = attributeDto.Code,
-                        Name = attributeDto.Name,
-                        SortOrder = attributeDto.SortOrder,
-                        IsActive = attributeDto.IsActive
+                        AttributeId = attribute.AttributeId,
+                        Value = value
                     };
-                    _context.Attributes.Add(attribute);
-                    _context.SaveChanges();
+                    _context.AttributeValues.Add(attrValue);
+                }
+                await _context.SaveChangesAsync();
 
-                    // Cắt chuỗi giá trị thành mảng
-                    var value_Array = SliceValueAttributeString(attributeDto.Value);
+                await transaction.CommitAsync();
 
-                    // Thêm các giá trị vào bảng AttributeValues
-                    foreach (var value in value_Array)
+                return Json(new { success = true, message = "Đã thêm thuộc tính thành công" });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return Json(new { success = false, message = $"Có lỗi xảy ra: {ex.Message}" });
+            }
+        }
+        [HttpPut("Update")]
+        public async Task<JsonResult> Update(AttributeDTo attributeDto)
+        {
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var attribute = await _context.Attributes.FirstOrDefaultAsync(a => a.AttributeId == attributeDto.AttributeId);
+                if (attribute == null)
+                {
+                    return Json(new { success = false, message = "Thuộc tính không tồn tại" });
+                }
+
+                attribute.Code = attributeDto.Code;
+                attribute.Name = attributeDto.Name;
+                attribute.SortOrder = attributeDto.SortOrder;
+                attribute.IsActive = attributeDto.IsActive;
+                _context.Attributes.Update(attribute);
+                await _context.SaveChangesAsync();
+
+                var oldValues = await _context.AttributeValues
+                    .Where(av => av.AttributeId == attribute.AttributeId)
+                    .ToListAsync();
+
+                foreach (var oldValue in oldValues)
+                {
+                    bool isUsed = await _context.VariantAttributes.AnyAsync(va => va.AttributeValueId == oldValue.AttributeValueId);
+                    if (!isUsed)
+                    {
+                        _context.AttributeValues.Remove(oldValue);
+                    }
+                }
+                await _context.SaveChangesAsync();
+
+                var newValuesArray = SliceValueAttributeString(attributeDto.Value);
+
+                foreach (var newValue in newValuesArray)
+                {
+                    bool exists = await _context.AttributeValues
+                        .AnyAsync(av => av.AttributeId == attribute.AttributeId &&
+                                   av.Value.ToLower() == newValue.ToLower());
+                    if (!exists)
                     {
                         var attrValue = new AttributeValue
                         {
                             AttributeId = attribute.AttributeId,
-                            Value = value
+                            Value = newValue
                         };
                         _context.AttributeValues.Add(attrValue);
                     }
-                    _context.SaveChanges();
-
-                    // Commit khi mọi thao tác thành công
-                    transaction.Commit();
-
-                    return Json(new { success = true, message = "Đã thêm thuộc tính thành công" });
                 }
-                catch (Exception ex)
-                {
-                    // Rollback nếu có lỗi xảy ra
-                    transaction.Rollback();
+                await _context.SaveChangesAsync();
 
-                    // Log lỗi (có thể ghi vào log để theo dõi sau này)
-                    // _logger.LogError(ex, "Lỗi khi thêm thuộc tính");
+                await transaction.CommitAsync();
 
-                    return Json(new { success = false, message = $"Có lỗi xảy ra: {ex.Message}" });
-                }
+                return Json(new { success = true, message = "Đã sửa thuộc tính thành công" });
             }
-        }
-        [HttpPut("Update")]
-        public JsonResult Update(AttributeDTo attributeDto)
-        {
-            // Dùng transaction để đảm bảo toàn vẹn
-            using (var transaction = _context.Database.BeginTransaction())
+            catch (Exception ex)
             {
-                try
-                {
-                    // Lấy attribute cũ
-                    var attribute = _context.Attributes.FirstOrDefault(a => a.AttributeId == attributeDto.AttributeId);
-                    if (attribute == null)
-                    {
-                        return Json(new { success = false, message = "Thuộc tính không tồn tại" });
-                    }
-
-                    // Cập nhật thông tin thuộc tính
-                    attribute.Code = attributeDto.Code;
-                    attribute.Name = attributeDto.Name;
-                    attribute.SortOrder = attributeDto.SortOrder;
-                    attribute.IsActive = attributeDto.IsActive;
-                    _context.Attributes.Update(attribute);
-                    _context.SaveChanges();
-
-                    // Lấy danh sách attribute values cũ
-                    var oldValues = _context.AttributeValues
-                        .Where(av => av.AttributeId == attribute.AttributeId)
-                        .ToList();
-
-                    // Xóa chỉ những giá trị chưa được sử dụng (giả sử bảng VariantAttributes chứa FK đến AttributeValues)
-                    foreach (var oldValue in oldValues)
-                    {
-                        bool isUsed = _context.VariantAttributes.Any(va => va.AttributeValueId == oldValue.AttributeValueId);
-                        if (!isUsed)
-                        {
-                            _context.AttributeValues.Remove(oldValue);
-                        }
-                    }
-                    _context.SaveChanges();
-
-                    // Cắt chuỗi giá trị thành mảng (tùy theo logic của hàm SliceValueAttributeString)
-                    var newValuesArray = SliceValueAttributeString(attributeDto.Value);
-
-                    // Thêm các giá trị mới (chỉ thêm nếu chưa tồn tại)
-                    foreach (var newValue in newValuesArray)
-                    {
-                        // Kiểm tra nếu đã tồn tại, so sánh không phân biệt chữ hoa thường
-                        bool exists = _context.AttributeValues
-                            .Any(av => av.AttributeId == attribute.AttributeId &&
-                                       av.Value.ToLower() == newValue.ToLower());
-                        if (!exists)
-                        {
-                            var attrValue = new AttributeValue
-                            {
-                                AttributeId = attribute.AttributeId,
-                                Value = newValue
-                            };
-                            _context.AttributeValues.Add(attrValue);
-                        }
-                    }
-                    _context.SaveChanges();
-
-                    // Commit giao dịch nếu mọi thứ đều ổn
-                    transaction.Commit();
-
-                    return Json(new { success = true, message = "Đã sửa thuộc tính thành công" });
-                }
-                catch (Exception ex)
-                {
-                    transaction.Rollback();
-                    return Json(new { success = false, message = $"Có lỗi xảy ra: {ex.Message}" });
-                }
+                await transaction.RollbackAsync();
+                return Json(new { success = false, message = $"Có lỗi xảy ra: {ex.Message}" });
             }
         }
 
 
 
         [HttpPost("Delete")]
-        public JsonResult Delete(int attributeId)
+        public async Task<JsonResult> Delete(int attributeId)
         {
-            // Sử dụng transaction để đảm bảo tính toàn vẹn của các thao tác
-            using (var transaction = _context.Database.BeginTransaction())
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                try
+                var attribute = await _context.Attributes.FirstOrDefaultAsync(a => a.AttributeId == attributeId);
+                if (attribute == null)
                 {
-                    // Lấy thuộc tính và các giá trị liên quan
-                    var attribute = _context.Attributes.FirstOrDefault(a => a.AttributeId == attributeId);
-                    if (attribute == null)
-                    {
-                        return Json(new { success = false, message = "Thuộc tính không tồn tại" });
-                    }
-
-                    var attributeValues = _context.AttributeValues.Where(av => av.AttributeId == attributeId).ToList();
-
-                    // Xóa các giá trị thuộc tính
-                    _context.AttributeValues.RemoveRange(attributeValues);
-                    _context.SaveChanges();
-
-                    // Xóa thuộc tính
-                    _context.Attributes.Remove(attribute);
-                    _context.SaveChanges();
-
-                    // Commit giao dịch khi mọi thao tác thành công
-                    transaction.Commit();
-
-                    return Json(new { success = true, message = "Đã xóa thuộc tính thành công" });
+                    return Json(new { success = false, message = "Thuộc tính không tồn tại" });
                 }
-                catch (Exception ex)
-                {
-                    // Rollback giao dịch nếu có lỗi xảy ra
-                    transaction.Rollback();
 
-                    return Json(new { success = false, message = $"Có lỗi xảy ra: {ex.Message}" });
-                }
+                var attributeValues = await _context.AttributeValues.Where(av => av.AttributeId == attributeId).ToListAsync();
+
+                _context.AttributeValues.RemoveRange(attributeValues);
+                await _context.SaveChangesAsync();
+
+                _context.Attributes.Remove(attribute);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                return Json(new { success = true, message = "Đã xóa thuộc tính thành công" });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return Json(new { success = false, message = $"Có lỗi xảy ra: {ex.Message}" });
             }
         }
 

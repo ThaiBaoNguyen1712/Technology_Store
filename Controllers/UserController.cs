@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Security.Claims;
 using Tech_Store.Events;
 using Tech_Store.Helper;
+using Tech_Store.Helpers;
 using Tech_Store.Models;
 using Tech_Store.Models.DTO;
 using Tech_Store.Models.DTO.Authentication;
@@ -46,6 +47,11 @@ namespace Tech_Store.Controllers
 
             // Retrieve the cart with related data
             var cart = await _context.Carts
+                .Include(c => c.CartItems)
+                    .ThenInclude(ci => ci.VarientProduct)
+                        .ThenInclude(vp => vp.VariantAttributes)
+                            .ThenInclude(va => va.AttributeValue)
+                                .ThenInclude(av => av.Attribute)
                 .Include(c => c.CartItems)
                     .ThenInclude(ci => ci.VarientProduct)
                         .ThenInclude(vp => vp.Product)
@@ -494,8 +500,13 @@ namespace Tech_Store.Controllers
                 };
             var orders = _context.Orders
                  .Include(o => o.OrderItems)
+                      .ThenInclude(oi => oi.VarientProduct)
+                          .ThenInclude(vp => vp.VariantAttributes)
+                              .ThenInclude(va => va.AttributeValue)
+                                  .ThenInclude(av => av.Attribute)
+                 .Include(o => o.OrderItems)
                      .ThenInclude(oi => oi.VarientProduct)
-                         .ThenInclude(vp => vp.Product)
+                          .ThenInclude(vp => vp.Product)
                  .Include(o => o.Payments)
                  .Where(o => o.UserId == int.Parse(userId))
                  .AsEnumerable() // Chuyển sang xử lý trên client
@@ -516,7 +527,7 @@ namespace Tech_Store.Controllers
                     ProductId = x.ProductId,
                     VariantId = x.VarientProductId,
                     ProductName = x.VarientProduct?.Product?.Name ?? string.Empty,
-                    Attributes = x.VarientProduct?.Attributes ?? string.Empty,
+                    Attributes = VariantDisplayHelper.Format(x.VarientProduct),
                     ImageUrl = x.VarientProduct?.Product?.Image ?? string.Empty
                 }).ToList(),
                 OrderStatus = o.OrderStatus,
@@ -693,6 +704,11 @@ namespace Tech_Store.Controllers
                 .Include(x => x.ShippingAddress)
                 .Include(x => x.OrderItems)
                     .ThenInclude(x => x.VarientProduct)
+                    .ThenInclude(vp => vp.VariantAttributes)
+                    .ThenInclude(va => va.AttributeValue)
+                    .ThenInclude(av => av.Attribute)
+                .Include(x => x.OrderItems)
+                    .ThenInclude(x => x.VarientProduct)
                     .ThenInclude(x => x.Product)
                 .Include(x => x.OrderItems)
                     .ThenInclude(x => x.Product)
@@ -740,7 +756,7 @@ namespace Tech_Store.Controllers
                 TotalPrice = order.TotalAmount.ToString("C0", new CultureInfo("vi-VN")),
                 DiscountPrice = (order.DeductAmount + order.DiscountAmount)?.ToString("C0", new CultureInfo("vi-VN")) ?? "0 ₫", // Format giá trị nếu cần
                 ShippingPrice = order.ShippingAmount?.ToString("C0", new CultureInfo("vi-VN")),
-                PaymentMethod = order.Payments.FirstOrDefault()?.PaymentMethod ?? "N/A",
+                PaymentMethod = order.Payments.FirstOrDefault()?.Gateway ?? "N/A",
                 OriginTotalPrice = (decimal)order.OriginAmount, // Tính tổng giá gốc
                 OrderStatus = order.OrderStatus,
                 User = new Generate_User
@@ -757,7 +773,7 @@ namespace Tech_Store.Controllers
                     ImageUrl = item.Product?.Image ?? item.VarientProduct?.Product?.Image,
                     Quantity = item.Quantity,
                     NameProduct = item.Product?.Name ?? item.VarientProduct?.Product?.Name,
-                    Attributes = item.VarientProduct.Attributes,
+                    Attributes = VariantDisplayHelper.Format(item.VarientProduct),
                     Slug = item.Product?.Slug ?? item.VarientProduct?.Product?.Slug
                 }).ToList()
             };

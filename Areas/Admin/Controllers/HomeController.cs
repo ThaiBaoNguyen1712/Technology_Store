@@ -22,8 +22,8 @@ namespace Tech_Store.Areas.Admin.Controllers
 		[Route("Index")]
 		public IActionResult Index()
 		{
-			var payments = _context.Payments.Select(x => new {x.PaymentId, x.PaymentDate,x.PaymentMethod,x.Amount,x.Status})
-				.OrderByDescending(x => x.PaymentId).Take(7).ToList();
+			var payments = _context.Payments.Select(x => new { x.Id, x.TransactionDate, x.Gateway, x.AmountIn, x.PaymentStatus })
+				.OrderByDescending(x => x.Id).Take(7).ToList();
 			var new_users = _context.Users.Select( x=> new { x.UserId,x.Img,x.FirstName,x.LastName,x.CreatedAt })
 				.OrderByDescending(x=>x.UserId).Take(7).ToList();
             var orders = _context.Orders
@@ -48,8 +48,8 @@ namespace Tech_Store.Areas.Admin.Controllers
                 .ToList();
             var oneMonthAgo = DateTime.Now.AddMonths(-1); // Lấy ngày cách đây 1 tháng
             var revenue = _context.Payments
-                .Where(x => x.Status == "Paid" && x.PaymentDate >= oneMonthAgo && x.PaymentDate <= DateTime.Now)
-                .Sum(x => x.Amount);
+                .Where(x => x.PaymentStatus == "Paid" && x.TransactionDate >= oneMonthAgo && x.TransactionDate <= DateTime.Now)
+                .Sum(x => x.AmountIn);
             
             var order_count = _context.Orders.Count();
 			var user_count = _context.Users.Count();
@@ -81,7 +81,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                  .Include(o => o.Payments)
                  .Where(o => o.OrderDate.Value.Month == month &&
                              o.OrderDate.Value.Year == year &&
-                             o.Payments.Any(p => p.Status == "paid")) // Chỉ lấy đơn hàng có thanh toán "paid"
+                             o.Payments.Any(p => p.PaymentStatus == "paid")) // Chỉ lấy đơn hàng có thanh toán "paid"
                  .GroupBy(o => o.OrderDate.Value.Day)
                  .Select(g => new
                  {

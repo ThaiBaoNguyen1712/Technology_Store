@@ -11,6 +11,7 @@
         public decimal SellPrice { get; set; }
         public decimal? OriginPrice { get; set; }
         public decimal? DiscountPrice { get; set; }
+        public bool IsShippingFee { get; set; }
 
     }
 }

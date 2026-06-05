@@ -1,0 +1,617 @@
+﻿@using System.Globalization
+@model Tech_Store.Models.ViewModel.SePayCheckoutViewModel
+
+@{
+    ViewData["Title"] = "Thanh toán đơn hàng của bạn";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var isPaid = string.Equals(Model.PaymentStatus, "Paid", StringComparison.OrdinalIgnoreCase);
+    var orderDetailUrl = Model.OrderId.HasValue ? $"/user/myOrders/OrderDetail/{Model.OrderId.Value}" : "/user/myOrders";
+}
+
+<section class="checkout-page sepay-page">
+    <div class="container">
+        <div class="checkout-page__head">
+            <div>
+                <h1 class="checkout-page__title">Thanh toán cho đơn hàng @Model.PaymentContent</h1>
+            </div>
+        </div>
+
+        <form id="sepayStatusForm" method="post">
+            @Html.AntiForgeryToken()
+        </form>
+
+        <div id="success_pay_box" class="sepay-page__success" style="display:@(isPaid ? "block" : "none")">
+            <div class="sepay-page__success-card">
+                <div class="sepay-page__success-icon">
+                    <i class="fas fa-circle-check"></i>
+                </div>
+                <div class="sepay-page__success-eyebrow">Thanh toán thành công</div>
+                <h2>Đã nhận thanh toán cho đơn hàng @Model.PaymentContent</h2>
+                <p>Giao dịch đã được xác nhận. Đơn hàng của bạn đã vào quy trình xử lý và sẽ sớm được cập nhật trạng thái tiếp theo.</p>
+                <div class="sepay-page__success-grid">
+                    <div class="sepay-page__success-item">
+                        <span>Mã thanh toán</span>
+                        <strong>@Model.PaymentContent</strong>
+                    </div>
+                    <div class="sepay-page__success-item">
+                        <span>Số tiền đã nhận</span>
+                        <strong>@Model.Amount.ToString("C0", new CultureInfo("vi-VN"))</strong>
+                    </div>
+                </div>
+                <div class="sepay-page__success-notes">
+                    <div class="sepay-page__success-note">
+                        <i class="fas fa-bell"></i>
+                        <span>Bạn có thể theo dõi tiến độ xử lý trong trang chi tiết đơn hàng.</span>
+                    </div>
+                    <div class="sepay-page__success-note">
+                        <i class="fas fa-shield-check"></i>
+                        <span>Nội dung chuyển khoản đã được đối soát tự động và ghi nhận thành công.</span>
+                    </div>
+                </div>
+                <div class="sepay-page__success-actions">
+                    <a id="orderDetailLink" class="btn btn-danger" href="@orderDetailUrl">Xem chi tiết đơn hàng</a>
+                    <a class="btn btn-outline-secondary" href="/">Tiếp tục mua sắm</a>
+                </div>
+            </div>
+        </div>
+
+        <div id="checkout_box" class="sepay-page__shell" style="display:@(isPaid ? "none" : "grid")">
+            <div class="sepay-page__card">
+                <div class="sepay-page__qr">
+                    <img id="sepayQrImage" src="@Model.QrImageUrl" alt="QR thanh toán - @Model.BankCode - @Model.AccountNumber - @(string.IsNullOrWhiteSpace(Model.AccountName) ? "-" : Model.AccountName)" />
+                </div>
+                <div class="sepay-page__qr-actions">
+                    <button type="button" class="btn btn-outline-secondary sepay-page__action-btn" id="downloadQrButton">
+                        <i class="fas fa-download"></i>
+                        <span>Tải mã QR</span>
+                    </button>
+                </div>
+                <div class="sepay-page__hint">
+                    Quét QR bằng app ngân hàng để chuyển đúng số tiền và nội dung <code>@Model.PaymentContent</code>.
+                </div>
+            </div>
+
+            <div class="sepay-page__card">
+                <h2 class="sepay-page__section-title">Thông tin chuyển khoản</h2>
+                <div class="sepay-page__details">
+                    <div class="sepay-page__row">
+                        <span class="sepay-page__label">Ngân hàng</span>
+                        <span class="sepay-page__value">@Model.BankCode</span>
+                    </div>
+                    <div class="sepay-page__row">
+                        <span class="sepay-page__label">Số tài khoản</span>
+                        <span class="sepay-page__value sepay-page__value--action">
+                            <span id="accountNumberValue">@Model.AccountNumber</span>
+                            <button type="button" class="sepay-page__inline-copy" data-copy-text="@Model.AccountNumber" aria-label="Sao chép số tài khoản">
+                                <i class="far fa-copy"></i>
+                                <span>Copy</span>
+                            </button>
+                        </span>
+                    </div>
+                    <div class="sepay-page__row">
+                        <span class="sepay-page__label">Chủ tài khoản</span>
+                        <span class="sepay-page__value">@(string.IsNullOrWhiteSpace(Model.AccountName) ? "-" : Model.AccountName)</span>
+                    </div>
+                    <div class="sepay-page__row">
+                        <span class="sepay-page__label">Số tiền</span>
+                        <span class="sepay-page__value sepay-page__value--amount">
+                            <strong>@Model.Amount.ToString("C0", new CultureInfo("vi-VN"))</strong>
+                        </span>
+                    </div>
+                    <div class="sepay-page__row">
+                        <span class="sepay-page__label">Số tiền (bằng chữ)</span>
+                        <span class="sepay-page__value sepay-page__value--amount">
+                            <span id="amountInWords"></span>
+                        </span>
+                    </div>
+                    <div class="sepay-page__row">
+                        <span class="sepay-page__label">Nội dung</span>
+                        <span class="sepay-page__value sepay-page__value--action">
+                            <span>@Model.PaymentContent</span>
+                            <button type="button" class="sepay-page__inline-copy" data-copy-text="@Model.PaymentContent" aria-label="Sao chép nội dung chuyển khoản">
+                                <i class="far fa-copy"></i>
+                                <span>Copy</span>
+                            </button>
+                        </span>
+                    </div>
+                    <div class="sepay-page__row">
+                        <span class="sepay-page__label">Trạng thái</span>
+                        <span id="paymentStatusText" class="sepay-page__value">@(isPaid ? "Đã thanh toán" : "Chưa thanh toán")</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script>
+    (function () {
+        var payStatus = '@Model.PaymentStatus';
+        var checkoutId = @Model.CheckoutId;
+        var orderId = @(Model.OrderId?.ToString() ?? "null");
+        var paymentAmount = @(((long)Math.Round(Model.Amount, 0, MidpointRounding.AwayFromZero)).ToString(CultureInfo.InvariantCulture));
+        var antiForgeryToken = document.querySelector('#sepayStatusForm input[name="__RequestVerificationToken"]').value;
+        var pollTimer = null;
+
+        function normalizeVietnameseMoneyWords(words) {
+            return String(words || '')
+                .replace(/\s+/g, ' ')
+                .replace(/một mươi/g, 'mười')
+                .replace(/mươi năm/g, 'mươi lăm')
+                .replace(/mươi một/g, 'mươi mốt')
+                .replace(/mười năm/g, 'mười lăm')
+                .trim();
+        }
+
+        function readThreeDigits(number, full) {
+            var digits = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín'];
+            var hundred = Math.floor(number / 100);
+            var ten = Math.floor((number % 100) / 10);
+            var unit = number % 10;
+            var parts = [];
+
+            if (full || hundred > 0) {
+                parts.push(digits[hundred] + ' trăm');
+            }
+
+            if (ten > 1) {
+                parts.push(digits[ten] + ' mươi');
+                if (unit === 1) {
+                    parts.push('mốt');
+                } else if (unit === 4) {
+                    parts.push('bốn');
+                } else if (unit === 5) {
+                    parts.push('lăm');
+                } else if (unit > 0) {
+                    parts.push(digits[unit]);
+                }
+            } else if (ten === 1) {
+                parts.push('mười');
+                if (unit === 5) {
+                    parts.push('lăm');
+                } else if (unit > 0) {
+                    parts.push(digits[unit]);
+                }
+            } else if (unit > 0) {
+                if (full && hundred > 0) {
+                    parts.push('lẻ');
+                }
+                if (unit === 5 && (full || hundred > 0)) {
+                    parts.push('năm');
+                } else {
+                    parts.push(digits[unit]);
+                }
+            }
+
+            return parts.join(' ');
+        }
+
+        function numberToVietnameseWords(value) {
+            var scales = ['', ' nghìn', ' triệu', ' tỷ', ' nghìn tỷ', ' triệu tỷ'];
+            var amount = Number(value || 0);
+            if (!Number.isFinite(amount) || amount <= 0) {
+                return 'không đồng';
+            }
+
+            var integer = Math.floor(amount);
+            var groups = [];
+            while (integer > 0) {
+                groups.push(integer % 1000);
+                integer = Math.floor(integer / 1000);
+            }
+
+            var result = [];
+            for (var i = groups.length - 1; i >= 0; i--) {
+                var groupValue = groups[i];
+                if (groupValue === 0) {
+                    continue;
+                }
+
+                var full = i < groups.length - 1 && groupValue < 100;
+                var groupWords = readThreeDigits(groupValue, full);
+                if (groupWords) {
+                    result.push(groupWords + scales[i]);
+                }
+            }
+
+            var sentence = normalizeVietnameseMoneyWords(result.join(' '));
+            if (!sentence) {
+                return 'không đồng';
+            }
+
+            return sentence.charAt(0).toUpperCase() + sentence.slice(1) + ' đồng';
+        }
+
+        function notifyCopied(message) {
+            if (window.notyf && typeof window.notyf.success === 'function') {
+                window.notyf.success(message);
+                return;
+            }
+            alert(message);
+        }
+
+        function copyText(text, successMessage) {
+            if (!text) {
+                return;
+            }
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(function () {
+                    notifyCopied(successMessage);
+                });
+                return;
+            }
+
+            var tempInput = document.createElement('input');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            notifyCopied(successMessage);
+        }
+
+        function getLocalizedStatus(status) {
+            return String(status || '').toLowerCase() === 'paid'
+                ? 'Đã thanh toán'
+                : 'Chưa thanh toán';
+        }
+
+        function resolveOrderDetailUrl(resolvedOrderId) {
+            return resolvedOrderId ? '/user/myOrders/OrderDetail/' + resolvedOrderId : '/user/myOrders';
+        }
+
+        function showSuccess() {
+            document.getElementById('checkout_box').style.display = 'none';
+            document.getElementById('success_pay_box').style.display = 'block';
+            document.getElementById('paymentStatusText').textContent = getLocalizedStatus('Paid');
+            document.getElementById('orderDetailLink').setAttribute('href', resolveOrderDetailUrl(orderId));
+            payStatus = 'Paid';
+
+            if (pollTimer) {
+                clearInterval(pollTimer);
+                pollTimer = null;
+            }
+        }
+
+        var amountInWordsElement = document.getElementById('amountInWords');
+        if (amountInWordsElement) {
+            amountInWordsElement.textContent = numberToVietnameseWords(paymentAmount);
+        }
+
+        document.querySelectorAll('.sepay-page__inline-copy').forEach(function (button) {
+            button.addEventListener('click', function () {
+                copyText(button.getAttribute('data-copy-text') || '', 'Đã sao chép vào bộ nhớ');
+            });
+        });
+
+        var downloadQrButton = document.getElementById('downloadQrButton');
+        if (downloadQrButton) {
+            downloadQrButton.addEventListener('click', function () {
+                var qrImage = document.getElementById('sepayQrImage');
+                if (!qrImage || !qrImage.getAttribute('src')) {
+                    return;
+                }
+
+                var link = document.createElement('a');
+                link.href = qrImage.getAttribute('src');
+                link.download = 'sepay-qr-' + checkoutId + '.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        }
+
+        document.getElementById('paymentStatusText').textContent = getLocalizedStatus(payStatus);
+
+        if (String(payStatus).toLowerCase() === 'paid') {
+            showSuccess();
+            return;
+        }
+
+        function checkPaymentStatus() {
+            if (String(payStatus).toLowerCase() !== 'unpaid') {
+                return;
+            }
+
+            $.ajax({
+                type: 'POST',
+                url: '@Url.Action("CheckSePayPaymentStatus", "Payment")',
+                headers: {
+                    'RequestVerificationToken': antiForgeryToken
+                },
+                data: { checkoutId: checkoutId },
+                dataType: 'json',
+                global: false,
+                success: function (data) {
+                    var paymentStatus = data && data.payment_status ? data.payment_status : 'Unpaid';
+                    orderId = data && data.order_id ? data.order_id : orderId;
+                    document.getElementById('paymentStatusText').textContent = getLocalizedStatus(paymentStatus);
+
+                    if (String(paymentStatus).toLowerCase() === 'paid') {
+                        showSuccess();
+                    }
+                }
+            });
+        }
+
+        pollTimer = setInterval(checkPaymentStatus, 1000);
+    })();
+</script>
+
+<style>
+    .sepay-page__shell {
+        display: grid;
+        grid-template-columns: minmax(280px, 420px) minmax(320px, 1fr);
+        gap: 24px;
+        align-items: start;
+    }
+
+    .sepay-page__card,
+    .sepay-page__success-card {
+        background: #fff;
+        border: 1px solid #ece5dc;
+        border-radius: 24px;
+        padding: 24px;
+        box-shadow: 0 20px 50px rgba(82, 46, 18, 0.08);
+    }
+
+    .sepay-page__qr {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 16px;
+        background: linear-gradient(180deg, #fff7ef 0%, #fff 100%);
+        border-radius: 18px;
+    }
+
+    .sepay-page__qr img {
+        width: min(100%, 320px);
+        height: auto;
+        display: block;
+    }
+
+    .sepay-page__hint {
+        margin-top: 16px;
+        color: #6b5a4d;
+        font-size: 0.95rem;
+    }
+
+    .sepay-page__qr-actions {
+        margin-top: 14px;
+        display: flex;
+        justify-content: center;
+    }
+
+    .sepay-page__action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 999px;
+        padding-inline: 18px;
+    }
+
+    .sepay-page__section-title {
+        margin-bottom: 16px;
+    }
+
+    .sepay-page__details {
+        display: grid;
+        gap: 12px;
+    }
+
+    .sepay-page__row {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #f0e7de;
+    }
+
+    .sepay-page__label {
+        color: #7d6a5b;
+        flex: 0 0 auto;
+    }
+
+    .sepay-page__value {
+        display: inline-block;
+        text-align: right;
+        color: #1f1a17;
+        word-break: break-word;
+        font-size: 1rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        max-width: 65%;
+    }
+
+    .sepay-page__value--action,
+    .sepay-page__value--amount {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .sepay-page__inline-copy {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid #e7d8c9;
+        background: #fffaf5;
+        color: #8a5b2b;
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    .sepay-page__inline-copy:hover {
+        background: #fff1e3;
+    }
+
+    .sepay-page__value--amount small {
+        color: #7d6a5b;
+        font-size: 0.83rem;
+        font-weight: 500;
+        line-height: 1.45;
+        text-align: right;
+    }
+
+    .sepay-page__success-card {
+        text-align: center;
+        padding: 32px 28px;
+        background: linear-gradient(180deg, #fffdfa 0%, #ffffff 55%, #f8fafc 100%);
+    }
+
+    .sepay-page__success-icon {
+        width: 72px;
+        height: 72px;
+        margin: 0 auto 14px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #16a34a, #22c55e);
+        color: #fff;
+        font-size: 2rem;
+        box-shadow: 0 18px 40px rgba(34, 197, 94, 0.24);
+    }
+
+    .sepay-page__success-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px 12px;
+        margin-bottom: 10px;
+        border-radius: 999px;
+        background: #ecfdf3;
+        color: #15803d;
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .sepay-page__success-card h2 {
+        margin-bottom: 10px;
+        color: #111827;
+    }
+
+    .sepay-page__success-card p {
+        margin: 0 auto;
+        max-width: 640px;
+        color: #5b6472;
+        line-height: 1.7;
+    }
+
+    .sepay-page__success-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 22px;
+    }
+
+    .sepay-page__success-item {
+        padding: 16px 18px;
+        border-radius: 18px;
+        border: 1px solid #e7ecf3;
+        background: rgba(255, 255, 255, 0.9);
+        text-align: left;
+    }
+
+    .sepay-page__success-item span {
+        display: block;
+        margin-bottom: 6px;
+        color: #6b7280;
+        font-size: 0.82rem;
+    }
+
+    .sepay-page__success-item strong {
+        color: #111827;
+        font-size: 1rem;
+    }
+
+    .sepay-page__success-notes {
+        display: grid;
+        gap: 10px;
+        margin-top: 18px;
+        text-align: left;
+    }
+
+    .sepay-page__success-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        background: #fff;
+        border: 1px solid #edf2f7;
+        color: #4b5563;
+    }
+
+    .sepay-page__success-note i {
+        color: #16a34a;
+        margin-top: 3px;
+    }
+
+    .sepay-page__success-actions {
+        margin-top: 22px;
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .sepay-page__actions,
+    .sepay-page__success {
+        margin-top: 20px;
+    }
+
+    @@media (max-width: 991.98px) {
+        .sepay-page__shell {
+            grid-template-columns: 1fr;
+        }
+
+        .sepay-page__success-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 575.98px) {
+        .sepay-page__card,
+        .sepay-page__success-card {
+            padding: 18px 16px;
+            border-radius: 18px;
+        }
+
+        .sepay-page__row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .sepay-page__value {
+            max-width: 100%;
+            width: 100%;
+            text-align: left;
+        }
+
+        .sepay-page__value--action,
+        .sepay-page__value--amount {
+            align-items: flex-start;
+            justify-content: flex-start;
+        }
+
+        .sepay-page__value--amount small {
+            text-align: left;
+        }
+
+        .sepay-page__success-icon {
+            width: 62px;
+            height: 62px;
+            font-size: 1.7rem;
+        }
+    }
+</style>

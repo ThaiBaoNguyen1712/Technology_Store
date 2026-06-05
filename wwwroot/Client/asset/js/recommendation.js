@@ -6,7 +6,8 @@ const RecommendationManager = {
     config: {
         currencyLocale: 'vi-VN',
         uploadPath: '/Upload/Products/',
-        defaultContainer: '#recommendation-container'
+        defaultContainer: '#recommendation-container',
+        debug: true
     },
 
     // 2. Hàm khởi tạo chính cho từng Scene
@@ -24,10 +25,20 @@ const RecommendationManager = {
         const request = this.helper.buildRequest(scene, productSysId, topN);
 
         if (!request) {
-            console.error("Recommend Error: unsupported scene", scene);
+            // console.error("Recommend Error: unsupported scene", scene);
             $(_self.config.defaultContainer).hide();
             return;
         }
+
+        // if (this.config.debug) {
+        //     console.groupCollapsed(`[Recommendation] Request ${scene}`);
+        //     console.log('Scene:', scene);
+        //     console.log('ProductSysId:', productSysId);
+        //     console.log('TopN:', topN);
+        //     console.log('Request URL:', request.url);
+        //     console.log('Request Query:', request.data);
+        //     console.groupEnd();
+        // }
 
         $.ajax({
             url: request.url,
@@ -37,12 +48,37 @@ const RecommendationManager = {
                 $(_self.config.defaultContainer).html(_self.helper.getSpinner());
             },
             success: function (res) {
+                // if (_self.config.debug) {
+                //     console.groupCollapsed(`[Recommendation] Response ${scene}`);
+                //     console.log('Response:', res);
+                //     console.log('DataSource:', res?.dataSource);
+                //     console.log('MlAttempted:', res?.mlAttempted);
+                //     console.log('FallbackUsed:', res?.fallbackUsed);
+                //     console.log('FallbackReason:', res?.fallbackReason);
+                //     console.log('MlRequestUrl:', res?.mlRequestUrl);
+                //     console.log('MlError:', res?.mlError);
+                //     console.log('MlResultCount:', res?.mlResultCount);
+                //     console.log('ProductCount:', Array.isArray(res?.products) ? res.products.length : 0);
+                //     console.groupEnd();
+                // }
+
+                // if (res?.fallbackUsed) {
+                //     console.warn(`[Recommendation] ${scene} is using fallback data.`, {
+                //         reason: res?.fallbackReason,
+                //         mlAttempted: res?.mlAttempted,
+                //         mlRequestUrl: res?.mlRequestUrl,
+                //         mlError: res?.mlError,
+                //         userId: res?.userId,
+                //         productSysId: res?.productSysId
+                //     });
+                // }
+
                 if (res && res.products) {
                     _self.renderList(res.products);
                 }
             },
             error: function (err) {
-                console.error("Recommend Error:", err);
+                // console.error("Recommend Error:", err);
                 $(_self.config.defaultContainer).hide();
             }
         });
@@ -188,17 +224,28 @@ const RecommendationManager = {
             if (scene === 'homepage') {
                 return {
                     url: '/api/v1/recommendations/homepage',
-                    data: { topN: normalizedTopN }
+                    data: { limit: normalizedTopN }
                 };
             }
 
-            if (scene === 'detail' || scene === 'cart' || scene === 'wishlist') {
+            if (scene === 'detail') {
+                if (!productSysId) {
+                    return null;
+                }
+
                 return {
-                    url: '/api/v1/recommendations/scene',
+                    url: `/api/v1/recommendations/detail/${encodeURIComponent(productSysId)}`,
                     data: {
-                        scene,
-                        productSysId,
-                        topN: normalizedTopN
+                        limit: normalizedTopN
+                    }
+                };
+            }
+
+            if (scene === 'cart' || scene === 'wishlist') {
+                return {
+                    url: `/api/v1/recommendations/${scene}`,
+                    data: {
+                        limit: normalizedTopN
                     }
                 };
             }

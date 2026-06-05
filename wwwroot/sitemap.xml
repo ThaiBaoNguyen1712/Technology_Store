@@ -4717,7 +4717,7 @@
     <loc>https://techshop-c4cafccbh0dmcwdp.eastasia-01.azurewebsites.net//product/laptop-lenovo-loq-15iax9-83gs001rvn</loc>
     <priority>0.9</priority>
     <changefreq>weekly</changefreq>
-    <lastmod>2026-01-10</lastmod>
+    <lastmod>2026-06-05</lastmod>
   </url>
   <url xmlns="">
     <loc>https://techshop-c4cafccbh0dmcwdp.eastasia-01.azurewebsites.net//product/samsung-galaxy-tab-s10-fe-wifi-8gb-128gb</loc>
@@ -5809,13 +5809,13 @@
     <loc>https://techshop-c4cafccbh0dmcwdp.eastasia-01.azurewebsites.net//product/realme-c55-8gb-128gb</loc>
     <priority>0.9</priority>
     <changefreq>weekly</changefreq>
-    <lastmod>2026-01-10</lastmod>
+    <lastmod>2026-06-05</lastmod>
   </url>
   <url xmlns="">
     <loc>https://techshop-c4cafccbh0dmcwdp.eastasia-01.azurewebsites.net//product/realme-narzo-50</loc>
     <priority>0.9</priority>
     <changefreq>weekly</changefreq>
-    <lastmod>2026-01-10</lastmod>
+    <lastmod>2026-06-05</lastmod>
   </url>
   <url xmlns="">
     <loc>https://techshop-c4cafccbh0dmcwdp.eastasia-01.azurewebsites.net//product/man-hinh-msi-pro-mp225v-22-inch</loc>
@@ -6073,6 +6073,12 @@
     <loc>https://techshop-c4cafccbh0dmcwdp.eastasia-01.azurewebsites.net//product/xiaomi-poco-m7-pro-5g-8gb-256gb</loc>
     <priority>0.9</priority>
     <changefreq>weekly</changefreq>
-    <lastmod>2026-05-27</lastmod>
+    <lastmod>2026-06-05</lastmod>
+  </url>
+  <url xmlns="">
+    <loc>https://techshop-c4cafccbh0dmcwdp.eastasia-01.azurewebsites.net//product/test-banking</loc>
+    <priority>0.9</priority>
+    <changefreq>weekly</changefreq>
+    <lastmod>2026-06-11</lastmod>
   </url>
 </urlset>

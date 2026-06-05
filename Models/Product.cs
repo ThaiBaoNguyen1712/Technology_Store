@@ -47,6 +47,10 @@ public partial class Product
 
     public string? Status { get; set; }
 
+    public bool IsShippingFee { get; set; }
+
+    public int SortOrder { get; set; }
+
     public string? UrlYoutube { get; set; }
 
     public string? WarrantyPeriod { get; set; }

@@ -90,7 +90,8 @@ namespace Tech_Store.Services.Client.Storefront
                     .AsNoTracking()
                     .Include(p => p.Brand)
                     .Where(p => p.CategoryId == category.CategoryId && p.Stock >= 1 && p.Status != "outstock")
-                    .OrderByDescending(p => p.ProductId)
+                    .OrderBy(p => p.SortOrder)
+                    .ThenByDescending(p => p.ProductId)
                     .Take(10)
                     .ToListAsync();
 

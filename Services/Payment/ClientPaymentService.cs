@@ -1,4 +1,5 @@
 using System.Data;
+using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Tech_Store.Events;
@@ -8,9 +9,13 @@ using Tech_Store.Models.DTO;
 using Tech_Store.Models.DTO.Payment.Client;
 using Tech_Store.Models.Enums;
 using Tech_Store.Models.ViewModel;
+using Tech_Store.Helpers;
 using Tech_Store.Services.Admin.NotificationServices;
 using Tech_Store.Services.Recommendation;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Tech_Store.Services.Payment
 {
@@ -25,19 +30,22 @@ namespace Tech_Store.Services.Payment
         private readonly NotificationService _notificationService;
         private readonly IPaymentGatewaySettingsService _paymentGatewaySettingsService;
         private readonly IUserProductEventTrackingService _userProductEventTrackingService;
+        private readonly ISePayService _sePayService;
 
         public ClientPaymentService(
             ApplicationDbContext context,
             IOnlinePaymentGatewayService onlinePaymentGatewayService,
             NotificationService notificationService,
             IPaymentGatewaySettingsService paymentGatewaySettingsService,
-            IUserProductEventTrackingService userProductEventTrackingService)
+            IUserProductEventTrackingService userProductEventTrackingService,
+            ISePayService sePayService)
         {
             _context = context;
             _onlinePaymentGatewayService = onlinePaymentGatewayService;
             _notificationService = notificationService;
             _paymentGatewaySettingsService = paymentGatewaySettingsService;
             _userProductEventTrackingService = userProductEventTrackingService;
+            _sePayService = sePayService;
         }
 
         public async Task<CheckoutPageResult> BuildCheckoutPageAsync(int userId, string? cartItemsJson, CancellationToken cancellationToken = default)
@@ -82,7 +90,7 @@ namespace Tech_Store.Services.Payment
                 .Where(x => x.IsEnabled)
                 .ToList();
             var subtotalAmount = productDetails.Sum(x => x.SellPrice * x.Quantity);
-            var shippingAmount = productDetails.Count > 0 ? DefaultShippingAmount : 0;
+            var shippingAmount = GetShippingAmount(productDetails.Any(x => x.IsShippingFee));
 
             var model = new CheckoutPageViewModel
             {
@@ -182,6 +190,11 @@ namespace Tech_Store.Services.Payment
                     StatusCode = StatusCodes.Status409Conflict,
                     ErrorMessage = ex.Message
                 };
+            }
+
+            if (paymentMethodType == PaymentMethodType.SePay)
+            {
+                return await CreateSePayOrderAsync(model, userId, cancellationToken);
             }
 
             var totalAmount = await GetTotalPriceAsync(model, cancellationToken);
@@ -317,6 +330,267 @@ namespace Tech_Store.Services.Payment
                 cancellationToken);
         }
 
+        public async Task<PaymentCallbackResult> HandleSePayIpnAsync(HttpContext httpContext, CancellationToken cancellationToken = default)
+        {
+            httpContext.Request.EnableBuffering();
+
+            string rawBody;
+            using (var reader = new StreamReader(httpContext.Request.Body, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, leaveOpen: true))
+            {
+                rawBody = await reader.ReadToEndAsync(cancellationToken);
+            }
+
+            httpContext.Request.Body.Position = 0;
+
+            var callbackResult = _sePayService.ValidateCallback(httpContext, rawBody);
+            if (!callbackResult.Success)
+            {
+                return new PaymentCallbackResult
+                {
+                    Success = false,
+                    StatusCode = StatusCodes.Status401Unauthorized,
+                    ErrorMessage = callbackResult.FailureMessage
+                };
+            }
+
+            SePayIpnPayload? payload;
+            try
+            {
+                payload = System.Text.Json.JsonSerializer.Deserialize<SePayIpnPayload>(
+                    rawBody,
+                    new System.Text.Json.JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                return new PaymentCallbackResult
+                {
+                    Success = false,
+                    StatusCode = StatusCodes.Status400BadRequest,
+                    ErrorMessage = "Payload IPN SePay khong hop le."
+                };
+            }
+
+            if (payload == null)
+            {
+                return new PaymentCallbackResult
+                {
+                    Success = false,
+                    StatusCode = StatusCodes.Status400BadRequest,
+                    ErrorMessage = "IPN SePay khong co du lieu hop le."
+                };
+            }
+
+            if (!string.IsNullOrWhiteSpace(payload.NotificationType) &&
+                !string.Equals(payload.NotificationType, "ORDER_PAID", StringComparison.OrdinalIgnoreCase))
+            {
+                return new PaymentCallbackResult
+                {
+                    Success = true,
+                    StatusCode = StatusCodes.Status200OK
+                };
+            }
+
+            if (!string.IsNullOrWhiteSpace(payload.TransferType) &&
+                !string.Equals(payload.TransferType, "in", StringComparison.OrdinalIgnoreCase))
+            {
+                return new PaymentCallbackResult
+                {
+                    Success = true,
+                    StatusCode = StatusCodes.Status200OK
+                };
+            }
+
+            if (!TryResolveSePayCheckoutId(payload, out var checkoutId))
+            {
+                return new PaymentCallbackResult
+                {
+                    Success = true,
+                    StatusCode = StatusCodes.Status200OK
+                };
+            }
+
+            var pendingCheckout = await _context.PendingSePayCheckouts
+                .FirstOrDefaultAsync(x => x.PendingSePayCheckoutId == checkoutId, cancellationToken);
+
+            if (pendingCheckout == null)
+            {
+                return new PaymentCallbackResult
+                {
+                    Success = false,
+                    StatusCode = StatusCodes.Status404NotFound,
+                    ErrorMessage = $"Khong tim thay phien thanh toan #{checkoutId}."
+                };
+            }
+
+            if (string.Equals(pendingCheckout.PaymentStatus, PaymentRecordStatusType.Paid.ToRecordValue(), StringComparison.OrdinalIgnoreCase) &&
+                pendingCheckout.OrderId.HasValue)
+            {
+                return new PaymentCallbackResult
+                {
+                    Success = true,
+                    StatusCode = StatusCodes.Status200OK
+                };
+            }
+
+            var amountIn = ResolveIncomingAmount(payload);
+            if (!amountIn.HasValue || amountIn.Value <= 0)
+            {
+                amountIn = pendingCheckout.Amount;
+            }
+
+            var amountOut = ResolveOutgoingAmount(payload) ?? 0;
+            var transactionDate = ResolveTransactionDate(payload) ?? DateTime.Now;
+            var configuredAccountNumber = _sePayService.GetAccountNumber();
+
+            if (!string.IsNullOrWhiteSpace(payload.AccountNumber) &&
+                !string.IsNullOrWhiteSpace(configuredAccountNumber) &&
+                !string.Equals(payload.AccountNumber.Trim(), configuredAccountNumber, StringComparison.OrdinalIgnoreCase))
+            {
+                return new PaymentCallbackResult
+                {
+                    Success = false,
+                    StatusCode = StatusCodes.Status409Conflict,
+                    ErrorMessage = $"Tai khoan nhan tien khong khop voi cau hinh cho phien thanh toan #{checkoutId}."
+                };
+            }
+
+            if (amountIn.Value != pendingCheckout.Amount)
+            {
+                return new PaymentCallbackResult
+                {
+                    Success = false,
+                    StatusCode = StatusCodes.Status409Conflict,
+                    ErrorMessage = $"So tien IPN SePay khong khop voi phien thanh toan #{checkoutId}."
+                };
+            }
+
+            if (!TryReadPendingSePayCheckoutPayload(pendingCheckout.CheckoutPayload, out var pendingPayload))
+            {
+                return new PaymentCallbackResult
+                {
+                    Success = false,
+                    StatusCode = StatusCodes.Status500InternalServerError,
+                    ErrorMessage = $"Khong doc duoc du lieu checkout cho phien thanh toan #{checkoutId}."
+                };
+            }
+
+            Order? createdOrder;
+            User? user;
+
+            using (var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken))
+            {
+                try
+                {
+                    pendingCheckout = await _context.PendingSePayCheckouts
+                        .FirstOrDefaultAsync(x => x.PendingSePayCheckoutId == checkoutId, cancellationToken);
+
+                    if (pendingCheckout == null)
+                    {
+                        throw new InvalidOperationException($"Khong tim thay phien thanh toan #{checkoutId}.");
+                    }
+
+                    if (string.Equals(pendingCheckout.PaymentStatus, PaymentRecordStatusType.Paid.ToRecordValue(), StringComparison.OrdinalIgnoreCase) &&
+                        pendingCheckout.OrderId.HasValue)
+                    {
+                        await transaction.CommitAsync(cancellationToken);
+                        return new PaymentCallbackResult
+                        {
+                            Success = true,
+                            StatusCode = StatusCodes.Status200OK
+                        };
+                    }
+
+                    var address = await ResolveShippingAddressAsync(pendingPayload.PaymentInfo, pendingCheckout.UserId, cancellationToken);
+                    if (address == null)
+                    {
+                        throw new InvalidOperationException("Khong tim thay dia chi van chuyen.");
+                    }
+
+                    createdOrder = await CreateOrderAggregateAsync(
+                        pendingPayload.PaymentInfo,
+                        pendingCheckout.UserId,
+                        address.AddressId,
+                        PaymentMethodType.SePay,
+                        OrderStatusType.Confirmed,
+                        PaymentRecordStatusType.Paid,
+                        cancellationToken);
+
+                    var sePayGateway = PaymentMethodType.SePay.ToPaymentRecordValue().ToLower();
+                    var payment = await _context.Payments
+                        .Where(x => x.OrderId == createdOrder.OrderId &&
+                                    x.Gateway != null &&
+                                    x.Gateway.ToLower() == sePayGateway)
+                        .OrderByDescending(x => x.TransactionDate ?? x.CreatedAt)
+                        .FirstOrDefaultAsync(cancellationToken);
+
+                    if (payment == null)
+                    {
+                        throw new InvalidOperationException($"Khong tim thay giao dich SePay cua don hang #{createdOrder.OrderId}.");
+                    }
+
+                    payment.Gateway = string.IsNullOrWhiteSpace(payload.Gateway)
+                        ? payment.Gateway
+                        : payload.Gateway.Trim();
+                    payment.TransactionDate = transactionDate;
+                    payment.AccountNumber = FirstNonEmpty(payload.AccountNumber, payment.AccountNumber);
+                    payment.SubAccount = FirstNonEmpty(payload.SubAccount, payment.SubAccount);
+                    payment.AmountIn = amountIn.Value;
+                    payment.AmountOut = amountOut;
+                    payment.Accumulated = payload.Accumulated ?? payment.Accumulated;
+                    payment.Code = FirstNonEmpty(payload.Code, payment.Code);
+                    payment.TransactionContent = FirstNonEmpty(payload.Content, payment.TransactionContent);
+                    payment.ReferenceNumber = FirstNonEmpty(payload.ReferenceCode, payment.ReferenceNumber);
+                    payment.Body = rawBody;
+                    payment.UpdatedAt = DateTime.Now;
+
+                    pendingCheckout.PaymentStatus = PaymentRecordStatusType.Paid.ToRecordValue();
+                    pendingCheckout.OrderStatus = createdOrder.OrderStatus;
+                    pendingCheckout.OrderId = createdOrder.OrderId;
+                    pendingCheckout.PaidAt = transactionDate;
+                    pendingCheckout.GatewayPayload = rawBody;
+                    pendingCheckout.UpdatedAt = DateTime.Now;
+
+                    await _context.SaveChangesAsync(cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    return new PaymentCallbackResult
+                    {
+                        Success = false,
+                        StatusCode = StatusCodes.Status409Conflict,
+                        ErrorMessage = ex.Message
+                    };
+                }
+                catch
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    return new PaymentCallbackResult
+                    {
+                        Success = false,
+                        StatusCode = StatusCodes.Status500InternalServerError,
+                        ErrorMessage = "Co loi xay ra trong qua trinh xu ly thanh toan SePay."
+                    };
+                }
+            }
+
+            user = await _context.Users.FindAsync([pendingCheckout.UserId], cancellationToken);
+            if (user != null)
+            {
+                await NotifyGatewayPaymentSuccessAsync(user, pendingCheckout.OrderId!.Value);
+            }
+
+            return new PaymentCallbackResult
+            {
+                Success = true,
+                StatusCode = StatusCodes.Status200OK
+            };
+        }
+
         public async Task<VoucherCheckResult> CheckVoucherAsync(string code, CancellationToken cancellationToken = default)
         {
             var normalizedCode = code?.ToLower().Trim() ?? string.Empty;
@@ -347,6 +621,110 @@ namespace Tech_Store.Services.Payment
                 Message = "Voucher đã được áp dụng",
                 Voucher = voucher
             };
+        }
+
+        public async Task<SePayCheckoutPageResult> BuildSePayCheckoutAsync(int checkoutId, int userId, CancellationToken cancellationToken = default)
+        {
+            var pendingCheckout = await _context.PendingSePayCheckouts
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.PendingSePayCheckoutId == checkoutId && x.UserId == userId, cancellationToken);
+
+            if (pendingCheckout == null)
+            {
+                return new SePayCheckoutPageResult
+                {
+                    Success = false,
+                    StatusCode = StatusCodes.Status404NotFound,
+                    ErrorMessage = "Khong tim thay phien thanh toan SePay."
+                };
+            }
+
+            return new SePayCheckoutPageResult
+            {
+                Success = true,
+                StatusCode = StatusCodes.Status200OK,
+                Model = new SePayCheckoutViewModel
+                {
+                    CheckoutId = pendingCheckout.PendingSePayCheckoutId,
+                    OrderId = pendingCheckout.OrderId,
+                    Amount = pendingCheckout.Amount,
+                    PaymentContent = pendingCheckout.PaymentContent,
+                    QrImageUrl = _sePayService.BuildQrImageUrl(pendingCheckout.Amount, pendingCheckout.PaymentContent),
+                    AccountNumber = _sePayService.GetAccountNumber(),
+                    BankCode = _sePayService.GetBankCode(),
+                    AccountName = _sePayService.GetAccountName(),
+                    PaymentStatus = pendingCheckout.PaymentStatus,
+                    OrderStatus = pendingCheckout.OrderStatus ?? string.Empty,
+                    WebhookUrl = _sePayService.GetIpnUrl()
+                }
+            };
+        }
+
+        public async Task<SePayPaymentStatusResult> GetSePayPaymentStatusAsync(int checkoutId, int userId, CancellationToken cancellationToken = default)
+        {
+            var pendingCheckout = await _context.PendingSePayCheckouts
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.PendingSePayCheckoutId == checkoutId && x.UserId == userId, cancellationToken);
+
+            if (pendingCheckout == null)
+            {
+                return new SePayPaymentStatusResult
+                {
+                    Success = false,
+                    StatusCode = StatusCodes.Status404NotFound,
+                    ErrorMessage = "Khong tim thay phien thanh toan."
+                };
+            }
+
+            return new SePayPaymentStatusResult
+            {
+                Success = true,
+                StatusCode = StatusCodes.Status200OK,
+                PaymentStatus = pendingCheckout.PaymentStatus,
+                OrderStatus = pendingCheckout.OrderStatus ?? string.Empty,
+                OrderId = pendingCheckout.OrderId
+            };
+        }
+
+        private async Task<PaymentStartResult> CreateSePayOrderAsync(PaymentDTo model, int userId, CancellationToken cancellationToken)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+            try
+            {
+                var pendingCheckout = await CreatePendingSePayCheckoutAsync(
+                    model,
+                    userId,
+                    cancellationToken);
+
+                await transaction.CommitAsync(cancellationToken);
+
+                return new PaymentStartResult
+                {
+                    Success = true,
+                    StatusCode = StatusCodes.Status200OK,
+                    RedirectUrl = $"/Payment/SePayCheckout/{pendingCheckout.PendingSePayCheckoutId}"
+                };
+            }
+            catch (InvalidOperationException ex)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new PaymentStartResult
+                {
+                    Success = false,
+                    StatusCode = StatusCodes.Status409Conflict,
+                    ErrorMessage = ex.Message
+                };
+            }
+            catch
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new PaymentStartResult
+                {
+                    Success = false,
+                    StatusCode = StatusCodes.Status500InternalServerError,
+                    ErrorMessage = "Co loi xay ra trong qua trinh khoi tao thanh toan SePay."
+                };
+            }
         }
 
         private async Task<PaymentCallbackResult> HandleSuccessfulGatewayPaymentAsync(int userId, PaymentMethodType paymentMethodType, HttpContext httpContext, CancellationToken cancellationToken)
@@ -450,7 +828,7 @@ namespace Tech_Store.Services.Payment
             var originAmount = checkoutContext.Lines.Sum(x => x.UnitPrice * x.Quantity);
             var voucher = await GetValidatedVoucherAsync(paymentInfo.VoucherCode, originAmount, cancellationToken);
             var discountAmount = voucher == null ? 0 : ParseCurrency(voucher.Promotion, originAmount);
-            var shippingAmount = GetShippingAmount(checkoutContext.Lines.Count);
+            var shippingAmount = GetShippingAmount(checkoutContext.Lines.Any(x => x.Product.IsShippingFee));
             var totalAmount = Math.Max(0, originAmount - discountAmount + shippingAmount);
 
             ApplyInventoryDeduction(checkoutContext.Lines);
@@ -488,10 +866,10 @@ namespace Tech_Store.Services.Payment
             _context.Payments.Add(new Models.Payment
             {
                 OrderId = order.OrderId,
-                PaymentDate = DateTime.Now,
-                PaymentMethod = paymentMethodType.ToPaymentRecordValue(),
-                Status = paymentRecordStatusType.ToRecordValue(),
-                Amount = totalAmount,
+                TransactionDate = DateTime.Now,
+                Gateway = paymentMethodType.ToPaymentRecordValue(),
+                PaymentStatus = paymentRecordStatusType.ToRecordValue(),
+                AmountIn = totalAmount,
                 CreatedAt = DateTime.Now,
                 UpdatedAt = DateTime.Now
             });
@@ -513,6 +891,40 @@ namespace Tech_Store.Services.Payment
 
             await _context.SaveChangesAsync(cancellationToken);
             return order;
+        }
+
+        private async Task<PendingSePayCheckout> CreatePendingSePayCheckoutAsync(
+            PaymentDTo paymentInfo,
+            int userId,
+            CancellationToken cancellationToken)
+        {
+            var checkoutContext = await BuildCheckoutContextAsync(paymentInfo, cancellationToken);
+            var originAmount = checkoutContext.Lines.Sum(x => x.UnitPrice * x.Quantity);
+            var voucher = await GetValidatedVoucherAsync(paymentInfo.VoucherCode, originAmount, cancellationToken);
+            var discountAmount = voucher == null ? 0 : ParseCurrency(voucher.Promotion, originAmount);
+            var shippingAmount = GetShippingAmount(checkoutContext.Lines.Any(x => x.Product.IsShippingFee));
+            var totalAmount = Math.Max(0, originAmount - discountAmount + shippingAmount);
+
+            var pendingCheckout = new PendingSePayCheckout
+            {
+                UserId = userId,
+                Amount = totalAmount,
+                PaymentContent = $"PENDING-{Guid.NewGuid():N}",
+                CheckoutPayload = WritePendingSePayCheckoutPayload(new PendingSePayCheckoutPayload
+                {
+                    PaymentInfo = paymentInfo
+                }),
+                PaymentStatus = PaymentRecordStatusType.Unpaid.ToRecordValue(),
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
+            };
+
+            _context.PendingSePayCheckouts.Add(pendingCheckout);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            pendingCheckout.PaymentContent = _sePayService.BuildPaymentContent(pendingCheckout.PendingSePayCheckoutId);
+            await _context.SaveChangesAsync(cancellationToken);
+            return pendingCheckout;
         }
 
         private async Task<CheckoutContext> BuildCheckoutContextAsync(PaymentDTo paymentInfo, CancellationToken cancellationToken)
@@ -662,6 +1074,28 @@ namespace Tech_Store.Services.Payment
             }
         }
 
+        private async Task TryConsumeVoucherByCodeAsync(string? voucherCode, CancellationToken cancellationToken)
+        {
+            var normalizedCode = NormalizeVoucherCode(voucherCode);
+            if (string.IsNullOrWhiteSpace(normalizedCode))
+            {
+                return;
+            }
+
+            var voucher = await _context.Vouchers.FirstOrDefaultAsync(
+                x => x.Code.ToLower().Trim() == normalizedCode,
+                cancellationToken);
+
+            if (voucher == null || voucher.Quantity <= 0)
+            {
+                return;
+            }
+
+            voucher.Quantity -= 1;
+            voucher.UpdatedAt = DateTime.Now;
+            _context.Vouchers.Update(voucher);
+        }
+
         private async Task<Voucher?> GetValidatedVoucherAsync(string? voucherCode, decimal? totalAmount, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(voucherCode))
@@ -779,6 +1213,9 @@ namespace Tech_Store.Services.Payment
 
             var variants = await _context.VarientProducts
                 .Where(x => variantIds.Contains(x.VarientId))
+                .Include(x => x.VariantAttributes)
+                    .ThenInclude(x => x.AttributeValue)
+                        .ThenInclude(x => x.Attribute)
                 .ToDictionaryAsync(x => x.VarientId, cancellationToken);
 
             var productDetails = new List<CheckoutDTo>();
@@ -801,7 +1238,8 @@ namespace Tech_Store.Services.Payment
                     VarientId = item.VarientProductId,
                     SellPrice = variantProduct?.Price ?? 0,
                     OriginPrice = product.OriginalPrice,
-                    Attributes = variantProduct?.Attributes
+                    Attributes = VariantDisplayHelper.Format(variantProduct),
+                    IsShippingFee = product.IsShippingFee
                 });
             }
 
@@ -814,12 +1252,12 @@ namespace Tech_Store.Services.Payment
             var originAmount = checkoutContext.Lines.Sum(x => x.UnitPrice * x.Quantity);
             var voucher = await GetValidatedVoucherAsync(model.VoucherCode, originAmount, cancellationToken);
             var discountAmount = voucher == null ? 0 : ParseCurrency(voucher.Promotion, originAmount);
-            return Math.Max(0, originAmount - discountAmount + GetShippingAmount(checkoutContext.Lines.Count));
+            return Math.Max(0, originAmount - discountAmount + GetShippingAmount(checkoutContext.Lines.Any(x => x.Product.IsShippingFee)));
         }
 
-        private static int GetShippingAmount(int productCount)
+        private static int GetShippingAmount(bool hasShippableProduct)
         {
-            return productCount > 0 ? DefaultShippingAmount : 0;
+            return hasShippableProduct ? DefaultShippingAmount : 0;
         }
 
         private decimal ParseCurrency(string? input, decimal totalPrice)
@@ -966,6 +1404,200 @@ namespace Tech_Store.Services.Payment
             public int VariantId { get; set; }
             public int ProductId { get; set; }
             public int Quantity { get; set; }
+        }
+
+        private sealed class SePayIpnPayload
+        {
+            [JsonPropertyName("notification_type")]
+            public string? NotificationType { get; set; }
+
+            [JsonPropertyName("gateway")]
+            public string? Gateway { get; set; }
+
+            [JsonPropertyName("transactionDate")]
+            public string? TransactionDateRaw { get; set; }
+
+            [JsonPropertyName("accountNumber")]
+            public string? AccountNumber { get; set; }
+
+            [JsonPropertyName("subAccount")]
+            public string? SubAccount { get; set; }
+
+            [JsonPropertyName("transferType")]
+            public string? TransferType { get; set; }
+
+            [JsonPropertyName("transferAmount")]
+            public decimal? TransferAmount { get; set; }
+
+            [JsonPropertyName("accumulated")]
+            public decimal? Accumulated { get; set; }
+
+            [JsonPropertyName("code")]
+            public string? Code { get; set; }
+
+            [JsonPropertyName("content")]
+            public string? Content { get; set; }
+
+            [JsonPropertyName("referenceCode")]
+            public string? ReferenceCode { get; set; }
+
+            [JsonPropertyName("description")]
+            public string? Description { get; set; }
+
+            [JsonPropertyName("order")]
+            public SePayIpnOrderPayload? Order { get; set; }
+
+            [JsonPropertyName("transaction")]
+            public SePayIpnTransactionPayload? Transaction { get; set; }
+        }
+
+        private sealed class SePayIpnOrderPayload
+        {
+            [JsonPropertyName("order_invoice_number")]
+            public string? OrderInvoiceNumber { get; set; }
+
+            [JsonPropertyName("order_amount")]
+            public decimal? OrderAmount { get; set; }
+        }
+
+        private sealed class SePayIpnTransactionPayload
+        {
+            [JsonPropertyName("amount")]
+            public decimal? Amount { get; set; }
+        }
+
+        private static decimal? ResolveIncomingAmount(SePayIpnPayload payload)
+        {
+            if (string.Equals(payload.TransferType, "in", StringComparison.OrdinalIgnoreCase) && payload.TransferAmount.HasValue)
+            {
+                return payload.TransferAmount.Value;
+            }
+
+            if (payload.Transaction?.Amount.HasValue == true)
+            {
+                return payload.Transaction.Amount.Value;
+            }
+
+            return payload.Order?.OrderAmount;
+        }
+
+        private static decimal? ResolveOutgoingAmount(SePayIpnPayload payload)
+        {
+            if (string.Equals(payload.TransferType, "out", StringComparison.OrdinalIgnoreCase) && payload.TransferAmount.HasValue)
+            {
+                return payload.TransferAmount.Value;
+            }
+
+            return null;
+        }
+
+        private static DateTime? ResolveTransactionDate(SePayIpnPayload payload)
+        {
+            if (string.IsNullOrWhiteSpace(payload.TransactionDateRaw))
+            {
+                return null;
+            }
+
+            if (DateTime.TryParse(payload.TransactionDateRaw, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out var transactionDate))
+            {
+                return transactionDate;
+            }
+
+            return null;
+        }
+
+        private static string? FirstNonEmpty(string? primary, string? fallback)
+        {
+            return string.IsNullOrWhiteSpace(primary) ? fallback : primary.Trim();
+        }
+
+        private static string? NormalizeVoucherCode(string? voucherCode)
+        {
+            return string.IsNullOrWhiteSpace(voucherCode)
+                ? null
+                : voucherCode.Trim().ToLowerInvariant();
+        }
+
+        private static bool TryReadPendingSePayCheckoutPayload(string? rawValue, out PendingSePayCheckoutPayload payload)
+        {
+            if (string.IsNullOrWhiteSpace(rawValue))
+            {
+                payload = new PendingSePayCheckoutPayload();
+                return false;
+            }
+
+            try
+            {
+                payload = System.Text.Json.JsonSerializer.Deserialize<PendingSePayCheckoutPayload>(
+                              rawValue,
+                              new System.Text.Json.JsonSerializerOptions
+                              {
+                                  PropertyNameCaseInsensitive = true
+                              })
+                          ?? new PendingSePayCheckoutPayload();
+                return payload.PaymentInfo.Products != null;
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                payload = new PendingSePayCheckoutPayload();
+                return false;
+            }
+        }
+
+        private static string WritePendingSePayCheckoutPayload(PendingSePayCheckoutPayload payload)
+        {
+            return System.Text.Json.JsonSerializer.Serialize(payload);
+        }
+
+        private static bool TryResolveSePayCheckoutId(SePayIpnPayload payload, out int checkoutId)
+        {
+            if (int.TryParse(payload.Order?.OrderInvoiceNumber, out checkoutId))
+            {
+                return true;
+            }
+
+            foreach (var candidate in new[] { payload.Content, payload.Code, payload.ReferenceCode, payload.Description })
+            {
+                if (TryExtractCheckoutId(candidate, out checkoutId))
+                {
+                    return true;
+                }
+            }
+
+            checkoutId = 0;
+            return false;
+        }
+
+        private static bool TryExtractCheckoutId(string? value, out int checkoutId)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                checkoutId = 0;
+                return false;
+            }
+
+            var normalized = value.Trim();
+            if (int.TryParse(normalized, out checkoutId))
+            {
+                return true;
+            }
+
+            foreach (var pattern in new[]
+                     {
+                         @"\bDH(?<id>\d+)\b",
+                         @"\bORDER(?<id>\d+)\b",
+                         @"#(?<id>\d+)\b"
+                     })
+            {
+                var match = Regex.Match(normalized, pattern, RegexOptions.IgnoreCase);
+                if (match.Success && int.TryParse(match.Groups["id"].Value, out checkoutId))
+                {
+                    return true;
+                }
+            }
+
+            checkoutId = 0;
+            return false;
         }
     }
 }

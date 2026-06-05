@@ -11,6 +11,9 @@ namespace Tech_Store.Services.Payment
         Task<PaymentStartResult> CreateCodOrderAsync(PaymentDTo model, int userId, HttpContext httpContext, CancellationToken cancellationToken = default);
         Task<PaymentCallbackResult> HandleMomoCallbackAsync(int userId, HttpContext httpContext, CancellationToken cancellationToken = default);
         Task<PaymentCallbackResult> HandleVnPayCallbackAsync(int userId, HttpContext httpContext, CancellationToken cancellationToken = default);
+        Task<PaymentCallbackResult> HandleSePayIpnAsync(HttpContext httpContext, CancellationToken cancellationToken = default);
+        Task<SePayCheckoutPageResult> BuildSePayCheckoutAsync(int checkoutId, int userId, CancellationToken cancellationToken = default);
+        Task<SePayPaymentStatusResult> GetSePayPaymentStatusAsync(int checkoutId, int userId, CancellationToken cancellationToken = default);
         Task<VoucherCheckResult> CheckVoucherAsync(string code, CancellationToken cancellationToken = default);
     }
 }

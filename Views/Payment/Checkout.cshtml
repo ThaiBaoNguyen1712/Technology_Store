@@ -1,4 +1,4 @@
-@using System.Globalization
+﻿@using System.Globalization
 @using Tech_Store.Helpers
 @model Tech_Store.Models.ViewModel.CheckoutPageViewModel
 
@@ -198,7 +198,7 @@
                             <span>Giảm giá</span>
                             <strong id="Discount">0₫</strong>
                         </div>
-                        <div class="checkout-page__summary-row">
+                        <div class="checkout-page__summary-row" id="shipFeeRow" style="@(Model.ShippingAmount > 0 ? string.Empty : "display:none")">
                             <span>Phí vận chuyển</span>
                             <strong id="shipFee">@Model.ShippingAmount.ToString("C0", new CultureInfo("vi-VN"))</strong>
                         </div>
@@ -222,6 +222,12 @@
 <script src="~/js/provincevn.js"></script>
 <script>
     $(document).ready(function () {
+        var $firstPaymentMethod = $('.payment-method').first();
+        if ($firstPaymentMethod.length) {
+            $firstPaymentMethod.addClass('is-selected');
+            $('#PayBtn').data('selectedMethod', $firstPaymentMethod.attr('data'));
+        }
+
         $('.payment-method').on('click', function () {
             $('.payment-method').removeClass('is-selected');
             $(this).addClass('is-selected');
@@ -284,6 +290,7 @@
 
             var total = Math.max(0, totalPrice - discountPrice + shipFee);
             $('#totalPrice').text(total.toLocaleString() + 'đ');
+            $('#shipFeeRow').toggle(shipFee > 0);
         }
 
         $('#isOldAddressCheckbox').change(function () {
