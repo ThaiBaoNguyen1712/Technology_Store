@@ -39,7 +39,6 @@ public class ProductDTo
     public string? Status { get; set; }
 
     public bool IsShippingFee { get; set; } = true;
-
     public int SortOrder { get; set; }
 
     public string? UrlYoutube { get; set; }

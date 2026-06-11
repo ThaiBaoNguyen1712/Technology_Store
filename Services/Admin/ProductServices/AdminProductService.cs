@@ -282,7 +282,6 @@ namespace Tech_Store.Services.Admin.ProductServices
             try
             {
                 NormalizeAndValidateVariantStock(productDto);
-
                 product = new Product
                 {
                     ProductSysId = ProductServices.GenerateProductSysId(),
@@ -427,7 +426,6 @@ namespace Tech_Store.Services.Admin.ProductServices
             try
             {
                 NormalizeAndValidateVariantStock(productDto);
-
                 product = await _context.Products.FindAsync(productDto.ProductId);
                 if (product == null)
                 {
