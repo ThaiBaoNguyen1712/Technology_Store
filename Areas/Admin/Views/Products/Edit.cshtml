@@ -316,10 +316,17 @@
                     Biến thể sản phẩm
                 </h5>
                 <div class="form-group d-flex align-items-center">
-                    @if (Model.VarientProducts.Any(s => !string.IsNullOrEmpty(s.Attributes)))
+                    @{
+                        var existingVariantRows = Model.VarientProducts
+                            .Where(v => v.VariantAttributes.Any() || !string.IsNullOrWhiteSpace(v.Attributes))
+                            .ToList();
+                        var hasConfiguredVariants = existingVariantRows.Any();
+                    }
+
+                    @if (hasConfiguredVariants)
                     {
                         <input type="hidden" name="IsUseVariant" value="true" />
-                        <input class="form-check-input me-2 mb-2" type="checkbox" checked onclick="return false;" />
+                        <input class="form-check-input me-2 mb-2" id="useVariant" type="checkbox" checked disabled />
                     }
                     else
                     {
@@ -401,7 +408,7 @@
                     }
 
                 </div>
-                <div class="table-responsive reusable-admin-table table-Varient mt-4" style="@(Model.VarientProducts.Any(s => !string.IsNullOrEmpty(s.Attributes)) ? "" : "display:none")">
+                <div class="table-responsive reusable-admin-table table-Varient mt-4" style="@(hasConfiguredVariants ? "" : "display:none")">
                     <table class="table table-hover align-middle product-form__variant-table">
                         <thead class="table-light">
                             <tr>
@@ -419,7 +426,7 @@
                                 int index = 0;
                             }  
 
-                            @foreach (var varient in Model.VarientProducts)
+                            @foreach (var varient in existingVariantRows)
                             {
                                 <tr>
                                     <td class="text-center fw-semibold">@(index + 1)</td>
@@ -846,7 +853,7 @@ Ckeditor *@
     });
 
     function isVariantEnabled() {
-        return $('#useVariant').is(':checked') || $('input[name="IsUseVariant"][value="true"]').length > 0;
+        return $('#useVariant').is(':checked');
     }
 
     function getVariantStockTotal() {

@@ -51,6 +51,7 @@
                                         <input type="checkbox"
                                                class="form-check-input product-checkbox"
                                                data-price="@unitPrice"
+                                               data-isshippingfee="@(item.VarientProduct.Product.IsShippingFee ? "true" : "false")"
                                                data-varientid="@item.VarientProduct.VarientId"
                                                data-productid="@item.ProductId">
                                     </div>
@@ -276,6 +277,7 @@
         function calculateSubtotal() {
             let subtotal = 0;
             let selectedCount = 0;
+            let hasShippableProduct = false;
 
             $('.product-checkbox:checked').each(function () {
                 const row = $(this).closest('.cart-item');
@@ -283,9 +285,13 @@
                 const quantity = parseInt(row.find('.qty-input').val()) || 1;
                 subtotal += price * quantity;
                 selectedCount += quantity;
+
+                if ($(this).attr('data-isshippingfee') === 'true') {
+                    hasShippableProduct = true;
+                }
             });
 
-            const appliedShippingFee = selectedCount > 0 ? @shippingFee : 0;
+            const appliedShippingFee = hasShippableProduct ? @shippingFee : 0;
             const total = subtotal + appliedShippingFee;
 
             $('#selectedCount').text(selectedCount + ' sản phẩm');

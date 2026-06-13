@@ -102,7 +102,7 @@ namespace Tech_Store.Areas.Admin.Controllers
             page = Math.Max(1, Math.Min(page, totalPages));
 
             var orders = await query
-                .OrderByDescending(x => x.OrderDate)
+                .OrderByDescending(x => x.CreatedAt ?? x.OrderDate ?? DateTime.MinValue)
                 .ThenByDescending(x => x.OrderId)
                 .Skip((page - 1) * resolvedPageSize)
                 .Take(resolvedPageSize)
@@ -124,7 +124,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                 Orders = orders.Select(order =>
                 {
                     var payment = order.Payments
-                        .OrderByDescending(x => x.TransactionDate ?? x.CreatedAt)
+                        .OrderByDescending(x => x.CreatedAt)
                         .FirstOrDefault();
                     var (orderBadgeClass, orderLabel) = GetOrderStatusPresentation(order.OrderStatus);
                     var (paymentBadgeClass, paymentLabel) = GetPaymentStatusPresentation(payment?.PaymentStatus);
@@ -142,7 +142,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                         PaymentStatus = payment?.PaymentStatus ?? "Unpaid",
                         PaymentStatusLabel = paymentLabel,
                         PaymentStatusBadgeClass = paymentBadgeClass,
-                        PaymentMethod = payment?.Gateway ?? "-",
+                        PaymentMethod = PaymentDisplayHelper.GetLabel(payment?.Gateway),
                         TotalAmount = order.TotalAmount,
                         ItemCount = order.OrderItems.Sum(x => x.Quantity),
                         ProductSummary = BuildProductSummary(order)
@@ -287,7 +287,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                 PaymentStatus = payment?.PaymentStatus ?? "Unpaid",
                 PaymentStatusLabel = paymentLabel,
                 PaymentStatusBadgeClass = paymentBadgeClass,
-                PaymentMethod = payment?.Gateway ?? "-",
+                PaymentMethod = PaymentDisplayHelper.GetLabel(payment?.Gateway),
                 PaymentDate = payment?.TransactionDate,
                 ItemCount = order.OrderItems.Sum(x => x.Quantity),
                 OriginAmount = order.OriginAmount ?? order.OrderItems.Sum(x => x.Price * x.Quantity),
@@ -397,7 +397,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                 }).ToList(),
                 ShippingFee = order.ShippingAmount ?? 0,
                 ShippingAmount = order.ShippingAmount ?? 0,
-                PaymentMethod = MapPaymentMethodLabel(payment?.Gateway),
+                PaymentMethod = PaymentDisplayHelper.GetLabel(payment?.Gateway),
                 IsPaid = string.Equals(payment?.PaymentStatus, "Paid", StringComparison.OrdinalIgnoreCase),
                 CompanyName = settings.FirstOrDefault(x => x.Key == "NameCompany")?.Value ?? settings.FirstOrDefault(x => x.Key == "NameWebsite")?.Value ?? "Tech Store",
                 CompanyAddress = settings.FirstOrDefault(x => x.Key == "Address")?.Value ?? string.Empty,
@@ -437,16 +437,6 @@ namespace Tech_Store.Areas.Admin.Controllers
             }
 
             return $"{baseUrl}/Upload/Logo/{logoPath.TrimStart('/')}";
-        }
-
-        private static string MapPaymentMethodLabel(string? paymentMethod)
-        {
-            return (paymentMethod ?? string.Empty).Trim().ToLowerInvariant() switch
-            {
-                "cash" => "Tiền mặt",
-                "card" => "Thẻ",
-                _ => string.IsNullOrWhiteSpace(paymentMethod) ? "-" : paymentMethod
-            };
         }
 
         private async Task<string> BuildFullAddressAsync(Address? shippingAddress)

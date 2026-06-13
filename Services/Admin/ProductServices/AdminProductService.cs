@@ -286,7 +286,6 @@ namespace Tech_Store.Services.Admin.ProductServices
                 {
                     ProductSysId = ProductServices.GenerateProductSysId(),
                     Name = productDto.Name,
-                    Slug = GenerateSlug(productDto.Name),
                     Sku = productDto.Sku,
                     Description = productDto.Description,
                     CostPrice = productDto.CostPrice,
@@ -305,6 +304,8 @@ namespace Tech_Store.Services.Admin.ProductServices
                     Weight = productDto.Weight,
                     Visible = true
                 };
+
+                product.Slug = await BuildUniqueProductSlugAsync(product.Name, product.Sku, product.ProductSysId);
 
                 var imageFile = productDto.Image;
                 if (imageFile != null && imageFile.Length > 0)
@@ -516,6 +517,7 @@ namespace Tech_Store.Services.Admin.ProductServices
             var galleries = await _context.Galleries.Where(x => x.ProductId == id).ToListAsync();
             var cartItems = await _context.CartItems.Where(x => x.ProductId == id).ToListAsync();
             var reviews = await _context.Reviews.Where(x => x.ProductId == id).ToListAsync();
+            var specValues = await _context.SpecValues.Where(x => x.ProductId == id).ToListAsync();
             var wishlists = await _context.Wishlists.Where(x => x.ProductId == id).ToListAsync();
             var orderItems = await _context.OrderItems.Where(x => x.ProductId == id).ToListAsync();
             var variantProductAttrs = await _context.VariantAttributes
@@ -553,6 +555,7 @@ namespace Tech_Store.Services.Admin.ProductServices
                 if (galleries.Any()) _context.Galleries.RemoveRange(galleries);
                 if (cartItems.Any()) _context.CartItems.RemoveRange(cartItems);
                 if (reviews.Any()) _context.Reviews.RemoveRange(reviews);
+                if (specValues.Any()) _context.SpecValues.RemoveRange(specValues);
                 if (wishlists.Any()) _context.Wishlists.RemoveRange(wishlists);
 
                 await _context.SaveChangesAsync();
@@ -1104,6 +1107,49 @@ namespace Tech_Store.Services.Admin.ProductServices
             slug = slug.Trim('-');
 
             return slug;
+        }
+
+        private async Task<string> BuildUniqueProductSlugAsync(string? productName, string? sku, string? productSysId)
+        {
+            var baseSlug = GenerateSlug(productName ?? string.Empty);
+            if (string.IsNullOrWhiteSpace(baseSlug))
+            {
+                baseSlug = "product";
+            }
+
+            var existingBaseSlug = await _context.Products
+                .AsNoTracking()
+                .AnyAsync(x => x.Slug == baseSlug);
+
+            if (!existingBaseSlug)
+            {
+                return baseSlug;
+            }
+
+            var slugSuffix = GenerateSlug(sku ?? string.Empty);
+            if (string.IsNullOrWhiteSpace(slugSuffix))
+            {
+                slugSuffix = GenerateSlug(productSysId ?? string.Empty);
+            }
+
+            if (string.IsNullOrWhiteSpace(slugSuffix))
+            {
+                slugSuffix = "duplicate";
+            }
+
+            var candidateSlug = $"{baseSlug}-{slugSuffix}";
+            if (!await _context.Products.AsNoTracking().AnyAsync(x => x.Slug == candidateSlug))
+            {
+                return candidateSlug;
+            }
+
+            var sequence = 2;
+            while (await _context.Products.AsNoTracking().AnyAsync(x => x.Slug == $"{candidateSlug}-{sequence}"))
+            {
+                sequence++;
+            }
+
+            return $"{candidateSlug}-{sequence}";
         }
 
         private static string RemoveDiacritics(string text)

@@ -1,5 +1,6 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Tech_Store.Helpers;
 using Tech_Store.Models;
 using Tech_Store.Models.ViewModel;
 
@@ -205,7 +206,7 @@ namespace Tech_Store.Areas.Admin.Controllers
             var currentPage = Math.Min(Math.Max(1, page), totalPages);
 
             var transactionRows = await query
-                .OrderBy(x => x.Status == "Paid")
+                .OrderByDescending(x => x.CreatedAt)
                 .ThenByDescending(x => x.PaymentId)
                 .Skip((currentPage - 1) * resolvedPageSize)
                 .Take(resolvedPageSize)
@@ -220,8 +221,8 @@ namespace Tech_Store.Areas.Admin.Controllers
                     PhoneNumber = x.PhoneNumber,
                     Email = x.Email,
                     PaymentMethod = x.PaymentMethod,
-                    PaymentMethodLabel = GetPaymentMethodLabel(x.PaymentMethod),
-                    PaymentMethodAsset = GetPaymentMethodAsset(x.PaymentMethod),
+                    PaymentMethodLabel = PaymentDisplayHelper.GetLabel(x.PaymentMethod),
+                    PaymentMethodAsset = PaymentDisplayHelper.GetLogoUrl(x.PaymentMethod),
                     Status = x.Status,
                     PaymentStatusLabel = GetPaymentStatusLabel(x.Status),
                     Amount = x.Amount,
@@ -281,8 +282,8 @@ namespace Tech_Store.Areas.Admin.Controllers
                 return NotFound();
             }
 
-            payment.PaymentMethodLabel = GetPaymentMethodLabel(payment.PaymentMethod);
-            payment.PaymentMethodAsset = GetPaymentMethodAsset(payment.PaymentMethod);
+            payment.PaymentMethodLabel = PaymentDisplayHelper.GetLabel(payment.PaymentMethod);
+            payment.PaymentMethodAsset = PaymentDisplayHelper.GetLogoUrl(payment.PaymentMethod);
             payment.PaymentStatusLabel = GetPaymentStatusLabel(payment.Status);
             payment.OrderDetailUrl = payment.OrderId > 0
                 ? $"/Admin/Orders/View/{payment.OrderId}"

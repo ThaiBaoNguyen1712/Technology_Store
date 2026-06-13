@@ -589,7 +589,7 @@ namespace Tech_Store.Controllers
             //Gửi thông báo đến admin và client
             await _notificationService.NotifyAsync(NotificationTarget.SpecificUsers, "Hủy đơn hàng", $"Đơn hàng {order.OrderId} đã được hủy", "info", $"/user/MyOrders/OrderDetail/{order.OrderId}", new List<int> { order.UserId});
 
-            await _notificationService.NotifyAsync(NotificationTarget.Admins, "Đơn hàng bị hủy", $"Đơn hàng {order.OrderId} đã bị hủy bởi khách hàng","danger", $"Admin/Orders/View/{order.OrderId}");
+            await _notificationService.NotifyAsync(NotificationTarget.Admins, "Đơn hàng bị hủy", $"Đơn hàng {order.OrderId} đã bị hủy bởi khách hàng","danger", $"/Admin/Orders/View/{order.OrderId}");
 
             return Json(new { success = true, message = "Đơn hàng đã hủy" });
         }

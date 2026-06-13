@@ -1,5 +1,6 @@
 @model Tech_Store.Models.ViewModel.AdminTransactionIndexViewModel
 @using System.Globalization
+@using Tech_Store.Helpers
 @{
     ViewData["Title"] = "Giao dịch";
     Layout = "~/Areas/Admin/Views/Shared/Layout.cshtml";
@@ -109,6 +110,14 @@
                         {
                             <option value="VNPay">VNPay</option>
                         }
+                        @if (Model.PaymentMethod == "SePay")
+                        {
+                            <option value="SePay" selected>SePay</option>
+                        }
+                        else
+                        {
+                            <option value="SePay">SePay</option>
+                        }
                         @if (Model.PaymentMethod == "cash")
                         {
                             <option value="cash" selected>Tiền mặt</option>
@@ -212,11 +221,15 @@
                                         </div>
                                     </td>
                                     <td>
+                                        @{
+                                            var paymentMethodLogo = PaymentDisplayHelper.GetLogoUrl(transaction.PaymentMethod);
+                                            var paymentMethodLabel = PaymentDisplayHelper.GetLabel(transaction.PaymentMethod);
+                                        }
                                         <div class="transaction-admin__payment">
-                                            @if (!string.IsNullOrWhiteSpace(transaction.PaymentMethodAsset))
+                                            @if (!string.IsNullOrWhiteSpace(paymentMethodLogo))
                                             {
                                                 <div class="transaction-admin__payment-icon-shell">
-                                                    <img src="@transaction.PaymentMethodAsset"
+                                                    <img src="@paymentMethodLogo"
                                                          class="transaction-admin__payment-icon"
                                                          alt="@transaction.PaymentMethod" />
                                                 </div>
@@ -228,7 +241,7 @@
                                                 </div>
                                             }
                                             <div class="order-admin__state-body">
-                                                <strong>@transaction.PaymentMethodLabel</strong>
+                                                <strong>@paymentMethodLabel</strong>
                                                 <span>@transaction.PaymentMethod</span>
                                             </div>
                                         </div>

@@ -26,7 +26,7 @@ namespace Tech_Store.Services.Client.RecommendServices
             if (_recommendApiEnabled)
             {
                 _http.BaseAddress = new Uri(recommendApiBaseUrl!);
-                _http.Timeout = TimeSpan.FromSeconds(5);
+                _http.Timeout = TimeSpan.FromSeconds(10);
             }
             _productServices = productServices;
             _context = context;
@@ -55,13 +55,16 @@ namespace Tech_Store.Services.Client.RecommendServices
                     var url = BuildRecommendationUrl("homepage", userId, null, topN);
                     if (string.IsNullOrWhiteSpace(url))
                     {
+                        var fallback = await BuildBackupProducts("homepage", userId, null, topN);
                         return new RecommendResponse
                         {
                             Scene = "homepage",
-                            Products = await _productServices.GetHotSaleProducts(topN),
+                            Products = fallback.Products,
                             DataSource = "fallback",
                             MlAttempted = false,
+                            MlSucceeded = false,
                             FallbackUsed = true,
+                            FallbackSource = fallback.Source,
                             FallbackReason = userId > 0 ? "unsupported_scene" : "anonymous_user_not_supported",
                             UserId = userId
                         };
@@ -71,6 +74,8 @@ namespace Tech_Store.Services.Client.RecommendServices
                     mlAttempted = true;
                     var aiResult = await _http.GetFromJsonAsync<RecommendRawResponse>(url, _jsonOptions);
                     ids = ExtractProductSysIds(aiResult);
+                    _logger.LogInformation("Recommendation API success. Scene={Scene}, UserId={UserId}, ResultCount={ResultCount}, Url={Url}",
+                        "homepage", userId, ids.Count, url);
                 }
                 catch (Exception ex)
                 {
@@ -82,14 +87,16 @@ namespace Tech_Store.Services.Client.RecommendServices
             if (!ids.Any())
             {
                 _logger.LogInformation("Recommendation API returned no items for scene {Scene} and user {UserId}. Using default query fallback.", "homepage", userId);
-                // Nếu AI lỗi, lấy Hot Sale từ DB làm Backup
+                var fallback = await BuildBackupProducts("homepage", userId, null, topN);
                 return new RecommendResponse
                 {
                     Scene = "homepage",
-                    Products = await _productServices.GetHotSaleProducts(topN),
+                    Products = fallback.Products,
                     DataSource = "fallback",
                     MlAttempted = mlAttempted,
+                    MlSucceeded = false,
                     FallbackUsed = true,
+                    FallbackSource = fallback.Source,
                     MlRequestUrl = mlRequestUrl,
                     MlError = mlError,
                     FallbackReason = mlAttempted ? "ml_empty_or_failed" : "recommendation_api_disabled",
@@ -104,6 +111,7 @@ namespace Tech_Store.Services.Client.RecommendServices
                 Products = await GetFullProductsFromIds(ids),
                 DataSource = "ml",
                 MlAttempted = mlAttempted,
+                MlSucceeded = true,
                 FallbackUsed = false,
                 MlRequestUrl = mlRequestUrl,
                 UserId = userId,
@@ -128,13 +136,16 @@ namespace Tech_Store.Services.Client.RecommendServices
 
                     if (string.IsNullOrWhiteSpace(url))
                     {
+                        var fallback = await BuildBackupProducts(scene, userId, productSysId, topN);
                         return new RecommendResponse
                         {
                             Scene = scene,
-                            Products = await BuildBackupProducts(scene, productSysId, topN),
+                            Products = fallback.Products,
                             DataSource = "fallback",
                             MlAttempted = false,
+                            MlSucceeded = false,
                             FallbackUsed = true,
+                            FallbackSource = fallback.Source,
                             FallbackReason = ResolveUnsupportedReason(scene, userId, productSysId),
                             UserId = userId,
                             ProductSysId = productSysId
@@ -145,6 +156,8 @@ namespace Tech_Store.Services.Client.RecommendServices
                     mlAttempted = true;
                     var aiResult = await _http.GetFromJsonAsync<RecommendRawResponse>(url, _jsonOptions);
                     ids = ExtractProductSysIds(aiResult);
+                    _logger.LogInformation("Recommendation API success. Scene={Scene}, UserId={UserId}, ProductSysId={ProductSysId}, ResultCount={ResultCount}, Url={Url}",
+                        scene, userId, productSysId, ids.Count, url);
                 }
                 catch (Exception ex)
                 {
@@ -161,6 +174,7 @@ namespace Tech_Store.Services.Client.RecommendServices
                     Products = await GetFullProductsFromIds(ids),
                     DataSource = "ml",
                     MlAttempted = mlAttempted,
+                    MlSucceeded = true,
                     FallbackUsed = false,
                     MlRequestUrl = mlRequestUrl,
                     UserId = userId,
@@ -171,13 +185,16 @@ namespace Tech_Store.Services.Client.RecommendServices
 
             // Nếu AI không có kết quả, chạy logic dự phòng
             _logger.LogInformation("Recommendation API returned no items for scene {Scene}, user {UserId}, productSysId {ProductSysId}. Using default query fallback.", scene, userId, productSysId);
+            var sceneFallback = await BuildBackupProducts(scene, userId, productSysId, topN);
             return new RecommendResponse
             {
                 Scene = scene,
-                Products = await BuildBackupProducts(scene, productSysId, topN),
+                Products = sceneFallback.Products,
                 DataSource = "fallback",
                 MlAttempted = mlAttempted,
+                MlSucceeded = false,
                 FallbackUsed = true,
+                FallbackSource = sceneFallback.Source,
                 MlRequestUrl = mlRequestUrl,
                 MlError = mlError,
                 FallbackReason = mlAttempted ? "ml_empty_or_failed" : "recommendation_api_disabled",
@@ -208,13 +225,190 @@ namespace Tech_Store.Services.Client.RecommendServices
                       .ToList()!;
         }
 
-        private async Task<List<Product>> BuildBackupProducts(string scene, string? productSysId, int topN)
+        private async Task<FallbackRecommendResult> BuildBackupProducts(string scene, int userId, string? productSysId, int topN)
         {
+            if (userId > 0)
+            {
+                var personalizedProducts = await GetInteractionBasedProductsForUserAsync(userId, scene, productSysId, topN);
+                if (personalizedProducts.Count > 0)
+                {
+                    return new FallbackRecommendResult(personalizedProducts, "user_behavior");
+                }
+            }
+
             if (scene == "detail" && !string.IsNullOrEmpty(productSysId))
             {
-                return await _productServices.GetRelatedProductsAsync(productSysId, topN);
+                var interactionProducts = await GetInteractionBasedProductsAsync(topN, productSysId, sameCategoryOnly: true);
+                if (interactionProducts.Count > 0)
+                {
+                    return new FallbackRecommendResult(interactionProducts, "interaction_same_category");
+                }
+
+                var relatedProducts = await _productServices.GetRelatedProductsAsync(productSysId, topN);
+                if (relatedProducts.Count > 0)
+                {
+                    return new FallbackRecommendResult(relatedProducts, "related_products");
+                }
             }
-            return await _productServices.GetHotSaleProducts(topN);
+
+            var globalInteractionProducts = await GetInteractionBasedProductsAsync(topN, productSysId);
+            if (globalInteractionProducts.Count > 0)
+            {
+                return new FallbackRecommendResult(globalInteractionProducts, "global_interaction");
+            }
+
+            return new FallbackRecommendResult(await _productServices.GetHotSaleProducts(topN), "hot_sale");
+        }
+
+        private async Task<List<Product>> GetInteractionBasedProductsForUserAsync(int userId, string scene, string? productSysId, int topN)
+        {
+            var preferredCategoryIds = await _context.UserProductEvents
+                .AsNoTracking()
+                .Where(x => x.UserId == userId)
+                .Join(
+                    _context.Products.AsNoTracking(),
+                    ev => ev.ProductId,
+                    product => product.ProductId,
+                    (ev, product) => new
+                    {
+                        product.CategoryId,
+                        ev.InteractionScore
+                    })
+                .Where(x => x.CategoryId.HasValue)
+                .GroupBy(x => x.CategoryId!.Value)
+                .Select(g => new
+                {
+                    CategoryId = g.Key,
+                    Score = g.Sum(x => x.InteractionScore)
+                })
+                .OrderByDescending(x => x.Score)
+                .Take(3)
+                .Select(x => x.CategoryId)
+                .ToListAsync();
+
+            var interactedProductIds = await _context.UserProductEvents
+                .AsNoTracking()
+                .Where(x => x.UserId == userId)
+                .Select(x => x.ProductId)
+                .Distinct()
+                .ToListAsync();
+
+            var currentProductId = await ResolveProductIdAsync(productSysId);
+            var excludedProductIds = interactedProductIds;
+            if (currentProductId.HasValue)
+            {
+                excludedProductIds.Add(currentProductId.Value);
+            }
+
+            IQueryable<Product> query = _context.Products
+                .AsNoTracking()
+                .Where(IsAvailableProductPredicate());
+
+            if (preferredCategoryIds.Count > 0)
+            {
+                query = query.Where(x => x.CategoryId.HasValue && preferredCategoryIds.Contains(x.CategoryId.Value));
+            }
+
+            if (excludedProductIds.Count > 0)
+            {
+                query = query.Where(x => !excludedProductIds.Contains(x.ProductId));
+            }
+
+            var products = await query
+                .GroupJoin(
+                    _context.UserProductEvents.AsNoTracking(),
+                    product => product.ProductId,
+                    behavior => behavior.ProductId,
+                    (product, behaviors) => new
+                    {
+                        Product = product,
+                        InteractionScore = behaviors.Sum(x => (double?)x.InteractionScore) ?? 0d,
+                        LastInteractedAt = behaviors.Max(x => (DateTime?)x.LastInteractedAt)
+                    })
+                .OrderByDescending(x => x.InteractionScore)
+                .ThenByDescending(x => x.LastInteractedAt)
+                .ThenByDescending(x => x.Product.CreatedAt)
+                .Take(topN)
+                .Select(x => x.Product)
+                .ToListAsync();
+
+            if (products.Count > 0)
+            {
+                return products;
+            }
+
+            return await GetInteractionBasedProductsAsync(topN, productSysId);
+        }
+
+        private async Task<List<Product>> GetInteractionBasedProductsAsync(int topN, string? productSysId, bool sameCategoryOnly = false)
+        {
+            var currentProduct = await ResolveProductAsync(productSysId);
+            var currentProductId = currentProduct?.ProductId;
+            var currentCategoryId = currentProduct?.CategoryId;
+
+            IQueryable<Product> query = _context.Products
+                .AsNoTracking()
+                .Where(IsAvailableProductPredicate());
+
+            if (currentProductId.HasValue)
+            {
+                query = query.Where(x => x.ProductId != currentProductId.Value);
+            }
+
+            if (sameCategoryOnly && currentCategoryId.HasValue)
+            {
+                query = query.Where(x => x.CategoryId == currentCategoryId.Value);
+            }
+
+            return await query
+                .GroupJoin(
+                    _context.UserProductEvents.AsNoTracking(),
+                    product => product.ProductId,
+                    behavior => behavior.ProductId,
+                    (product, behaviors) => new
+                    {
+                        Product = product,
+                        InteractionScore = behaviors.Sum(x => (double?)x.InteractionScore) ?? 0d,
+                        LastInteractedAt = behaviors.Max(x => (DateTime?)x.LastInteractedAt)
+                    })
+                .Where(x => x.InteractionScore > 0)
+                .OrderByDescending(x => x.InteractionScore)
+                .ThenByDescending(x => x.LastInteractedAt)
+                .ThenByDescending(x => x.Product.CreatedAt)
+                .Take(topN)
+                .Select(x => x.Product)
+                .ToListAsync();
+        }
+
+        private async Task<Product?> ResolveProductAsync(string? productSysId)
+        {
+            if (string.IsNullOrWhiteSpace(productSysId))
+            {
+                return null;
+            }
+
+            return await _context.Products
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.ProductSysId == productSysId);
+        }
+
+        private async Task<int?> ResolveProductIdAsync(string? productSysId)
+        {
+            if (string.IsNullOrWhiteSpace(productSysId))
+            {
+                return null;
+            }
+
+            return await _context.Products
+                .AsNoTracking()
+                .Where(x => x.ProductSysId == productSysId)
+                .Select(x => (int?)x.ProductId)
+                .FirstOrDefaultAsync();
+        }
+
+        private static System.Linq.Expressions.Expression<Func<Product, bool>> IsAvailableProductPredicate()
+        {
+            return x => x.Visible == true && x.Stock >= 1 && x.Status != "outstock";
         }
 
         private static List<string> ExtractProductSysIds(RecommendRawResponse? response)
@@ -273,5 +467,7 @@ namespace Tech_Store.Services.Client.RecommendServices
 
             return "unsupported_scene";
         }
+
+        private sealed record FallbackRecommendResult(List<Product> Products, string Source);
     }
 }

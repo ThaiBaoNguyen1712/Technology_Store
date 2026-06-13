@@ -48,37 +48,43 @@ const RecommendationManager = {
                 $(_self.config.defaultContainer).html(_self.helper.getSpinner());
             },
             success: function (res) {
-                // if (_self.config.debug) {
-                //     console.groupCollapsed(`[Recommendation] Response ${scene}`);
-                //     console.log('Response:', res);
-                //     console.log('DataSource:', res?.dataSource);
-                //     console.log('MlAttempted:', res?.mlAttempted);
-                //     console.log('FallbackUsed:', res?.fallbackUsed);
-                //     console.log('FallbackReason:', res?.fallbackReason);
-                //     console.log('MlRequestUrl:', res?.mlRequestUrl);
-                //     console.log('MlError:', res?.mlError);
-                //     console.log('MlResultCount:', res?.mlResultCount);
-                //     console.log('ProductCount:', Array.isArray(res?.products) ? res.products.length : 0);
-                //     console.groupEnd();
-                // }
+                if (_self.config.debug) {
+                    console.groupCollapsed(`[Recommendation] ${scene} status`);
+                    console.log('ML success:', !!res?.mlSucceeded);
+                    console.log('ML attempted:', !!res?.mlAttempted);
+                    console.log('Fallback used:', !!res?.fallbackUsed);
+                    console.log('Fallback source:', res?.fallbackSource || null);
+                    console.log('Fallback reason:', res?.fallbackReason || null);
+                    console.log('Data source:', res?.dataSource || null);
+                    console.log('ML request URL:', res?.mlRequestUrl || null);
+                    console.log('ML error:', res?.mlError || null);
+                    console.log('ML result count:', res?.mlResultCount || 0);
+                    console.log('Product count:', Array.isArray(res?.products) ? res.products.length : 0);
+                    console.log('Response payload:', res);
+                    console.groupEnd();
+                }
 
-                // if (res?.fallbackUsed) {
-                //     console.warn(`[Recommendation] ${scene} is using fallback data.`, {
-                //         reason: res?.fallbackReason,
-                //         mlAttempted: res?.mlAttempted,
-                //         mlRequestUrl: res?.mlRequestUrl,
-                //         mlError: res?.mlError,
-                //         userId: res?.userId,
-                //         productSysId: res?.productSysId
-                //     });
-                // }
+                if (res?.fallbackUsed) {
+                    console.warn(`[Recommendation] ${scene} is using fallback data.`, {
+                        mlSucceeded: !!res?.mlSucceeded,
+                        mlAttempted: !!res?.mlAttempted,
+                        fallbackSource: res?.fallbackSource || null,
+                        fallbackReason: res?.fallbackReason || null,
+                        mlRequestUrl: res?.mlRequestUrl || null,
+                        mlError: res?.mlError || null,
+                        userId: res?.userId,
+                        productSysId: res?.productSysId || null
+                    });
+                }
 
                 if (res && res.products) {
                     _self.renderList(res.products);
                 }
             },
             error: function (err) {
-                // console.error("Recommend Error:", err);
+                if (_self.config.debug) {
+                    console.error(`[Recommendation] ${scene} request failed at HTTP layer.`, err);
+                }
                 $(_self.config.defaultContainer).hide();
             }
         });

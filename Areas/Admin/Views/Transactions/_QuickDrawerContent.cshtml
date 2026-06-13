@@ -1,5 +1,6 @@
 @model Tech_Store.Models.ViewModel.AdminTransactionQuickDrawerViewModel
 @using System.Globalization
+@using Tech_Store.Helpers
 
 <div class="transaction-drawer">
     <div class="transaction-drawer__summary">
@@ -13,7 +14,7 @@
         </div>
         <div class="transaction-drawer__summary-card">
             <span>Phương thức</span>
-            <strong>@Model.PaymentMethod</strong>
+            <strong>@PaymentDisplayHelper.GetLabel(Model.PaymentMethod)</strong>
         </div>
         <div class="transaction-drawer__summary-card">
             <span>Giá trị</span>
@@ -83,7 +84,7 @@
             </div>
             <div class="transaction-drawer__info-row">
                 <span>Phương thức</span>
-                <strong>@Model.PaymentMethodLabel</strong>
+                <strong>@PaymentDisplayHelper.GetLabel(Model.PaymentMethod)</strong>
             </div>
             <div class="transaction-drawer__info-row">
                 <span>Trạng thái đơn</span>

@@ -162,7 +162,7 @@ namespace Tech_Store.Areas.Admin.Controllers
         [Route("GetUser")]
         public async Task<JsonResult> GetUser(int id)
         {
-            var cus = await _context.Users.Include(x => x.Addresses).Select(x=> new {x.UserId,x.LastName,x.FirstName,x.PhoneNumber,x.Addresses})
+            var cus = await _context.Users.Include(x => x.Addresses).Select(x=> new {x.UserId,x.LastName,x.FirstName,x.PhoneNumber,x.Email,x.Addresses})
                 .FirstOrDefaultAsync(x => x.UserId == id);
             if (cus == null)
             {
@@ -633,7 +633,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                     await transaction.CommitAsync();
 
                     await _notificationService.NotifyAsync(Events.NotificationTarget.Admins, "Đơn hàng hoàn tất", $"Đơn hàng {order.OrderId} đã được thanh toán hoàn tất ", "success", $"/Admin/Orders/View/{order.OrderId}");
-                    await _notificationService.NotifyAsync(Events.NotificationTarget.SpecificUsers, "Đơn hàng hoàn tất", $"Đơn hàng {order.OrderId} đã được thanh toán hoàn tất ", "success", $"/Admin/Orders/View/{order.OrderId}",new List<int> { invoice.UserId});
+                    await _notificationService.NotifyAsync(Events.NotificationTarget.SpecificUsers, "Đơn hàng hoàn tất", $"Đơn hàng {order.OrderId} đã được thanh toán hoàn tất ", "success", $"/user/MyOrders/OrderDetail/{order.OrderId}",new List<int> { invoice.UserId});
 
                     try
                     {
@@ -792,7 +792,7 @@ namespace Tech_Store.Areas.Admin.Controllers
                 }).ToList(),
                 ShippingFee = order.ShippingAmount ?? 0,
                 ShippingAmount = order.ShippingAmount ?? 0,
-                PaymentMethod = MapPaymentMethodLabel(payment?.Gateway),
+                PaymentMethod = PaymentDisplayHelper.GetLabel(payment?.Gateway),
                 IsPaid = string.Equals(payment?.PaymentStatus, "Paid", StringComparison.OrdinalIgnoreCase),
                 CompanyName = settings.FirstOrDefault(x => x.Key == "NameCompany")?.Value ?? settings.FirstOrDefault(x => x.Key == "NameWebsite")?.Value ?? "Tech Store",
                 CompanyAddress = settings.FirstOrDefault(x => x.Key == "Address")?.Value ?? string.Empty,
@@ -897,14 +897,5 @@ namespace Tech_Store.Areas.Admin.Controllers
             return $"{baseUrl}/Upload/Logo/{logoPath.TrimStart('/')}";
         }
 
-        private static string MapPaymentMethodLabel(string? paymentMethod)
-        {
-            return (paymentMethod ?? string.Empty).Trim().ToLowerInvariant() switch
-            {
-                "cash" => "Tiền mặt",
-                "card" => "Thẻ",
-                _ => string.IsNullOrWhiteSpace(paymentMethod) ? "-" : paymentMethod
-            };
-        }
     }
 }

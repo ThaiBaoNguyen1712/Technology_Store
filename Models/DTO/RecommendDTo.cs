@@ -42,7 +42,11 @@ namespace Tech_Store.Models.DTO
 
         public bool MlAttempted { get; set; }
 
+        public bool MlSucceeded { get; set; }
+
         public bool FallbackUsed { get; set; }
+
+        public string? FallbackSource { get; set; }
 
         public string? MlRequestUrl { get; set; }
 

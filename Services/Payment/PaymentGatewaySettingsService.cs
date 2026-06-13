@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Tech_Store.Helpers;
 using Tech_Store.Models;
 using Tech_Store.Models.Enums;
 using Tech_Store.Models.ViewModel;
@@ -35,7 +36,7 @@ namespace Tech_Store.Services.Payment
                 PaymentMethodType.SePay,
                 PaymentGatewaySettingKeys.SePayEnabled,
                 "SePay",
-                "/Upload/Logo/LogoSePay.svg",
+                "/Upload/Logo/logo-sepay-color-in-white.webp",
                 "Chuyển khoản tự động",
                 false)
         };

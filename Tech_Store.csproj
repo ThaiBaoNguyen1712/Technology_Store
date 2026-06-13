@@ -47,6 +47,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Remove="artifacts\**" />
+    <None Remove="artifacts\**" />
+    <EmbeddedResource Remove="artifacts\**" />
+    <Compile Remove="artifacts\**" />
     <Folder Include="Areas\Admin\Data\" />
     <Folder Include="Areas\Admin\Models\" />
     <Folder Include="wwwroot\Upload\Banner\" />

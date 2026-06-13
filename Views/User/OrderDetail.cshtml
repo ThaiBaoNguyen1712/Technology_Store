@@ -40,6 +40,12 @@
         "cash" => "Thanh toán tiền mặt",
         _ => "Không xác định"
     };
+    if (Model.PaymentMethod == "SePay")
+    {
+        paymentLabel = "Thanh toán qua SePay";
+    }
+    paymentLabel = PaymentDisplayHelper.GetLabel(Model.PaymentMethod);
+    var paymentLogoUrl = PaymentDisplayHelper.GetLogoUrl(Model.PaymentMethod);
 }
 
 <link rel="stylesheet" href="~/client/asset/css/ordersview.css" asp-append-version="true" />
@@ -185,17 +191,9 @@
                         <div class="order-detail-sidebar-card__body">
                             <div class="payment-method">
                                 <div class="payment-method__icon">
-                                    @if (Model.PaymentMethod == "COD")
+                                    @if (!string.IsNullOrWhiteSpace(paymentLogoUrl))
                                     {
-                                        <img src="/Upload/Logo/shipcod.png" alt="COD" />
-                                    }
-                                    else if (Model.PaymentMethod == "MoMo")
-                                    {
-                                        <img src="/Upload/Logo/LogoMoMo.webp" alt="MoMo" />
-                                    }
-                                    else if (Model.PaymentMethod == "VNPay")
-                                    {
-                                        <img src="/Upload/Logo/LogoVNPay.png" alt="VNPay" />
+                                        <img src="@paymentLogoUrl" alt="@Model.PaymentMethod" />
                                     }
                                     else if (Model.PaymentMethod == "cash")
                                     {
